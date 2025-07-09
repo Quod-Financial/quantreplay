@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - include:
+      file: venue.yml
+      relativeToChangelogFile: true
+  - includeAll:
+      path: listings/
+      relativeToChangelogFile: true
+  - includeAll:
+      path: price_seeds/
+      relativeToChangelogFile: true
+  - includeAll:
+      path: setting/
+      relativeToChangelogFile: true

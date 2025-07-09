@@ -1,0 +1,157 @@
+project(generator
+  LANGUAGES CXX
+  DESCRIPTION
+    "Order generator for market data simulator")
+
+#------------------------------------------------------------------------------#
+
+ensure_project_dependency_exist(RapidJSON::RapidJSON)
+ensure_project_dependency_exist(date::date)
+ensure_project_dependency_exist(libpqxx::libpqxx)
+ensure_project_dependency_exist(quickfix::quickfix)
+ensure_project_dependency_exist(vincentlaucsb-csv-parser::vincentlaucsb-csv-parser)
+ensure_project_dependency_exist(simulator::core)
+ensure_project_dependency_exist(simulator::protocol)
+ensure_project_dependency_exist(simulator::middleware)
+ensure_project_dependency_exist(simulator::data_layer)
+ensure_project_dependency_exist(simulator::log)
+
+#------------------------------------------------------------------------------#
+
+add_static_library(
+  NAME ${PROJECT_NAME}
+  ALIAS simulator::generator
+  HEADERS
+    ih/adaptation/generated_message.hpp
+    ih/adaptation/protocol_conversion.hpp
+    ih/context/component_context.hpp
+    ih/context/generation_manager.hpp
+    ih/context/instrument_context.hpp
+    ih/context/order_generation_context.hpp
+    ih/context/order_generation_context_impl.hpp
+    ih/context/order_market_data_provider.hpp
+    ih/factory/executable_factory.hpp
+    ih/factory/executable_factory_impl.hpp
+    ih/historical/adapters/csv_reader.hpp
+    ih/historical/adapters/data_access_adapter.hpp
+    ih/historical/adapters/postgresql_connector.hpp
+    ih/historical/data/provider.hpp
+    ih/historical/data/record.hpp
+    ih/historical/data/time.hpp
+    ih/historical/mapping/column_mapping_filter.hpp
+    ih/historical/mapping/configurator.hpp
+    ih/historical/mapping/datasource_params.hpp
+    ih/historical/mapping/depth_config.hpp
+    ih/historical/mapping/params.hpp
+    ih/historical/mapping/specification.hpp
+    ih/historical/parsing/params.hpp
+    ih/historical/parsing/row.hpp
+    ih/historical/parsing/parsing.hpp
+    ih/historical/processor.hpp
+    ih/historical/record_applier.hpp
+    ih/historical/replier.hpp
+    ih/historical/scheduler.hpp
+    ih/random/algorithm/generation_algorithm.hpp
+    ih/random/algorithm/order_generation_algorithm.hpp
+    ih/random/algorithm/utils/attributes_setter.hpp
+    ih/random/algorithm/utils/max_mktdepth_selector.hpp
+    ih/random/algorithm/utils/price_params_selector.hpp
+    ih/random/algorithm/utils/quantity_params_selector.hpp
+    ih/random/generators/counterparty_generator.hpp
+    ih/random/generators/event_generator.hpp
+    ih/random/generators/price_generator.hpp
+    ih/random/generators/quantity_generator.hpp
+    ih/random/generators/resting_order_action_generator.hpp
+    ih/random/generators/value_generator.hpp
+    ih/random/generators/value_generator_impl.hpp
+    ih/random/instrument_generator.hpp
+    ih/random/utils.hpp
+    ih/random/values/event.hpp
+    ih/random/values/price_generation_params.hpp
+    ih/random/values/quantity_generation_params.hpp
+    ih/random/values/resting_order_action.hpp
+    ih/registry/generated_order_data.hpp
+    ih/registry/generated_orders_registry.hpp
+    ih/registry/generated_orders_registry_impl.hpp
+    ih/registry/registry_updater.hpp
+    ih/tracing/json_tracer.hpp
+    ih/tracing/null_tracer.hpp
+    ih/tracing/trace_logger.hpp
+    ih/tracing/trace_value.hpp
+    ih/tracing/tracing.hpp
+    ih/utils/executable.hpp
+    ih/utils/executor.hpp
+    ih/utils/parsers.hpp
+    ih/utils/request_builder.hpp
+    ih/utils/validator.hpp
+    ih/constants.hpp
+    ih/generator_impl.hpp
+    ih/generator.hpp
+    include/generator/generator.hpp
+  SOURCES
+    src/adaptation/protocol_conversion.cpp
+    src/adaptation/generated_message.cpp
+    src/context/generation_manager.cpp
+    src/context/order_generation_context_impl.cpp
+    src/context/order_market_data_provider.cpp
+    src/factory/executable_factory_impl.cpp
+    src/historical/adapters/csv_reader.cpp
+    src/historical/adapters/data_access_adapter.cpp
+    src/historical/adapters/postgresql_connector.cpp
+    src/historical/data/provider.cpp
+    src/historical/data/record.cpp
+    src/historical/mapping/column_mapping_filter.cpp
+    src/historical/mapping/configurator.cpp
+    src/historical/mapping/datasource_params.cpp
+    src/historical/mapping/params.cpp
+    src/historical/mapping/specification.cpp
+    src/historical/parsing/params.cpp
+    src/historical/parsing/parsing.cpp
+    src/historical/processor.cpp
+    src/historical/record_applier.cpp
+    src/historical/replier.cpp
+    src/historical/scheduler.cpp
+    src/random/algorithm/order_generation_algorithm.cpp
+    src/random/algorithm/utils/quantity_params_selector.cpp
+    src/random/generators/counterparty_generator.cpp
+    src/random/generators/event_generator.cpp
+    src/random/generators/price_generator.cpp
+    src/random/generators/quantity_generator.cpp
+    src/random/generators/resting_order_action_generator.cpp
+    src/random/generators/value_generator_impl.cpp
+    src/random/instrument_generator.cpp
+    src/random/values/event.cpp
+    src/random/values/price_generation_params.cpp
+    src/random/values/quantity_generation_params.cpp
+    src/random/values/resting_order_action.cpp
+    src/registry/generated_orders_registry_impl.cpp
+    src/registry/registry_updater.cpp
+    src/utils/executor.cpp
+    src/utils/parsers.cpp
+    src/utils/request_builder.cpp
+    src/utils/validator.cpp
+    src/generator_impl.cpp
+    src/generator.cpp
+  PUBLIC_INCLUDE_DIRECTORIES
+    ${PROJECT_SOURCE_DIR}/include
+  PRIVATE_INCLUDE_DIRECTORIES
+    ${PROJECT_SOURCE_DIR}/include/generator
+    ${PROJECT_SOURCE_DIR}
+  PUBLIC_DEPENDENCIES
+    simulator::protocol
+  PRIVATE_DEPENDENCIES
+    RapidJSON::RapidJSON
+    date::date
+    libpqxx::libpqxx
+    quickfix::quickfix
+    vincentlaucsb-csv-parser::vincentlaucsb-csv-parser
+    simulator::core
+    simulator::protocol
+    simulator::middleware
+    simulator::cfg
+    simulator::log
+    simulator::data_layer)
+
+#------------------------------------------------------------------------------#
+
+add_subdirectory(tests)

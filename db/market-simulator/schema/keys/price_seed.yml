@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_key_price_seed_1
+      labels: schema,v4
+      comment: Add price_seed_pkey (price_seed_id) for price_seed table
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: price_seed
+        - columnExists:
+            tableName: price_seed
+            columnName: price_seed_id
+        - not:
+            - primaryKeyExists:
+                tableName: price_seed
+                primaryKeyName: price_seed_pkey
+      changes:
+        - addPrimaryKey:
+            constraintName: price_seed_pkey
+            tableName: price_seed
+            columnNames: price_seed_id
+            validate: true

@@ -1,0 +1,406 @@
+# XETRA VODI listing, id=4
+databaseChangeLog:
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_VODI_1
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Define VODI XETRA listing
+      preConditions:
+        - onFail: WARN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: listing_id
+        - columnExists:
+            tableName: listing
+            columnName: venue_id
+      changes:
+        - insert:
+            tableName: listing
+            columns:
+              - column:
+                  name: listing_id
+                  valueNumeric: 4
+              - column:
+                  name: venue_id
+                  value: XETRA
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_VODI_2
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set symbol for VODI XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: symbol
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: symbol
+                  value: VODI
+
+            where: listing_id=4
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_VODI_3
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set security_type for VODI XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: security_type
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: security_type
+                  value: CS
+            where: listing_id=4
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_VODI_4
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set price_currency for VODI XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: price_currency
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: price_currency
+                  value: EUR
+            where: listing_id=4
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_VODI_5
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set instr_symbol for VODI XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: instr_symbol
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: instr_symbol
+                  value: VODI
+            where: listing_id=4
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_VODI_6
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set qty_minimum for VODI XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: qty_minimum
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: qty_minimum
+                  valueNumeric: 1
+            where: listing_id=4
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_VODI_7
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set qty_maximum for VODI XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: qty_maximum
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: qty_maximum
+                  valueNumeric: 2000
+            where: listing_id=4
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_VODI_8
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set qty_multiple for VODI XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: qty_multiple
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: qty_multiple
+                  valueNumeric: 
+            where: listing_id=4
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_VODI_9
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set price_tick_size for VODI XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: price_tick_size
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: price_tick_size
+                  valueNumeric: 
+            where: listing_id=4
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_VODI_10
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set enabled for VODI XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: enabled
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: enabled
+                  valueBoolean: true
+            where: listing_id=4
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_VODI_11
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set random_qty_maximum for VODI XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_qty_maximum
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: random_qty_maximum
+                  valueNumeric: 
+            where: listing_id=4
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_VODI_12
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set random_depth_levels for VODI XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_depth_levels
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: random_depth_levels
+                  valueNumeric: 5
+            where: listing_id=4
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_VODI_13
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set random_orders_spread for VODI XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_orders_spread
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: random_orders_spread
+                  valueNumeric: 0.01
+            where: listing_id=4
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_VODI_14
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set random_orders_rate for VODI XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_orders_rate
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: random_orders_rate
+                  valueNumeric: 1
+            where: listing_id=4
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_VODI_15
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set random_tick_range for VODI XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_tick_range
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: random_tick_range
+                  valueNumeric: 
+            where: listing_id=4
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_VODI_16
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set security_exchange for VODI XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: security_exchange
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: security_exchange
+                  value: ABER
+            where: listing_id=4
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_VODI_17
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set isin_id for VODI XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: isin_id
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: sedol_id
+                  value: 
+            where: listing_id=4
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_VODI_18
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set random_qty_minimum for VODI XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_qty_minimum
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: random_qty_minimum
+                  valueNumeric: 10
+            where: listing_id=4
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_VODI_19
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set random_orders_enabled for VODI XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_orders_enabled
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: random_orders_enabled
+                  valueBoolean: true
+            where: listing_id=4

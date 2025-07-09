@@ -1,0 +1,62 @@
+databaseChangeLog:
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_table_column_mapping_1
+      labels: schema,v4
+      comment: Create column_mapping table
+      preConditions:
+        - not:
+            - tableExists:
+                tableName: column_mapping
+      changes:
+        - createTable:
+            tableName: column_mapping
+            columns:
+              - column:
+                  name: venue_id
+                  type: text
+              - column:
+                  name: column_from
+                  type: text
+              - column:
+                  name: column_to
+                  type: text
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_table_column_mapping_2
+      labels: schema,v4,SIM-526
+      comment: Add column_mapping.data_source_id column
+      preConditions:
+        - tableExists:
+            tableName: column_mapping
+        - not:
+            - columnExists:
+                tableName: column_mapping
+                columnName: data_source_id
+      changes:
+        - addColumn:
+            tableName: column_mapping
+            columns:
+              - column:
+                  name: data_source_id
+                  type: int
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_table_column_mapping_3
+      labels: schema,v4,SIM-526
+      comment: Remove column_mapping.venue_id column
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: column_mapping
+        - columnExists:
+            tableName: column_mapping
+            columnName: venue_id
+      changes:
+        - dropColumn:
+            tableName: column_mapping
+            columns:
+              - column:
+                  name: venue_id

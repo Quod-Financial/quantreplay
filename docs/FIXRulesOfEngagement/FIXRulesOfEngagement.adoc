@@ -1,0 +1,46 @@
+:maintitle: FIX Rules of Engagement
+include::../common/adoc/titleblock.adoc[]
+:docinfo: shared
+:docinfodir: ../common/adoc
+:toc: left
+:toclevels: 4
+:table-stripes: even
+:front-cover-image: Introduction/Cover.pdf
+
+ifndef::imagesDir[]
+:imagesDir: images
+endif::[]
+
+include::../common/adoc/header.adoc[]
+
+<<<
+
+include::Introduction/Introduction.adoc[]
+
+<<<
+
+include::CommonComponents/CommonComponents.adoc[]
+
+<<<
+
+include::AdminMessages/AdminMessages.adoc[]
+
+
+<<<
+
+include::PreTradeMessages/PreTradeMessages.adoc[]
+
+<<<
+
+include::TradeMessages/TradeMessages.adoc[]
+
+<<<
+
+include::PhaseReportingMessages/PhaseReportingMessages.adoc[]
+
+<<<
+
+include::MessageFlows/MessageFlows.adoc[]
+
+<<<
+

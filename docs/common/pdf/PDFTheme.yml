@@ -1,0 +1,63 @@
+extends: base
+font:
+  catalog:
+    # Noto Serif supports Latin, Latin-1 Supplement, Latin Extended-A, Greek, Cyrillic, Vietnamese & an assortment of symbols
+    Noto Serif:
+      normal: GEM_FONTS_DIR/notoserif-regular-subset.ttf
+      bold: GEM_FONTS_DIR/notoserif-bold-subset.ttf
+      italic: GEM_FONTS_DIR/notoserif-italic-subset.ttf
+      bold_italic: GEM_FONTS_DIR/notoserif-bold_italic-subset.ttf
+    # M+ 1mn supports ASCII and the circled numbers used for conums
+    M+ 1mn:
+      normal: GEM_FONTS_DIR/mplus1mn-regular-subset.ttf
+      bold: GEM_FONTS_DIR/mplus1mn-bold-subset.ttf
+      italic: GEM_FONTS_DIR/mplus1mn-italic-subset.ttf
+      bold_italic: GEM_FONTS_DIR/mplus1mn-bold_italic-subset.ttf
+    # M+ 1p supports Latin, Latin-1 Supplement, Latin Extended, Greek, Cyrillic, Vietnamese, Japanese & an assortment of symbols
+    # It also provides arrows for ->, <-, => and <= replacements in case these glyphs are missing from font
+    M+ 1p Fallback: GEM_FONTS_DIR/mplus1p-regular-fallback.ttf
+    Noto Emoji: GEM_FONTS_DIR/notoemoji-subset.ttf
+  fallbacks: [M+ 1p Fallback, Noto Emoji]
+page:
+  layout: portrait
+  margin: [2.5cm, 2.5cm, 2.5cm, 2.5cm]
+  size: A4
+base:
+  font-color: #333333
+  font-family: Noto Serif
+  font-size: 12
+  line-height-length: 17
+  line-height: $base-line-height-length / $base-font-size
+vertical-spacing: $base-line-height-length
+heading:
+  font-color: #262626
+  font-size: 17
+  font-style: bold
+  line-height: 1.2
+  margin-bottom: $vertical-spacing
+link:
+  font-color: #002FA7
+list:
+  indent: $base-font-size * 1.5
+header:
+  height: $base-line-height-length * 3
+  border_color: dddddd
+  border_width: 0.25
+  recto: &header
+    left: 
+        content: image:Logo.png[width=80] 
+    center: 
+        content: '{document-title}'
+  verso: *header
+    
+footer:
+  height: $base_line_height_length * 3
+  border_color: dddddd
+  border_width: 0.25
+  line-height: 1
+  recto: &footer
+    left: 
+        content: "\u00A9 {orgname}"
+    right:
+        content: '{page-number} of {page-count}'
+  verso: *footer

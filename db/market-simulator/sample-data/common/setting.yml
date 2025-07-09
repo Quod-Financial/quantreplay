@@ -1,0 +1,78 @@
+databaseChangeLog:
+  - changeSet:
+      id: market_simulator_sample_data_common_setting_1
+      author: avovchen
+      labels: sample-data,v4
+      comment: Predefine the DisplayName general setting
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: setting
+        - columnExists:
+            tableName: setting
+            columnName: key
+        - columnExists:
+            tableName: setting
+            columnName: value
+      changes:
+        - insert:
+            tableName: setting
+            columns:
+              - column:
+                  name: key
+                  value: DisplayName
+              - column:
+                  name: value
+                  value: SITE NAME
+
+  - changeSet:
+      id: market_simulator_sample_data_common_setting_2
+      author: avovchen
+      labels: sample-data,v4
+      comment: Predefine the SeedPriceDatabaseConnection general setting
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: setting
+        - columnExists:
+            tableName: setting
+            columnName: key
+        - columnExists:
+            tableName: setting
+            columnName: value
+      changes:
+        - insert:
+            tableName: setting
+            columns:
+              - column:
+                  name: key
+                  value: SeedPriceDatabaseConnection
+              - column:
+                  name: value
+                  value: postgresql://username:password@1.2.3.4:1234/quodsimdb
+
+  - changeSet:
+      id: market_simulator_sample_data_common_setting_3
+      author: avovchen
+      labels: sample-data,v4
+      comment: Predefine the SeedPricesLastUpdated1 general setting
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: setting
+        - columnExists:
+            tableName: setting
+            columnName: key
+        - columnExists:
+            tableName: setting
+            columnName: value
+      changes:
+        - insert:
+            tableName: setting
+            columns:
+              - column:
+                  name: key
+                  value: SeedPricesLastUpdated
+              - column:
+                  name: value
+                  value: ""

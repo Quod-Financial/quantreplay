@@ -1,0 +1,89 @@
+databaseChangeLog:
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_table_data_source_1
+      labels: schema,v4
+      comment: Create data_source table
+      preConditions:
+        - not:
+            - tableExists:
+                tableName: data_source
+      changes:
+        - createTable:
+            tableName: data_source
+            columns:
+              - column:
+                  name: data_source_id
+                  type: int
+              - column:
+                  name: disabled
+                  type: bool
+              - column:
+                  name: name
+                  type: text
+              - column:
+                  name: venue_id
+                  type: text
+              - column:
+                  name: connection
+                  type: text
+              - column:
+                  name: format
+                  type: text
+              - column:
+                  name: type
+                  type: text
+              - column:
+                  name: repeat
+                  type: bool
+              - column:
+                  name: text_delimiter
+                  type: varchar(1)
+              - column:
+                  name: text_header_row
+                  type: int
+              - column:
+                  name: text_data_row
+                  type: int
+              - column:
+                  name: table_name
+                  type: text
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_table_data_source_2
+      labels: schema,v4,SIM-679,SIM-480
+      comment: Rename disabled column to enabled
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: disabled
+      changes:
+        - renameColumn:
+            tableName: data_source
+            oldColumnName: disabled
+            newColumnName: enabled
+            columnDataType: bool
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_table_data_source_3
+      labels: schema,v9,SIM-229
+      comment: Add max_depth_levels column
+      preConditions:
+        - tableExists:
+            tableName: data_source
+        - not:
+            - columnExists:
+                tableName: data_source
+                columnName: max_depth_levels
+      changes:
+        - addColumn:
+            tableName: data_source
+            columns:
+              - column:
+                  name: max_depth_levels
+                  type: int

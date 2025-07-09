@@ -1,0 +1,229 @@
+databaseChangeLog:
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_constraint_data_source_1
+      labels: schema,v4
+      comment: Add NOT NULL constraint data_source_name_idx on data_source.name
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: name
+      changes:
+        - addNotNullConstraint:
+            constraintName: data_source_name_idx
+            tableName: data_source
+            columnName: name
+            validate: true
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_constraint_data_source_2
+      labels: schema,schema,v4
+      comment: Add NOT NULL constraint data_source_venue_id_idx on data_source.venue_id
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: venue_id
+      changes:
+        - addNotNullConstraint:
+            constraintName: data_source_venue_id_idx
+            tableName: data_source
+            columnName: venue_id
+            validate: true
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_constraint_data_source_3
+      labels: schema,v4
+      comment: Add NOT NULL constraint data_source_connection_idx on data_source.connection
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: connection
+      changes:
+        - addNotNullConstraint:
+            constraintName: data_source_connection_idx
+            tableName: data_source
+            columnName: connection
+            validate: true
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_constraint_data_source_4
+      labels: schema,v4
+      comment: Add NOT NULL constraint data_source_format_idx on data_source.format
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: format
+      changes:
+        - addNotNullConstraint:
+            constraintName: data_source_connection_idx
+            tableName: data_source
+            columnName: format
+            validate: true
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_constraint_data_source_5
+      labels: schema,v4
+      comment: Add NOT NULL constraint data_source_type_idx on data_source.type
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: type
+      changes:
+        - addNotNullConstraint:
+            constraintName: data_source_type_idx
+            tableName: data_source
+            columnName: type
+            validate: true
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_constraint_data_source_6
+      labels: schema,v4
+      comment: Add UNIQUE constraint data_source_name_venue_id_key on (name, venue_id)
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: name
+        - columnExists:
+            tableName: data_source
+            columnName: venue_id
+        - not:
+          - uniqueConstraintExists:
+              tableName: data_source
+              constraintName: data_source_name_venue_id_key
+      changes:
+        - addUniqueConstraint:
+            tableName: data_source
+            columnNames: name,venue_id
+            constraintName: data_source_name_venue_id_key
+            validate: true
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_constraint_data_source_7
+      labels: schema,v4
+      comment: Set `false` default value for data_source.disabled column
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: disabled
+      changes:
+        - addDefaultValue:
+            tableName: data_source
+            columnName: disabled
+            defaultValueBoolean: false
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_constraint_data_source_8
+      labels: schema,v4
+      comment: Set `false` default value for data_source.repeat column
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: repeat
+      changes:
+        - addDefaultValue:
+            tableName: data_source
+            columnName: repeat
+            defaultValueBoolean: false
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_constraint_data_source_9
+      labels: schema,v4
+      comment: Set `,` default value for data_source.text_delimiter column
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: text_delimiter
+      changes:
+        - addDefaultValue:
+            tableName: data_source
+            columnName: text_delimiter
+            defaultValue: ','
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_constraint_data_source_10
+      labels: schema,v4
+      comment: Set `0` default value for data_source.text_header_row column
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: text_header_row
+      changes:
+        - addDefaultValue:
+            tableName: data_source
+            columnName: text_header_row
+            defaultValueNumeric: 0
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_constraint_data_source_11
+      labels: schema,v4
+      comment: Set `1` default value for data_source.text_data_row column
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: text_data_row
+      changes:
+        - addDefaultValue:
+            tableName: data_source
+            columnName: text_data_row
+            defaultValueNumeric: 1
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_constraint_data_source_12
+      labels: schema,v4,SIM-679,SIM-480
+      comment: Set `true` default value for data_source.enabled column
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: enabled
+      changes:
+        - addDefaultValue:
+            tableName: data_source
+            columnName: enabled
+            defaultValueBoolean: true

@@ -1,0 +1,210 @@
+# NFC listing price seed, id=3
+databaseChangeLog:
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_price_seed_NFC_1
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Define price_seed for NFC listing
+      preConditions:
+        - onFail: WARN
+        - tableExists:
+            tableName: price_seed
+        - columnExists:
+            tableName: price_seed
+            columnName: price_seed_id
+      changes:
+        - insert:
+            tableName: price_seed
+            columns:
+              - column:
+                  name: price_seed_id
+                  valueNumeric: 3
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_price_seed_NFC_2
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set symbol for NFC price_seed
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: price_seed
+        - columnExists:
+            tableName: price_seed
+            columnName: symbol
+      changes:
+        - update:
+            tableName: price_seed
+            columns:
+              - column:
+                  name: symbol
+                  value: NFC
+            where: price_seed_id=3
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_price_seed_NFC_3
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set security_type for NFC price_seed
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: price_seed
+        - columnExists:
+            tableName: price_seed
+            columnName: security_type
+      changes:
+        - update:
+            tableName: price_seed
+            columns:
+              - column:
+                  name: security_type
+                  value: CS
+            where: price_seed_id=3
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_price_seed_NFC_4
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set price_currency for NFC price_seed
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: price_seed
+        - columnExists:
+            tableName: price_seed
+            columnName: price_currency
+      changes:
+        - update:
+            tableName: price_seed
+            columns:
+              - column:
+                  name: price_currency
+                  value: EUR
+            where: price_seed_id=3
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_price_seed_NFC_5
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set security_id for NFC price_seed
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: price_seed
+        - columnExists:
+            tableName: price_seed
+            columnName: security_id
+      changes:
+        - update:
+            tableName: price_seed
+            columns:
+              - column:
+                  name: security_id
+                  value: NFC
+            where: price_seed_id=3
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_price_seed_NFC_6
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set security_id_source for NFC price_seed
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: price_seed
+        - columnExists:
+            tableName: price_seed
+            columnName: security_id_source
+      changes:
+        - update:
+            tableName: price_seed
+            columns:
+              - column:
+                  name: security_id_source
+                  value: ISI
+            where: price_seed_id=3
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_price_seed_NFC_7
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set instrument_symbol for NFC price_seed
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: price_seed
+        - columnExists:
+            tableName: price_seed
+            columnName: instrument_symbol
+      changes:
+        - update:
+            tableName: price_seed
+            columns:
+              - column:
+                  name: instrument_symbol
+                  value: NFC
+            where: price_seed_id=3
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_price_seed_NFC_8
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set mid_price for NFC price_seed
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: price_seed
+        - columnExists:
+            tableName: price_seed
+            columnName: mid_price
+      changes:
+        - update:
+            tableName: price_seed
+            columns:
+              - column:
+                  name: mid_price
+                  valueNumeric: 100
+            where: price_seed_id=3
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_price_seed_NFC_9
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set bid_price for NFC price_seed
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: price_seed
+        - columnExists:
+            tableName: price_seed
+            columnName: bid_price
+      changes:
+        - update:
+            tableName: price_seed
+            columns:
+              - column:
+                  name: bid_price
+                  valueNumeric: 98
+            where: price_seed_id=3
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_price_seed_NFC_10
+      author: avovchen
+      labels: sample-data,xetra,demo,v4
+      comment: Set offer_price for NFC price_seed
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: price_seed
+        - columnExists:
+            tableName: price_seed
+            columnName: offer_price
+      changes:
+        - update:
+            tableName: price_seed
+            columns:
+              - column:
+                  name: offer_price
+                  valueNumeric: 102
+            where: price_seed_id=3

@@ -1,0 +1,55 @@
+databaseChangeLog:
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_constraint_listing_1
+      labels: schema,v4
+      comment: Add NOT NULL constraint listing_venue_id_idx on listing.venue_id
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: venue_id
+      changes:
+        - addNotNullConstraint:
+            constraintName: listing_venue_id_idx
+            tableName: listing
+            columnName: venue_id
+            validate: true
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_constraint_listing_2
+      labels: schema,v4
+      comment: Set `true` default value for listing.enabled column
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: enabled
+      changes:
+        - addDefaultValue:
+            tableName: listing
+            columnName: enabled
+            defaultValueBoolean: true
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_constraint_listing_3
+      labels: schema,v4,SIM-504
+      comment: Set `true` default value for listing.random_orders_enabled column
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_orders_enabled
+      changes:
+        - addDefaultValue:
+            tableName: listing
+            columnName: random_orders_enabled
+            defaultValueBoolean: true

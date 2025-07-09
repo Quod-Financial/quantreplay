@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - include:
+      file: market-simulator/root-changelog.yml
+      relativeToChangelogFile: true
+  - include:
+      file: external-price-seed/root-changelog.yml
+      relativeToChangelogFile: true

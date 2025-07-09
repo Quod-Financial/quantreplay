@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_sequence_price_seed_1
+      labels: schema,v4
+      comment: Add auto-increment sequence for price_seed.price_seed_id column
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: price_seed
+        - columnExists:
+            tableName: price_seed
+            columnName: price_seed_id
+      changes:
+        - addAutoIncrement:
+            tableName: price_seed
+            columnName: price_seed_id
+            columnDataType: int
+            startWith: 1
+            incrementBy: 1
+            generationType: BY DEFAULT

@@ -1,0 +1,165 @@
+{
+  "version": 2,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "ci-enable-ccache",
+      "description": "Enable ccache for project compilation",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_C_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache"
+      }
+    },
+    {
+      "name": "ci-enable-testing",
+      "description": "Enable tests compilation (currently enabled by default)",
+      "hidden": true,
+      "cacheVariables": {
+        "ENABLE_TESTING": "TRUE"
+      }
+    },
+    {
+      "name": "ci-build-with-code-coverage",
+      "description": "Enable coverage files generation",
+      "hidden": true,
+      "cacheVariables": {
+        "ENABLE_COVERAGE": "TRUE"
+      }
+    },
+    {
+      "name": "dev-enable-ubsan",
+      "description": "Enable undefined behaviour sanitizer",
+      "hidden": true,
+      "cacheVariables": {
+        "ENABLE_SANITIZER_UNDEFINED_BEHAVIOR": "TRUE"
+      }
+    },
+    {
+      "name": "dev-enable-lsan",
+      "description": "Enable leak sanitizer",
+      "hidden": true,
+      "cacheVariables": {
+        "ENABLE_SANITIZER_LEAK": "TRUE"
+      }
+    },
+    {
+      "name": "dev-enable-asan",
+      "description": "Enable address sanitizer",
+      "hidden": true,
+      "cacheVariables": {
+        "ENABLE_SANITIZER_ADDRESS": "TRUE"
+      }
+    },
+    {
+      "name": "dev-enable-tsan",
+      "description": "Enable thread sanitizer",
+      "hidden": true,
+      "cacheVariables": {
+        "ENABLE_SANITIZER_THREAD": "TRUE"
+      }
+    },
+    {
+      "name": "ci-gitlab-base-config",
+      "description": "Base cmake configuration for GiLab pipelines",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "cc",
+        "CMAKE_CXX_COMPILER": "c++"
+      }
+    },
+    {
+      "name": "ci-gitlab-release-config",
+      "description": "Configuration preset for GitLab pipeline release build",
+      "inherits": ["ci-enable-testing", "ci-gitlab-base-config"],
+      "generator": "Unix Makefiles",
+      "binaryDir": "release-build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "ci-gitlab-release-with-debug-info-config",
+      "description": "Configuration preset for GitLab pipeline release build with debug metadata",
+      "inherits": ["ci-enable-testing", "ci-gitlab-base-config"],
+      "generator": "Unix Makefiles",
+      "binaryDir": "release-with-debug-info-build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "ci-gitlab-coverage-config",
+      "description": "Configuration preset for GitLab pipeline debug build with code coverage metadata",
+      "inherits": ["ci-enable-testing", "ci-build-with-code-coverage", "ci-gitlab-base-config"],
+      "generator": "Unix Makefiles",
+      "binaryDir": "coverage-build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "ci-gitlab-build-all",
+      "description": "Build preset for GitLab pipelines to build all available targets",
+      "hidden": true,
+      "targets": ["all"]
+    },
+    {
+      "name": "ci-gitlab-build-executor",
+      "description": "Build preset for GitLab pipelines to build executor tool target only",
+      "hidden": true,
+      "targets": ["executor"]
+    },
+    {
+      "name": "ci-gitlab-release-with-debug-info",
+      "description": "Build preset for GitLab pipeline release with debug metadata build",
+      "inherits": ["ci-gitlab-build-all"],
+      "configurePreset": "ci-gitlab-release-with-debug-info-config",
+      "jobs": 8
+    },
+    {
+      "name": "ci-gitlab-release-executor",
+      "description": "Build preset for GitLab pipeline executor tool release build ",
+      "inherits": ["ci-gitlab-build-executor"],
+      "configurePreset": "ci-gitlab-release-config",
+      "jobs": 8
+    },
+    {
+      "name": "ci-gitlab-coverage",
+      "description": "Build preset for GitLab pipeline code coverage build",
+      "inherits": ["ci-gitlab-build-all"],
+      "configurePreset": "ci-gitlab-coverage-config",
+      "jobs": 8
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "ci-gitlab-release-with-debug-info-test",
+      "description": "Test (ctest) preset to launch release tests built with debug metadata",
+      "configurePreset": "ci-gitlab-release-with-debug-info-config",
+      "execution": {
+        "jobs": 8,
+        "noTestsAction": "ignore",
+        "timeout": 120,
+        "stopOnFailure": false
+      }
+    },
+    {
+      "name": "ci-gitlab-coverage-test",
+      "description": "Test (ctest) preset to launch test coverage tests",
+      "configurePreset": "ci-gitlab-coverage-config",
+      "execution": {
+        "jobs": 8,
+        "noTestsAction": "ignore",
+        "timeout": 120,
+        "stopOnFailure": false
+      }
+    }
+  ]
+}

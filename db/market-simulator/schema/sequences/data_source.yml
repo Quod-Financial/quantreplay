@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_sequence_data_source_1
+      labels: schema,v4
+      comment: Add auto-increment sequence for data_source.data_source_id column
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: data_source_id
+      changes:
+        - addAutoIncrement:
+            tableName: data_source
+            columnName: data_source_id
+            columnDataType: int
+            startWith: 1
+            incrementBy: 1
+            generationType: BY DEFAULT

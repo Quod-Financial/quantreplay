@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_sequence_listing_1
+      labels: schema,v4
+      comment: Add auto-increment sequence for listing.listing_id column
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: listing_id
+      changes:
+        - addAutoIncrement:
+            tableName: listing
+            columnName: listing_id
+            columnDataType: int
+            startWith: 1
+            incrementBy: 1
+            generationType: BY DEFAULT

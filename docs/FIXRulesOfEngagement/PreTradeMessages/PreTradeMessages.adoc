@@ -1,0 +1,271 @@
+ifndef::imagesDir[]
+:imagesDir: images
+endif::[]
+
+[[pretrade-messages]]
+== Pre-Trade Messages
+
+[[pretrade-messages-mktdatarequest]]
+=== MarketDataRequest (35=V)
+
+[cols="10,25,10,55"]
+
+|===
+| Tag | Field Name | Req’d | Comments
+
+| Component | <<common-components-std-header>> | Y | MsgType = V
+
+| 262 | MDReqID | Y | Unique identifier for Market Data Request, 
+or the ID of previous Market Data Request to
+disable if SubscriptionRequestType (263) = 2 (Disable previous Snapshot + Updates Request).
+
+| 263 | SubscriptionRequestType | Y a| Subscription Request Type.
+
+* 0 - Snapshot
+* 1 - Snapshot + Updates (Subscribe)
+* 2 - Disable previous Snapshot + Update Request (Unsubscribe)
+
+| 264 | MarketDepth | Y a| Depth of market for Book Snapshot / Incremental updates.
+
+* 0 - full book depth
+* 1 - top of book
+
+| 265 | MDUpdateType | C a| Required if SubscriptionRequestType (263) = 1 (Snapshot + Updates)
+
+* 0 - Full Refresh
+* 1 - Incremental Refresh
+
+| 266 | AggregatedBook | N a| Specifies whether or not book entries should be aggregated.
+
+* Y - book entries to be aggregated (default, and only supported value)
+
+| 146 | NoRelatedSym | Y | Number of symbols (instruments) requested.
+
+| => Component | <<common-components-instrument>> | Y | 
+
+| => 15 | Currency a| C | For non-FX instruments, identifies the currency used for price. 
+Absence of this field is interpreted as the default for the security.
+
+For FX instruments, identifies the currency used for quantity.
+
+Required when SecurityIDSource = ISIN in the Instrument component.
+
+| 267 | NoMDEntryTypes | Y | Number of MDEntryType fields requested.
+
+| => 269 | MDEntryType | Y a| Must be the first field in this repeating group. 
+This is a list of all the types of Market Data Entries that the firm requesting the Market Data is interested in receiving.
+
+* 0 - Bid
+* 1 - Offer
+* 2 - Trade
+* 7 - Trading Session High Price
+* 8 - Trading Session Low Price
+* H - Mid Price
+* b - Market bid
+* c - MarketOffer
+* Q - Auction Clearing Price
+* P - Early Prices
+
+| => Component | <<common-components-parties>> | N | 
+
+| Component | <<common-components-std-trailer>> | Y | 
+|===
+
+[[pretrade-messages-mktdatarequest-reject]]
+=== MarketDataRequestReject (35=Y)
+
+[cols="10,25,10,55"]
+|===
+| Tag | Field Name | Req’d | Comments
+
+| Component | <<common-components-std-header>> | Y | MsgType = Y
+
+| 262 | MDReqID | Y | request ID from rejected request (from rejected request's tag 262).
+
+| 281 | MDReqRejReason | N a| codified reason for the rejection of a Market Data request, chosen from one of the values listed:
+
+* 0 - Unknown symbol
+* 1 - Duplicate MDReqID
+
+| 58 | Text | N | free text message describing the reason for the rejection
+
+| 10 | <<common-components-std-trailer>> | Y | 
+|===
+
+[[pretrade-messages-mktdatasnapshot]]
+=== MarketDataSnapshotFullRefresh (35=W)
+
+[cols="10,25,10,55"]
+|===
+| Tag | Field Name | Req’d | Comments
+
+| Component | <<common-components-std-header>> | Y | MsgType = W
+
+| 262 | MDReqID | C | Unique identifier for Market Data Request. 
+Conditionally required if this message is in response to a MarketDataRequest(35=V).
+
+| Component | Instrument | Y | 
+
+| 779 | LastUpdateTime | Y | Timestamp of last update to data item (or creation if no updates made since creation).
+
+| 268 | NoMDEntries | N | Number of entries in Market Data message.
+
+| => 269 | MDEntryType | Y a| Type of market data entry.
+
+* 0 - Bid
+* 1 - Offer
+* 2 - Trade
+* 7 - Trading Session High Price
+* 8 - Trading Session Low Price
+* H - Mid Price
+* b - Market Bid
+* c - Market Offer
+* Q - Auction Clearing Price
+* P - Early Price
+
+| => 270 | MDEntryPx | C | Price of the Market Data Entry.
+
+| => 15 | Currency | N | Can be used to specify the currency of the quoted price.
+
+| => 271 | MDEntrySize | C | Quantity or volume represented by the Market Data Entry. MDEntrySize=Indicative Volume.
+
+| => 272 | MDEntryDate | C | The date the trade happened. Required when MDEntryType=Trade.
+
+| => 273 | MDEntryTime | C | The time the trade happened. Required when MDEntryType=Trade.
+
+| => 288 | MDEntryBuyer | C | To report the Buy/Bid order party ID. Required when MDEntryType=Trade.
+
+| => 289 | MDEntrySeller | C | To report the Sell/Offer order party ID. Required when MDEntryType=Trade.
+
+| => 2446 | AggressorSide | C a| To report side of trades:
+
+* 1 (Buy) when the aggressive order was a Buy against a resting Offer
+* 2 (Sell) when the aggressive order was a Sell against a resting Bid
+
+Required when MDEntryType=Trade.
+
+| => 336 | TradingSessionID | C a| Can be used to represent a specific market trading session (e.g. "PRE-OPEN"). 
+To specify good for session where session spans more than one calendar day, use TimeInForce <59> = 'Day' in conjunction with TradingSessionID <336>.
+
+* 1 - Day
+
+Required when MDEntryType=Trade.
+
+| => 625 | TradingSessionSubID | C a| Optional market assigned sub identifier for a trading session. 
+Usage is determined by market or counterparties.
+
+* 2 - Opening Auction for PreOpen
+* 3 - Continuous Trading
+* 4 - Closing Auction for PreClosed
+* 5 - Post-Trading
+* 6 - Intraday Auction
+* 9 - Unscheduled Intraday Auction
+* 10 - Out Of Main Session Trading
+
+Required when MDEntryType=Trade.
+
+| => 326 | SecurityTradingStatus | C a| Identifies the trading status applicable to the transaction.
+
+* 2 - Trading Halt (Uncrossing of the Auction)
+* 3 - Resume (Start of the Auction)
+
+Required when MDEntryType=Trade.
+
+| => 277 | TradeCondition | a| Side of the imbalance.
+
+* P = Imbalance more buyers
+* Q = Imbalance more sellers
+
+| 278 | MDEntryID | Y a| MDEntryID value is unique per Listing. This is an incrementing counter of the format timestamp:counter (e.g. 12346523:7)
+
+The timestamp component is a Unix Timestamp (Sec) that is generated when the simulator instance starts. The counter component starts from 1 and is incremented separately for each new bid and each new offer.
+
+| Component | <<common-components-std-trailer>> | Y | 
+|===
+
+[[pretrade-messages-mktdatarequest-incr-refresh]]
+=== MarketDataIncrementalRefresh (35=X)
+
+[cols="10,25,10,55"]
+|===
+| Tag | Field Name | Req’d | Comments
+
+| Component | <<common-components-std-header>> | Y | MsgType = X
+
+| 262 | MDReqID | C | Unique identifier for Market Data Request. Conditionally required if this message is in response to a MarketDataRequest(35=V).
+
+| 268 | NoMDEntries | N | Number of entries in Market Data message.
+
+| => 279 | MDUpdateAction | Y a| Type of Market Data update action.
+
+* 0 - New
+* 1 - Change
+* 2 - Delete
+
+| => 269 | MDEntryType | Y a| Type of market data entry.
+
+* 0 - Bid
+* 1 - Offer
+* 2 - Trade
+* 7 - Trading Session High Price
+* 8 - Trading Session Low Price
+* H - Mid Price
+* b - Market Bid
+* c - Market Offer
+* Q - Auction Clearing Price
+* P - Early Price
+
+| => 270 | MDEntryPx | C | Price of the Market Data Entry. MDEntryPx=Indicative Price.
+
+| => 15 | Currency | C | Can be used to specify the currency of the quoted price. Required when MDEntryType=Trade.
+
+| => 271 | MDEntrySize | C | Quantity or volume represented by the Market Data Entry. MDEntrySize=Indicative Volume
+
+| => 272 | MDEntryDate | C | The date the trade happened. Required when MDEntryType=Trade.
+
+| => 273 | MDEntryTime | C | The time the trade happened. Required when MDEntryType=Trade.
+
+| => 277 | TradeCondition | a| Side of the imbalance.
+
+* P = Imbalance more buyers
+* Q = Imbalance more sellers
+
+| => 288 | MDEntryBuyer | C | To report the Buy/Bid order party ID. Required when MDEntryType=Trade.
+
+| => 289 | MDEntrySeller | C | To report the Sell/Offer order party ID. Required when MDEntryType=Trade.
+
+| => 336 | TradingSessionID | C a| Can be used to represent a specific market trading session (e.g. "PRE-OPEN"). 
+To specify good for session where session spans more than one calendar day, use TimeInForce <59> = 'Day' in conjunction with TradingSessionID <336>.
+
+* 1 - Day
+
+Required when MDEntryType=Trade
+
+| => 625 | TradingSessionSubID | C a| Optional market assigned sub identifier for a trading session. Usage is determined by market or counterparties.
+
+* 2 - Opening Auction for PreOpen
+* 3 - Continuous Trading
+* 4 - Closing Auction for PreClosed
+* 5 - Post-Trading
+* 6 - Intraday Auction
+* 9 - Unscheduled Intraday Auction
+* 10 - Out Of Main Session Trading
+
+Required when MDEntryType=Trade.
+
+| => 326 | SecurityTradingStatus | C a| Identifies the trading status applicable to the transaction.
+
+* 2 - Trading Halt (Uncrossing of the Auction)
+* 3 - Resume (Start of the Auction)
+
+Required when MDEntryType=Trade.
+
+| => 2446 | AggressorSide | C a| To report side of trades:
+
+* 1 (Buy) when the aggressive order was a Buy against a resting Offer
+* 2 (Sell) when the aggressive order was a Sell against a resting Bid
+
+Required when MDEntryType=Trade.
+
+| Component | <<common-components-std-trailer>> | Y | 
+|===

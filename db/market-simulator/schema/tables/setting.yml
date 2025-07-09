@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_table_listing_1
+      labels: schema,v4
+      comment: Create listing table
+      preConditions:
+        - not:
+            - tableExists:
+                tableName: setting
+      changes:
+        - createTable:
+            tableName: setting
+            columns:
+              - column:
+                  name: key
+                  type: text
+              - column:
+                  name: value
+                  type: text

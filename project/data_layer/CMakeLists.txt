@@ -1,0 +1,120 @@
+project(data_layer
+        LANGUAGES CXX
+        DESCRIPTION
+        "Market Simulator Data Access Layer")
+
+#------------------------------------------------------------------------------#
+
+ensure_project_dependency_exist(libpqxx::libpqxx)
+ensure_project_dependency_exist(simulator::core)
+ensure_project_dependency_exist(simulator::log)
+ensure_project_dependency_exist(simulator::cfg)
+
+#------------------------------------------------------------------------------#
+
+add_static_library(
+  NAME ${PROJECT_NAME}
+  ALIAS simulator::data_layer
+  HEADERS
+    ih/common/command/commands.hpp
+    ih/common/command/handlers.hpp
+    ih/common/database/context_resolver.hpp
+    ih/common/database/driver.hpp
+    ih/common/database/ping_agent.hpp
+    ih/common/exceptions.hpp
+    ih/common/queries/data_extractor.hpp
+    ih/formatters/pqxx/context.hpp
+    ih/pqxx/common/column_resolver.hpp
+    ih/pqxx/common/names/database_entries.hpp
+    ih/pqxx/common/names/enumerations.hpp
+    ih/pqxx/common/enumeration_resolver.hpp
+    ih/pqxx/dao/datasource_dao.hpp
+    ih/pqxx/dao/listing_dao.hpp
+    ih/pqxx/dao/price_seed_dao.hpp
+    ih/pqxx/dao/setting_dao.hpp
+    ih/pqxx/dao/venue_dao.hpp
+    ih/pqxx/database/connector.hpp
+    ih/pqxx/database/transaction.hpp
+    ih/pqxx/database/value_sanitizer.hpp
+    ih/pqxx/queries/detail/delete_query_builder.hpp
+    ih/pqxx/queries/detail/insert_query_builder.hpp
+    ih/pqxx/queries/detail/predicate_formatter.hpp
+    ih/pqxx/queries/detail/select_query_builder.hpp
+    ih/pqxx/queries/detail/update_query_builder.hpp
+    ih/pqxx/queries/datasource_queries.hpp
+    ih/pqxx/queries/listing_queries.hpp
+    ih/pqxx/queries/price_seed_queries.hpp
+    ih/pqxx/queries/venue_queries.hpp
+    ih/pqxx/result/detail/basic_row_parser.hpp
+    ih/pqxx/result/datasource_parser.hpp
+    ih/pqxx/result/listing_parser.hpp
+    ih/pqxx/result/price_seed_parser.hpp
+    ih/pqxx/result/setting_parser.hpp
+    ih/pqxx/result/venue_parser.hpp
+    ih/pqxx/context.hpp
+    include/data_layer/api/converters/column_mapping.hpp
+    include/data_layer/api/database/context.hpp
+    include/data_layer/api/exceptions/exceptions.hpp
+    include/data_layer/api/inspectors/column_mapping.hpp
+    include/data_layer/api/inspectors/datasource.hpp
+    include/data_layer/api/inspectors/listing.hpp
+    include/data_layer/api/inspectors/market_phase.hpp
+    include/data_layer/api/inspectors/price_seed.hpp
+    include/data_layer/api/inspectors/setting.hpp
+    include/data_layer/api/inspectors/venue.hpp
+    include/data_layer/api/models/column_mapping.hpp
+    include/data_layer/api/models/datasource.hpp
+    include/data_layer/api/models/listing.hpp
+    include/data_layer/api/models/market_phase.hpp
+    include/data_layer/api/models/price_seed.hpp
+    include/data_layer/api/models/setting.hpp
+    include/data_layer/api/models/venue.hpp
+    include/data_layer/api/predicate/expression.hpp
+    include/data_layer/api/predicate/definitions.hpp
+    include/data_layer/api/predicate/lexeme.hpp
+    include/data_layer/api/predicate/predicate.hpp
+    include/data_layer/api/predicate/traits.hpp
+    include/data_layer/api/validations/column_mapping.hpp
+    include/data_layer/api/validations/datasource.hpp
+    include/data_layer/api/data_access_layer.hpp
+  SOURCES
+    src/api/converters/column_mapping.cpp
+    src/api/database/context.cpp
+    src/api/exceptions/exceptions.cpp
+    src/api/models/column_mapping.cpp
+    src/api/models/datasource.cpp
+    src/api/models/listing.cpp
+    src/api/models/market_phase.cpp
+    src/api/models/price_seed.cpp
+    src/api/models/setting.cpp
+    src/api/models/venue.cpp
+    src/api/validations/column_mapping.cpp
+    src/api/validations/datasource.cpp
+    src/common/database/ping_agent.cpp
+    src/common/exceptions.cpp
+    src/pqxx/common/column_resolver.cpp
+    src/pqxx/common/enumeration_resolver.cpp
+    src/pqxx/dao/datasource_dao.cpp
+    src/pqxx/dao/listing_dao.cpp
+    src/pqxx/dao/price_seed_dao.cpp
+    src/pqxx/dao/setting_dao.cpp
+    src/pqxx/dao/venue_dao.cpp
+    src/pqxx/database/connector.cpp
+    src/pqxx/context.cpp
+    src/api/data_access_layer.cpp
+  PUBLIC_INCLUDE_DIRECTORIES
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+   PRIVATE_INCLUDE_DIRECTORIES
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/data_layer
+    ${CMAKE_CURRENT_SOURCE_DIR}
+  PUBLIC_DEPENDENCIES
+    tl::expected
+    simulator::cfg
+    PRIVATE_DEPENDENCIES
+    libpqxx::libpqxx
+    simulator::core
+    simulator::log)
+
+#------------------------------------------------------------------------------#
+
+add_subdirectory(tests)

@@ -1,0 +1,104 @@
+databaseChangeLog:
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_table_venue_1
+      labels: schema,v4
+      comment: Create venue table
+      preConditions:
+        - not:
+            - tableExists:
+                tableName: venue
+      changes:
+        - createTable:
+            tableName: venue
+            columns:
+              - column:
+                  name: venue_id
+                  type: text
+              - column:
+                  name: name
+                  type: text
+              - column:
+                  name: engine_type
+                  type: text
+              - column:
+                  name: support_tif_ioc
+                  type: bool
+              - column:
+                  name: support_tif_fok
+                  type: bool
+              - column:
+                  name: support_tif_day
+                  type: bool
+              - column:
+                  name: include_own_orders
+                  type: bool
+              - column:
+                  name: rest_port
+                  type: int
+              - column:
+                  name: order_on_startup
+                  type: bool
+              - column:
+                  name: random_party_count
+                  type: int
+              - column:
+                  name: tns_enabled
+                  type: bool
+              - column:
+                  name: tns_qty_enabled
+                  type: bool
+              - column:
+                  name: tns_side_enabled
+                  type: bool
+              - column:
+                  name: tns_parties_enabled
+                  type: bool
+              - column:
+                  name: timezone
+                  type: text
+              - column:
+                  name: cancel_on_disconnect
+                  type: bool
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_table_venue_2
+      labels: schema,v4,SIM-631
+      comment: Add persistence_enabled column into venue table
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - not:
+            - columnExists:
+                tableName: venue
+                columnName: persistence_enabled
+      changes:
+        - addColumn:
+            tableName: venue
+            columns:
+              - column:
+                  name: persistence_enabled
+                  type: bool
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_table_venue_3
+      labels: schema,v4,SIM-631
+      comment: Add persistence_file_path column into venue table
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - not:
+            - columnExists:
+                tableName: venue
+                columnName: persistence_file_path
+      changes:
+        - addColumn:
+            tableName: venue
+            columns:
+              - column:
+                  name: persistence_file_path
+                  type: text

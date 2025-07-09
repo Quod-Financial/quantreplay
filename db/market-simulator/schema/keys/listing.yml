@@ -1,0 +1,57 @@
+databaseChangeLog:
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_key_listing_1
+      labels: schema,v4
+      comment: Add listing_pkey (listing_id) for listing table
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: listing_id
+        - not:
+            - primaryKeyExists:
+                tableName: listing
+                primaryKeyName: listing_pkey
+      changes:
+        - addPrimaryKey:
+            constraintName: listing_pkey
+            tableName: listing
+            columnNames: listing_id
+            validate: true
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_key_listing_2
+      labels: schema,v4
+      comment: Add listing_venue_fkey (listing.venue_id) to (venue.venue_id)
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: listing_id
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: venue_id
+        - primaryKeyExists:
+            tableName: venue
+            primaryKeyName: venue_pkey
+        - not:
+            - foreignKeyConstraintExists:
+                foreignKeyName: listing_venue_fkey
+      changes:
+        - addForeignKeyConstraint:
+            constraintName: listing_venue_fkey
+            baseTableName: listing
+            baseColumnNames: venue_id
+            referencedTableName: venue
+            referencedColumnNames: venue_id
+            onUpdate: CASCADE
+            onDelete: CASCADE
+            validate: false

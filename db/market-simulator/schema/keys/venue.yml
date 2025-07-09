@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_key_venue_1
+      labels: schema,v4
+      comment: Add venue_pkey (venue_id) for venue table
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: venue_id
+        - not:
+            - primaryKeyExists:
+                tableName: venue
+                primaryKeyName: venue_pkey
+      changes:
+        - addPrimaryKey:
+            tableName: venue
+            columnNames: venue_id
+            constraintName: venue_pkey
+            validate: true

@@ -1,0 +1,46 @@
+<mktsimulator>
+    <!-- A path to a QuickFIX configuration file -->
+    <config>/market-simulator/quod/data/cfg/configSim.txt</config>
+
+    <!-- VenueID of the venue that is simulated by a MktSimulator instance -->
+    <venue>XETRA</venue>
+
+    <!-- Database connection configuration -->
+    <database>
+        <name>simdb</name>
+        <user>sim</user>
+        <password>sim</password>
+        <host>market-simulator-database</host>
+        <port>5432</port>
+    </database>
+
+    <!-- Rotating logger configuration -->
+    <logger>
+        <!-- Available levels: [DEBUG, INFO, WARN, ERROR] -->
+        <level>INFO</level>
+
+        <!-- Maximal size (MB) of a single log file -->
+        <maxSize>5</maxSize>
+
+        <!-- Maximal number of log files -->
+        <maxFiles>10</maxFiles>
+    </logger>
+
+    <http>
+        <!-- Specifies how the market simulator instance must resolve
+             a hostname to redirect HTTP requests to other instances.
+             Possible values:
+                * localhost (default) - use localhost hostname
+                * venue - use VenueID as hostname -->
+        <peerHostResolution>venue</peerHostResolution>
+        <!-- Turn on or off the check the equality of
+             the incoming REST API requests' optional X-API-Version HTTP header value and
+             the major version of the simulator.
+             If they are not equal, the simulator will respond with status code 412, "Precondition Failed".
+             If the header is not present, the simulator will not check the version.
+             Possible values:
+                * true - turn on the check - the default value.
+                * false - turn off the check. -->
+        <checkApiVersion>true</checkApiVersion>
+    </http>
+</mktsimulator>

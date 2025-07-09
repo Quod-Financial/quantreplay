@@ -1,0 +1,34 @@
+databaseChangeLog:
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_key_market_phase_1
+      labels: schema,v4
+      comment: Add market_phase_venue_fkey (market_phase.venue_id) to (venue.venue_id)
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: market_phase
+        - columnExists:
+            tableName: market_phase
+            columnName: venue_id
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: venue_id
+        - primaryKeyExists:
+            tableName: venue
+            primaryKeyName: venue_pkey
+        - not:
+            - foreignKeyConstraintExists:
+                foreignKeyName: market_phase_venue_fkey
+      changes:
+        - addForeignKeyConstraint:
+            constraintName: market_phase_venue_fkey
+            baseTableName: market_phase
+            baseColumnNames: venue_id
+            referencedTableName: venue
+            referencedColumnNames: venue_id
+            onUpdate: CASCADE
+            onDelete: CASCADE
+            validate: true

@@ -1,0 +1,48 @@
+databaseChangeLog:
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_table_market_phase_1
+      labels: schema,v4
+      comment: Create venue table
+      preConditions:
+        - not:
+            - tableExists:
+                tableName: market_phase
+      changes:
+        - createTable:
+            tableName: market_phase
+            columns:
+              - column:
+                  name: phase
+                  type: text
+              - column:
+                  name: start_time
+                  type: text
+              - column:
+                  name: end_time
+                  type: text
+              - column:
+                  name: venue_id
+                  type: text
+              - column:
+                  name: end_time_range
+                  type: int
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_table_market_phase_2
+      labels: schema,v8,SIM-178
+      comment: Add allow_cancels column into market_phase table
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: market_phase
+                columnName: allow_cancels
+      changes:
+        - addColumn:
+            tableName: market_phase
+            columns:
+              - column:
+                  name: allow_cancels
+                  type: boolean

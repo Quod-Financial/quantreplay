@@ -1,0 +1,57 @@
+databaseChangeLog:
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_key_data_source_1
+      labels: schema,v4
+      comment: Add data_source_pkey (data_source_id) for data_source table
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: data_source_id
+        - not:
+            - primaryKeyExists:
+                tableName: data_source
+                primaryKeyName: data_source_pkey
+      changes:
+        - addPrimaryKey:
+            constraintName: data_source_pkey
+            tableName: data_source
+            columnNames: data_source_id
+            validate: true
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_key_data_source_2
+      labels: schema,v4
+      comment: Add data_source_venue_fkey (data_source.venue_id) to (venue.venue_id)
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: venue_id
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: venue_id
+        - primaryKeyExists:
+            tableName: venue
+            primaryKeyName: venue_pkey
+        - not:
+            - foreignKeyConstraintExists:
+                foreignKeyName: data_source_venue_fkey
+      changes:
+        - addForeignKeyConstraint:
+            constraintName: data_source_venue_fkey
+            baseTableName: data_source
+            baseColumnNames: venue_id
+            referencedTableName: venue
+            referencedColumnNames: venue_id
+            onUpdate: CASCADE
+            onDelete: CASCADE
+            validate: true

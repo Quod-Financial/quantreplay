@@ -1,0 +1,13 @@
+ifndef::imagesDir[]
+:imagesDir: images
+endif::[]
+
+[[introduction]]
+== Introduction
+This reference document provides details of the {orgname} Market Simulator Representational State Transfer (REST) API.
+
+[[introduction-scope]]
+=== Scope
+
+This document provides technical-level details of using the administrative functions through the REST API of the {orgname} Market Simulator, 
+for modifying administrative settings and sending administrative requests to market simulator instances.

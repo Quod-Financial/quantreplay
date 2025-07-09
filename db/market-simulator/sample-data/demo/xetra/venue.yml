@@ -1,0 +1,377 @@
+# XETRA venue, id='XETRA'
+databaseChangeLog:
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_venue_1
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Define XETRA venue
+      preConditions:
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: venue_id
+      changes:
+        - insert:
+            tableName: venue
+            columns:
+              - column:
+                  name: venue_id
+                  value: XETRA
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_venue_2
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set venue name
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: name
+      changes:
+        - update:
+            tableName: venue
+            columns:
+              - column:
+                  name: name
+                  value: XETRA
+            where: venue_id='XETRA'
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_venue_3
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set engine_type
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: engine_type
+      changes:
+        - update:
+            tableName: venue
+            columns:
+              - column:
+                  name: engine_type
+                  value: Matching
+            where: venue_id='XETRA'
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_venue_4
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set support_tif_ioc
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: support_tif_ioc
+      changes:
+        - update:
+            tableName: venue
+            columns:
+              - column:
+                  name: support_tif_ioc
+                  valueBoolean: true
+            where: venue_id='XETRA'
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_venue_5
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set support_tif_fok
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: support_tif_fok
+      changes:
+        - update:
+            tableName: venue
+            columns:
+              - column:
+                  name: support_tif_fok
+                  valueBoolean: true
+            where: venue_id='XETRA'
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_venue_6
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set support_tif_day
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: support_tif_day
+      changes:
+        - update:
+            tableName: venue
+            columns:
+              - column:
+                  name: support_tif_day
+                  valueBoolean: true
+            where: venue_id='XETRA'
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_venue_7
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set include_own_orders
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: include_own_orders
+      changes:
+        - update:
+            tableName: venue
+            columns:
+              - column:
+                  name: include_own_orders
+                  valueBoolean: true
+            where: venue_id='XETRA'
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_venue_8
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set rest_port
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: rest_port
+      changes:
+        - update:
+            tableName: venue
+            columns:
+              - column:
+                  name: rest_port
+                  valueNumeric: 9050
+            where: venue_id='XETRA'
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_venue_9
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set order_on_startup
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: order_on_startup
+      changes:
+        - update:
+            tableName: venue
+            columns:
+              - column:
+                  name: order_on_startup
+                  valueBoolean: true
+            where: venue_id='XETRA'
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_venue_10
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set random_party_count
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: random_party_count
+      changes:
+        - update:
+            tableName: venue
+            columns:
+              - column:
+                  name: random_party_count
+                  valueNumeric: 2
+            where: venue_id='XETRA'
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_venue_11
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set tns_enabled
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: tns_enabled
+      changes:
+        - update:
+            tableName: venue
+            columns:
+              - column:
+                  name: tns_enabled
+                  valueBoolean: true
+            where: venue_id='XETRA'
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_venue_12
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set tns_qty_enabled
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: tns_qty_enabled
+      changes:
+        - update:
+            tableName: venue
+            columns:
+              - column:
+                  name: tns_qty_enabled
+                  valueBoolean: true
+            where: venue_id='XETRA'
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_venue_13
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set tns_side_enabled
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: tns_side_enabled
+      changes:
+        - update:
+            tableName: venue
+            columns:
+              - column:
+                  name: tns_side_enabled
+                  valueBoolean: true
+            where: venue_id='XETRA'
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_venue_14
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set tns_parties_enabled
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: tns_parties_enabled
+      changes:
+        - update:
+            tableName: venue
+            columns:
+              - column:
+                  name: tns_parties_enabled
+                  valueBoolean: true
+            where: venue_id='XETRA'
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_venue_15
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set timezone
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: timezone
+      changes:
+        - update:
+            tableName: venue
+            columns:
+              - column:
+                  name: timezone
+                  value: UTC
+            where: venue_id='XETRA'
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_venue_16
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set cancel_on_disconnect
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: cancel_on_disconnect
+      changes:
+        - update:
+            tableName: venue
+            columns:
+              - column:
+                  name: cancel_on_disconnect
+                  valueBoolean: false
+            where: venue_id='XETRA'
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_venue_17
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set persistence_enabled
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: persistence_enabled
+      changes:
+        - update:
+            tableName: venue
+            columns:
+              - column:
+                  name: persistence_enabled
+                  valueBoolean: false
+            where: venue_id='XETRA'
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_venue_18
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Add persistence_file_path column into venue table
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: persistence_file_path
+      changes:
+        - update:
+            tableName: venue
+            columns:
+              - column:
+                  name: persistence_file_path
+                  value: 
+            where: venue_id='XETRA'

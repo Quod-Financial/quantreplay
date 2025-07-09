@@ -1,0 +1,15 @@
+add_target_tests(
+  TARGET
+    ${PROJECT_NAME}
+  HEADERS
+    test_utils/matchers.hpp
+    test_utils/rapidjson_utils.hpp
+  UNIT_TESTS
+    unit_tests/factories/logger_factory_tests.cpp
+    unit_tests/factories/sink_factory_tests.cpp
+    unit_tests/custom_spd_flags_tests.cpp
+    unit_tests/logger_tests.cpp
+    unit_tests/logging_tests.cpp
+    unit_tests/util_tests.cpp
+  DEPENDENCIES
+    RapidJSON::RapidJSON)

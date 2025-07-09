@@ -1,0 +1,12 @@
+<script>
+    if ("{show-overview}") {
+        // Link to overview page in TOC.
+        var toc = document.getElementById('toctitle').nextElementSibling;
+        var li = document.createElement('li');
+        var a = document.createElement('a');
+        a.setAttribute('href', '../Overview/Overview.html');
+        a.appendChild(document.createTextNode('All Documents /'));
+        li.appendChild(a);
+        toc.insertBefore(li, toc.firstChild);
+    }
+</script>

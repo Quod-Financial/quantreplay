@@ -1,0 +1,119 @@
+project(http
+  LANGUAGES CXX
+  DESCRIPTION
+    "MktSimulator REST API interface")
+
+#------------------------------------------------------------------------------#
+
+ensure_project_dependency_exist(Pistache::Pistache)
+ensure_project_dependency_exist(RapidJSON::RapidJSON)
+ensure_project_dependency_exist(httplib::httplib)
+ensure_project_dependency_exist(simulator::core)
+ensure_project_dependency_exist(simulator::protocol)
+ensure_project_dependency_exist(simulator::middleware)
+ensure_project_dependency_exist(simulator::cfg)
+ensure_project_dependency_exist(simulator::data_layer)
+ensure_project_dependency_exist(simulator::log)
+
+#------------------------------------------------------------------------------#
+
+add_static_library(
+  NAME ${PROJECT_NAME}
+  ALIAS simulator::http
+  HEADERS
+    ih/constants.hpp
+    ih/controllers/datasource_controller.hpp
+    ih/controllers/listing_controller.hpp
+    ih/controllers/price_seed_controller.hpp
+    ih/controllers/setting_controller.hpp
+    ih/controllers/trading_controller.hpp
+    ih/controllers/venue_controller.hpp
+    ih/data_bridge/datasource_accessor.hpp
+    ih/data_bridge/operation_failure.hpp
+    ih/data_bridge/listing_accessor.hpp
+    ih/data_bridge/price_seed_accessor.hpp
+    ih/data_bridge/setting_accessor.hpp
+    ih/data_bridge/venue_accessor.hpp
+    ih/formatters/redirect.hpp
+    ih/formatters/request_formatter.hpp
+    ih/headers/x_api_version.hpp
+    ih/marshalling/json/detail/enumeration_resolver.hpp
+    ih/marshalling/json/detail/key_resolver.hpp
+    ih/marshalling/json/detail/keys.hpp
+    ih/marshalling/json/detail/marshaller.hpp
+    ih/marshalling/json/detail/marshaller.hpp
+    ih/marshalling/json/detail/traits.hpp
+    ih/marshalling/json/detail/unmarshaller.hpp
+    ih/marshalling/json/detail/utils.hpp
+    ih/marshalling/json/datasource.hpp
+    ih/marshalling/json/halt.hpp
+    ih/marshalling/json/listing.hpp
+    ih/marshalling/json/price_seed.hpp
+    ih/marshalling/json/setting.hpp
+    ih/marshalling/json/venue.hpp
+    ih/redirect/destination.hpp
+    ih/redirect/redirector.hpp
+    ih/redirect/request.hpp
+    ih/redirect/resolver.hpp
+    ih/redirect/result.hpp
+    ih/utils/response_formatters.hpp
+    ih/redirect/destination_resolver.hpp
+    ih/redirect/redirection_processor.hpp
+    ih/redirect/request_redirector.hpp
+    ih/processors/delete_processor.hpp
+    ih/processors/get_processor.hpp
+    ih/processors/post_processor.hpp
+    ih/processors/put_processor.hpp
+    ih/endpoint.hpp
+    ih/router.hpp
+    ih/server.hpp
+    include/http/http.hpp
+  SOURCES
+    src/controllers/datasource_controller.cpp
+    src/controllers/listing_controller.cpp
+    src/controllers/price_seed_controller.cpp
+    src/controllers/setting_controller.cpp
+    src/controllers/trading_controller.cpp
+    src/controllers/venue_controller.cpp
+    src/data_bridge/datasource_accessor.cpp
+    src/data_bridge/listing_accessor.cpp
+    src/data_bridge/price_seed_accessor.cpp
+    src/data_bridge/setting_accessor.cpp
+    src/data_bridge/venue_accessor.cpp
+    src/marshalling/json/detail/enumeration_resolver.cpp
+    src/marshalling/json/detail/key_resolver.cpp
+    src/marshalling/json/datasource.cpp
+    src/marshalling/json/halt.cpp
+    src/marshalling/json/listing.cpp
+    src/marshalling/json/price_seed.cpp
+    src/marshalling/json/setting.cpp
+    src/marshalling/json/venue.cpp
+    src/processors/delete_processor.cpp
+    src/processors/get_processor.cpp
+    src/processors/post_processor.cpp
+    src/processors/put_processor.cpp
+    src/redirect/destination_resolver.cpp
+    src/redirect/redirection_processor.cpp
+    src/redirect/request_redirector.cpp
+    src/http.cpp
+    src/router.cpp
+  PUBLIC_INCLUDE_DIRECTORIES
+    ${PROJECT_SOURCE_DIR}/include
+  PRIVATE_INCLUDE_DIRECTORIES
+    ${PROJECT_SOURCE_DIR}/include/http
+    ${PROJECT_SOURCE_DIR}
+  PRIVATE_DEPENDENCIES
+    Pistache::Pistache
+    RapidJSON::RapidJSON
+    httplib::httplib
+    tl::expected
+    simulator::core
+    simulator::protocol
+    simulator::middleware
+    simulator::cfg
+    simulator::data_layer
+    simulator::log)
+
+#------------------------------------------------------------------------------#
+
+add_subdirectory(tests)

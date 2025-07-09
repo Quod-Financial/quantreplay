@@ -1,0 +1,47 @@
+databaseChangeLog:
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_table_price_seed_1
+      labels: schema,v4
+      comment: Create price_seed table
+      preConditions:
+        - not:
+            - tableExists:
+                tableName: price_seed
+      changes:
+        - createTable:
+            tableName: price_seed
+            columns:
+              - column:
+                  name: price_seed_id
+                  type: int
+              - column:
+                  name: symbol
+                  type: text
+              - column:
+                  name: security_type
+                  type: text
+              - column:
+                  name: price_currency
+                  type: text
+              - column:
+                  name: security_id
+                  type: text
+              - column:
+                  name: security_id_source
+                  type: text
+              - column:
+                  name: instrument_symbol
+                  type: text
+              - column:
+                  name: mid_price
+                  type: float(4)
+              - column:
+                  name: bid_price
+                  type: float(4)
+              - column:
+                  name: offer_price
+                  type: float(4)
+              - column:
+                  name: last_update
+                  type: text

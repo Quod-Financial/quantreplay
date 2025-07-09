@@ -1,0 +1,4 @@
+databaseChangeLog:
+  - include:
+      file: tables/price_seed.yml
+      relativeToChangelogFile: true

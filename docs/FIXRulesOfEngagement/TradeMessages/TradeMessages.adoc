@@ -1,0 +1,283 @@
+ifndef::imagesDir[]
+:imagesDir: images
+endif::[]
+
+[[trading-msg]]
+== Trading Messages
+
+[[trading-msg-new-single]]
+=== NewOrderSingle (35=D)
+
+[cols="10,25,10,55"]
+
+|===
+| Tag | Field Name | Req’d | Comments
+
+| Component | <<common-components-std-header>> | Y | MsgType = D
+
+| 11 | ClOrdID | Y | Unique identifier of the order as assigned by institution.
+
+| 21 | HandlInst | N a| Instructions for order handling.
+
+* 1 - Automated execution order, private, no Broker intervention
+* 2 - Automated execution order, public, Broker intervention OK
+* 3 - Manual order, best execution
+
+| 38 | OrderQty | Y | Quantity ordered.
+
+| 40 | OrdType | Y a| Order type.
+
+* 1 - Market
+* 2 - Limit
+
+| 44 | Price | C | Required for OrdType Limit.
+
+| 54 | Side | Y a| Side of order.
+
+* 1 - Buy
+* 2 - Sell
+* 5 - SellShort
+* 6 - SellShortExempt
+
+| => Component | <<common-components-instrument>> | Y | 
+
+| 15 | Currency | C | For non-FX instruments, identifies currency used for price. 
+Absence of this field is interpreted as the default for the security.
+
+For FX instruments, identifies currency used for quantity.
+
+Required when SecurityIDSource = ISIN in the Instrument component.
+
+| 60 | TransactTime | Y | Time this order request was initiated/released.
+
+| 59 | TimeInForce | N a| Specifies how long the order remains in effect. Absence of this field is interpreted as Day.
+
+* 0 - Day
+* 1 - Good Till Cancel
+* 3 - Immediate Or Cancel
+* 4 - Fill Or Kill
+* 6 - Good Till Date
+
+| 432 | ExpireDate | C | Date of order expiration (last day the order can trade), always expressed in terms of the local market date. 
+Conditionally required if TimeInForce (59) = GTD and ExpireTime (126) is not specified.
+
+| 126 | ExpireTime | C | Time/Date of order expiration (always expressed in UTC). 
+Conditionally required if TimeInForce (59) = GTD and ExpireDate (432) is not specified.
+
+| Component | <<common-components-parties>> | N | 
+
+| 1688 | ShortSellExemption Reason | N | Indicates the reason a short sale order is exempted from applicable regulation.
+Any integer value is accepted only when Side (54) = SellShortExempt
+
+| Component | <<common-components-std-trailer>> | Y | 
+|===
+
+[[trading-msg-exreport]]
+=== ExecutionReport (35=8)
+
+[cols="10,25,10,55"]
+
+|===
+| Tag | Field Name | Req’d | Comments
+
+| Component | <<common-components-std-header>> | Y | MsgType = 8
+
+| 37 | OrderID | Y | OrderID is required to be unique for each chain of orders.
+
+| 11 | ClOrdID | N | Required when referring to orders electronically submitted over FIX or otherwise assigned a ClOrdID(11).
+
+| 41 | OrigClOrdID | N | Conditionally required for response to a Cancel or Cancel/Replace request.
+
+| 17 | ExecID | Y | Unique identifier of execution message. 
+ExecutionReport ExecID values are unique per listing per order.
+(Format:OrderID-Counter)
+
+| 150 | ExecType | Y a| Describes the purpose of the execution report.
+
+* 0 - New
+* 4 - Canceled
+* 5 - Replaced
+* 8 - Rejected
+* F - Trade
+
+| 39 | OrdStatus | Y a| Describes the current state of the order.
+
+* 0 - New
+* 1 - Partially filled
+* 2 - Filled
+* 4 - Canceled
+* 5 - Replaced
+* 8 - Rejected
+
+| 31 | LastPx | C | Price of this (last) fill. Required if ExecType (150) = Trade
+
+| 32 | LastQty | C | Quantity bought/sold on this (last) fill. Required if ExecType (150) = Trade
+
+| 54 | Side | Y a| Side of order.
+
+* 1 - Buy
+* 2 - Sell
+* 5 - SellShort
+* 6 - SellShortExempt
+
+| => Component | <<common-components-instrument>> | Y | 
+
+| 15 | Currency | C | For non-FX instruments, identifies currency used for price. 
+Absence of this field is interpreted as the default for the security.
+
+For FX instruments, identifies currency used for quantity.
+
+Required when SecurityIDSource = ISIN in the Instrument component.
+
+| 58 | Text | N | Free format text string.
+
+| 151 | LeavesQty | Y | Quantity open for further execution.
+
+| 14 | CumQty | Y | Currently executed quantity for chain of orders.
+
+| Component | <<common-components-parties>> | N | 
+
+| 1688 | ShortSellExemptionReason | N | Indicates the reason a short sale order is exempted from applicable regulation.
+The exact value is reported as specified in NewOrderSingle/OrderCancelReplaceRequest in ShortSellExemptionReason (1688) for orders with Side (54) = SellShortExempt.
+
+| Component | <<common-components-std-trailer>> | Y | 
+|===
+
+
+[[trading-msg-cancel-replace]]
+=== OrderCancelReplaceRequest (35=G)
+
+[cols="10,25,10,55"]
+
+|===
+| Tag | Field Name | Req’d | Comments
+
+| Component | <<common-components-std-header>> | Y | MsgType = G
+
+| 11 | ClOrdID | Y | Unique identifier of replacement request.
+
+| 37 | OrderID | N | Unique identifier of most recent order as assigned.
+
+| 41 | OrigClOrdID | N | ClOrdID(11) of the previous non rejected order (NOT the initial order of the day) when canceling or replacing an order.
+
+| 21 | HandlInst | N a| Instructions for order handling.
+
+* 1 - Automated execution order, private, no Broker intervention
+* 2 - Automated execution order, public, Broker intervention OK
+* 3 - Manual order, best execution
+
+| 38 | OrderQty | Y | Quantity ordered.
+
+| 40 | OrdType | Y a| Order type.
+
+* 1 - Market
+* 2 - Limit
+
+| 44 | Price | C | Required for OrdType Limit.
+
+| 54 | Side | Y a| Side of order.
+
+* 1 - Buy
+* 2 - Sell
+* 5 - SellShort
+* 6 - SellShortExempt
+
+| => Component | <<common-components-instrument>> | Y | 
+
+| 15 | Currency | C | For non-FX instruments, identifies currency used for price. 
+Absence of this field is interpreted as the default for the security.
+
+For FX instruments, identifies currency used for quantity.
+
+Required when SecurityIDSource = ISIN in the Instrument component.
+
+| 60 | TransactTime | Y | Time this order request was initiated/released.
+
+
+| Component | <<common-components-parties>> | N | 
+
+| 1688 | ShortSellExemptionReason | N | Indicates the reason a short sale order is exempted from applicable regulation.
+Any integer value is accepted only when Side (54) = SellShortExempt.
+
+| Component | <<common-components-std-trailer>> | Y | 
+|===
+
+
+[[trading-msg-cancel]]
+=== OrderCancelRequest (35=F)
+
+[cols="10,25,10,55"]
+
+|===
+| Tag | Field Name | Req’d | Comments
+
+| Component | <<common-components-std-header>> | Y | MsgType = F
+
+| 11 | ClOrdID | Y | Unique ID of cancel request.
+
+| 37 | OrderID | N | Unique identifier of most recent order as assigned.
+
+| 41 | OrigClOrdID | N | ClOrdID(11) of the previous non rejected order (NOT the initial order of the day) when canceling or replacing an order.
+
+| 54 | Side | Y a| Side of order.
+
+* 1 - Buy
+* 2 - Sell
+* 5 - SellShort
+* 6 - SellShortExempt
+
+| => Component | <<common-components-instrument>> | Y | 
+
+| 15 | Currency | C | For non-FX instruments, identifies currency used for price. 
+Absence of this field is interpreted as the default for the security.
+
+For FX instruments, identifies currency used for quantity.
+
+Required when SecurityIDSource = ISIN in the Instrument component.
+
+| 60 | TransactTime | Y | Time this order request was initiated/released.
+
+| Component | <<common-components-parties>> | N | 
+
+| Component | <<common-components-std-trailer>> | Y | 
+|===
+
+
+
+[[trading-msg-cancel-reject]]
+=== OrderCancelReject (35=9)
+
+[cols="10,25,10,55"]
+
+|===
+| Tag | Field Name | Req’d | Comments
+
+| Component | <<common-components-std-header>> | Y | MsgType = 9
+
+| 37 | OrderID | Y | OrderID is required to be unique for each chain of orders.
+
+| 11 | ClOrdID | Y | Required when referring to orders electronically submitted over FIX or otherwise assigned a ClOrdID(11).
+
+| 41 | OrigClOrdID | N | ClOrdID(11) which could not be canceled/replaced.
+
+| 39 | OrdStatus | Y a| Describes the current state of the order.
+
+* 0 - New
+* 1 - Partially filled
+* 2 - Filled
+* 4 - Canceled
+* 5 - Replaced
+* 8 - Rejected
+
+| 434 | CxlRejResponseTo | Y a| Identifies the type of request that a Cancel Reject is in response to.
+
+* 1 - Order cancel request
+* 2 - Order cancel/replace request
+
+| 58 | Text | N | Free format text string.
+
+| Component | <<common-components-std-trailer>> | Y | 
+|===
+
+
+

@@ -1,0 +1,66 @@
+name: Build Custom Postgres Image for MarketSim
+
+on:
+  push:
+    paths:
+      - '.github/docker/Postgres_Marketsim.Dockerfile'
+      - '.github/docker/init.sql'
+    branches:
+      - main
+      - develop
+    tags:
+      - 'v[0-9]+.[0-9]+'
+      - 'v[0-9]+'
+  workflow_dispatch:
+
+jobs:
+  build-postgres-image:
+    runs-on: ubuntu-latest
+
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set lowercase org name
+        run: echo "REPO_OWNER_LOWER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
+
+      - name: Determine image tags
+        run: |
+          BASE_IMAGE_NAME="ghcr.io/${REPO_OWNER_LOWER}/postgres_marketsim"
+          
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            SAFE_TAG="${GITHUB_REF_NAME}"
+            TAGS="$BASE_IMAGE_NAME:$SAFE_TAG"
+          elif [[ "${GITHUB_REF_NAME}" == "main" ]]; then
+            TAGS="$BASE_IMAGE_NAME:main,$BASE_IMAGE_NAME:latest"
+          elif [[ "${GITHUB_REF_NAME}" == "develop" ]]; then
+            TAGS="$BASE_IMAGE_NAME:develop"
+          else
+            SAFE_TAG="${GITHUB_REF_NAME//\//-}"
+            TAGS="$BASE_IMAGE_NAME:$SAFE_TAG"
+          fi
+
+          echo "POSTGRES_IMAGE_TAGS=$TAGS" >> $GITHUB_ENV
+          echo "Final image tags: $TAGS"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push Postgres Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .github/docker
+          file: .github/docker/Postgres_Marketsim.Dockerfile
+          push: true
+          tags: ${{ env.POSTGRES_IMAGE_TAGS }}

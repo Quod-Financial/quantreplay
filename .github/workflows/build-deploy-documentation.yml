@@ -1,0 +1,65 @@
+name: Build and Deploy AsciiDoc Docs to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      PUBLISH_DIR: public
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Install dependencies
+        run: |
+          gem install asciidoctor -v 2.0.23
+          gem install asciidoctor-pdf -v 2.3.19
+          gem install rouge -v 4.5.1
+
+      - name: Convert AsciiDoc to HTML
+        run: |
+          cd docs/
+          mkdir -p ${PUBLISH_DIR}/Overview
+          mkdir ${PUBLISH_DIR}/FIXRulesOfEngagement
+          mkdir ${PUBLISH_DIR}/RESTAPI
+
+          cp common/favicon.ico ${PUBLISH_DIR}
+          cp common/favicon.ico ${PUBLISH_DIR}/Overview
+          cp common/favicon.ico ${PUBLISH_DIR}/FIXRulesOfEngagement
+          cp common/favicon.ico ${PUBLISH_DIR}/RESTAPI
+
+          cp index.html ${PUBLISH_DIR}
+
+          cp -r FIXRulesOfEngagement/images ${PUBLISH_DIR}/FIXRulesOfEngagement/images
+          cp -r RESTAPI/images ${PUBLISH_DIR}/RESTAPI/images
+          
+          asciidoctor "Overview/Overview.adoc" -o "${PUBLISH_DIR}/Overview/Overview.html"
+
+          asciidoctor "FIXRulesOfEngagement/FIXRulesOfEngagement.adoc" -o "${PUBLISH_DIR}/FIXRulesOfEngagement/FIXRulesOfEngagement.html"
+          asciidoctor-pdf -a allow-uri-read -a pdf-theme="common/pdf/PDFTheme.yml" "FIXRulesOfEngagement/FIXRulesOfEngagement.adoc" -D "${PUBLISH_DIR}/FIXRulesOfEngagement"
+
+          asciidoctor "RESTAPI/RESTAPI.adoc" -o "${PUBLISH_DIR}/RESTAPI/RESTAPI.html"
+          asciidoctor-pdf -a allow-uri-read -a pdf-theme="common/pdf/PDFTheme.yml" "RESTAPI/RESTAPI.adoc" -D "${PUBLISH_DIR}/RESTAPI"
+
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/${{ env.PUBLISH_DIR }}
+          force_orphan: true      # without it there will be an error "fatal: Remote branch gh-pages not found in upstream origin"

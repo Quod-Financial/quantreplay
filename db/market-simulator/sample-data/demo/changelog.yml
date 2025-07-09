@@ -1,0 +1,64 @@
+databaseChangeLog:
+  - include:
+      file: xetra/changelog.yml
+      relativeToChangelogFile: true
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_1
+      author: avovchen
+      labels: sample-data,demo
+      comment: Reset listing_id autoincrement sequence in PostgreSQL database
+      runAlways: true
+      runOrder: last
+      failOnError: false
+      preConditions:
+        - onFail: WARN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: listing_id
+      changes:
+        - sql:
+            dbms: 'postgresql'
+            sql: SELECT setval('listing_listing_id_seq', COALESCE((SELECT MAX(listing_id)+1 FROM listing), 1), false);
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_2
+      author: avovchen
+      labels: sample-data,demo
+      comment: Reset price_seed_id autoincrement sequence in PostgreSQL database
+      runAlways: true
+      runOrder: last
+      failOnError: false
+      preConditions:
+        - onFail: WARN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: listing_id
+      changes:
+        - sql:
+            dbms: 'postgresql'
+            sql: SELECT setval('price_seed_price_seed_id_seq', COALESCE((SELECT MAX(price_seed_id)+1 FROM price_seed), 1), false);
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_3
+      author: avovchen
+      labels: sample-data,demo
+      comment: Reset data_source_id autoincrement sequence in PostgreSQL database
+      runAlways: true
+      runOrder: last
+      failOnError: false
+      preConditions:
+        - onFail: WARN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: data_source_id
+      changes:
+        - sql:
+            dbms: 'postgresql'
+            sql: SELECT setval('data_source_data_source_id_seq', COALESCE((SELECT MAX(data_source_id)+1 FROM data_source), 1), false);

@@ -1,0 +1,311 @@
+ifndef::imagesDir[]
+:imagesDir: images
+endif::[]
+
+[[message-flows]]
+== Message Flows
+
+[[message-flows-mkt-data]]
+=== Market Data Streaming
+
+To subscribe to a market data stream, unsubscribe from a previously-subscribed market data stream or retrieve the actual market data state (snapshot) 
+a client shall send the *MarketDataRequest* message. 
+Depending on *SubscriptionRequestType* value, the market simulator:
+
+* creates a new subscription and starts requested market data streaming;
+* cancels an existing subscription and stops market data streaming for cancelled subscription;
+* responds with an actual state of requested market data in the form of a snapshot.
+
+Each market data request can be associated with only one listing. 
+Market data updates are sent for each visible market data change.
+
+The format of a market data being streamed can be configured by a client in the *MDUpdateType* tag in the *MarketDataRequest* with 
+*SubscriptionRequestType=Subscribe*, which allows to:
+
+* stream the data in the form of incremental updates applied to the initially reported full state;
+* stream the data in the form of full market data snapshots.
+
+Active market data subscriptions are *automatically cancelled* by the simulator on client disconnection. 
+The market data incremental streaming messages flow between the client application and the simulator: 
+
+image::02MktDataStreamingMsg.png[width = 600, height=300]
+
+The market data full snapshot streaming messages flow between the client application and the simulator:
+
+image::01MktDataIncrementalMsg.png[width = 600, height=300] 
+
+The market data snapshot request-response messages flow between the client application and the simulator:
+
+image::03MktDataSnapReqRsp.png[width = 600, height=300]
+
+The simulator can reject the Market Data Request message issued by a client due to different circumstances. 
+In case session-level rules violation occurs, the Market Data Request message is rejected by the *Reject* message with the reject reason indicated in the *Text* tag. 
+For application-level rules violation, the *MarketDataRequestReject* message is used to report the rejection to a client, with an optional *MDReqRejReason* and 
+*Text* specifying the details:
+
+image::04MktDataReqRct.png[width = 600, height=300]
+
+The application-level reasons for a MarketDataReject message are listed in the table below with details:
+
+[cols="1,1,1,1"]
+
+|===
+| Reason | Condition | MDReqRejReason (tag 281) value | Text (tag 58) value
+
+| MarketDataRequest contains no securities inside NoRelatedSym (146) group | – | – | 
+
+| MarketDataRequest contains more than one security inside NoRelatedSym (146) group | – | –  
+| ‘market data requests on multiple securities are now allowed'
+
+| No security matches listing identification attributes specified in NoRelatedSym (146) group | – |
+Unknown Symbol (0) | ‘listing not found'
+
+| Security identification attributes cannot in NoRelatedSym (146) cannot be used to identify the listing (see Instrument Resolution section) | – |
+Unknown Symbol (0) | ‘listing identification attributes set is malformed’
+
+| Subscription MarketDataRequest has MDReqID (262) value is used by another active subscription
+| MarketDataRequest has SubscriptionRequestType=Subscribe specified
+| Duplicate MDReqID (1) | 'request identifier is used already'
+
+| No active subscription associated with a given MDReqID (262) exists
+| MarketDataRequest has SubscriptionRequestType=Unsubscribe specified
+| – | ‘no subscription found for the request id’
+
+|===
+
+[[message-flows-trd-msg]]
+=== Trading Messages
+
+[[message-flows-trd-msg-new-odr]]
+==== New Order Single
+
+To create a new order a client shall issue the *NewOrderSingle* message, which should contain new order properties. 
+The simulator responds with an *ExecutionReport* message indicating that an order for a requested listing is created and is ready to be executed. 
+Each successfully created new order is acknowledged with an ExecutionReport containing *ExecType=New* and *OrdStatus=New*:
+
+image::05MktDataNewOrderSgl.png[width = 600, height=300]
+
+A NewOrderSingle message can be rejected by the simulator. 
+An application-level reject is always issued in the form of an *ExecutionReport* message with *ExecType=Rejected*, *OrdStatus=Rejected*, 
+and a *Text* field specifying the reason for a new order rejection:
+
+image::06MktDataNewOrderRct.png[width = 600, height=300]
+
+NewOrderSingle message rejection reasons are listed in the table below:
+
+[cols="1,1,1"]
+
+|===
+| Reason | Condition |  Text (tag 58) value
+
+| No listing matches listing identification attributes specified in NewOrderSingle | – | ‘listing not found'
+
+| Listing identification attributes cannot be used to identify the listing (see Instrument Resolution section) | – | 
+‘listing identification attributes set is malformed’
+
+| Price (44) is missing in NewOrderSingle request | Reported when an order with OrdType=Limit is specified without a price | ‘order price not found'
+
+| Price (44) is specified in NewOrderSingle request | Reported when an order with OrdType=Market is specified with a price | ‘order price is not allowed’
+
+| OrderQty (38) is missing in NewOrderSingle request | – | ‘order quantity missing’
+
+| Value in Price (44) is not a multiple of the requested listing’s price tick | – | ‘order price tick constraint is violated’
+
+| Value in OrderQty (38) is not a multiple of the requested listing’s quantity multiple | – | ‘order quantity multiple constraint is violated’
+
+| Value in OrderQty (38) is less than the requested listing’s quantity minimum | – | ‘minimal order quantity constraint is violated’
+
+| Value in OrderQty (38) is greater than the requested listing’s quantity maximum | – | ‘maximal order quantity constraint is violated’
+
+| An opposite side has no orders matching the new order to be traded | Reported only for orders with
+
+OrdType=Market or TimeInForce=ImmediateOrCancel or TimeInForce=FillOrKill | ‘no facing orders found’
+
+| All matching opposite orders cannot fill a new FillOrKill order | Reported only for orders with TimeInForce=FillOrKill | 'not enough liquidity to fill FoK order'
+
+| Both ExpireDate (432) and ExpireTime (126) are missing for a GoodTillCancel order | Reported only for orders with TimeInForce=GoodTillCancel 
+| ‘neither expire date nor expire time specified’
+
+| Both ExpireDate (432) and ExpireTime (126) are specified for a GoodTillCancel order | Reported only for orders with TimeInForce=GoodTillCancel | 
+‘both expire date and expire time specified’
+
+| A new GoodTillCancel order is already expired as per the specified ExpireDate (432) or ExpireTime (126) | Reported only for orders with TimeInForce=GoodTillCancel | 
+‘order already expired’
+
+a| The venue is in the Open halted phase.
+
+It means that in the message SecurityStatus (35=f), the tags are:
+
+* TradingSessionSubID is “(Continuous) Trading” - 625=3
+* SecurityTradingStatus is “Trading halt” - 326=2 | – | ‘request cannot be processed during halted trading status’
+
+|===
+[[message-flows-trd-msg-exe-rpt]]
+==== Execution Report
+
+Once a NewOrderSingle message is accepted and acknowledged by the simulator, an order can be traded. 
+Each trade event is reported by the *ExecutionReport* message with *ExecType=Trade*. 
+The order status is changed to *OrdStatus=PartiallyFilled* if there is volume left for being executed, 
+otherwise order status is changed to *OrdStatus=Filled* and the order is terminated. 
+The diagram below illustrates the basic message flow for the order lifetime between a client and the simulator:
+
+image::07MktDataExeRpt.png[width = 600, height=300]
+
+The simulator cancels orders with *TimeInForce=ImmediateOrCancel* automatically if there is a non-executed order part left after the order matching and trading process. 
+Such cancellation would be reported by *OrdStatus=Cancelled* in the last execution report for an order:
+
+image::08MktDataCancel.png[width = 600, height=300]
+
+The simulator automatically cancels expired orders with *TimeInForce=Day* and *TimeInForce=GoodTillDate*. 
+The cancellation is reported to a client in the form of an ExecutionReport message with *ExecType=Cancelled* and *OrdStatus=Cancelled*:
+
+image::09MktDataPartialCancel.png[width = 600, height=300]
+
+[[message-flows-trd-msg-odr-cl-rep-req]]
+==== Order Cancel Replace Request
+
+A client may issue an *OrderCancelReplaceRequest* to modify his active order. 
+A successful modification is reported by an ExecutionReport message with *ExecType=Replaced* and *OrdStatus=Replaced*, as shown in the diagram:
+
+image::10MktDataOrderReplace.png[width = 600, height=300]
+
+An OrderCancelReplaceRequest message can be rejected by the simulator. 
+An application-level reject is always issued in the form of an *OrderCancelReject* message with *CxlRejResponseTo=OrderCancelReplaceRequest*, *OrdStatus=Rejected*, 
+and a Text field specifying the reason for a modification rejection. 
+An order is not modified if OrderCancelReplaceRequest is rejected.
+
+image::11MktDataCancelReject.png[width = 600, height=300]
+
+OrderCancelReplaceRequest message rejection reasons are listed in the table below:
+
+[cols="1,1,1"]
+
+|===
+| Reason | Condition |  Text (tag 58) value
+
+| No listing matches listing identification attributes specified in OrderCancelReplaceRequest | – | ‘listing not found'
+
+| Listing identification attributes cannot be used to identify the listing (see Instrument Resolution section) | – | ‘listing identification attributes set is malformed’
+
+| Given OrigClOrdID (41), ClOrdID (11), or OrderID (37) do not match any client order for a requested listing.
+Side (54) does not match the original order side value.
+Order is terminated (e.g. filled or cancelled)
+| – | ‘order not found’
+
+| New OrderQty (38) value is less than or equal to the already executed CumQty (14) for an order | – | ‘invalid quantity’
+
+| New TimeInForce (59) value does not match the original value specified for an order | – | ‘time in force value can not be changed’
+
+| Price (44) is missing in NewOrderSingle request | Reported when an order with OrdType=Limit is specified without a price | 
+‘order price not found’
+
+| OrderQty (38) is missing in NewOrderSingle request | – | ‘order quantity missing’
+
+| Value in Price (44) is not a multiple of the requested listing’s price tick | – | ‘order price tick constraint is violated’
+
+| Value in OrderQty (38) is not a multiple of the requested listing’s quantity multiple | – | ‘order quantity multiple constraint is violated’
+
+| Value in OrderQty (38) is less than the requested listing’s quantity minimum | – | ‘minimal order quantity constraint is violated’
+
+| Value in OrderQty (38) is greater than the requested listing’s quantity maximum | – | ‘maximal order quantity constraint is violated’
+
+| Both ExpireDate (432) and ExpireTime (126) are missing for a GoodTillCancel order | Reported only for orders with TimeInForce=GoodTillCancel | 
+‘neither expire date nor expire time specified’
+
+|  Both ExpireDate (432) and ExpireTime (126) are specified for a GoodTillCancel order | Reported only for orders with TimeInForce=GoodTillCancel | 
+‘both expire date and expire time specified’
+
+| A new GoodTillCancel order is already expired as per specified ExpireDate (432) or ExpireTime (126) | 
+Reported only for orders with TimeInForce=GoodTillCancel | ‘order already expired’
+
+a| The venue is in the Open halted phase. 
+
+It means that in the message SecurityStatus (35=f),the tags are:
+
+* TradingSessionSubID is “(Continuous) Trading” - 625=3
+* SecurityTradingStatus is “Trading halt” - 326=2 | – | ‘request cannot be processed during halted trading status'
+
+|===
+
+[[message-flows-trd-msg-odr-cl-req]]
+==== Order Cancel Request
+
+A client may issue an *OrderCancelRequest* (35=F) to cancel his active order. 
+A successful cancellation is reported by an ExecutionReport message with *ExecType=Cancelled* and *OrdStatus=Cancelled*, as shown in the diagram:
+
+image::12MktDataCancelSuccess.png[width = 600, height=300]
+
+An OrderCancelReplaceRequest message can be rejected by the simulator. 
+An application-level reject is always issued in the form of an *OrderCancelReject* message with *CxlRejResponseTo=OrderCancelRequest*, *OrdStatus=Rejected*, and a *Text* field specifying the reason for a cancellation rejection. 
+An order remains active if OrderCancelRequest is rejected.
+ 
+image::13MktDataCancelReplaceReject.png[width = 600, height=300]
+
+OrderCancelRequest message rejection reasons are listed in the table below:
+
+[cols="1,1,1"]
+
+|===
+| Reason | Condition |  Text (tag 58) value
+
+| No listing matches listing identification attributes specified in OrderCancelRequest | – | ‘listing not found'
+
+| Listing identification attributes cannot be used to identify the listing (see Instrument Resolution section) | – | ‘listing identification attributes set is malformed’
+
+| Given OrigClOrdID (41), ClOrdID (11), or OrderID (37) do not match any client order for a requested listing.
+Side (54) does not match the original order side value.
+Order is terminated (e.g. filled or cancelled) | – | ‘order not found’
+
+a| The venue is in the Open halted phase and OrderCancelRequest is not allowed on this halted phase.
+
+“Open halted phase” means that in the message SecurityStatus (35=f), the tags are:
+
+* TradingSessionSubID is “(Continuous) Trading” - 625=3
+* SecurityTradingStatus is “Trading halt” - 326=2
+| – | ‘request cannot be processed during halted trading status'
+
+|===
+
+[[message-flows-trd-phase]]
+=== Trading Phase and Trading Status Reporting
+
+The Market Simulator allows clients to retrieve trading phase and status updates for a specific security by issuing a *SecurityStatusRequest* message with 
+the *SubscriptionRequestType=Subscribe*. 
+The simulator creates a subscription for a client and starts updates streaming in the form of *SecurityStatus messages*, 
+each defining a currently active trading phase and its status. 
+The subscription is considered to be active until a client sends an unsubscribe request in the form of *SecurityStatusRequest* message with *SubscriptionRequestType=Unsubscribe*. 
+A subscription is automatically cancelled upon client disconnect. 
+The general trading phase/status reporting message flow is described in a diagram below:
+
+image::14MktDataStsReport.png[width = 600, height=300]
+
+A client may also issue a current trading phase/status information only, without the creation of a subscription and further updates streaming. 
+In this case, a client shall send a *SecurityStatusRequest* message with *SubscriptionRequestType=Snapshot*. 
+The simulator replies with the *SecurityStatus* message only, as shown in the diagram below: 
+
+image::15MktDataStsSnapSht.png[width = 600, height=300]
+
+A SecurityStatusRequest message can be rejected by the simulator. 
+An application-level reject is always issued in the form of a *BusinessMessageReject* message with *BusinessRejectReason* and *Text* specifying reject details.
+
+image::16MktDataStsReject.png[width = 600, height=300]
+
+SecurityStatusRequest message application level reject reasons listed in a table below.
+
+[cols="1,1,1,1"]
+
+|===
+| Reason | Condition | BusinessRejectReason (tag 380) value | Text (tag 58) value
+
+| No listing matches listing identification attributes specified in NewOrderSingle | – | Unknown Security (2) | ‘listing not found'
+
+| Listing identification attributes cannot be used to identify the listing (see Instrument Resolution section) | – | Unknown Security (2) 
+| ‘listing identification attributes set is malformed’
+
+| SecurityStatusRequest has SecurityStatusReqID (324) value used by another active subscription | SecurityStatusRequest is sent with SubscriptionRequestType=Subscribe 
+| Other (0) | 'security status subscription request id is already in use'
+
+| No active subscription associated with a given SecurityStatusReqID (324) exists | SecurityStatusRequest is sent with SubscriptionRequestType=Unsubscribe
+| Unknown ID (1) | ‘no subscription found for the security status request id’
+
+|===

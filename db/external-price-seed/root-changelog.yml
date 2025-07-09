@@ -1,0 +1,5 @@
+databaseChangeLog:
+  - context: external-price-seed
+  - include:
+      file: schema/changelog.yml
+      relativeToChangelogFile: true

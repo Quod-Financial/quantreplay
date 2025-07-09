@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_constraint_market_phase_1
+      labels: schema,v4
+      comment: Add NOT NULL constraint market_phase_phase_idx on market_phase.phase
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: market_phase
+        - columnExists:
+            tableName: market_phase
+            columnName: phase
+      changes:
+        - addNotNullConstraint:
+            constraintName: market_phase_phase_idx
+            tableName: market_phase
+            columnName: phase
+            validate: true

@@ -1,0 +1,110 @@
+databaseChangeLog:
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_key_column_mapping_1
+      labels: schema,v4
+      comment: Add column_mapping_venue_fkey (column_mapping.venue_id) to (venue.venue_id)
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: column_mapping
+        - columnExists:
+            tableName: column_mapping
+            columnName: venue_id
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: venue_id
+        - primaryKeyExists:
+            tableName: venue
+            primaryKeyName: venue_pkey
+        - not:
+            - foreignKeyConstraintExists:
+                foreignKeyName: column_mapping_venue_fkey
+      changes:
+        - addForeignKeyConstraint:
+            constraintName: column_mapping_venue_fkey
+            baseTableName: column_mapping
+            baseColumnNames: venue_id
+            referencedTableName: venue
+            referencedColumnNames: venue_id
+            onUpdate: CASCADE
+            onDelete: CASCADE
+            validate: true
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_key_column_mapping_2
+      labels: schema,v4,SIM-526
+      comment: Drop column_mapping_venue_fkey
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: column_mapping
+        - foreignKeyConstraintExists:
+            foreignKeyName: column_mapping_venue_fkey
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: column_mapping
+            constraintName: column_mapping_venue_fkey
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_key_column_mapping_3
+      labels: schema,v4
+      comment: Add column_mapping_pkey (data_source_id, column_from) for column_mapping table
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: column_mapping
+        - columnExists:
+            tableName: column_mapping
+            columnName: data_source_id
+        - columnExists:
+            tableName: column_mapping
+            columnName: column_from
+        - not:
+            - primaryKeyExists:
+                tableName: column_mapping
+                primaryKeyName: column_mapping_pkey
+      changes:
+        - addPrimaryKey:
+            constraintName: column_mapping_pkey
+            tableName: column_mapping
+            columnNames: data_source_id, column_from
+            validate: true
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_key_column_mapping_4
+      labels: schema,v4,SIM-526
+      comment: Add column_mapping_data_source_fkey (column_mapping.data_source_id) to (data_source.data_source_id)
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: column_mapping
+        - columnExists:
+            tableName: column_mapping
+            columnName: data_source_id
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: data_source_id
+        - primaryKeyExists:
+            tableName: data_source
+            primaryKeyName: data_source_pkey
+        - not:
+            - foreignKeyConstraintExists:
+                foreignKeyName: column_mapping_data_source_fkey
+      changes:
+        - addForeignKeyConstraint:
+            constraintName: column_mapping_data_source_fkey
+            baseTableName: column_mapping
+            baseColumnNames: data_source_id
+            referencedTableName: data_source
+            referencedColumnNames: data_source_id
+            onUpdate: CASCADE
+            onDelete: CASCADE
+            validate: true

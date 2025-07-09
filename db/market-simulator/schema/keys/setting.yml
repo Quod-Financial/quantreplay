@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_key_setting_1
+      labels: schema,v4
+      comment: Add setting_pkey (key) for setting table
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: setting
+        - columnExists:
+            tableName: setting
+            columnName: key
+        - not:
+            - primaryKeyExists:
+                tableName: setting
+                primaryKeyName: setting_pkey
+      changes:
+        - addPrimaryKey:
+            constraintName: setting_pkey
+            tableName: setting
+            columnNames: key
+            validate: true

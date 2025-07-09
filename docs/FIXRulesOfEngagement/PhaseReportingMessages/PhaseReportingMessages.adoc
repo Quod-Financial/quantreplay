@@ -1,0 +1,105 @@
+ifndef::imagesDir[]
+:imagesDir: images
+endif::[]
+
+[[phase-reporting-msg]]
+== Phase Reporting Messages
+
+Support subscriptions to phase changes reported per security using SecurityStatus workflows when the phase change happens.
+The SecurityStatusRequest and SecurityStatus messages are both expected to be sent in the context of a specific indicated listing. 
+Changes to phase occur across the entire venue. 
+In any case, the phase will always be reported by listing. 
+This means if a phase change happens across the venue, a separate SecurityStatus message is sent for every listing on that venue 
+(but, of course, only for the client-subscribed listings).
+If there are any application-layer problems handling the SecurityStatusRequest, the simulator responds with a BusinessMessageReject (35=j) message, 
+indicating the rejection details in Text and BusinessRejectReason tags, and considers the request invalid and terminated.
+
+[[phase-reporting-msg-sec-sts-req]]
+=== SecurityStatusRequest request (35=e)
+
+[cols="10,25,10,55"]
+
+|===
+| Tag | Field Name | Req’d | Comments
+
+| Component | <<common-components-std-header>> | Y | MsgType = e
+
+| 324 | SecurityStatusReqID | Y | Unique request ID used to request a snapshot, subscribe to updates, or unsubscribe from a previous subscription that used the same ID
+
+| => Component | <<common-components-instrument>> | Y | 
+
+| 15 | Currency | C | For non-FX instruments, identifies the currency used for price. The absence of this field is interpreted as the default for the security.
+
+For FX instruments, identifies the currency used for quantity.
+
+Required when SecurityIDSource = ISIN in the Instrument component.
+
+| 263 | SubscriptionRequestType | Y a| Subscription Request Type.
+
+* 0 - Snapshot
+* 1 - Snapshot + Updates (Subscribe)
+* 2 - Disable previous Snapshot + Update Request (Unsubscribe)
+ 
+| Component | <<common-components-std-trailer>> | Y | 
+|===
+
+[[phase-reporting-msg-sec-sts-resp]]
+=== SecurityStatus response (35=f)
+
+[cols="10,25,10,55"]
+
+|===
+| Tag | Field Name | Req’d | Comments
+
+| Component | <<common-components-std-header>> | Y | MsgType = e
+
+| 324 | SecurityStatusReqID | N | ID of request that triggered this response
+
+| => Component | <<common-components-instrument>> | Y | 
+
+| 15 | Currency | C | For non-FX instruments, identifies the currency used for price. 
+The absence of this field is interpreted as the default for the security.
+
+For FX instruments, identifies the currency used for quantity.
+
+Required when SecurityIDSource = ISIN in the Instrument component.
+
+| 336 | TradingSessionID | N | Trading session identifier
+
+| 625 | TradingSessionSubID | N a| Sub-identifier for a trading phase within a trading session.
+
+* 3 - Open
+* 10 - Closed
+
+| 326 | SecurityTradingStatus | N a| Trading status.
+
+* 2 - Trading Halt
+* 3 - Resume
+ 
+| Component | <<common-components-std-trailer>> | Y | 
+|===
+
+[[phase-reporting-msg-bus-msg-rej]]
+=== BusinessMessageReject (35=j)
+
+[cols="10,25,10,55"]
+
+|===
+| Tag | Field Name | Req’d | Comments
+
+| Component | <<common-components-std-header>> | Y | MsgType = j
+
+| 45 | RefSeqNum | N | The sequence number of the rejected message
+
+| 372 | RefMsgType | Y | The rejected message type
+
+| 380 | BusinessRejectReason | Y a| Codified reason for the rejection.
+
+* 0 - Other
+* 1 - Unknown ID
+* 2 - Uknown Security
+
+| 58 | Text | N | Free text message describing the reason for the rejection
+ 
+| Component | <<common-components-std-trailer>> | Y | 
+|===

@@ -1,0 +1,145 @@
+ifndef::imagesDir[]
+:imagesDir: images
+endif::[]
+
+[[common-components]]
+== Common Components
+
+[[common-components-std-header]]
+=== Standard Header
+
+[cols="5,25,15,55"]
+|===
+| Tag | Field Name | Req’d | Comments
+
+| 8 | BeginString | Y | Identifies beginning of new message and protocol version. ALWAYS FIRST FIELD IN MESSAGE. 
+(Always sent unencrypted.)
+
+Valid values: FIXT.1.1
+| 9 | BodyLength | Y | Message length, in bytes, forward to the CheckSum field. ALWAYS SECOND FIELD IN MESSAGE. 
+(Always sent unencrypted.)
+
+| 35 | MsgType | Y | Message length, in bytes, forward to the CheckSum field. ALWAYS THIRD FIELD IN MESSAGE. 
+(Always sent unencrypted.)
+
+| 1128 | ApplVerID | Y |  Indicates application version using a service pack identifier. 
+The ApplVerID applies to a specific message occurrence.
+
+Supported values: 9 – FIX50SP2
+
+| 49 | SenderCompID | Y | Assigned value used to identify firm sending message.
+
+| 56 | TargetCompID | Y | Assigned value used to identify receiving firm.
+
+| 34 | MsgSeqNum | Y | Integer message sequence number.
+
+| 50 | SenderSubID | N | Assigned value used to identify specific message originator (desk, trader, etc.)
+
+| 57 | TargetSubID | N | Assigned value used to identify specific individual or unit intended to receive message.
+
+| 43 | PossDupFlag | C | Always required for retransmitted messages, whether prompted by the sending system or as the result of a resend request.
+
+| 97 | PossResend | C | Required when message may be duplicate of another message sent under a different sequence number.
+
+| 52 | SendingTime | Y | Time of message transmission.
+
+| 122 |  OrigSendingTime | C | Required for message resent as a result of a ResendRequest. 
+If data is not available set to same value as SendingTime.
+
+|===
+
+
+[[common-components-std-trailer]]
+=== Standard Trailer
+
+[cols="5,25,15,55"]
+|===
+| Tag | Field Name | Req’d | Comments
+
+| 10 | CheckSum | Y | Message length. ALWAYS LAST FIELD IN MESSAGE. (Always sent unencrypted.)
+
+|===
+
+[[common-components-parties]]
+=== Parties
+
+[cols="15,25,15,45"]
+|===
+| Tag | Field Name | Req’d | Comments
+
+| 453 | NoPartyIDs | Y | Number of party entries.
+
+| => 448 | PartyID | Y | Party identifier/code.
+
+| => 447 | PartyIDSource | Y a| Identifies class or source of the PartyID (448) value.
+
+* D - Proprietary
+
+| => 452 | PartyRole | Y a| Identifies the type or role of the PartyID (448) specified.
+
+* 1 - Executing Firm
+* 17 - Contra Firm
+
+|===
+
+
+[[common-components-instrument]]
+=== Instrument
+
+[cols="5,25,15,55"]
+|===
+| Tag | Field Name | Req’d | Comments
+
+| 55 | Symbol | C a| Configured data source symbol - Ticker symbol.
+
+Required when SecurityIDSource is not set.
+
+| 48 | SecurityID | C a| Security identifier value of SecurityIDSource (22) type.
+
+Requires SecurityIDSource.
+
+| 22 | SecurityIDSource | C a| Identifies the class or source of the SecurityID(48) value. Required if SecurityID (48) is specified.
+
+* 1 - CUSIP
+* 2 - SEDOL
+* 4 - ISIN
+* 5 - RIC
+* 8 - Exchange Symbol
+* A - Bloomberg Symbol
+
+| 167 | SecurityType | C a|Identifies the class of an asset: +
+
+[cols="1,1"]
+
+!===
+2+! Asset Class
+
+a! * CS - Common Stock (Equity) +
+* FUT - Future +
+* OPT - Option +
+* MLEG - Multi-Leg Instrument +
+* SML - Synthetic Multi-Leg Instrument +
+* WAR - Warrant +
+* MF - Mutual Fund +
+* CORP - Corporate Bond +
+* CB - Convertible Bond +
+* REPO - Repurchase Agreement +
+* INDEX - Index +
+a! * CFD - Contract For Difference +
+* CD - Certificate +
+* FXSPOT - Forex Spot +
+* FORWARD - Forward +
+* FXFWD - Forex Forward +
+* FXNDF - Forex Non-Deliverable Forward +
+* FXSWAP - Forex Swap +
+* FXNDS - Forex Non-Deliverable Swap +
+* Required when SecurityIDSource = ISIN
+
+!===
+
+| 207 | SecurityExchange | C | A code of a market where security is listed.
+
+Used to identify the security.
+Required when SecurityIDSource = ISIN
+
+|===

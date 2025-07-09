@@ -1,0 +1,347 @@
+databaseChangeLog:
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_table_listing_1
+      labels: schema,v4
+      comment: Create listing table
+      preConditions:
+        - not:
+            - tableExists:
+                tableName: listing
+      changes:
+        - createTable:
+            tableName: listing
+            columns:
+              - column:
+                  name: listing_id
+                  type: int
+              - column:
+                  name: symbol
+                  type: text
+              - column:
+                  name: venue_id
+                  type: text
+              - column:
+                  name: security_type
+                  type: text
+              - column:
+                  name: price_currency
+                  type: text
+              - column:
+                  name: fx_base_currency
+                  type: text
+              - column:
+                  name: security_id
+                  type: text
+              - column:
+                  name: security_source
+                  type: text
+              - column:
+                  name: instr_symbol
+                  type: text
+              - column:
+                  name: md_symbol
+                  type: text
+              - column:
+                  name: qty_minimum
+                  type: float(4)
+              - column:
+                  name: qty_maximum
+                  type: float(4)
+              - column:
+                  name: qty_multiple
+                  type: float(4)
+              - column:
+                  name: price_tick_size
+                  type: float(4)
+              - column:
+                  name: enabled
+                  type: bool
+              - column:
+                  name: random_qty_maximum
+                  type: float(4)
+              - column:
+                  name: random_depth_levels
+                  type: int
+              - column:
+                  name: random_orders_spread
+                  type: float(4)
+              - column:
+                  name: random_orders_rate
+                  type: int
+              - column:
+                  name: random_tick_range
+                  type: int
+
+  - changeSet:
+      author: szhur
+      id: market_simulator_schema_table_listing_2
+      labels: schema,v4,SIM-181
+      comment: Drop obsolete listing.security_id column
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: listing
+            columnName: security_id
+      changes:
+        - dropColumn:
+            tableName: listing
+            columnName: security_id
+
+  - changeSet:
+      author: szhur
+      id: market_simulator_schema_table_listing_3
+      labels: schema,v4,SIM-181
+      comment: Drop obsolete listing.security_source column
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: listing
+            columnName: security_source
+      changes:
+        - dropColumn:
+            tableName: listing
+            columnName: security_source
+
+  - changeSet:
+      author: szhur
+      id: market_simulator_schema_table_listing_4
+      labels: schema,v4,SIM-181
+      comment: Drop obsolete listing.md_symbol column
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: listing
+            columnName: md_symbol
+      changes:
+        - dropColumn:
+            tableName: listing
+            columnName: md_symbol
+
+  - changeSet:
+      author: szhur
+      id: market_simulator_schema_table_listing_5
+      labels: schema,v4,SIM-181
+      comment: Add instrument identification attributes as per SIM-181
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: security_exchange
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: party_id
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: party_role
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: cusip_id
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: sedol_id
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: sedol_id
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: isin_id
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: ric_id
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: exchange_symbol_id
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: bloomberg_symbol_id
+
+      changes:
+        - addColumn:
+            tableName: listing
+            columns:
+              - column:
+                  name: security_exchange
+                  type: text
+              - column:
+                  name: party_id
+                  type: text
+              - column:
+                  name: party_role
+                  type: text
+              - column:
+                  name: cusip_id
+                  type: text
+              - column:
+                  name: sedol_id
+                  type: text
+              - column:
+                  name: isin_id
+                  type: text
+              - column:
+                  name: ric_id
+                  type: text
+              - column:
+                  name: exchange_symbol_id
+                  type: text
+              - column:
+                  name: bloomberg_symbol_id
+                  type: text
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_table_listing_6
+      labels: schema,v4,SIM-362
+      comment: Add random_qty_minimum column into listing table
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: random_qty_minimum
+      changes:
+        - addColumn:
+            tableName: listing
+            columns:
+              - column:
+                  name: random_qty_minimum
+                  type: float(4)
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_table_listing_7
+      labels: schema,v4,SIM-363
+      comment: Add random_orders_amount_minimum and random_orders_amount_maximum columns into listing table
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: random_orders_amount_minimum
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: random_orders_amount_maximum
+      changes:
+        - addColumn:
+            tableName: listing
+            columns:
+              - column:
+                  name: random_orders_amount_minimum
+                  type: float(4)
+              - column:
+                  name: random_orders_amount_maximum
+                  type: float(4)
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_table_listing_8
+      labels: schema,v4,SIM-504
+      comment: Add random_orders_enabled column into listing table
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: random_orders_enabled
+      changes:
+        - addColumn:
+            tableName: listing
+            columns:
+              - column:
+                  name: random_orders_enabled
+                  type: bool
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_table_listing_9
+      labels: schema,v4,SIM-576
+      comment: Rename random_orders_amount_minimum column to random_amt_minimum
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: listing
+            columnName: random_orders_amount_minimum
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: random_amt_minimum
+      changes:
+        - renameColumn:
+            tableName: listing
+            oldColumnName: random_orders_amount_minimum
+            newColumnName: random_amt_minimum
+            columnDataType: float(4)
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_table_listing_10
+      labels: schema,v4,SIM-576
+      comment: Rename random_orders_amount_maximum column to random_amt_maximum
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: listing
+            columnName: random_orders_amount_maximum
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: random_amt_maximum
+      changes:
+        - renameColumn:
+            tableName: listing
+            oldColumnName: random_orders_amount_maximum
+            newColumnName: random_amt_maximum
+            columnDataType: float(4)
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_table_listing_11
+      labels: schema,v9,SIM-366
+      comment: >
+        Add random_aggressive_qty_minimum, random_aggressive_qty_maximum,
+        random_aggressive_amt_minimum, and random_aggressive_amt_maximum columns into the listing table
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: random_aggressive_qty_minimum
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: random_aggressive_qty_maximum
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: random_aggressive_amt_minimum
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: random_aggressive_amt_maximum
+      changes:
+        - addColumn:
+            tableName: listing
+            columns:
+              - column:
+                  name: random_aggressive_qty_minimum
+                  type: float(4)
+              - column:
+                  name: random_aggressive_qty_maximum
+                  type: float(4)
+              - column:
+                  name: random_aggressive_amt_minimum
+                  type: float(4)
+              - column:
+                  name: random_aggressive_amt_maximum
+                  type: float(4)

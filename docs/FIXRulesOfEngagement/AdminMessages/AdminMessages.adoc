@@ -1,0 +1,129 @@
+ifndef::imagesDir[]
+:imagesDir: images
+endif::[]
+
+[[admin-messages]]
+== Administrative Messages
+
+[[admin-messages-heartbeat]]
+=== Heartbeat (35=0)
+During periods of inactivity, each party should send heartbeat messages to monitor the status of the communication. 
+
+[cols="25,25,25,25"]
+|===
+| Tag | Field Name | Req’d | Comments
+
+| Component | <<common-components-std-header>> | Y | MsgType = 0
+
+| 112 | TestReqID | C | Conditionally required when the heartbeat is the result of a TestRequest message, identifier included in TestRequest message 
+to be returned in resulting Heartbeat.
+
+Most FIX clients will utilize a timestamp as this identifier.
+
+| Component | <<common-components-std-trailer>> | Y | 
+
+|===
+
+[[admin-messages-logon]]
+=== Logon
+
+[cols="25,25,25,25"]
+|===
+| Tag | Field Name | Req’d | Comments
+
+| Component | <<common-components-std-header>> | Y | MsgType = 0
+
+| 98 | EncryptMethod | Y | (Always sent unencrypted)
+
+0 - None / Other
+
+| 108 | HeartBtInt | Y | Heartbeat interval (seconds). Note same value used by both sides.
+
+| 1137 | DefaultApplVerID | Y | The default version of FIX being carried over this FIXT session.
+
+9 - FIX50SP2
+
+| Component | <<common-components-std-trailer>> | Y | 
+|===
+
+[[admin-messages-logout]]
+=== Logout
+
+[cols="25,25,25,25"]
+|===
+| Tag | Field Name | Req’d | Comments
+
+| Component | <<common-components-std-header>> | Y | MsgType = 5
+
+| Component | <<common-components-std-trailer>> | Y | 
+|===
+
+[[admin-messages-test-request]]
+=== TestRequest
+
+[cols="25,25,25,25"]
+|===
+| Tag | Field Name | Req’d | Comments
+
+| Component | <<common-components-std-header>> | Y | MsgType = 1
+
+| 112 | TestReqID | Y | Identifier included in Test Request message to be returned in resulting Heartbeat.
+
+| Component | <<common-components-std-trailer>> | Y | 
+|===
+
+[[admin-messages-resend-request]]
+=== ResendRequest
+
+[cols="25,25,25,25"]
+|===
+| Tag | Field Name | Req’d | Comments
+
+| Component | <<common-components-std-header>> | Y | MsgType = 2
+
+| 7 | BeginSeqNo | Y | Message sequence number of the first message in range to be resent
+
+| 16 | EndSeqNo | Y | Message sequence number of the last message in range to be resent.
+
+| Component | <<common-components-std-trailer>> | Y | 
+|===
+
+[[admin-messages-reject]]
+=== Reject
+
+[cols="25,25,25,25"]
+|===
+| Tag | Field Name | Req’d | Comments
+
+| Component | <<common-components-std-header>> | Y | MsgType = 3
+
+| 45 | RefSeqNum | Y | MsgSeqNum - sequence number of rejected message.
+
+| 58 | Text | N | Free text message to explain the reason of the rejection.
+
+| 371 | RefTagID | N | A tag number of the FIX field being referenced (optional).
+It is included only if a specific tag is the reason for the rejection.
+
+| 372 | RefMsgType | N | The MsgType of the FIX message being referenced.
+
+| 373 | SessionRejectReason | N a| Code to identify reason for a session-level Reject message.
+
+* 11 - Invalid MsgType
+
+| Component | <<common-components-std-trailer>> | Y | 
+|===
+
+
+[[admin-messages-seq-reset]]
+=== SequenceReset
+
+[cols="25,25,25,25"]
+|===
+| Tag | Field Name | Req’d | Comments
+
+| Component | <<common-components-std-header>> | Y | MsgType = 4
+
+| 36 | NewSeqNo | Y | New sequence number.
+
+| Component | <<common-components-std-trailer>> | Y | 
+|===

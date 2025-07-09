@@ -1,0 +1,13 @@
+ifdef::backend-html5[]
+[frame=none,grid=none,cols="<,>"]
+|===
+
+a| ifndef::hide-overview[link:../Overview/Overview.html[[gray]#All Documents /#]] |
+
+ifndef::hide-pdf[]
+link:{docname}.pdf[[gray]#Download#]
+image:data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABoAAAAaCAYAAACpSkzOAAAABmJLR0QA/wD/AP+gvaeTAAABbklEQVRIib3WPUscURTG8d8aBMFAKm1cQQOxthTEXgjEVoRYaZsiTap0qUzwA1hpJ66SxqwfwMJKQVIpFlskiCFb7IZYiMtazCzI7Muduys+cBgYnnP+59y5c2doVxEl1NEMRAUrHWoEVUQ1ByAbn2JBpTTxEBMB70IG9iUG1FquYg7viPbJNvOCWgmx/sfx9blATXx+LlAT758SdNwDVHlKUFajeJunTsiwg1+YDgAHBt3iB9ZiQUOBhKxOJS9qPTIv3ElGq2hgPLZO7ES/UcDryLxwJxl9kzyjn3gVU6fQwdDpPgzjCu8wj2V8xCxeoozLHHU6d/JI6zjBB3zHfeptSDbJn5x1ehqmcI3/2MKSZEPMYRfn2BgENIZt3EmWJrTb+gad4QJ/JVPlVfT2vsELLAockrEa9FDtWic70b/0mudT3k2T6bXWy3SQdlLuEzaJo7TGfi/jjP5+t7JRxZtQV0XsSUaPBdTSSdogD7GVvK6jtRJgAAAAAElFTkSuQmCC[link="{docname}.pdf"]
+endif::[]
+
+|===
+endif::[]

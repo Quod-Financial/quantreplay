@@ -1,0 +1,21 @@
+add_target_tests(
+  TARGET
+    ${PROJECT_NAME}
+  HEADERS
+    mocks/executor_mock.hpp
+    mocks/instrument_resolver_mock.hpp
+    mocks/repository_accessor_mock.hpp
+    mocks/serializer_mock.hpp
+    mocks/trading_engine_mock.hpp
+    mocks/trading_reply_receiver_mock.hpp
+  UNIT_TESTS
+    unit_tests/config/phase_entry_reader_tests.cpp
+    unit_tests/config/venue_entry_reader_tests.cpp
+    unit_tests/execution/execution_system_tests.cpp
+    unit_tests/execution/reject_notifier_tests.cpp
+    unit_tests/repository/trading_engines_repository_tests.cpp
+    unit_tests/state_persistence/market_state_persistence_controller_tests.cpp
+    unit_tests/state_persistence/serializer_tests.cpp
+    unit_tests/tools/instrument_resolver_tests.cpp
+  DEPENDENCIES
+    simulator::cfg)

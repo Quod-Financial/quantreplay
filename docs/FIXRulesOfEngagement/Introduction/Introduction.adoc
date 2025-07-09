@@ -1,0 +1,128 @@
+ifndef::imagesDir[]
+:imagesDir: images
+endif::[]
+
+[[introduction]]
+== Introduction
+
+[[introduction-purpose]]
+=== Purpose
+
+This document provides the interface and general functions of the {orgname} Market Simulator as used through the Financial Information eXchange (FIX) protocol.
+
+
+[[introduction-general-format]]
+=== General Format
+
+FIX messages are constructed by stringing together field identifiers (called tags) and values. 
+Each pair is separated by a special character (ASCII code 0x01). 
+The messages are communicated in a string format.
+
+The FIX protocol is a series of message standards or definitions. 
+Each message within the FIX protocol is comprised of required, optional and conditionally required fields. 
+Conditionally required fields are those fields that are required if another field in the messages needs further information. 
+For example, options orders require fields to hold put/call codes and limit orders require fields to hold prices.
+
+Each field is composed of 4 parts:
+
+1. Tag Number
+2. “=”
+3. Field Value
+4. Field Delimiter
+
+Each field uses a “<tag>=<value><delimiter>” format. 
+The <tag> attribute represents the field identifier, which is the tag number. 
+The <value> attribute represents the field content or data. 
+The <delimiter> attribute is used to signal the end of the field. 
+For example, the first field in every FIX message is the BeginString field which would be constructed as 
+“8=FIX4.2” where “8” is the tag number representing the BeginString field and “FIX.4.2” is the BeginString field value.
+
+Every FIX message is composed of the message header, message body and message trailer. 
+All messages must have a header and a trailer. 
+Most messages have a body.
+
+A FIX session is identified by a unique FIX Parties pair in the FIX Message Header:
+
+SenderCompID (Tag 49) + TargerCompID (Tag 56)
+
+[[introduction-time-priority]]
+=== Time Priority
+
+New resting orders will be entered into the order queue by time priority (first in, first to match) within the range of orders at the same price as each other. 
+Amended orders will lose time priority if the price is amended to any new value, moving to the end of the queue for the range of orders at the new price. 
+Amended orders will also lose time priority if the quantity is amended to a larger value, moving to the end of the queue for the range of orders at the same existing price. 
+Orders that are not amended for price, but amended to a smaller quantity or for any other value of the order will not lose time priority, 
+maintaining its current position in the queue.
+
+
+[[introduction-auto-cancel]]
+=== Auto Cancel On Disconnect
+
+On termination of a session, either through connection disconnect or session log out:
+
+* All active market data subscriptions are automatically terminated, and require new subscriptions on subsequent successful login.
+* If CancelOrdersOnDisconnect is True on the venue, all active orders from a given session are automatically canceled, and on subsequent successful login 
+the new session will receive execution report messages for cancelled orders. 
+Otherwise all resting orders will remain active even on session disconnect.
+
+[[introduction-instrument-resolution]]
+=== Instrument Resolution
+
+The simulator allows clients to specify the listing in their requests using a security identifier or a symbol and a set of additional identification fields. 
+The system uses several algorithms to find the correct listing for a client request. 
+The simulator offers several algorithms for a listing resolution. 
+The concrete algorithm is chosen based on a specified set of instrument identification attributes. 
+The system rejects a request when an algorithm for listing resolution cannot be determined based on a given instrument attribute.
+
+All algorithms search for a listing with attributes equal to those specified in the instrument. 
+Each algorithm also checks for a proper listing party by matching the listing's PartyID and PartyRole values with all groups specified in the request in Parties list. 
+If any listing attribute differs from the one specified in a request, the listing no longer participates in the resolution process. 
+The system rejects requests with an appropriate reject message when resolving a single unique listing is impossible. 
+The reject message type depends on the request message type.
+
+The list of algorithms for the listing resolution supported by the Market Simulator:
+
+[cols="15,5,20,30,30"]
+|===
+| Search Algorithm | Priority | Condition | Required Instrument Attributes | Additional Instrument Attributes
+
+| Lookup by CUSIP | 1 | SecurityIDSource (22) = CUSIP a| * SecurityID (48) a| * Symbol (55)
+* SecurityType (167)
+* SecurityExchange (207)
+* Currency (15)
+* Party Group
+| Lookup by SEDOL | 1 | SecurityIDSource (22) = SEDOL a| * SecurityID (48) a| * Symbol (55)
+* SecurityType (167)
+* SecurityExchange (207)
+* Currency (15)
+* Party Group
+| Lookup by ISIN | 1 a| SecurityIDSource (22) = ISIN a| * SecurityID (48) 
+* SecurityType (167)
+* SecurityExchange (207)
+* Currency (15) a| * Symbol (55)
+* Party Group
+| Lookup by RIC | 1 | SecurityIDSource (22) = RIC a| * SecurityID (48) a| * Symbol (55)
+* SecurityType (167)
+* SecurityExchange (207)
+* Currency (15)
+* Party Group
+| Lookup by Exchange Symbol | 1 | SecurityIDSource (22) = ExchangeSymbol a| * SecurityID (48) a| * Symbol (55)
+* SecurityType (167)
+* SecurityExchange (207)
+* Currency (15)
+* Party Group
+| Lookup by Bloomberg Symbol | 1 | SecurityIDSource (22) = BloombergSymbol a| * SecurityID (48) a| * Symbol (55)
+* SecurityType (167)
+* SecurityExchange (207)
+* Currency (15)
+* Party Group
+| Lookup by Symbol | 2 a| SecurityIDSource (22) is missing in a message
+
+AND
+
+Symbol (55) is present in a message a| * Symbol (55) a| * SecurityType (167)
+* SecurityExchange (207)
+* Currency (15)
+* Party Group
+
+|===

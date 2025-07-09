@@ -1,0 +1,182 @@
+# .github/workflows/marketsim-ci.yml
+name: Market Simulator CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - main
+      - develop
+    tags:
+      - 'v[0-9]+.[0-9]+'
+      - 'v[0-9]+'
+  workflow_dispatch:
+
+jobs:
+  release-with-deb-info-build:
+    runs-on: ubuntu-latest
+    if: ${{ (startsWith(github.ref, 'refs/tags/v') && github.ref_type == 'tag') || github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
+    container:
+      image: ghcr.io/quod-financial/build_marketsim:v0.1
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Mark repository as safe
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+
+      - name: Derive SIM_VERSION (major branch name or tag major)
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            MAJOR_VERSION=$(echo "${GITHUB_REF_NAME}" | sed -E 's/^v?([0-9]+).*/\1/')
+            echo "Detected tag version: $MAJOR_VERSION"
+          elif [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
+            git fetch --tags
+            LATEST_TAG=$(git describe --tags "$(git rev-list --tags --max-count=1)" || echo "v0.0")
+            MAJOR_VERSION=$(echo "$LATEST_TAG" | sed -E 's/^v?([0-9]+).*/\1/')
+            echo "Latest tag on main: $LATEST_TAG major: $MAJOR_VERSION"
+          else
+            MAJOR_VERSION="${GITHUB_REF_NAME//\//-}"
+            echo "Using branch name as version: $MAJOR_VERSION"
+          fi
+
+          echo "Derived SIM_VERSION: $MAJOR_VERSION"
+          echo "SIM_VERSION=$MAJOR_VERSION" >> "$GITHUB_ENV"
+
+      - name: Configure CMake
+        run: cmake --preset ci-gitlab-release-with-debug-info-config -DSIM_VERSION=$SIM_VERSION
+
+      - name: Build Project
+        run: cmake --build --preset ci-gitlab-release-with-debug-info --target all 2>&1 | tee compilation_log.txt
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-${{ github.run_id }}
+          path: |
+            release-with-debug-info-build/
+            compilation_log.txt
+          retention-days: 2
+
+  release-with-deb-info-test:
+    runs-on: ubuntu-latest
+    needs: release-with-deb-info-build
+    if: ${{ (startsWith(github.ref, 'refs/tags/v') && github.ref_type == 'tag') || github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
+    container:
+      image: ghcr.io/quod-financial/build_marketsim:v0.1
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-${{ github.run_id }}
+          path: .
+
+      - name: Make test binaries executable
+        run: chmod +x release-with-debug-info-build/bin/* || true
+
+      - name: Run CTest
+        run: ctest --preset ci-gitlab-release-with-debug-info-test --output-junit test_report.xml
+
+      - name: Upload Test Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-${{ github.run_id }}
+          path: test_report.xml
+          retention-days: 2
+
+  create-marketsim-package:
+    runs-on: ubuntu-latest
+    needs: release-with-deb-info-test
+    if: ${{ (startsWith(github.ref, 'refs/tags/v') && github.ref_type == 'tag') || github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-${{ github.run_id }}
+          path: .
+
+      - name: Create Marketsimulator Package
+        run: |
+          echo "Creating marketsimulator package"
+          mkdir -p package/quod/bin
+          mkdir -p package/quod/script
+          cp -r release-with-debug-info-build/bin/marketsimulator package/quod/bin/
+          cp -r cfg package/quod/
+          cp -r db package/quod/
+          ls -la package/quod
+
+      - name: Upload Package Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: marketsim-package-${{ github.run_id }}
+          path: package/quod
+          retention-days: 30
+
+  create-marketsim-docker-for-deploy:
+    runs-on: ubuntu-latest
+    needs: create-marketsim-package
+    if: ${{ (startsWith(github.ref, 'refs/tags/v') && github.ref_type == 'tag') || github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
+    
+    permissions:
+      packages: write
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Package Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: marketsim-package-${{ github.run_id }}
+          path: package/quod
+
+      - name: Set lowercase owner
+        run: echo "REPO_OWNER_LOWER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
+
+      - name: Determine Docker image tags
+        run: |
+          BASE_IMAGE_NAME="ghcr.io/${REPO_OWNER_LOWER}/deploy_marketsim"
+
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            SAFE_TAG="${GITHUB_REF_NAME}"
+            TAGS="$BASE_IMAGE_NAME:$SAFE_TAG"
+          elif [[ "${GITHUB_REF_NAME}" == "main" ]]; then
+            TAGS="$BASE_IMAGE_NAME:main,$BASE_IMAGE_NAME:latest"
+          elif [[ "${GITHUB_REF_NAME}" == "develop" ]]; then
+            TAGS="$BASE_IMAGE_NAME:develop"
+          else
+            SAFE_TAG="${GITHUB_REF_NAME//\//-}"
+            TAGS="$BASE_IMAGE_NAME:$SAFE_TAG"
+          fi
+
+          echo "DEPLOY_IMAGE_FULL_TAG=$TAGS" >> "$GITHUB_ENV"
+          echo "Final image tag(s): $TAGS"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push Deploy Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: .github/docker/Deploy_Marketsim.Dockerfile
+          push: true
+          tags: ${{ env.DEPLOY_IMAGE_FULL_TAG }}

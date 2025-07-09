@@ -1,0 +1,447 @@
+# XETRA MSF listing, id=2
+databaseChangeLog:
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_MSF_1
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Define MSF XETRA listing
+      preConditions:
+        - onFail: WARN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: listing_id
+        - columnExists:
+            tableName: listing
+            columnName: venue_id
+      changes:
+        - insert:
+            tableName: listing
+            columns:
+              - column:
+                  name: listing_id
+                  valueNumeric: 2
+              - column:
+                  name: venue_id
+                  value: XETRA
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_MSF_2
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set symbol for MSF XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: symbol
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: symbol
+                  value: MSF
+            where: listing_id=2
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_MSF_3
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set security_type for MSF XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: security_type
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: security_type
+                  value: CS
+            where: listing_id=2
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_MSF_4
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set price_currency for MSF XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: price_currency
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: price_currency
+                  value: EUR
+            where: listing_id=2
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_MSF_5
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set instr_symbol for MSF XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: instr_symbol
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: instr_symbol
+                  value: MSF
+            where: listing_id=2
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_MSF_6
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set qty_minimum for MSF XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: qty_minimum
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: qty_minimum
+                  valueNumeric: 1
+            where: listing_id=2
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_MSF_7
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set qty_maximum for MSF XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: qty_maximum
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: qty_maximum
+                  valueNumeric: 1000
+            where: listing_id=2
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_MSF_8
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set qty_multiple for MSF XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: qty_multiple
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: qty_multiple
+                  valueNumeric: 
+            where: listing_id=2
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_MSF_9
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set price_tick_size for MSF XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: price_tick_size
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: price_tick_size
+                  valueNumeric: 
+            where: listing_id=2
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_MSF_10
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set enabled for MSF XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: enabled
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: enabled
+                  valueBoolean: true
+            where: listing_id=2
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_MSF_11
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set random_qty_maximum for MSF XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_qty_maximum
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: random_qty_maximum
+                  valueNumeric: 900
+            where: listing_id=2
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_MSF_12
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set random_depth_levels for MSF XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_depth_levels
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: random_depth_levels
+                  valueNumeric: 2
+            where: listing_id=2
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_MSF_13
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set random_orders_spread for MSF XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_orders_spread
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: random_orders_spread
+                  valueNumeric: 
+            where: listing_id=2
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_MSF_14
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set random_orders_rate for MSF XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_orders_rate
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: random_orders_rate
+                  valueNumeric: 1
+            where: listing_id=2
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_MSF_15
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set random_tick_range for MSF XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_tick_range
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: random_tick_range
+                  valueNumeric: 
+            where: listing_id=2
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_MSF_16
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set security_exchange for MSF XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: security_exchange
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: security_exchange
+                  value: XETR
+            where: listing_id=2
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_MSF_17
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set isin_id for MSF XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: isin_id
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: isin_id
+                  value: 
+            where: listing_id=2
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_MSF_18
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set random_qty_minimum for MSF XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_qty_minimum
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: random_qty_minimum
+                  valueNumeric: 2
+            where: listing_id=2
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_MSF_19
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set random_orders_enabled for MSF XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_amt_minimum
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: random_amt_minimum
+                  valueNumeric: 
+            where: listing_id=2
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_MSF_20
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set random_orders_enabled for MSF XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_amt_maximum
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: random_amt_maximum
+                  valueNumeric: 
+            where: listing_id=2
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_xetra_listing_MSF_21
+      author: dnovak
+      labels: sample-data,xetra,demo,v4
+      comment: Set random_orders_enabled for MSF XETRA
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_orders_enabled
+      changes:
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: random_orders_enabled
+                  valueBoolean: true
+            where: listing_id=2

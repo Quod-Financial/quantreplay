@@ -1,0 +1,8 @@
+databaseChangeLog:
+  - context: market-simulator
+  - include:
+      file: schema/changelog.yml
+      relativeToChangelogFile: true
+  - include:
+      file: sample-data/changelog.yml
+      relativeToChangelogFile: true

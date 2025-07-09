@@ -1,0 +1,36 @@
+databaseChangeLog:
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_constraint_venue_1
+      labels: schema,v4
+      comment: Set `true` default value for venue.order_on_startup column
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: order_on_startup
+      changes:
+        - addDefaultValue:
+            tableName: venue
+            columnName: order_on_startup
+            defaultValueBoolean: true
+
+  - changeSet:
+      author: avovchen
+      id: market_simulator_schema_constraint_venue_2
+      labels: schema,v4,SIM-631
+      comment: Set `false` default value for venue.persistence_enabled column
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: persistence_enabled
+      changes:
+        - addDefaultValue:
+            tableName: venue
+            columnName: persistence_enabled
+            defaultValueBoolean: false

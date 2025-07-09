@@ -1,0 +1,1575 @@
+ifndef::imagesDir[]
+:imagesDir: images
+endif::[]
+
+[[adminsets]]
+== Administrative Settings
+
+[[adminsets-general]]
+=== General Settings
+
+Manage general settings across all market simulator instances.
+
+[1,1,1]
+|===
+| Path | Type |Description
+
+| key | Text | Unique primary key
+| value	| Text | Value of setting
+|=== 
+
+A list of settings, currently defined in the Market Simulator backend:
+
+[1,1,1]
+|===
+| Setting | Key | Meaning
+
+| System Display Name| DisplayName	| The name of the site for display purposes
+| Price Seed Values Database Connection	| SeedPriceDatabaseConnection	| Connection string to a PostgreSQL database to synchronize price seeds 
+| Price Seed Values Last Update	| SeedPricesLastUpdated	| Last time when price seeds were synchronised
+
+|=== 
+
+Market Simulator REST backend allows a user to retrieve general settings and update them. 
+There is no possibility to create a new setting or drop an existing one via the REST API.
+
+[[adminsets-general-get]]
+==== Get Settings
+
+Request all market simulator general settings.
+
+_Resource URI_
+----
+GET /api/settings
+----
+_Example_: Request all settings
+
+[,http]
+----
+GET /api/settings HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+----
+
+_Example_: Possible response
+
+[,http]
+----
+HTTP/1.1 200 OK
+Connection: Close
+Content-Length: XXX
+
+{
+    "settings" : [
+        {
+            "key":"DisplayName",
+            "value":"SITE NAME"
+        },
+        {
+            "key" : "SeedPriceDatabaseConnection",
+            "value" : "postgresql://user:password@1.2.3.4:1234/simdb"
+        },
+        {
+            "key" : "SeedPricesLastUpdated",
+            "value" : "2023-09-07 12:34:55"
+        }
+    ]
+}
+----
+
+[[adminsets-general-update]]
+==== Update Settings
+Update Market Simulator general setting values.
+
+_Resource URI_
+
+----
+PUT /api/settings
+----
+
+_Example_: Update settings
+
+[,http]
+----
+PUT /api/settings/DisplayName HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+
+{
+    "settings" : [
+      {
+        "key":"DisplayName",
+        "value":"MKTSIMULATOR-DEV"
+      },
+      {
+        "key" : "SeedPriceDatabaseConnection",
+        "value" : "postgresql://user:pass@1.2.3.4:1234/simdb"
+      }
+    ]
+}
+----
+
+_Example_: Positive reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "General settings updated successfully"
+}
+----
+
+_Example_: Negative reply
+
+[,http]
+----
+HTTP/1.1 400 Bad Request
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "Unknown BadKey setting update requested"
+}
+----
+
+NOTE: *SeedPricesLastUpdated* is considered as read-only to a user. 
+It can be updated by the MarketSimulator BE itself only, and will be ignored if included in the settings update request.
+
+
+[[adminsets-venues]]
+=== Venues
+Manage settings for each market simulator venue entity.
+
+_Resource Properties_
+
+
+[1,1,1]
+|===
+| Path | Type | Description
+
+| id	| Text	| Unique primary key
+| name	| Text	| Display name
+| engineType	| Enum	a| Indicates which type of engine we want to use for this venue (Currently only matching engine is available)
+
+* *Matching* - Matching engine
+* *Quoting* - Quote engine
+| supportTifIoc	| Boolean	| Whether IOC limit orders are supported
+| supportTifFok	| Boolean	| Whether FOK limit orders are supported
+| supportTifDay	| Boolean	| Whether Day limit orders are supported
+| includeOwnOrders	| Boolean	| Whether to include a party's own orders in published depth
+| restPort	| Integer	| The port that will be used to send REST API calls
+| orderOnStartup	| Boolean	| Whether to start generating orders when MktSimulator launched
+| randomPartyCount	| Integer	| The amount of different counter party id's used by generator
+| timeAndSalesEnabled	| Boolean	| Whether time and sales trades should be included at all in market data updates
+| timeAndSalesQuantityEnabled	| Boolean	| Whether time and sales trades should include quantity of the trade
+| timeAndSalesSideEnabled	| Boolean	| Whether time and sales trades should include side of the trade
+| timeAndSalesPartiesEnabled	| Boolean	| Whether time and sales trades should include counter parties of the trade
+| timeZone	| Text	| Local time zone for a venue (f.e. Europe/Kyiv or America/Los_Angeles)
+
+For reference: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+| cancelOnDisconnect	| Boolean	a| If a client's FIX connection disconnects:
+
+* False (default) - any of the live resting orders placed through that COMPID should be left in the Order Book.
+* True - any of the live resting orders that were placed through that COMPID should be cancelled, the rejection messages the next time that COMPID reconnects should be sent.
+| persistenceEnabled	| Boolean	| Whether a matching engine persisted state functionality should be enabled
+| persistenceFilePath	| Text	| A file path to the persistence file where matching engine state should be stored/recovered
+|=== 
+
+[[adminsets-venues-mktphasessublist]]
+==== Market Phases Sub-List
+
+[1,1,1]
+|===
+| Path | Type |Description
+
+| phase	| Text	a| Enum value from a pre-defined list of supported values:
+
+*	Open
+*	Closed
+*	PreOpen
+*	PreClose
+*	Auction
+*	TradeAtLast
+
+| startTime	| Text	| The time a phase should begin set in corresponding venue timezone, specified to the granularity of minutes
+| endTime	| Text	| The time a phase should end set in corresponding venue timezone, specified to the granularity of minutes
+| endTimeRange	| Integer	| Time range to choose a random actual end time from the specified endTime for the phase (this setting is only used during an Auction phase). 
+The value indicates the range after and before that a random end time will be chosen. 
+For example, a value of 5 indicates that a random end time will be chosen between 5 minutes before and 5 minutes after the specified endTime.
+| allowCancels	| Boolean	| Whether or not to allow cancel of orders (this setting is only used during a Halt phase).
+|=== 
+
+[[adminsets-venues-get-single]]
+==== Get Single Venue
+Request a single market simulator venue entity.
+
+_Resource URI_
+
+----
+GET /api/venues/{venueId}
+----
+
+_Example_: Request single venue
+
+[,http]
+----
+GET /api/venues/LSE HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+----
+
+_Example_: Positive reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "id" : "LSE",
+    "name" : "London Stock Exchange",
+    "engineType" : "Matching",
+    "supportTifIoc" : true,
+    "supportTifFok" : true,
+    "supportTifDay" : true,
+    "includeOwnOrders" : true,
+    "restPort":9184,
+    "orderOnStartup" : false,
+    "randomPartyCount" : 10,
+    "timeAndSalesEnabled" : true,
+    "timeAndSalesQuantityEnabled" : true,
+    "timeAndSalesSideEnabled" : true,
+    "timeAndSalesPartiesEnabled" : true,
+    "timezone" : "America/Los_Angeles",
+    "cancelOnDisconnect" : false,
+    "persistenceEnabled" : true,
+    "persistenceFilePath" : "/path/to/LSE-state.json"
+    "phases" : [
+        {
+             "phase" : "Open",
+             "startTime" : "07:39:00",
+             "endTime" : "07:39:00",
+             "endTimeRange" : 0
+        },
+        {
+             "phase" : "Closed",
+             "startTime" : "09:27:00",
+             "endTime" : "09:28:00",
+             "endTimeRange" : 0
+        }
+    ]
+}
+----
+
+_Example_: Negative reply
+
+[,http]
+----
+HTTP/1.1 404 Not Found
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "No such venue"
+}
+----
+
+[[adminsets-venues-get-multi]]
+==== Get Multiple Venues
+Request all market simulator venue entities.
+
+_Resource URI_
+
+----
+GET /api/venues
+----
+
+_Example_: Request all venues
+
+[,http]
+----
+GET /api/venues HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+----
+
+_Example_: Possible response
+
+[,http]
+----
+HTTP/1.1 200 OK
+Connection: Close
+Content-Length: XXX
+
+{
+    "venues": [
+        {
+            "id": "FASTMATCH",
+            "name": "FASTMATCH",
+            "engineType": "Quoting",
+            "supportTifIoc": true,
+            "supportTifFok": true,
+            "supportTifDay": true,
+            "includeOwnOrders": true,
+            "restPort": 9182,
+            "orderOnStartup": false,
+            "randomPartyCount": 10,
+            "timeAndSalesEnabled": true,
+            "timeAndSalesQuantityEnabled": true,
+            "timeAndSalesSideEnabled": true,
+            "timeAndSalesPartiesEnabled": true,
+            "timezone" : "America/Los_Angeles",
+            "cancelOnDisconnect": false,
+            "persistenceEnabled" : false,
+            "phases": []
+        },
+        {
+            "id" : "LSE",
+            "name" : "London Stock Exchange",
+            "engineType" : 1,
+            "supportTifIoc" : true,
+            "supportTifFok" : true,
+            "supportTifDay" : true,
+            "includeOwnOrders" : true,
+            "restPort":9184,
+            "orderOnStartup" : false,
+            "randomPartyCount" : 10,
+            "timeAndSalesEnabled" : true,
+            "timeAndSalesQuantityEnabled" : true,
+            "timeAndSalesSideEnabled" : true,
+            "timeAndSalesPartiesEnabled" : true,
+            "timezone" : "America/Los_Angeles",
+            "cancelOnDisconnect" : false,
+            "persistenceEnabled" : true,
+            "persistenceFilePath" : "/path/to/LSE-state.json"
+            "phases" : [
+                {
+                   "phase" : "Open",
+                   "startTime" : "07:39:00",
+                   "endTime" : "07:39:00",
+                   "endTimeRange" : 0
+                },
+                {
+                   "phase" : "Closed",
+                   "startTime" : "09:27:00",
+                   "endTime" : "09:28:00",
+                   "endTimeRange" : 0
+                }
+            ]
+        }
+    ]
+}
+----
+
+
+[[adminsets-venues-add]]
+==== Add Venue
+Add new market simulator venue entity.
+
+_Resource URI_
+
+----
+POST /api/venues
+----
+
+_Example_: Add venue
+
+[,http]
+----
+POST /api/venues HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+Content-Length: XXX
+
+{
+    "id" : "NewExchange",
+    "name" : "NewExchange Description",
+    "engineType" : "Matching",
+    "supportTimeInSales" : false,
+    "supportTifIoc" : false,
+    "supportTifFok" : false,
+    "supportTifDay" : false,
+    "includeOwnOrders" : false,
+    "restPort" : 9087,
+    "orderOnStartup" : true,
+    "randomPartyCount" : 1
+}
+----
+
+_Example_: Positive reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Connection: Keep-Alive
+Content-Length: XXX
+
+{
+    "result" : "Requested insert of the venue - NewExchange"
+}
+----
+
+_Example_: Negative reply
+
+[,http]
+----
+HTTP/1.1 400 Bad Request
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "There is already such venue"
+}
+----
+
+[[adminsets-venues-update]]
+==== Update Venue
+Update existing market simulator venue entities.
+
+_Resource URI_
+
+----
+PUT /api/venues/{venueId}
+----
+
+_Example_: Update Venue
+
+[,http]
+----
+POST /api/venues/NewExchange HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+Content-Length: XXX
+
+{
+    "randomOrdersRate" : 12,
+    "orderOnStartup" : true
+}
+----
+
+_Example_: Positive reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "Requested update of the venue - NewExchange"
+}
+----
+
+_Example_: Negative reply
+
+[,http]
+----
+HTTP/1.1 404 Not Found
+Connection: Close
+Content-Length: XXX
+
+{
+    "result":"No such venue"
+}
+----
+
+
+[[adminsets-venues-delete]]
+==== Delete Single Venue
+It is not allowed to delete venues using the REST API.
+
+[[adminsets-listings]]
+=== Listings
+Manage settings for specific listings on each market simulator instance.
+
+_Resource Properties_
+
+[cols="15,15,70"]
+|===
+| Path | Type |Description
+
+| id	| Numeric	| Unique primary key
+| symbol	| Text	| The symbol for this listing, unique to the venue
+| venueId	| Text	| Unique venue key for this listing
+| securityType	| Text	a| Security type for this listing, possible values are:
+
+*	CS - Common Stock
+*	FUT - Future
+*	OPT - Option
+*	MLEG - Multi-Leg Instrument
+*	SML - Synthetic Multi-Leg Instrument
+*	WAR - Warrant
+*	MF - Mutual Fund
+*	CORP - Corporate Bond
+*	CB - Convertible Bond
+*	REPO - Repurchase Agreement
+*	INDEX - Index
+*	CFD - Contract for Difference
+*	CD - Certificate
+*	FXSPOT - Forex Spot
+*	FORWARD - Forward
+*	FXFWD - Forex Forward
+*	FXNDF - Forex Non-Deliverable Forward
+*	FXSWAP - Forex Swap
+*	FXNDS - Forex Non-Deliverable Swap
+
+| priceCurrency	| Text	| Currency of price (for FX, second currency in the pair)
+| fxBaseCurrency	| Text	| For FX only, first currency in the pair, representing current of quantity
+| instrSymbol	| Text	| A common symbol used for this listing across different venues
+| securityExchange	| Text	| Exchange name to indicate where a listing is traded
+| partyId	| Text	| Additional value to indicate where a listing is traded
+| partyRole	| Text	| Additional value to indicate where a listing is traded
+| cusipId	| Text	| CUSIP instrument/listing identifier
+| sedolId	| Text	| SEDOL instrument/listing identifier
+| isinId	| Text	| ISIN instrument/listing identifier
+| ricId	| Text	| RIC instrument/listing identifier
+| exchangeSymbolId	| Text	| Custom Exchange listing identifier
+| bloombergSymbolId	| Text	| Bloomberg instrument/listing identifier
+| qtyMinimum	| Decimal	| The minimum allowed order quantity (0 by default, though all orders require >0 quantity)
+| qtyMaximum	| Decimal	| The maximum allowed order quantity (no limit by default)
+| qtyMultiple	| Decimal	| Required even multiple of order quantity (any multiple by default)
+| priceTickSize	| Decimal	| Required even multiple of order price (any multiple by default)
+| randomQtyMinimum	| Decimal	| The minimum quantity that can be created by the Random Order Generator (uses qtyMinimum by default or if qtyMinimum has a higher value)
+
+Used only for passive orders if randomAggQtyMinimum and/or randomAggAmtMinimum have a value.
+| randomQtyMaximum	| Decimal	| The maximum quantity that can be created by the Random Order Generator (uses qtyMaximum by default or if qtyMaximum has a lower value)
+
+Used only for passive orders if randomAggQtyMaximum and/or randomAggAmtMaximum have a value.
+| randomAmtMinimum	| Decimal	| The amount used to derive the minimum quantity that can be created by the Random Order Generator (uses randomQtyMinimum by default or if randomQtyMinimum has a higher value than the quantity derived from this value)
+
+Used only for passive orders if randomAggQtyMinimum and/or randomAggAmtMinimum have a value.
+| randomAmtMaximum	| Decimal	| The amount used to derive the maximum quantity that can be created by the Random Order Generator (uses randomQtyMaximum by default or if randomQtyMaximum has a lower value than the quantity derived from this value)
+
+Used only for passive orders if randomAggQtyMaximum and/or randomAggAmtMaximum have a value.
+| randomAggQtyMinimum	| Decimal	| The minimum quantity that can be created by the Random Order Generator for aggressive orders (uses randomQtyMinimum by default)
+| randomAggQtyMaximum	| Decimal	| The maximum quantity that can be created by the Random Order Generator for aggressive orders (uses randomQtyMaximum by default)
+| randomAggAmtMinimum	| Decimal	| The amount used to derive the minimum quantity that can be created by the Random Order Generator for aggressive orders (uses randomAggQtyMinimum by default or if randomAggQtyMinimum has a higher value than the quantity derived from this value)
+| randomAggAmtMaximum	| Decimal	| The amount used to derive the maximum quantity that can be created by the Random Order Generator for aggressive orders (uses randomAggQtyMaximum by default or if randomAggQtyMaximum has a lower value than the quantity derived from this value)
+| randomDepthLevels	| Integer	| Maximum count of depth levels that can be created by Random Order Generator (no limit by default)
+| randomOrdersSpread	| Decimal	| The smallest top of book bid/ask price difference for prices created by the Random Order Generator (uses priceTickSize by default)
+| randomOrdersRate	| Integer	| The number of order actions (new order/modification/cancel/wait) per second during Random Order Generation
+| randomTickRange	| Integer	| Range of price ticks used to calculate prices created by the Random Order Generator (10 by default)
+| randomOrdersEnabled	| Boolean	| Indicates if the Random Order Generator has to generate random orders on a listing
+| enabled	| Boolean	| Indicates if the listing is enabled and should be used by the Market Simulator
+
+|=== 
+
+
+[[adminsets-listings-get-sgl]]
+==== Get Single Listing
+Request a single market simulator listing entity via `id`.
+
+
+_Resource URI_
+
+----
+GET /api/listings/{id} 
+----
+
+Request a single market simulator listing entity via `symbol`.
+
+_Resource URI_
+
+----
+GET /api/listings/{symbol}  
+----
+
+_Example_: Request by symbol
+
+[,http]
+----
+GET /api/listings/DE0007664005 HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+----
+
+_Example_: Positive reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Connection: Close
+Content-Length: XXX
+
+{
+    "id" : 1,
+    "symbol" : "DE0007664005",
+    "venueId" : "XETRA",
+    "securityType" : "CS",
+    "priceCurrency" : "EUR",
+    "fxBaseCurrency" : "",
+    "instrSymbol" : "DE0007664005",
+    "securityExchange" : "XETR",
+    "partyId" : "",
+    "partyRole" : "",
+    "cusipId" : "",
+    "sedolId" : "",
+    "isinId" : "DE0007664005",
+    "ricId" : "",
+    "exchangeSymbolId" : "",
+    "bloombergSymbolId" : "",
+    "qtyMinimum" : 1.0,
+    "qtyMaximum" : 100000.0,
+    "qtyMultiple" : 1.0,
+    "priceTickSize" : 0.001,
+    "enabled" : true,
+    "randomQtyMinimum" : 1.0,
+    "randomQtyMaximum" : 700.0,
+    "randomAmtMinimum" : 0.0,
+    "randomAmtMaximum" : 0.0,
+    "randomDepthLevels" : 7,
+    "randomOrdersSpread" : 0.01,
+    "randomOrdersRate" : 7,
+    "randomTickRange" : 100,
+    "randomOrdersEnabled" : true,
+    "randomAggQtyMinimum" : 2.0,
+    "randomAggQtyMaximum" : 200.0,
+    "randomAggAmtMinimum" : 1000.0,
+    "randomAggAmtMaximum" : 3000.0
+}
+----
+
+_Example_: Negative reply
+
+[,http]
+----
+HTTP/1.1 404 Not Found
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "No such listing"
+}
+----
+
+WARNING: Market Simulator selects a listing by both symbol and VenueID implicitly when a GET request is received with a symbol. 
+The VenueID value is taken from the simulator instance configuration. 
+
+[[adminsets-listings-get-multi]]
+==== Get Multiple Listings
+Request all market simulator listings entities.
+
+_Resource URI_
+
+----
+GET /api/listings/
+----
+
+_Example_: Request multiple listings
+
+[,http]
+----
+GET /api/listings HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+----
+
+_Example_: Possible reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "listings": [
+        {
+            "id": 1,
+            "symbol": "DE0007664005",
+            "venueId": "XETRA",
+            "securityType": "CS",
+            "priceCurrency": "EUR",
+            "fxBaseCurrency": "",
+            "instrSymbol": "DE0007664005",
+            "securityExchange": "XETR",
+            "partyId": "",
+            "partyRole": "",
+            "cusipId": "",
+            "sedolId": "",
+            "isinId": "DE0007664005",
+            "ricId": "",
+            "exchangeSymbolId": "",
+            "bloombergSymbolId": "",
+            "qtyMinimum": 1,
+            "qtyMaximum": 1000000,
+            "qtyMultiple": 1,
+            "priceTickSize": 0.001,
+            "randomQtyMinimum": 1,
+            "randomQtyMaximum": 1000,
+            "randomAmtMinimum": 0,
+            "randomAmtMaximum": 0,
+            "randomDepthLevels": 10,
+            "randomOrdersSpread": 1,
+            "randomOrdersRate": 1,
+            "randomTickRange": 10,
+            "randomAggQtyMinimum" : 2.0,
+            "randomAggQtyMaximum" : 200.0,
+            "randomAggAmtMinimum" : 1000.0,
+            "randomAggAmtMaximum" : 3000.0
+        },
+        {
+            "id": 3,
+            "symbol": "EUR/USD",
+            "venueId": "FASTMATCH",
+            "securityType": "FXSPOT",
+            "priceCurrency": "USD",
+            "fxBaseCurrency": "EUR",
+            "instrSymbol": "EUR/USD",
+            "securityExchange": "FASTMATCH",
+            "partyId": "",
+            "partyRole": "",
+            "cusipId": "",
+            "sedolId": "",
+            "isinId": "",
+            "ricId": "",
+            "exchangeSymbolId": "",
+            "bloombergSymbolId": "",
+            "qtyMinimum": 1,
+            "qtyMaximum": 1.0E8,
+            "qtyMultiple": 1,
+            "priceTickSize": 0.001,
+            "randomQtyMinimum": 1,
+            "randomQtyMaximum": 1.0E7,
+            "randomAmtMinimum": 0,
+            "randomAmtMaximum": 0,
+            "randomDepthLevels": 3,
+            "randomOrdersSpread": 1.0E-4,
+            "randomOrdersRate": 1,
+            "randomTickRange": 10,
+            "randomAggQtyMinimum" : 2.0,
+            "randomAggQtyMaximum" : 200.0,
+            "randomAggAmtMinimum" : 1000.0,
+            "randomAggAmtMaximum" : 3000.0
+        }
+    ]
+}
+----
+
+[[adminsets-listings-add]]
+==== Add Listing
+Add a new market simulator listing entity.
+
+_Resource URI_
+
+----
+POST /api/listings/
+----
+
+_Example_: Request to add a new listing
+
+[,http]
+----
+POST /api/listings HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+
+{
+    "symbol" : "AAPL",
+    "venueId" : "XETRA",
+    "instrSymbol" : "AAPL",
+    "securityType" : "CS",
+    "qtyMinimum" : 1,
+    "qtyMaximum" : 100000,
+    "randomQtyMultiple" : 1,
+    "randomQtyMinimum" : 200,
+    "randomQtyMaximum" : 1100,
+    "randomAmtMinimum" : 100,
+    "randomAmtMaximum" : 2000,
+    "randomOrdersEnabled" : false,
+    "enabled" : false
+}
+----
+
+_Example_: Positive reply
+
+[,http]
+----
+HTTP/1.1 201 Created
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "Requested insert of the listing - AAPL"
+}
+----
+
+_Example_: Negative reply
+
+[,http]
+----
+HTTP/1.1 400 Bad Request
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "There is already such listing"
+}
+----
+
+[[adminsets-listings-update]]
+==== Update Listing
+Update existing market simulator listing entity via ID.
+
+_Resource URI_
+
+----
+PUT /api/listings/{listingId}
+----
+
+_Example_: Request to update a listing
+
+[,http]
+----
+PUT /api/listings/AAPL HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+
+{
+    "enabled" : true,
+    "randomOrdersEnabled" : true
+}
+----
+
+_Example_: Positive reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "Requested update of the listing - AAPL"
+}
+----
+
+_Example_: Negative reply
+
+[,http]
+----
+HTTP/1.1 404 Not Found
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "No such listing"
+}
+----
+
+Update existing market simulator listing entities via Symbol.
+
+_Resource URI_
+----
+PUT /api/listings/{symbol}
+----
+
+_Example_: Request to update a new listing
+[,http]
+----
+PUT /api/listings/AAPL HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+
+{
+    "priceTickSize" : 0.001,
+    "qtyMultiple" : 2
+}
+----
+
+_Example_: Positive reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "Requested update of the listing - AAPL"
+}
+----
+
+_Example_: Negative reply
+
+[,http]
+----
+HTTP/1.1 404 Not Found
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "No such listing"
+}
+----
+
+WARNING: Market Simulator updates a listing by both symbol and VenueID implicitly when a PUT request is received with a symbol. 
+The VenueID value is taken from the simulator instance configuration. 
+
+
+[[adminsets-data]]
+=== Data Sources
+Manage settings for specific data sources on each market simulator instance.
+
+See <<general-datasource,this section>> for more information about playback of data from data sources.
+
+_Resource Properties_
+
+[1,1,1]
+|===
+| Path | Type |Description
+
+| id	| Numeric	| Unique primary key
+| enabled	| Boolean	| Whether or not this data source is enabled or disabled
+| name	| Text	| Name for this data source, unique to the venue
+| venueId	| Text	| Unique venue key for a data source
+| connection	| Text	| Connection string for the datasource (eg a file path for CSV files, or a database connection string for database connections).
+| format	| Text	a| Indicates the type of historic data storage. Supported values:
+
+*	CSV - comma-separated value file
+*	PSQL - PostgreSQL (or TimescaleDB) database
+
+| type	| Text	a| Indicates the data source format. Supported values:
+
+*	OrderBook - L1/L2 market data format
+
+| repeat	| Boolean	| Whether to start reading from the beginning of the data source when the end is reached (supported only for files and databases)
+| textDelimeter	| Char	| Delimiter used to separate values ("," by default if not specified) (supported only for CSV format)
+| textHeaderRow	| Integer	| 1-based row index of where header row is located (0 indicates no header row) (supported only for CSV format)
+| textDataRow	| Integer	| 1-based row index of where the first row of data is located. 
+Cannot be 0, and must be greater than `textHeaderRow`, if present (supported only for CSV format)
+| tableName	| Text	| Name of table (supported only for databases)
+| maxDepthLevels	| Integer	| Maximum depth levels to read from the data source. 0 or unspecified indicates to read all levels.
+
+|=== 
+
+[[adminsets-data-colmapping]]
+==== Column Mapping Sub-List
+
+[cols="15,15,70"]
+|===
+| Path | Type |Description
+
+| dataSourceId	| Integer	| An identifier of the data source record which has a column mapping config.
+Users may omit to send this value in the requests.
+| columnFrom	| Enum	a| Internal simulator field for mapping data. Supported values (part 1, continued on next page):
+
+*	ReceivedTimeStamp - timestamp market data update was received (required, date/time precision to the ms, e.g. `2019-03-07 15:00:00.243`)
+*	MessageTimeStamp - timestamp from original sent market data message (required, date/time precision to the ms, e.g. `2019-03-07 15:00:00.115`)
+*	Instrument - instrument symbol matching one of the listing’s Symbol for this venue (required, string)
+*	BidParty - bid level counter party (optional, string, e.g. `CP1`)
+*	BidQuantity - bid level quantity (optional, float, e.g. `10`)
+*	BidPrice - bid level price (optional, float, e.g. `133.5`)
+*	AskPrice - ask level price (optional, float, e.g. `134.85`)
+*	AskQuantity - ask level quantity (optional, float, e.g. `15`)
+*	AskParty - ask level counter party (optional, string, e.g. `CP2`)
+
+| columnFrom	| Enum	a| Internal simulator field for mapping data. Supported values (part 2, continued from previous page):
+
+Any bid or ask level missing a price or quantity value is considered to be empty and removed from the state of the matching engine. 
+If the party value for a bid or ask level is missing, a default value of “CP#” is used, where # is the index for each level (e.g. level 1 would use CP1, etc).
+
+If the datasource contains several levels, a 1-based level index must be appended to each of column names BidParty, BidQuantity, BidPrice, AskPrice, AskQuantity, AskParty. 
+For example, BidParty1, BidParty2 etc.
+
+The # character can also be used with these fields to indicate reading from whatever index levels are specified in the file or database itself. 
+For example, BidParty#, BidQuantity# etc.
+| columnTo	| Text	| External data source column name for mapping data.
+
+If the datasource contains several levels, the # character can be used as a placeholder for the level number. 
+For instance, `bidparty#` instead of `bidparty1`, `bidparty2`, etc.
+
+In the case of CSV format, a 1-based column number can be indicated to specify the position of columns instead of the name of columns. 
+To use this method, `textHeaderRow`  for the datasource must be 0.
+
+|===
+
+[[adminsets-data-get-sgl]]
+==== Get Single Data Source
+Request a single market simulator data source entity.
+
+_Resource URI_
+----
+GET /api/datasources/{id}
+----
+
+_Example_: Request single data source
+
+[,http]
+----
+GET /api/datasource/1 HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+----
+
+_Example_: Positive reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "id" : 1,
+    "enabled" : false,
+    "name" : "LSE1",
+    "venueId" : "LSE",
+    "connection" : "lse1.csv",
+    "format" : "CSV",
+    "type" : "OrderBook",
+    "repeat" : false,
+    "textDelimeter" : "|",
+    "textHeaderRow" : 0,
+    "textDataRow" : 1,
+    "maxDepthLevels": 3,
+    "columnMapping": [
+        {
+            "dataSourceId" : 1,
+            "columnFrom" : "ReceivedTimeStamp",
+            "columnTo" : "ActionTime"
+        },
+        {
+            "dataSourceId" : 1,
+            "columnFrom" : "MessageTimeStamp",
+            "columnTo" : "2"
+        },
+        {
+            "dataSourceId" : 1,
+            "columnFrom" : "BidPrice3",
+            "columnTo" : "bid_price_three"
+        }
+    ]
+}
+----
+
+_Example_: Negative reply
+
+[,http]
+----
+HTTP/1.1 404 Not Found
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "No such data source"
+}
+----
+
+[[adminsets-data-get-multi]]
+==== Get Multiple Data Sources
+Request all market simulator data sources entities.
+
+_Resource URI_
+----
+GET /api/datasources
+----
+
+_Example_: Get all data sources
+
+[,http]
+----
+GET /api/datasources HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+----
+
+_Example_: Possible reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Connection: Close
+Content-Length: XXX
+
+{
+    "dataSources": [
+        {
+            "id" : 1,
+            "enabled" : true,
+            "name" : "XETRA-3",
+            "venueId" : "XETRA",
+            "connection" : "postgresql://develop:develop@172.16.238.3:5432/simhistoricaldb",
+            "format" : "PSQL",
+            "type" : "OrderBook",
+            "repeat" : true,
+            "tableName" : "historical_data",
+            "columnMapping": [
+                {
+                    "dataSourceId" : 1,
+                    "columnFrom" : "ReceivedTimeStamp",
+                    "columnTo" : "ActionTime"
+                },
+                {
+                    "dataSourceId" : 1,
+                    "columnFrom" : "MessageTimeStamp",
+                    "columnTo" : "2"
+                },
+            ]
+        },
+        {
+            "id" : 2,
+            "enabled" : false,
+            "name" : "XETRA-CONT-1",
+            "venueId" : "XETRA",
+            "connection" : "/rodata/XETRA-trimmed.csv",
+            "format" : "CSV",
+            "type" : "OrderBook",
+            "repeat" : true,
+            "textDelimeter" : ";",
+            "textHeaderRow" : 1,
+            "textDataRow" : 2,
+            "columnMapping" : []
+        }
+    ]
+}
+----
+
+[[adminsets-data-add]]
+==== Add Data Sources
+Add a new market simulator data source entity.
+
+_Resource URI_
+----
+POST /api/datasources
+----
+
+_Example_: Request to add a new data source entity
+
+[,http]
+----
+POST /api/datasources HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+
+{
+    "enabled" : false,
+    "name" : "XETRA-NEW",
+    "venueId" : "XETRA",
+    "connection" : "/rodata/XETRA-new.csv",
+    "format" : "CSV",
+    "type" : "OrderBook",
+    "repeat" : true,
+    "textDelimiter" : ",",
+    "textHeaderRow" : 0,
+    "textDataRow" : 100,
+    "columnMapping": [
+        {
+            "columnFrom" : "ReceivedTimeStamp",
+            "columnTo" : "ActionTime"
+        }
+    ]
+}
+----
+
+_Example_: Positive reply
+
+[,http]
+----
+HTTP/1.1 201 Created
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "Requested insert of the data source - XETRA-NEW"
+}
+----
+
+_Example_: Negative reply
+
+[,http]
+----
+HTTP/1.1 400 Bad Request
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "There is already such data source"
+}
+----
+
+[[adminsets-data-update]]
+==== Update Data Sources
+Update existing market simulator data source entities.
+
+_Resource URI_
+----
+PUT /api/datasources/{id}
+----
+
+_Example_: Request to update a data source entity
+
+[,http]
+----
+PUT /api/datasources/1 HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+
+{
+    "enabled" : true,
+    "venueId" : "XETRA",
+    "repeat" : false
+}
+----
+
+_Example_: Positive reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "Requested update of the data source with identifier - 1"
+}
+----
+
+_Example_: Negative reply
+
+[,http]
+----
+HTTP/1.1 404 Not Found
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "No such data source"
+}
+----
+
+
+[[adminsets-priceseeds]]
+=== Price Seeds
+Manage values for price seeds on which will be used to generate random orders on market simulator.
+
+_Resource Properties_
+
+[cols="25,25,50"]
+|===
+| Path | Type |Description
+
+| id	| Integer	| A unique price seed record identifier
+| symbol	| Text	| Symbol for this instrument
+| securityType	| Text	a| Security type for a target instrument:
+
+*	CS - Common Stock
+*	FUT - Future
+*	OPT - Option
+*	MLEG - Multi-Leg Instrument
+*	SML - Synthetic Multi-Leg Instrument
+*	WAR - Warrant
+*	MF - Mutual Fund
+*	CORP - Corporate Bond
+*	CB - Convertible Bond
+*	REPO - Repurchase Agreement
+*	INDEX - Index
+*	CFD - Contract for Difference
+*	CD - Certificate
+*	FXSPOT - Forex Spot
+*	FORWARD - Forward
+*	FXFWD - Forex Forward
+*	FXNDF - Forex Non-Deliverable Forward
+*	FXSWAP - Forex Swap
+*	FXNDS - Forex Non-Deliverable Swap
+
+| priceCurrency	| Text	| Currency of price (for FX, second currency in the pair), using ISO-4217 3-char currency codes
+| securityId	| Text	| Security ID for this listing
+| securityIdSource	| Text	| Type of security ID entered, can be null (i.e. for FX where we don't require a security ID)
+| instrumentSymbol	| Text	| Common symbol used for this listing across different venues
+| midPrice	| Decimal	| Last known mid price
+| bidPrice	| Decimal	| Last known bid price
+| offerPrice	| Decimal	| Last known offer price
+| lastUpdate	| DateTime	| Date and time in UTC of last time instrument price was last successfully refreshed
+
+|===
+
+[[adminsets-priceseeds-get-sgl]]
+==== Get Single Price Seed
+Request a single market simulator price seed entity.
+
+_Resource URI_
+----
+GET /api/priceseeds/{id}
+----
+
+_Example_: Get a single price seed
+
+[,http]
+----
+GET /api/priceseeds/1 HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+----
+
+_Example_: Positive reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "id" : 1,
+    "symbol" : "PAR_ST",
+    "securityType" : "CS",
+    "priceCurrency" : "USD",
+    "securityId" : "SEDOL",
+    "securityIdSource" : "SEDOL",
+    "instrumentSymbol" : "PAR",
+    "midPrice" : 10,
+    "bidPrice" : 9,
+    "offerPrice" : 11,
+    "lastUpdate" : "2015-09-08T15:32:09"
+}
+----
+
+_Example_: Negative reply
+
+[,http]
+----
+HTTP/1.1 404 Not Found
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "Can not resolve a single PriceSeed by a given key"
+}
+----
+
+[[adminsets-priceseeds-get-multi]]
+==== Get Multiple Price Seeds
+Request all market simulator price seed entities.
+
+_Resource URI_
+----
+GET /api/priceseeds
+----
+
+_Example_: Get all price seeds
+
+[,http]
+----
+GET /api/priceseeds HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+----
+
+_Example_: Possible reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Connection: Close
+Content-Length: XXX
+
+{
+    "priceSeeds" : [
+        {
+            "id" : 2,
+            "symbol" : "DE0007664005",
+            "securityType" : "CS",
+            "priceCurrency" : "EUR",
+            "securityId" : "DE0007664005",
+            "securityIdSource" : "ISI",
+            "instrumentSymbol" : "DE0007664005",
+            "midPrice" : 140.0,
+            "bidPrice" : 135.0,
+            "offerPrice" : 145.0,
+            "lastUpdate" : "2023-May-10 12:47:08.252739"
+        },
+        {
+            "id" : 3,
+            "symbol" : "EUR/USD",
+            "securityType" : "FXSPOT",
+            "priceCurrency" : "USD",
+            "securityId" : "",
+            "securityIdSource" : "",
+            "instrumentSymbol" : "EUR/USD",
+            "midPrice" : 31.345,
+            "bidPrice" : 30.435,
+            "offerPrice" : 33.435,
+            "lastUpdate" : "2023-May-10 12:47:08.252739"
+        }
+    ]
+}
+----
+
+[[adminsets-priceseeds-add]]
+==== Add Price Seeds
+Add new market simulator price seed entity.
+
+_Resource URI_
+----
+POST /api/priceseeds
+----
+
+_Example_: Add new price seed
+
+[,http]
+----
+POST /api/priceseeds HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+
+{
+    "symbol" : "AAPL",
+    "securityType" : "CS",
+    "priceCurrency" : "USD",
+    "instrumentSymbol" : "AAPL",
+    "midPrice" : 120.5,
+    "bidPrice" : 110.5,
+    "offerPrice" : 130.5
+}
+----
+
+_Example_: Positive reply
+
+[,http]
+----
+HTTP/1.1 201 Created
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "Successfully added a new price seed"
+}
+----
+
+_Example_: Negative reply
+
+[,http]
+----
+HTTP/1.1 400 Bad Request
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "Requested operation violates data integrity constraints"
+}
+----
+
+[[adminsets-priceseeds-update]]
+==== Update Price Seeds
+Update existing market simulator price seed entities.
+
+_Resource URI_
+----
+PUT /api/priceseeds/{id}
+----
+
+_Example_: Update price seed
+
+[,http]
+----
+PUT /api/priceseeds/4 HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+
+{
+    "midPrice" : 120.5,
+    "offerPrice" : 123.5
+}
+----
+
+_Example_: Positive reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "Successfully updated the price seed with 4 identifier"
+}
+----
+
+_Example_: Negative reply
+
+[,http]
+----
+HTTP/1.1 404 Not Found
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "Can not resolve a single PriceSeed by a given key"
+}
+----
+
+[[adminsets-priceseeds-del]]
+==== Delete Price Seeds
+Delete market simulator price seeds entity.
+
+_Resource URI_
+----
+DELETE /api/priceseeds/{id}
+----
+
+_Example_: Delete price seed
+
+[,http]
+----
+DELETE /api/priceseeds/4 HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+----
+
+_Example_: Positive reply
+
+[,http]
+----
+HTTP/1.1 204 No Content
+Connection: Close
+Content-Length: 0
+----
+
+_Example_: Negative reply
+
+[,http]
+----
+HTTP/1.1 404 Not Found
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "Can not resolve a single PriceSeed by a given key"
+}
+----
+
+[[adminsets-priceseeds-sync]]
+==== Sync Price Seeds
+Retrieve and update price seeds from an external database
+
+_Resource URI_
+----
+PUT /api/syncpriceseeds
+----
+
+_Example_: Sync price seeds
+
+[,http]
+----
+PUT /api/syncpriceseeds HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+----
+
+_Example_: Possible reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Connection: Close
+Content-Length: 45
+
+{
+    "result" : "Price seeds successfully synchronized"
+}
+----
