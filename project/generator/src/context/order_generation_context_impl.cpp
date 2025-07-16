@@ -17,7 +17,7 @@ OrderInstrumentContextImpl::OrderInstrumentContextImpl(
       instrument_descriptor_{std::move(descriptor)},
       global_context_{std::move(global_context)},
       instrument_orders_registry_{std::move(generated_orders_registry)} {
-  assert(global_context);
+  assert(global_context_);
   assert(instrument_orders_registry_);
 }
 

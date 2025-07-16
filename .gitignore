@@ -35,6 +35,7 @@
 !**.properties
 !**.py
 !**.sh
+!**.sky
 !**.txt
 !**.xml
 !**.yml
