@@ -117,12 +117,6 @@ auto convert_instrument_security_identifier(const data_layer::Listing& listing,
   return std::nullopt;
 }
 
-[[nodiscard]] auto convert_order_parties(const PartyId& party_id)
-    -> std::vector<Party> {
-  return {Party{PartyIdentifier{party_id, PartyIdSource::Option::Proprietary},
-                PartyRole::Option::ExecutingFirm}};
-}
-
 template <typename T, typename U>
 auto assign(T& destination, U source) -> void {
   if constexpr (std::same_as<T, std::string>) {
@@ -187,8 +181,8 @@ auto convert_to_order_placement_request(const GeneratedMessage& message,
       convert_order_price(message.order_price, request.order_type);
   request.order_quantity = convert_order_quantity(message.quantity);
   request.client_order_id = message.client_order_id;
-  if (const auto& party_id = message.party_id) {
-    request.parties = convert_order_parties(*party_id);
+  if (const auto& party = message.party) {
+    request.parties.push_back(*party);
   }
   request.instrument = instrument;
 
@@ -209,8 +203,8 @@ auto convert_to_order_modification_request(
   request.order_quantity = convert_order_quantity(message.quantity);
   request.client_order_id = message.client_order_id;
   request.orig_client_order_id = message.orig_client_order_id;
-  if (const auto& party_id = message.party_id) {
-    request.parties = convert_order_parties(*party_id);
+  if (const auto& party = message.party) {
+    request.parties.push_back(*party);
   }
   request.instrument = instrument;
 

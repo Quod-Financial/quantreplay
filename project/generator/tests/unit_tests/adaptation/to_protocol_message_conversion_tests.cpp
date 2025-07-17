@@ -83,7 +83,7 @@ TEST_F(GeneratorOrderPlacementRequestConversion, ConvertsClientOrderId) {
 }
 
 TEST_F(GeneratorOrderPlacementRequestConversion, ConvertsParties) {
-  message.party_id = PartyId{"CP1"};
+  message.party = generated_party(PartyId{"CP1"});
 
   const auto request = convert_to_order_placement_request(message, instrument);
 
@@ -186,7 +186,7 @@ TEST_F(GeneratorOrderModificationRequestConversion, ConvertsOrigClientOrderId) {
 }
 
 TEST_F(GeneratorOrderModificationRequestConversion, ConvertsParties) {
-  message.party_id = PartyId{"CP1"};
+  message.party = generated_party(PartyId{"CP1"});
 
   const auto request =
       convert_to_order_modification_request(message, instrument);

@@ -21,7 +21,7 @@ auto validate_client_order_id(const GeneratedMessage& message) -> void {
 }
 
 auto validate_party_id(const GeneratedMessage& message) -> void {
-  if (!message.party_id.has_value() || message.party_id->value().empty()) {
+  if (!message.party.has_value() || message.party->party_id().value().empty()) {
     throw std::invalid_argument{
         fmt::format("registry updater expects a `{}' message to have non-empty "
                     "1 counterparty (owner)",
@@ -94,11 +94,11 @@ auto OrderRegistryUpdater::handle_new_order(const GeneratedMessage& message)
 
   validate_new_order(message);
 
-  const auto& owner_id = message.party_id;
+  const auto& owner_id = message.party->party_id();
   const auto& order_id = message.client_order_id;
   const auto side = message.side;
 
-  GeneratedOrderData::Builder ord_builder{*owner_id, *order_id, *side};
+  GeneratedOrderData::Builder ord_builder{owner_id, *order_id, *side};
   ord_builder.set_price(message.order_price.value_or(OrderPrice{0.}))
       .set_quantity(message.quantity.value_or(Quantity{0.}));
 
@@ -123,7 +123,7 @@ auto OrderRegistryUpdater::handle_modification(const GeneratedMessage& message)
 
   validate_modification(message);
 
-  const auto& owner_id = message.party_id->value();
+  const auto& owner_id = message.party->party_id().value();
   const auto& order_id = *message.client_order_id;
 
   GeneratedOrderData::Patch update;
@@ -156,7 +156,7 @@ auto OrderRegistryUpdater::handle_cancellation(const GeneratedMessage& message)
 
   validate_cancellation(message);
 
-  const auto& owner_id = message.party_id->value();
+  const auto& owner_id = message.party->party_id().value();
   const bool removed = registry().remove_by_owner(owner_id);
   if (!removed) {
     log::warn(

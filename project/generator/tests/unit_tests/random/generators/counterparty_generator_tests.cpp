@@ -12,7 +12,7 @@ namespace {
 
 using namespace ::testing;
 
-class Generator_Random_CounterpartyGenerator : public testing::Test {
+class GeneratorRandomCounterpartyGenerator : public testing::Test {
  public:
   auto value_generator_ptr() -> std::shared_ptr<mock::ValueGenerator> {
     return value_generator_;
@@ -29,7 +29,7 @@ class Generator_Random_CounterpartyGenerator : public testing::Test {
   std::shared_ptr<mock::ValueGenerator> value_generator_;
 };
 
-TEST_F(Generator_Random_CounterpartyGenerator, CheckRequestedLimit) {
+TEST_F(GeneratorRandomCounterpartyGenerator, CheckRequestedLimit) {
   using RandomInt = std::uint64_t;
 
   constexpr RandomInt min_counterparty_number = 1;
@@ -47,7 +47,7 @@ TEST_F(Generator_Random_CounterpartyGenerator, CheckRequestedLimit) {
   [[maybe_unused]] const auto party = generator->generate_counterparty();
 }
 
-TEST_F(Generator_Random_CounterpartyGenerator, GenerateParty) {
+TEST_F(GeneratorRandomCounterpartyGenerator, GeneratesPartyId) {
   using RandomInt = std::uint64_t;
 
   constexpr RandomInt max_counterparties = 121;
@@ -62,8 +62,43 @@ TEST_F(Generator_Random_CounterpartyGenerator, GenerateParty) {
       .Times(1)
       .WillOnce(Return(random_integer));
 
-  const auto party_id = generator->generate_counterparty();
-  EXPECT_EQ(party_id, expected_party_id);
+  const auto party = generator->generate_counterparty();
+  ASSERT_EQ(party.party_id(), expected_party_id);
+}
+
+TEST_F(GeneratorRandomCounterpartyGenerator, GeneratesPartyRoleExecutingFirm) {
+  using RandomInt = std::uint64_t;
+
+  constexpr RandomInt max_counterparties = 121;
+
+  auto generator = random::CounterpartyGeneratorImpl::create(
+      max_counterparties, value_generator_ptr());
+
+  EXPECT_CALL(value_generator(),
+              generate_uniform(A<RandomInt>(), A<RandomInt>()))
+      .Times(1)
+      .WillOnce(Return(42));
+
+  const auto party = generator->generate_counterparty();
+  ASSERT_EQ(party.role(), PartyRole::Option::ExecutingFirm);
+}
+
+TEST_F(GeneratorRandomCounterpartyGenerator,
+       GeneratesPartyIdSourceProprietary) {
+  using RandomInt = std::uint64_t;
+
+  constexpr RandomInt max_counterparties = 121;
+
+  auto generator = random::CounterpartyGeneratorImpl::create(
+      max_counterparties, value_generator_ptr());
+
+  EXPECT_CALL(value_generator(),
+              generate_uniform(A<RandomInt>(), A<RandomInt>()))
+      .Times(1)
+      .WillOnce(Return(42));
+
+  const auto party = generator->generate_counterparty();
+  ASSERT_EQ(party.source(), PartyIdSource::Option::Proprietary);
 }
 
 }  // namespace

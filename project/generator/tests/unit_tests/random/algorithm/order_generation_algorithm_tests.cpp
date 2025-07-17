@@ -20,6 +20,7 @@
 #include "mocks/random/random_event_generator.hpp"
 #include "mocks/random/resting_order_action_generator.hpp"
 #include "mocks/registry/generated_orders_registry.hpp"
+#include "test_utils/generated_message_utils.hpp"
 
 namespace simulator::generator::random::test {
 namespace {
@@ -283,7 +284,7 @@ TEST_F(Generator_Random_OrderGenerationAlgorithm,
   EXPECT_DOUBLE_EQ(message.order_price->value(), price);
   EXPECT_DOUBLE_EQ(message.quantity->value(), quantity);
   EXPECT_EQ(message.client_order_id->value(), order_id);
-  EXPECT_EQ(message.party_id->value(), party);
+  EXPECT_THAT(message.party, Optional(GeneratedParty(PartyId{party})));
 }
 
 TEST_F(Generator_Random_OrderGenerationAlgorithm,
@@ -337,7 +338,7 @@ TEST_F(Generator_Random_OrderGenerationAlgorithm,
   EXPECT_DOUBLE_EQ(message.order_price->value(), price);
   EXPECT_DOUBLE_EQ(message.quantity->value(), quantity);
   EXPECT_EQ(message.client_order_id->value(), order_id);
-  EXPECT_EQ(message.party_id->value(), party);
+  EXPECT_THAT(message.party, Optional(GeneratedParty(PartyId{party})));
 }
 
 TEST_F(Generator_Random_OrderGenerationAlgorithm,
@@ -432,7 +433,7 @@ TEST_F(Generator_Random_OrderGenerationAlgorithm,
   EXPECT_DOUBLE_EQ(message.quantity->value(), quantity.value());
   EXPECT_EQ(message.client_order_id, order_id);
   EXPECT_EQ(message.orig_client_order_id->value(), order_id.value());
-  EXPECT_EQ(message.party_id, party);
+  EXPECT_THAT(message.party, Optional(GeneratedParty(party)));
 }
 
 TEST_F(Generator_Random_OrderGenerationAlgorithm,
@@ -493,7 +494,7 @@ TEST_F(Generator_Random_OrderGenerationAlgorithm,
   EXPECT_DOUBLE_EQ(message.quantity->value(), new_quantity);
   EXPECT_EQ(message.client_order_id, order_id);
   EXPECT_EQ(message.orig_client_order_id->value(), order_id.value());
-  EXPECT_EQ(message.party_id, party);
+  EXPECT_THAT(message.party, Optional(GeneratedParty(party)));
 }
 
 TEST_F(Generator_Random_OrderGenerationAlgorithm,
@@ -549,7 +550,7 @@ TEST_F(Generator_Random_OrderGenerationAlgorithm,
   EXPECT_EQ(message.time_in_force, TimeInForce::Option::Day);
   EXPECT_EQ(message.client_order_id, order_id);
   EXPECT_EQ(message.orig_client_order_id->value(), order_id.value());
-  EXPECT_EQ(message.party_id, party);
+  EXPECT_THAT(message.party, Optional(GeneratedParty(party)));
 }
 
 }  // namespace

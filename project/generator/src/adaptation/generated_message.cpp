@@ -2,6 +2,12 @@
 
 namespace simulator::generator {
 
+auto generated_party(PartyId party_id) -> Party {
+  return Party{
+      PartyIdentifier{std::move(party_id), PartyIdSource::Option::Proprietary},
+      PartyRole::Option::ExecutingFirm};
+}
+
 auto operator<<(std::ostream& os, MessageType message_type) -> std::ostream& {
   return os << fmt::to_string(message_type);
 }
@@ -42,7 +48,7 @@ auto fmt::formatter<simulator::generator::GeneratedMessage>::format(
       ctx.out(),
       "GeneratedMessage={{ message_type={}, order_type={}, "
       "time_in_force={}, side={}, order_price={}, quantity={}, "
-      "client_order_id={}, orig_client_order_id={}, party_id={}, "
+      "client_order_id={}, orig_client_order_id={}, party={}, "
       "order_status={} }}",
       message.message_type,
       message.order_type,
@@ -52,6 +58,6 @@ auto fmt::formatter<simulator::generator::GeneratedMessage>::format(
       message.quantity,
       message.client_order_id,
       message.orig_client_order_id,
-      message.party_id,
+      message.party,
       message.order_status);
 }

@@ -12,6 +12,7 @@ add_target_tests(
     mocks/random/value_generator.hpp
     mocks/registry/generated_orders_registry.hpp
     mocks/trading_request_channel.hpp
+    test_utils/generated_message_utils.hpp
     test_utils/historical_data_utils.hpp
     test_utils/historical_mapping_utils.hpp
   UNIT_TESTS
