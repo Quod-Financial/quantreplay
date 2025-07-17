@@ -92,10 +92,10 @@ auto GeneratorImpl::initialize_random_generation_executors() -> void {
   for (const auto& instrument_ctx : order_listings_contexts_) {
     const auto& instrument = instrument_ctx->get_instrument();
 
-    if (!instrument.symbol().has_value()) {
+    if (!instrument.instr_symbol().has_value()) {
       log::info(
           "can not initialize random orders generation executable for "
-          "instrument id `{}' - the instrument does not have a symbol",
+          "instrument id `{}' - the instrument does not have an instr_symbol",
           instrument.listing_id());
       continue;
     }
@@ -105,16 +105,17 @@ auto GeneratorImpl::initialize_random_generation_executors() -> void {
       const auto px_seed = data_layer::select_one_price_seed(
           database_context_,
           data_layer::predicate::eq<data_layer::PriceSeed>(
-              data_layer::PriceSeed::Attribute::Symbol, *instrument.symbol()));
+              data_layer::PriceSeed::Attribute::InstrumentSymbol,
+              *instrument.instr_symbol()));
 
       executable = rnd_executor_factory_->create_orders_executable(
           instrument_ctx, px_seed);
     } catch (std::logic_error& e) {
       log::info(
           "can not initialize random orders generation executable for "
-          "`{}' instrument - no price seed entry has been found "
-          "for the instrument",
-          instrument.symbol());
+          "instrument with the instr_symbol `{}' - no price seed entry has "
+          "been found for the instrument",
+          instrument.instr_symbol());
       continue;
     }
 
