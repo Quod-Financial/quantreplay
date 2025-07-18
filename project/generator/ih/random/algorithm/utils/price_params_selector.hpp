@@ -20,7 +20,7 @@ auto PriceParamsSelector::select(const data_layer::Listing& instrument,
                                  Tracer&& tracer) -> PriceGenerationParams {
   using namespace trace;
 
-  PriceGenerationParams::Builder params_builder{};
+  PriceGenerationParams::Builder params_builder;
   auto step = make_step(tracer, "selecting params for price generation");
 
   const auto& instrument_symbol = instrument.symbol();
@@ -37,11 +37,14 @@ auto PriceParamsSelector::select(const data_layer::Listing& instrument,
   params_builder.set_price_tick_size(px_tick_size);
   trace_output(step, make_value("priceTickSize", px_tick_size));
 
-  const auto px_spread =
-      instrument.random_orders_spread().value_or(px_tick_size);
+  auto px_spread = instrument.random_orders_spread().value_or(px_tick_size);
+  if (px_spread < px_tick_size) {
+    px_spread = px_tick_size;
+  }
   params_builder.set_price_spread(px_spread);
-
   trace_output(step, make_value("priceSpread", px_spread));
+
+  trace_step(std::move(step), tracer);
   return PriceGenerationParams{params_builder};
 }
 
