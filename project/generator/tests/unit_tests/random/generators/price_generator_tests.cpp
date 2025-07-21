@@ -14,7 +14,7 @@ namespace {
 
 using namespace ::testing;
 
-class Generator_Random_PriceGenerator : public testing::Test {
+class GeneratorRandomPriceGenerator : public testing::Test {
  public:
   using RandomEvent = random::Event::Type;
 
@@ -51,7 +51,8 @@ class Generator_Random_PriceGenerator : public testing::Test {
   }
 
   static auto make_px_seed(const std::optional<double>& bid_px = std::nullopt,
-                           const std::optional<double>& offer_px = std::nullopt)
+                           const std::optional<double>& offer_px = std::nullopt,
+                           const std::optional<double>& mid_px = std::nullopt)
       -> data_layer::PriceSeed {
     data_layer::PriceSeed::Patch patch;
     if (bid_px.has_value()) {
@@ -59,6 +60,9 @@ class Generator_Random_PriceGenerator : public testing::Test {
     }
     if (offer_px.has_value()) {
       patch.with_offer_price(offer_px.value());
+    }
+    if (mid_px.has_value()) {
+      patch.with_mid_price(mid_px.value());
     }
     return data_layer::PriceSeed::create(std::move(patch), 1);
   }
@@ -84,54 +88,167 @@ class Generator_Random_PriceGenerator : public testing::Test {
   std::unique_ptr<random::PriceGenerator> price_generator_;
 };
 
-TEST_F(Generator_Random_PriceGenerator, Generate_EmptyMktState_BuyOrder) {
-  constexpr double seed_buy_px = 123.5;
-  constexpr double seed_sell_px = 321.5;
+struct GeneratorRandomPriceGeneratorEmptyMktState
+    : public GeneratorRandomPriceGenerator {
+  const MarketState EmptyMktState;
+  const PriceGenerationParams EmptyGenerationParams = make_generation_params();
+};
 
-  const random::PriceGenerationParams px_gen_params = make_generation_params();
-  const MarketState mkt_state = make_mkt_state();
-  const data_layer::PriceSeed px_seed = make_px_seed(seed_buy_px, seed_sell_px);
+TEST_F(GeneratorRandomPriceGeneratorEmptyMktState,
+       ReturnsPriceSeedBidPriceIfOrderIsRestingBuy) {
+  constexpr double seed_bid_px = 123.5;
+  constexpr double seed_offer_px = 321.5;
+
+  const data_layer::PriceSeed px_seed =
+      make_px_seed(seed_bid_px, seed_offer_px);
 
   EXPECT_CALL(value_generator(),
               generate_uniform(A<std::int64_t>(), A<std::int64_t>()))
       .Times(0);
 
-  const double resting_px = generate(
-      px_gen_params, mkt_state, px_seed, make_event(RandomEvent::RestingBuy));
-  EXPECT_DOUBLE_EQ(resting_px, seed_buy_px);
+  const double resting_px = generate(EmptyGenerationParams,
+                                     EmptyMktState,
+                                     px_seed,
+                                     make_event(RandomEvent::RestingBuy));
+  ASSERT_DOUBLE_EQ(resting_px, seed_bid_px);
+}
 
-  const double aggressive_px = generate(px_gen_params,
-                                        mkt_state,
+TEST_F(GeneratorRandomPriceGeneratorEmptyMktState,
+       ReturnsPriceSeedMidPriceIfBidPriceIsEmptyAndOrderIsRestingBuy) {
+  constexpr double seed_offer_px = 321.5;
+  constexpr double seed_mid_px = 123.5;
+
+  const data_layer::PriceSeed px_seed =
+      make_px_seed(std::nullopt, seed_offer_px, seed_mid_px);
+
+  EXPECT_CALL(value_generator(),
+              generate_uniform(A<std::int64_t>(), A<std::int64_t>()))
+      .Times(0);
+
+  const double resting_px = generate(EmptyGenerationParams,
+                                     EmptyMktState,
+                                     px_seed,
+                                     make_event(RandomEvent::RestingBuy));
+  ASSERT_DOUBLE_EQ(resting_px, seed_mid_px);
+}
+
+TEST_F(GeneratorRandomPriceGeneratorEmptyMktState,
+       ReturnsPriceSeedBidPriceIfOrderIsAggressiveBuy) {
+  constexpr double seed_bid_px = 123.5;
+  constexpr double seed_offer_px = 321.5;
+
+  const data_layer::PriceSeed px_seed =
+      make_px_seed(seed_bid_px, seed_offer_px);
+
+  EXPECT_CALL(value_generator(),
+              generate_uniform(A<std::int64_t>(), A<std::int64_t>()))
+      .Times(0);
+
+  const double aggressive_px = generate(EmptyGenerationParams,
+                                        EmptyMktState,
                                         px_seed,
                                         make_event(RandomEvent::AggressiveBuy));
-  EXPECT_DOUBLE_EQ(aggressive_px, seed_buy_px);
+  ASSERT_DOUBLE_EQ(aggressive_px, seed_bid_px);
 }
 
-TEST_F(Generator_Random_PriceGenerator, Generate_EmptyMktState_SellOrder) {
-  constexpr double seed_buy_px = 123.5;
-  constexpr double seed_sell_px = 321.5;
+TEST_F(GeneratorRandomPriceGeneratorEmptyMktState,
+       ReturnsPriceSeedMidPriceIfBidPriceIsEmptyOrderIsAggressiveBuy) {
+  constexpr double seed_offer_px = 321.5;
+  constexpr double seed_mid_px = 123.5;
 
-  const random::PriceGenerationParams px_gen_params = make_generation_params();
-  const MarketState mkt_state = make_mkt_state();
-  const data_layer::PriceSeed px_seed = make_px_seed(seed_buy_px, seed_sell_px);
+  const data_layer::PriceSeed px_seed =
+      make_px_seed(std::nullopt, seed_offer_px, seed_mid_px);
 
   EXPECT_CALL(value_generator(),
               generate_uniform(A<std::int64_t>(), A<std::int64_t>()))
       .Times(0);
 
-  const double resting_px = generate(
-      px_gen_params, mkt_state, px_seed, make_event(RandomEvent::RestingSell));
-  EXPECT_DOUBLE_EQ(resting_px, seed_sell_px);
-
-  const double aggressive_px =
-      generate(px_gen_params,
-               mkt_state,
-               px_seed,
-               make_event(RandomEvent::AggressiveSell));
-  EXPECT_DOUBLE_EQ(aggressive_px, seed_sell_px);
+  const double aggressive_px = generate(EmptyGenerationParams,
+                                        EmptyMktState,
+                                        px_seed,
+                                        make_event(RandomEvent::AggressiveBuy));
+  ASSERT_DOUBLE_EQ(aggressive_px, seed_mid_px);
 }
 
-TEST_F(Generator_Random_PriceGenerator, Generate_RestingBuy_SellSideEmpty) {
+TEST_F(GeneratorRandomPriceGeneratorEmptyMktState,
+       ReturnsPriceSeedOfferPriceIfOrderIsRestingSell) {
+  constexpr double seed_bid_px = 123.5;
+  constexpr double seed_offer_px = 321.5;
+
+  const data_layer::PriceSeed px_seed =
+      make_px_seed(seed_bid_px, seed_offer_px);
+
+  EXPECT_CALL(value_generator(),
+              generate_uniform(A<std::int64_t>(), A<std::int64_t>()))
+      .Times(0);
+
+  const double resting_px = generate(EmptyGenerationParams,
+                                     EmptyMktState,
+                                     px_seed,
+                                     make_event(RandomEvent::RestingSell));
+  EXPECT_DOUBLE_EQ(resting_px, seed_offer_px);
+}
+
+TEST_F(GeneratorRandomPriceGeneratorEmptyMktState,
+       ReturnsPriceSeedMidPriceIfOfferPriceIsEmptyAndOrderIsRestingSell) {
+  constexpr double seed_bid_px = 123.5;
+  constexpr double seed_mid_px = 321.5;
+
+  const data_layer::PriceSeed px_seed =
+      make_px_seed(seed_bid_px, std::nullopt, seed_mid_px);
+
+  EXPECT_CALL(value_generator(),
+              generate_uniform(A<std::int64_t>(), A<std::int64_t>()))
+      .Times(0);
+
+  const double resting_px = generate(EmptyGenerationParams,
+                                     EmptyMktState,
+                                     px_seed,
+                                     make_event(RandomEvent::RestingSell));
+  EXPECT_DOUBLE_EQ(resting_px, seed_mid_px);
+}
+
+TEST_F(GeneratorRandomPriceGeneratorEmptyMktState,
+       ReturnsPriceSeedOfferPriceIfOrderIsAggressiveSell) {
+  constexpr double seed_bid_px = 123.5;
+  constexpr double seed_offer_px = 321.5;
+
+  const data_layer::PriceSeed px_seed =
+      make_px_seed(seed_bid_px, seed_offer_px);
+
+  EXPECT_CALL(value_generator(),
+              generate_uniform(A<std::int64_t>(), A<std::int64_t>()))
+      .Times(0);
+
+  const double aggressive_px =
+      generate(EmptyGenerationParams,
+               EmptyMktState,
+               px_seed,
+               make_event(RandomEvent::AggressiveSell));
+  EXPECT_DOUBLE_EQ(aggressive_px, seed_offer_px);
+}
+
+TEST_F(GeneratorRandomPriceGeneratorEmptyMktState,
+       ReturnsPriceSeedMidPriceIfOfferPriceIsEmptyAndOrderIsAggressiveSell) {
+  constexpr double seed_bid_px = 123.5;
+  constexpr double seed_mid_px = 321.5;
+
+  const data_layer::PriceSeed px_seed =
+      make_px_seed(seed_bid_px, std::nullopt, seed_mid_px);
+
+  EXPECT_CALL(value_generator(),
+              generate_uniform(A<std::int64_t>(), A<std::int64_t>()))
+      .Times(0);
+
+  const double aggressive_px =
+      generate(EmptyGenerationParams,
+               EmptyMktState,
+               px_seed,
+               make_event(RandomEvent::AggressiveSell));
+  EXPECT_DOUBLE_EQ(aggressive_px, seed_mid_px);
+}
+
+TEST_F(GeneratorRandomPriceGenerator, Generate_RestingBuy_SellSideEmpty) {
   // Input values:
   //     BasePx (aka best_buy_px)        = 201.05
   //     PxTickRange (aka px_tick_range) = 10
@@ -176,7 +293,7 @@ TEST_F(Generator_Random_PriceGenerator, Generate_RestingBuy_SellSideEmpty) {
   EXPECT_DOUBLE_EQ(price, expected_px);
 }
 
-TEST_F(Generator_Random_PriceGenerator, Generate_RestingBuy_SellSideHasPrices) {
+TEST_F(GeneratorRandomPriceGenerator, Generate_RestingBuy_SellSideHasPrices) {
   // Input values:
   //     BasePx (aka best_sell_px)       = 201.05
   //     PxTickRange (aka px_tick_range) = 10
@@ -223,7 +340,7 @@ TEST_F(Generator_Random_PriceGenerator, Generate_RestingBuy_SellSideHasPrices) {
   EXPECT_DOUBLE_EQ(price, expected_px);
 }
 
-TEST_F(Generator_Random_PriceGenerator, Generate_RestingSell_BuySideEmpty) {
+TEST_F(GeneratorRandomPriceGenerator, Generate_RestingSell_BuySideEmpty) {
   // Input values:
   //     BasePx (aka best_sell_px)       = 434.045
   //     PxTickRange (aka px_tick_range) = 7
@@ -267,7 +384,7 @@ TEST_F(Generator_Random_PriceGenerator, Generate_RestingSell_BuySideEmpty) {
   EXPECT_DOUBLE_EQ(price, expected_px);
 }
 
-TEST_F(Generator_Random_PriceGenerator, Generate_RestingSell_BuySideHasPrices) {
+TEST_F(GeneratorRandomPriceGenerator, Generate_RestingSell_BuySideHasPrices) {
   // Input values:
   //     BasePx (aka best_buy_px)        = 434.045
   //     PxTickRange (aka px_tick_range) = 7
@@ -313,7 +430,7 @@ TEST_F(Generator_Random_PriceGenerator, Generate_RestingSell_BuySideHasPrices) {
   EXPECT_DOUBLE_EQ(price, expected_px);
 }
 
-TEST_F(Generator_Random_PriceGenerator, Generate_AggressiveBuy) {
+TEST_F(GeneratorRandomPriceGenerator, Generate_AggressiveBuy) {
   // Input values:
   //     BasePx (aka best_sell_px)       = 434.045
   //     PxTickRange (aka px_tick_range) = 7
@@ -357,7 +474,7 @@ TEST_F(Generator_Random_PriceGenerator, Generate_AggressiveBuy) {
   EXPECT_DOUBLE_EQ(price, expected_px);
 }
 
-TEST_F(Generator_Random_PriceGenerator, Generate_AggressiveSell) {
+TEST_F(GeneratorRandomPriceGenerator, Generate_AggressiveSell) {
   // Input values:
   //     BasePx (aka best_buy_px)        = 201.05
   //     PxTickRange (aka px_tick_range) = 10

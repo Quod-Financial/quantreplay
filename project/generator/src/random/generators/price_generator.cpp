@@ -144,8 +144,17 @@ auto PriceGeneratorImpl::resolve_configured_price(
   assert(event.is_buy_event() || event.is_sell_event());
   const auto price_side = event.target_side();
 
-  return price_side == Side::Option::Buy ? *configured_prices.bid_price()
-                                         : *configured_prices.offer_price();
+  if (price_side == Side::Option::Buy) {
+    if (configured_prices.bid_price().has_value()) {
+      return *configured_prices.bid_price();
+    }
+  } else {
+    if (configured_prices.offer_price().has_value()) {
+      return *configured_prices.offer_price();
+    }
+  }
+
+  return *configured_prices.mid_price();
 }
 
 }  // namespace simulator::generator::random
