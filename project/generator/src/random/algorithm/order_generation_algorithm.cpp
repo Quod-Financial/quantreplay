@@ -50,7 +50,7 @@ auto OrderGenerationAlgorithm::create(
     std::shared_ptr<OrderGenerationContext> algorithm_context)
     -> std::unique_ptr<OrderGenerationAlgorithm> {
   assert(algorithm_context);
-  const auto& target_enue = algorithm_context->get_venue();
+  const auto& target_venue = algorithm_context->get_venue();
 
   auto value_generator = ValueGeneratorImpl::create();
   auto event_generator = EventGeneratorImpl::create(value_generator);
@@ -59,7 +59,7 @@ auto OrderGenerationAlgorithm::create(
   auto resting_action_generator =
       RestingOrderActionGeneratorImpl::create(value_generator);
   auto counterparty_generator = CounterpartyGeneratorImpl::create(
-      target_enue.random_parties_count().value_or(
+      target_venue.random_parties_count().value_or(
           constant::DefaultVenueRandomPartiesCount),
       value_generator);
 
