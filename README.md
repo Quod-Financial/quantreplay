@@ -316,3 +316,7 @@ Please refer to the following resources for documentation:
 
 For additional help, you can reach out to us via **GitHub**: for bug and issue reports, use "Issues"; for general questions - "Discussions".
 A member of our team will be happy to assist you shortly.
+
+---
+
+QuantReplay is an open-source initiative by Quod Financial, a leading provider of multi-asset trading technology. To explore our products and services, visit [quodfinancial.com](https://www.quodfinancial.com/).
