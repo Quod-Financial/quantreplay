@@ -5,6 +5,8 @@
 
 #include <memory>
 
+#include "core/domain/party.hpp"
+#include "ih/adaptation/generated_message.hpp"
 #include "ih/constants.hpp"
 #include "ih/random/generators/value_generator.hpp"
 #include "ih/tracing/null_tracer.hpp"
@@ -18,7 +20,7 @@ class CounterpartyGenerator {
 
   template <typename GenerationTracer = trace::NullTracer>
   auto generate_counterparty(GenerationTracer&& tracer = GenerationTracer{})
-      -> PartyId;
+      -> Party;
 
  private:
   virtual auto generate_counterparty_number() -> unsigned int = 0;
@@ -26,7 +28,7 @@ class CounterpartyGenerator {
 
 template <typename GenerationTracer>
 inline auto CounterpartyGenerator::generate_counterparty(
-    GenerationTracer&& tracer) -> PartyId {
+    GenerationTracer&& tracer) -> Party {
   using namespace trace;
   auto step = make_step(tracer, "generating order counterparty");
 
@@ -34,12 +36,22 @@ inline auto CounterpartyGenerator::generate_counterparty(
   trace_input(step,
               make_value("randomCounterpartyNumber", counterparty_number));
 
-  std::string counterparty_identifier =
+  const std::string counterparty_identifier =
       fmt::format("{}{}", constant::CounterpartyIDPrefix, counterparty_number);
-  trace_output(step, make_value("partyId", counterparty_identifier));
+  const auto party = generated_party(PartyId{counterparty_identifier});
+
+  trace_output(step, make_value("partyId", party.party_id().value()));
+  trace_output(step,
+               make_commented_value("partyRole",
+                                    fmt::to_string(party.role().value()),
+                                    "predefined value"));
+  trace_output(step,
+               make_commented_value("partyIdSource",
+                                    fmt::to_string(party.source().value()),
+                                    "predefined value"));
 
   trace_step(std::move(step), tracer);
-  return PartyId{counterparty_identifier};
+  return party;
 }
 
 class CounterpartyGeneratorImpl final : public random::CounterpartyGenerator {

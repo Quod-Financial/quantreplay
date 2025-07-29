@@ -89,7 +89,10 @@ auto RequestBuilder::construct(RequestBuilder&& builder) -> GeneratedMessage {
   message.client_order_id = std::move(builder.target_clordid_);
 
   message.orig_client_order_id = std::move(builder.target_orig_clordid_);
-  message.party_id = std::move(builder.target_cpid_);
+  if (builder.target_cpid_) {
+    message.party = generated_party(std::move(*builder.target_cpid_));
+    builder.target_cpid_.reset();
+  }
   message.order_price = builder.target_price_;
   message.quantity = builder.target_qty_;
 

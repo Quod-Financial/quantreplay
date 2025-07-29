@@ -18,6 +18,7 @@
 #include "ih/registry/generated_orders_registry_impl.hpp"
 #include "mocks/context/order_context.hpp"
 #include "mocks/registry/generated_orders_registry.hpp"
+#include "tests/test_utils/generated_message_utils.hpp"
 #include "tests/test_utils/historical_data_utils.hpp"
 
 namespace simulator::generator::historical::test {
@@ -144,7 +145,8 @@ MATCHER_P5(IsNewOrderRequest, side, order_id, price, quantity, party, "") {
              Optional(Eq(order_id)), arg.client_order_id, result_listener) &&
          ExplainMatchResult(
              Eq(std::nullopt), arg.orig_client_order_id, result_listener) &&
-         ExplainMatchResult(Optional(Eq(party)), arg.party_id, result_listener);
+         ExplainMatchResult(
+             Optional(GeneratedParty(party)), arg.party, result_listener);
 }
 
 MATCHER_P5(IsModificationRequest, side, order_id, price, quantity, party, "") {
@@ -167,7 +169,8 @@ MATCHER_P5(IsModificationRequest, side, order_id, price, quantity, party, "") {
          ExplainMatchResult(Eq(order_id.value()),
                             arg.orig_client_order_id->value(),
                             result_listener) &&
-         ExplainMatchResult(Optional(Eq(party)), arg.party_id, result_listener);
+         ExplainMatchResult(
+             Optional(GeneratedParty(party)), arg.party, result_listener);
 }
 
 MATCHER_P5(IsCancelRequest, side, order_id, price, quantity, party, "") {
@@ -190,7 +193,8 @@ MATCHER_P5(IsCancelRequest, side, order_id, price, quantity, party, "") {
          ExplainMatchResult(Eq(order_id.value()),
                             arg.orig_client_order_id->value(),
                             result_listener) &&
-         ExplainMatchResult(Optional(Eq(party)), arg.party_id, result_listener);
+         ExplainMatchResult(
+             Optional(GeneratedParty(party)), arg.party, result_listener);
 }
 
 MATCHER_P5(IsGeneratedOrder, side, order_id, price, quantity, party, "") {
@@ -320,7 +324,8 @@ TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
 
   ASSERT_EQ(messages.size(), 1);
   const auto& new_order_request = messages.front();
-  EXPECT_EQ(new_order_request.party_id->value(), counterparty);
+  EXPECT_THAT(new_order_request.party,
+              Optional(GeneratedParty(PartyId{counterparty})));
 
   ASSERT_TRUE(generated_order.has_value());
   EXPECT_EQ(generated_order->get_owner_id().value(), counterparty);
@@ -452,7 +457,8 @@ TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
   ASSERT_EQ(messages.size(), 1);
 
   const auto& new_order_request = messages.front();
-  EXPECT_EQ(new_order_request.party_id->value(), counterparty);
+  EXPECT_THAT(new_order_request.party,
+              Optional(GeneratedParty(PartyId{counterparty})));
 
   ASSERT_TRUE(generated_order.has_value());
   EXPECT_EQ(generated_order->get_owner_id().value(), counterparty);
@@ -533,8 +539,8 @@ TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
 
   std::vector<GeneratedMessage> messages = apply(record);
   ASSERT_EQ(messages.size(), 2);
-  ASSERT_THAT(messages[0].party_id, Optional(Eq(PartyId{"CP1"})));
-  ASSERT_THAT(messages[1].party_id, Optional(Eq(PartyId{"CP2"})));
+  ASSERT_THAT(messages[0].party, Optional(GeneratedParty(PartyId{"CP1"})));
+  ASSERT_THAT(messages[1].party, Optional(GeneratedParty(PartyId{"CP2"})));
 
   ASSERT_THAT(generated_orders[0]->get_owner_id(), Eq(PartyId{"CP1"}));
   ASSERT_THAT(generated_orders[1]->get_owner_id(), Eq(PartyId{"CP2"}));
@@ -573,12 +579,12 @@ TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
   std::vector<GeneratedMessage> messages1 = apply(record1);
   std::vector<GeneratedMessage> messages2 = apply(record2);
   ASSERT_EQ(messages1.size(), 2);
-  ASSERT_THAT(messages1[0].party_id, Optional(Eq(PartyId{"CP1"})));
-  ASSERT_THAT(messages1[1].party_id, Optional(Eq(PartyId{"CP2"})));
+  ASSERT_THAT(messages1[0].party, Optional(GeneratedParty(PartyId{"CP1"})));
+  ASSERT_THAT(messages1[1].party, Optional(GeneratedParty(PartyId{"CP2"})));
 
   ASSERT_EQ(messages2.size(), 2);
-  ASSERT_THAT(messages2[0].party_id, Optional(Eq(PartyId{"CP1"})));
-  ASSERT_THAT(messages2[1].party_id, Optional(Eq(PartyId{"CP2"})));
+  ASSERT_THAT(messages2[0].party, Optional(GeneratedParty(PartyId{"CP1"})));
+  ASSERT_THAT(messages2[1].party, Optional(GeneratedParty(PartyId{"CP2"})));
 
   ASSERT_EQ(generated_orders.size(), 4);
   ASSERT_THAT(generated_orders[0].get_owner_id(), Eq(PartyId{"CP1"}));
@@ -621,12 +627,14 @@ TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
 
   std::vector<GeneratedMessage> messages = apply(record);
   ASSERT_EQ(messages.size(), 6);
-  ASSERT_THAT(messages[0].party_id, Optional(Eq(PartyId{"CP1"})));
-  ASSERT_THAT(messages[1].party_id, Optional(Eq(PartyId{"Counterparty1"})));
-  ASSERT_THAT(messages[2].party_id, Optional(Eq(PartyId{"Counterparty2"})));
-  ASSERT_THAT(messages[3].party_id, Optional(Eq(PartyId{"CP2"})));
-  ASSERT_THAT(messages[4].party_id, Optional(Eq(PartyId{"CP3"})));
-  ASSERT_THAT(messages[5].party_id, Optional(Eq(PartyId{"CP4"})));
+  ASSERT_THAT(messages[0].party, Optional(GeneratedParty(PartyId{"CP1"})));
+  ASSERT_THAT(messages[1].party,
+              Optional(GeneratedParty(PartyId{"Counterparty1"})));
+  ASSERT_THAT(messages[2].party,
+              Optional(GeneratedParty(PartyId{"Counterparty2"})));
+  ASSERT_THAT(messages[3].party, Optional(GeneratedParty(PartyId{"CP2"})));
+  ASSERT_THAT(messages[4].party, Optional(GeneratedParty(PartyId{"CP3"})));
+  ASSERT_THAT(messages[5].party, Optional(GeneratedParty(PartyId{"CP4"})));
 
   ASSERT_EQ(generated_orders.size(), 6);
   ASSERT_THAT(generated_orders[0].get_owner_id(), Eq(PartyId{"CP1"}));
@@ -950,7 +958,6 @@ TEST_F(
                               better_ord_px.value(),
                               better_ord_qty.value(),
                               better_order_owner));
-
   ASSERT_THAT(messages[1],
               IsNewOrderRequest(
                   Side::Option::Sell, order_id, price, quantity, counterparty));

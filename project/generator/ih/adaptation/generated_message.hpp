@@ -6,6 +6,8 @@
 
 namespace simulator::generator {
 
+auto generated_party(PartyId party_id) -> Party;
+
 enum class MessageType : std::uint8_t {
   NewOrderSingle,
   OrderCancelReplaceRequest,
@@ -22,7 +24,7 @@ struct GeneratedMessage {
   std::optional<Quantity> quantity;
   std::optional<ClientOrderId> client_order_id;
   std::optional<OrigClientOrderId> orig_client_order_id;
-  std::optional<PartyId> party_id;
+  std::optional<Party> party;
   std::optional<OrderStatus> order_status;
 };
 

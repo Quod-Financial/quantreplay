@@ -41,7 +41,7 @@ struct GeneratorOrderRegistryUpdaterRestingNewOrderSingle
     resting_new_order_single.order_type = constant::RestingOrderType;
     resting_new_order_single.time_in_force = constant::RestingTimeInForce;
     resting_new_order_single.client_order_id = order_id;
-    resting_new_order_single.party_id = owner_id;
+    resting_new_order_single.party = generated_party(owner_id);
     resting_new_order_single.side = side;
   }
 };
@@ -88,7 +88,7 @@ TEST_F(GeneratorOrderRegistryUpdaterRestingNewOrderSingle,
 
 TEST_F(GeneratorOrderRegistryUpdaterRestingNewOrderSingle,
        ThrowsExceptionOnAbsentPartyId) {
-  resting_new_order_single.party_id = std::nullopt;
+  resting_new_order_single.party = std::nullopt;
 
   EXPECT_CALL(registry, add).Times(0);
 
@@ -98,7 +98,7 @@ TEST_F(GeneratorOrderRegistryUpdaterRestingNewOrderSingle,
 
 TEST_F(GeneratorOrderRegistryUpdaterRestingNewOrderSingle,
        ThrowsExceptionOnEmptyPartyId) {
-  resting_new_order_single.party_id = PartyId{{}};
+  resting_new_order_single.party = generated_party(PartyId{{}});
 
   EXPECT_CALL(registry, add).Times(0);
 
@@ -144,7 +144,7 @@ struct GeneratorOrderRegistryUpdaterRestingOrderCancelReplaceRequest
     resting_order_cancel_replace_request.time_in_force =
         constant::RestingTimeInForce;
     resting_order_cancel_replace_request.client_order_id = order_id;
-    resting_order_cancel_replace_request.party_id = owner_id;
+    resting_order_cancel_replace_request.party = generated_party(owner_id);
   }
 };
 
@@ -183,7 +183,7 @@ TEST_F(GeneratorOrderRegistryUpdaterRestingOrderCancelReplaceRequest,
 
 TEST_F(GeneratorOrderRegistryUpdaterRestingOrderCancelReplaceRequest,
        ThrowsExceptionOnAbsentPartyId) {
-  resting_order_cancel_replace_request.party_id = std::nullopt;
+  resting_order_cancel_replace_request.party = std::nullopt;
 
   EXPECT_CALL(registry, add).Times(0);
 
@@ -194,7 +194,7 @@ TEST_F(GeneratorOrderRegistryUpdaterRestingOrderCancelReplaceRequest,
 
 TEST_F(GeneratorOrderRegistryUpdaterRestingOrderCancelReplaceRequest,
        ThrowsExceptionOnEmptyPartyId) {
-  resting_order_cancel_replace_request.party_id = PartyId{{}};
+  resting_order_cancel_replace_request.party = generated_party(PartyId{{}});
 
   EXPECT_CALL(registry, add).Times(0);
 
@@ -226,7 +226,7 @@ struct GeneratorOrderRegistryUpdaterOrderCancelRequest
   GeneratorOrderRegistryUpdaterOrderCancelRequest() {
     resting_order_cancel_request.order_type = constant::RestingOrderType;
     resting_order_cancel_request.time_in_force = constant::RestingTimeInForce;
-    resting_order_cancel_request.party_id = owner_id;
+    resting_order_cancel_request.party = generated_party(owner_id);
   }
 };
 
@@ -243,7 +243,7 @@ TEST_F(GeneratorOrderRegistryUpdaterOrderCancelRequest,
 
 TEST_F(GeneratorOrderRegistryUpdaterOrderCancelRequest,
        ThrowsExceptionOnAbsentPartyId) {
-  resting_order_cancel_request.party_id = std::nullopt;
+  resting_order_cancel_request.party = std::nullopt;
 
   EXPECT_CALL(registry, add).Times(0);
 
@@ -254,7 +254,7 @@ TEST_F(GeneratorOrderRegistryUpdaterOrderCancelRequest,
 
 TEST_F(GeneratorOrderRegistryUpdaterOrderCancelRequest,
        ThrowsExceptionOnEmptyPartyId) {
-  resting_order_cancel_request.party_id = PartyId{{}};
+  resting_order_cancel_request.party = generated_party(PartyId{{}});
 
   EXPECT_CALL(registry, add).Times(0);
 

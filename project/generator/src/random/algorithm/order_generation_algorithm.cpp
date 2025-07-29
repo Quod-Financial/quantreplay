@@ -161,8 +161,8 @@ auto OrderGenerationAlgorithm::fill_resting_order(
   assert(event.is_resting_order_event());
   assert(event.is_buy_event() || event.is_sell_event());
 
-  assert(message.party_id.has_value());
-  const auto& owner_id = *message.party_id;
+  assert(message.party.has_value());
+  const auto& owner_id = message.party->party_id();
   const auto& generated_orders_registry = take_context().take_registry();
   bool publish = true;
 
@@ -216,7 +216,7 @@ auto OrderGenerationAlgorithm::update_active_resting_order(
   message.client_order_id = existing_order.get_order_id();
   message.orig_client_order_id =
       OrigClientOrderId(existing_order.get_order_id().value());
-  message.party_id = existing_order.get_owner_id();
+  message.party = generated_party(existing_order.get_owner_id());
   AttributesSetter::set(message, existing_order.get_order_side());
 
   auto message_type = MessageType::OrderCancelReplaceRequest;
@@ -278,7 +278,7 @@ template <typename GenerationTracer>
 auto OrderGenerationAlgorithm::generate_counterparty(GeneratedMessage& message,
                                                      GenerationTracer& tracer)
     -> void {
-  message.party_id = take_party_generator().generate_counterparty(tracer);
+  message.party = take_party_generator().generate_counterparty(tracer);
 }
 
 template <typename GenerationTracer>
