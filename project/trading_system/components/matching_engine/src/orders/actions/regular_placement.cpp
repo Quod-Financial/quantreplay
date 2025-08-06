@@ -31,6 +31,7 @@ auto RegularPlacement::operator()(MarketOrder order) -> void {
   if (!matcher_.has_facing_orders(order)) {
     emit(ClientNotification(
         prepare_placement_reject(order)
+            .with_execution_id(order.make_execution_id())
             .with_reason(RejectText{"no facing orders found"})
             .build()));
     return;
@@ -62,6 +63,7 @@ auto RegularPlacement::match_ioc_order(LimitOrder order) -> void {
   if (!matcher_.has_facing_orders(order)) {
     emit(ClientNotification(
         prepare_placement_reject(order)
+            .with_execution_id(order.make_execution_id())
             .with_reason(RejectText{"no facing orders found"})
             .build()));
     return;
@@ -79,6 +81,7 @@ auto RegularPlacement::match_fok_order(LimitOrder order) -> void {
   if (!matcher_.has_facing_orders(order)) {
     emit(ClientNotification(
         prepare_placement_reject(order)
+            .with_execution_id(order.make_execution_id())
             .with_reason(RejectText{"no facing orders found"})
             .build()));
     return;
@@ -87,6 +90,7 @@ auto RegularPlacement::match_fok_order(LimitOrder order) -> void {
   if (!matcher_.can_fully_trade(order)) {
     emit(ClientNotification(
         prepare_placement_reject(order)
+            .with_execution_id(order.make_execution_id())
             .with_reason(RejectText("not enough liquidity to fill FoK order"))
             .build()));
     return;

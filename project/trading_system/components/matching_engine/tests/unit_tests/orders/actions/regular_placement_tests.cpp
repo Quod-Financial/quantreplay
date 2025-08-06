@@ -31,6 +31,23 @@ struct MatchingEngineRegularPlacementLimitOrderImmediateOrCancel
 };
 
 TEST_F(MatchingEngineRegularPlacementLimitOrderImmediateOrCancel,
+       EmitsPlacementRejectWithExecutionIdWhenNoFacingOrders) {
+  const auto order = ioc_limit_order();
+
+  EXPECT_CALL(matcher, has_facing_orders(A<const LimitOrder&>()))
+      .WillOnce(Return(false));
+
+  EXPECT_CALL(
+      event_listener,
+      on(IsClientNotification(VariantWith<protocol::OrderPlacementReject>(Field(
+          &protocol::OrderPlacementReject::execution_id,
+          Optional(
+              Eq(ExecutionId{std::to_string(order_id.value()) + "-1"})))))));
+
+  regular_placement(std::move(order));
+}
+
+TEST_F(MatchingEngineRegularPlacementLimitOrderImmediateOrCancel,
        EmitsPlacementRejectWithRejectTextWhenNoFacingOrders) {
   const auto order = ioc_limit_order();
 
@@ -88,6 +105,23 @@ struct MatchingEngineRegularPlacementLimitOrderFillOrKill
 };
 
 TEST_F(MatchingEngineRegularPlacementLimitOrderFillOrKill,
+       EmitsPlacementRejectWithExecutionIdWhenNoFacingOrders) {
+  const auto order = fok_limit_order();
+
+  EXPECT_CALL(matcher, has_facing_orders(A<const LimitOrder&>()))
+      .WillOnce(Return(false));
+
+  EXPECT_CALL(
+      event_listener,
+      on(IsClientNotification(VariantWith<protocol::OrderPlacementReject>(Field(
+          &protocol::OrderPlacementReject::execution_id,
+          Optional(
+              Eq(ExecutionId{std::to_string(order_id.value()) + "-1"})))))));
+
+  regular_placement(std::move(order));
+}
+
+TEST_F(MatchingEngineRegularPlacementLimitOrderFillOrKill,
        EmitsPlacementRejectWithRejectTextWhenNoFacingOrders) {
   const auto order = fok_limit_order();
 
@@ -99,6 +133,25 @@ TEST_F(MatchingEngineRegularPlacementLimitOrderFillOrKill,
       on(IsClientNotification(VariantWith<protocol::OrderPlacementReject>(
           Field(&protocol::OrderPlacementReject::reject_text,
                 Optional(Eq(RejectText{"no facing orders found"})))))));
+
+  regular_placement(std::move(order));
+}
+
+TEST_F(MatchingEngineRegularPlacementLimitOrderFillOrKill,
+       EmitsPlacementRejectWithExecutionIdWhenOrderCannotBeFullyTraded) {
+  const auto order = fok_limit_order();
+
+  EXPECT_CALL(matcher, has_facing_orders(A<const LimitOrder&>()))
+      .WillOnce(Return(true));
+  EXPECT_CALL(matcher, can_fully_trade(A<const LimitOrder&>()))
+      .WillOnce(Return(false));
+
+  EXPECT_CALL(
+      event_listener,
+      on(IsClientNotification(VariantWith<protocol::OrderPlacementReject>(Field(
+          &protocol::OrderPlacementReject::execution_id,
+          Optional(
+              Eq(ExecutionId{std::to_string(order_id.value()) + "-1"})))))));
 
   regular_placement(std::move(order));
 }
@@ -270,6 +323,23 @@ struct MatchingEngineRegularPlacementMarketOrder
     return OrderBuilder{}.with_order_id(order_id).build_market_order();
   }
 };
+
+TEST_F(MatchingEngineRegularPlacementMarketOrder,
+       EmitsPlacementRejectWithExecutionIdWhenNoFacingOrders) {
+  const auto order = market_order();
+
+  EXPECT_CALL(matcher, has_facing_orders(A<const MarketOrder&>()))
+      .WillOnce(Return(false));
+
+  EXPECT_CALL(
+      event_listener,
+      on(IsClientNotification(VariantWith<protocol::OrderPlacementReject>(Field(
+          &protocol::OrderPlacementReject::execution_id,
+          Optional(
+              Eq(ExecutionId{std::to_string(order_id.value()) + "-1"})))))));
+
+  regular_placement(std::move(order));
+}
 
 TEST_F(MatchingEngineRegularPlacementMarketOrder,
        EmitsPlacementRejectWithRejectTextWhenNoFacingOrders) {
