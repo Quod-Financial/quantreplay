@@ -361,8 +361,7 @@ The following diagram represents this distribution:
 image::17pricebook.png[width = 500]
 
 The final price of a new random order is chosen as a number of ticks away from the initial price value, weighted by the frequency distribution as described above. 
-In this way, the final price is a multiple of the configured ticks on the listing (Listings → PriceTickSize), rounded to the configured precision of the 
-listing (Listings → PricePrecision).
+In this way, the final price is a multiple of the configured ticks on the listing (Listings → PriceTickSize).
 
 [[general-randomorder-distrqty]]
 ==== Distribution of Quantity
