@@ -9,6 +9,7 @@ add_target_tests(
     mocks/mock_market_entry_id_generator.hpp
     mocks/mock_order_id_generator.hpp
     mocks/order_event_handler_mock.hpp
+    mocks/regular_matcher_mock.hpp
     mocks/trading_reply_receiver_mock.hpp
     tools/fake_depth_node.hpp
     tools/matchers.hpp
@@ -41,6 +42,7 @@ add_target_tests(
     unit_tests/market_data/trade_cache_tests.cpp
     unit_tests/orders/actions/all_orders_elimination_tests.cpp
     unit_tests/orders/actions/limit_order_recover_tests.cpp
+    unit_tests/orders/actions/regular_placement_tests.cpp
     unit_tests/orders/actions/system_elimination_tests.cpp
     unit_tests/orders/book/better_order_comparator_tests.cpp
     unit_tests/orders/book/limit_order_tests.cpp
