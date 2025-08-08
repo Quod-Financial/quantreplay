@@ -1,5 +1,3 @@
-#include "ih/chained_mux.hpp"
-
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
@@ -7,9 +5,10 @@
 #include <csignal>
 #include <thread>
 
+#include "ih/chained_mux.hpp"
 #include "runtime/thread_pool.hpp"
 
-namespace simulator::trading_system::runtime {
+namespace simulator::trading_system::runtime::test {
 namespace {
 
 using namespace std::chrono_literals;
@@ -59,4 +58,4 @@ INSTANTIATE_TEST_SUITE_P(ChainedMuxTestSuite,
                          });
 
 }  // namespace
-}  // namespace simulator::trading_system::runtime
+}  // namespace simulator::trading_system::runtime::test

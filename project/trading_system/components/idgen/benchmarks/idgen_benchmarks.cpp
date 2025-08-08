@@ -10,7 +10,7 @@ namespace {
 
 namespace idgen = simulator::trading_system::idgen;
 
-void setup([[maybe_unused]] const benchmark::State& state) {
+auto setup([[maybe_unused]] const benchmark::State& state) -> void {
   using namespace simulator::cfg;
 
   // Currently we have no other options to disable logging in runtime,
@@ -18,8 +18,8 @@ void setup([[maybe_unused]] const benchmark::State& state) {
   simulator::cfg::init();
   auto& log_cfg = const_cast<LogConfiguration&>(simulator::cfg::log());
   log_cfg.level = "ERROR";
-  log_cfg.maxFiles = 0;
-  log_cfg.maxSize = 0;
+  log_cfg.max_files = 0;
+  log_cfg.max_size = 0;
 }
 
 auto BM_make_instrument_id_generation_ctx(benchmark::State& state) -> void {

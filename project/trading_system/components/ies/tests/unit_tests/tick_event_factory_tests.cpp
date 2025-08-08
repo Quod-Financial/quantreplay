@@ -1,18 +1,17 @@
-#include "ih/tick_event_factory.hpp"
-
 #include <gtest/gtest.h>
 
 #include <chrono>
 
 #include "core/tools/time.hpp"
+#include "ih/tick_event_factory.hpp"
+
+namespace simulator::trading_system::ies::test {
+namespace {
 
 using namespace std::chrono_literals;
 
-namespace simulator::trading_system::ies {
-namespace {
-
 struct TickEventFactoryTest : public ::testing::Test {
-  void SetUp() override { factory.set_tz_clock(clock); }
+  auto SetUp() -> void override { factory.set_tz_clock(clock); }
 
   // 2024-09-19 03:00:00 UNIX, 2024-09-18 23:00:00 America/New_York
   core::sys_us tick_time{1726714800s};
@@ -72,4 +71,4 @@ TEST_F(TickEventFactoryTest, SetsNewTzDayFlagWhenTzDateNotChanged) {
 }
 
 }  // namespace
-}  // namespace simulator::trading_system::ies
+}  // namespace simulator::trading_system::ies::test

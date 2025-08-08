@@ -32,8 +32,7 @@ class OrderRequestProcessor {
   virtual auto process(const protocol::SecurityStatusRequest& request)
       -> void = 0;
 
-  virtual auto store_state(
-      market_state::OrderBook& state) -> void = 0;
+  virtual auto store_state(market_state::OrderBook& state) -> void = 0;
 
   virtual auto recover_state(market_state::OrderBook state) -> void = 0;
 };

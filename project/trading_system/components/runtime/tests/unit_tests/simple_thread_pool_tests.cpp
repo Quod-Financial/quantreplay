@@ -1,5 +1,3 @@
-#include "ih/simple_thread_pool.hpp"
-
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
@@ -7,7 +5,9 @@
 #include <csignal>
 #include <thread>
 
-namespace simulator::trading_system::runtime {
+#include "ih/simple_thread_pool.hpp"
+
+namespace simulator::trading_system::runtime::test {
 namespace {
 
 using namespace std::chrono_literals;
@@ -127,4 +127,4 @@ INSTANTIATE_TEST_SUITE_P(CounterIncrement,
                          });
 
 }  // namespace
-}  // namespace simulator::trading_system::runtime
+}  // namespace simulator::trading_system::runtime::test

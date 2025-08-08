@@ -1,11 +1,10 @@
-#include "ih/instruments_cache.hpp"
-
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "common/instrument.hpp"
 #include "core/domain/instrument_descriptor.hpp"
 #include "data_layer/api/models/listing.hpp"
+#include "ih/instruments_cache.hpp"
 #include "test_utils/utils.hpp"
 
 namespace simulator::trading_system::instrument::test {

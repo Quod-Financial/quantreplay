@@ -6,7 +6,7 @@
 #include "core/domain/attributes.hpp"
 #include "ih/orders/book/limit_order.hpp"
 #include "ih/orders/book/order_book.hpp"
-#include "tools/order_test_tools.hpp"
+#include "tools/order_builder.hpp"
 
 namespace simulator::trading_system::matching_engine::test {
 namespace {
@@ -14,8 +14,6 @@ namespace {
 using namespace ::testing;  // NOLINT
 
 // NOLINTBEGIN(*magic-numbers*,*non-private-member*)
-
-// region LimitOrdersContainer tests
 
 struct LimitOrdersContainer : public Test {
  public:
@@ -150,10 +148,6 @@ TEST_F(LimitOrdersContainer, ReportsErrorOnErasingRangeByInvalidIterators) {
                std::invalid_argument);
 }
 
-// endregion LimitOrdersContainer tests
-
-// region OrderBook tests
-
 struct OrderBook : public Test {
   matching_engine::OrderBook book;
 };
@@ -170,8 +164,6 @@ TEST_F(OrderBook, ReportsErrorOnTakingPageForInvalidSide) {
   ASSERT_THROW(book.take_page(static_cast<Side::Option>(0xFF)),
                std::invalid_argument);
 }
-
-// endregion OrderBook tests
 
 // NOLINTEND(*magic-numbers*,*non-private-member*)
 

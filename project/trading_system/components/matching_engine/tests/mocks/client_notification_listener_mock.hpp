@@ -1,5 +1,5 @@
-#ifndef SIMULATOR_MATCHING_ENGINE_TESTS_MOCKS_MOCK_CLIENT_NOTIFICATION_LISTENER_HPP_
-#define SIMULATOR_MATCHING_ENGINE_TESTS_MOCKS_MOCK_CLIENT_NOTIFICATION_LISTENER_HPP_
+#ifndef SIMULATOR_MATCHING_ENGINE_TESTS_MOCKS_CLIENT_NOTIFICATION_LISTENER_MOCK_HPP_
+#define SIMULATOR_MATCHING_ENGINE_TESTS_MOCKS_CLIENT_NOTIFICATION_LISTENER_MOCK_HPP_
 
 #include <gmock/gmock.h>
 
@@ -17,7 +17,7 @@
 
 namespace simulator::trading_system::matching_engine {
 
-class MockClientNotificationListener : public EventListener {
+class ClientNotificationListenerMock : public EventListener {
  public:
   // clang-format off
   MOCK_METHOD(void, on_business_message_reject, (protocol::BusinessMessageReject));
@@ -40,4 +40,4 @@ class MockClientNotificationListener : public EventListener {
 
 }  // namespace simulator::trading_system::matching_engine
 
-#endif  // SIMULATOR_MATCHING_ENGINE_TESTS_MOCKS_MOCK_CLIENT_NOTIFICATION_LISTENER_HPP_
+#endif  // SIMULATOR_MATCHING_ENGINE_TESTS_MOCKS_CLIENT_NOTIFICATION_LISTENER_MOCK_HPP_

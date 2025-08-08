@@ -1,5 +1,5 @@
-#ifndef SIMULATOR_INSTRUMENTS_IH_CURRENCY_CATEGORY_HPP_
-#define SIMULATOR_INSTRUMENTS_IH_CURRENCY_CATEGORY_HPP_
+#ifndef SIMULATOR_INSTRUMENTS_IH_LOOKUP_CURRENCY_CATEGORY_HPP_
+#define SIMULATOR_INSTRUMENTS_IH_LOOKUP_CURRENCY_CATEGORY_HPP_
 
 #include <cstdint>
 #include <optional>
@@ -62,4 +62,4 @@ constexpr auto determine_currency_category(const Instrument& instrument)
 
 }  // namespace simulator::trading_system::instrument
 
-#endif  // SIMULATOR_INSTRUMENTS_IH_CURRENCY_CATEGORY_HPP_
+#endif  // SIMULATOR_INSTRUMENTS_IH_LOOKUP_CURRENCY_CATEGORY_HPP_

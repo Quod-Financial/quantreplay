@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 struct TradingSystemPhaseEntryReader : public Test {
   using MarketPhase = data_layer::MarketPhase;
 
-  static auto create_phase(MarketPhase::Patch patch) {
+  static auto create_phase(MarketPhase::Patch patch) -> MarketPhase {
     return MarketPhase::create(std::move(patch), "venue_id");
   }
 

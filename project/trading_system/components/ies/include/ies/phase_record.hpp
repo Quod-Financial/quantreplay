@@ -18,7 +18,8 @@ struct PhaseRecord {
   std::variant<TradingPhase, TradingStatus> phase;
   bool allow_cancels_on_halt = false;
 
-  friend auto operator==(const PhaseRecord& lhs, const PhaseRecord& rhs) noexcept -> bool = default;
+  friend auto operator==(const PhaseRecord& lhs,
+                         const PhaseRecord& rhs) noexcept -> bool = default;
 };
 
 }  // namespace simulator::trading_system::ies
@@ -69,11 +70,11 @@ struct fmt::formatter<simulator::trading_system::ies::PhaseRecord> {
 
 namespace simulator::trading_system::ies {
 
-inline auto operator<<(std::ostream& stream,
-                const PhaseRecord& record) -> std::ostream& {
+inline auto operator<<(std::ostream& stream, const PhaseRecord& record)
+    -> std::ostream& {
   return stream << fmt::to_string(record);
 }
 
-} // namespace simulator::trading_system::ies
+}  // namespace simulator::trading_system::ies
 
 #endif  // SIMULATOR_TRADING_SYSTEM_COMPONENTS_IES_PHASE_RECORD_HPP_

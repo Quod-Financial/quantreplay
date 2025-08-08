@@ -11,12 +11,11 @@
 
 namespace simulator::trading_system {
 
-namespace database = data_layer::database;
-
 namespace {
 
 [[nodiscard]]
-auto read_system_configuration(const database::Context& database) -> Config {
+auto read_system_configuration(const data_layer::database::Context& database)
+    -> Config {
   log::trace("reading system configuration");
 
   Config config;
@@ -28,7 +27,7 @@ auto read_system_configuration(const database::Context& database) -> Config {
 }
 
 [[nodiscard]]
-auto create_instruments_cache(const database::Context& database)
+auto create_instruments_cache(const data_layer::database::Context& database)
     -> instrument::Cache {
   log::trace("creating trading instruments cache");
 
@@ -41,7 +40,8 @@ auto create_instruments_cache(const database::Context& database)
 }
 
 [[nodiscard]]
-auto create_trading_system_implementation(const database::Context& database)
+auto create_trading_system_implementation(
+    const data_layer::database::Context& database)
     -> std::unique_ptr<System::Implementation> {
   try {
     return std::make_unique<System::Implementation>(
@@ -108,7 +108,8 @@ auto System::implementation() const noexcept -> Implementation& {
   std::abort();
 }
 
-auto create_trading_system(const database::Context& database) -> System {
+auto create_trading_system(const data_layer::database::Context& database)
+    -> System {
   log::debug("creating trading system instance");
   System engine{create_trading_system_implementation(database)};
   log::info("created trading system instance");

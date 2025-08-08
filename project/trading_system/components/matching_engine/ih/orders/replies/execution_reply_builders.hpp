@@ -1,7 +1,10 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_REPLIES_EXECUTION_REPLY_BUILDERS_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_REPLIES_EXECUTION_REPLY_BUILDERS_HPP_
 
-#include "common/attributes.hpp"
+#include <optional>
+
+#include "core/domain/attributes.hpp"
+#include "core/domain/party.hpp"
 #include "ih/orders/book/limit_order.hpp"
 #include "ih/orders/book/market_order.hpp"
 #include "protocol/app/execution_report.hpp"

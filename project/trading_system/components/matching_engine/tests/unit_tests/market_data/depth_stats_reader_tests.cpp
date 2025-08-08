@@ -6,12 +6,12 @@
 #include "ih/market_data/depth/depth_stats_reader.hpp"
 #include "tools/fake_depth_node.hpp"
 
+namespace simulator::trading_system::matching_engine::mdata::test {
+namespace {
+
 using namespace testing;  // NOLINT
 
 // NOLINTBEGIN(*magic-number*)
-
-namespace simulator::trading_system::matching_engine::mdata {
-namespace {
 
 struct DepthStatsReaderTest : Test {
   static auto view(const auto& depth) {
@@ -99,6 +99,6 @@ TEST_F(DepthStatsReaderTest, FiltersOutTopRemovedLevel) {
 }
 
 }  // namespace
-}  // namespace simulator::trading_system::matching_engine::mdata
+}  // namespace simulator::trading_system::matching_engine::mdata::test
 
 // NOLINTEND(*magic-number*)

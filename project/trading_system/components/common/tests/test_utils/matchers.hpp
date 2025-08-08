@@ -50,8 +50,8 @@ MATCHER_P2(HasArraySize, key, size, "") {
   return ExplainMatchResult(Ne(arg.MemberEnd()), iter, result_listener) &&
          ExplainMatchResult(IsTrue, iter->value.IsArray(), result_listener) &&
          ExplainMatchResult(Eq(static_cast<rapidjson::SizeType>(size)),
-                               iter->value.GetArray().Size(),
-                               result_listener);
+                            iter->value.GetArray().Size(),
+                            result_listener);
 }
 
 MATCHER_P(HasObject, key, "") {

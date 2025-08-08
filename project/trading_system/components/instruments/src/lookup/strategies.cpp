@@ -19,8 +19,7 @@ constexpr auto missing(const std::optional<T>& attribute) -> bool {
 SymbolLookup::SymbolLookup(const InstrumentDescriptor& descriptor)
     : descriptor_(&descriptor) {}
 
-auto SymbolLookup::operator()(const Instrument& instrument) const
-    -> MatchRate {
+auto SymbolLookup::operator()(const Instrument& instrument) const -> MatchRate {
   constexpr auto matcher = make_matcher(match_symbol,
                                         match_security_type,
                                         match_currency,
@@ -86,8 +85,7 @@ auto CusipIdLookup::create(const InstrumentDescriptor& descriptor)
 IsinIdLookup::IsinIdLookup(const InstrumentDescriptor& descriptor)
     : descriptor_(&descriptor) {}
 
-auto IsinIdLookup::operator()(const Instrument& instrument) const
-    -> MatchRate {
+auto IsinIdLookup::operator()(const Instrument& instrument) const -> MatchRate {
   constexpr auto matcher = make_matcher(match_isin_id,
                                         match_security_type,
                                         match_currency,
@@ -118,8 +116,7 @@ auto IsinIdLookup::create(const InstrumentDescriptor& descriptor)
 RicIdLookup::RicIdLookup(const InstrumentDescriptor& descriptor)
     : descriptor_(&descriptor) {}
 
-auto RicIdLookup::operator()(const Instrument& instrument) const
-    -> MatchRate {
+auto RicIdLookup::operator()(const Instrument& instrument) const -> MatchRate {
   constexpr auto matcher = make_matcher(match_ric_id,
                                         match_security_type,
                                         match_currency,

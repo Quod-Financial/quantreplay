@@ -1,5 +1,5 @@
-#ifndef SIMULATOR_MATCHING_ENGINE_TESTS_TOOLS_ORDER_TEST_TOOLS_HPP_
-#define SIMULATOR_MATCHING_ENGINE_TESTS_TOOLS_ORDER_TEST_TOOLS_HPP_
+#ifndef SIMULATOR_MATCHING_ENGINE_TESTS_TOOLS_ORDER_BUILDER_HPP_
+#define SIMULATOR_MATCHING_ENGINE_TESTS_TOOLS_ORDER_BUILDER_HPP_
 
 #include <optional>
 #include <vector>
@@ -26,32 +26,32 @@ class OrderBuilder {
 
   auto build_market_order() const -> MarketOrder;
 
-  auto with_order_id(OrderId identifier) -> OrderBuilder &;
+  auto with_order_id(OrderId identifier) -> OrderBuilder&;
 
-  auto with_side(Side side) -> OrderBuilder &;
+  auto with_side(Side side) -> OrderBuilder&;
 
-  auto with_time_in_force(TimeInForce time_in_force) -> OrderBuilder &;
+  auto with_time_in_force(TimeInForce time_in_force) -> OrderBuilder&;
 
   auto with_short_sell_exemption_reason(ShortSaleExemptionReason reason)
-      -> OrderBuilder &;
+      -> OrderBuilder&;
 
-  auto with_client_session(protocol::Session session) -> OrderBuilder &;
+  auto with_client_session(protocol::Session session) -> OrderBuilder&;
 
-  auto with_instrument(InstrumentDescriptor instrument) -> OrderBuilder &;
+  auto with_instrument(InstrumentDescriptor instrument) -> OrderBuilder&;
 
-  auto with_order_parties(std::vector<Party> parties) -> OrderBuilder &;
+  auto with_order_parties(std::vector<Party> parties) -> OrderBuilder&;
 
-  auto with_client_order_id(ClientOrderId client_order_id) -> OrderBuilder &;
+  auto with_client_order_id(ClientOrderId client_order_id) -> OrderBuilder&;
 
-  auto with_order_price(OrderPrice price) -> OrderBuilder &;
+  auto with_order_price(OrderPrice price) -> OrderBuilder&;
 
-  auto with_order_quantity(OrderQuantity quantity) -> OrderBuilder &;
+  auto with_order_quantity(OrderQuantity quantity) -> OrderBuilder&;
 
-  auto with_expire_time(ExpireTime time) -> OrderBuilder &;
+  auto with_expire_time(ExpireTime time) -> OrderBuilder&;
 
-  auto with_expire_date(ExpireDate date) -> OrderBuilder &;
+  auto with_expire_date(ExpireDate date) -> OrderBuilder&;
 
-  auto with_order_time(OrderTime time) -> OrderBuilder &;
+  auto with_order_time(OrderTime time) -> OrderBuilder&;
 
  private:
   InstrumentDescriptor instrument_;
@@ -73,4 +73,4 @@ class OrderBuilder {
 
 }  // namespace simulator::trading_system::matching_engine
 
-#endif  // SIMULATOR_MATCHING_ENGINE_TESTS_TOOLS_ORDER_TEST_TOOLS_HPP_
+#endif  // SIMULATOR_MATCHING_ENGINE_TESTS_TOOLS_ORDER_BUILDER_HPP_

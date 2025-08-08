@@ -1,13 +1,12 @@
-#include "ih/market_data/depth/incremental_depth_update.hpp"
-
 #include <gmock/gmock.h>
 
+#include "ih/market_data/depth/incremental_depth_update.hpp"
 #include "tools/fake_depth_node.hpp"
 
-using namespace ::testing;  // NOLINT
-
-namespace simulator::trading_system::matching_engine::mdata {
+namespace simulator::trading_system::matching_engine::mdata::test {
 namespace {
+
+using namespace ::testing;  // NOLINT
 
 struct BuilderTest : Test {
   static auto depth_view(const auto& depth) {
@@ -25,8 +24,6 @@ struct BuilderTest : Test {
   IncrementalDepthUpdate update{destination};
   constexpr static std::optional<Price> NoPrice = std::nullopt;
 };
-
-/*----------------------------------------------------------------------------*/
 
 struct IncrementalDepthUpdateTest : Test {
   std::vector<MarketDataEntry> destination;
@@ -117,8 +114,6 @@ TEST_F(IncrementalDepthUpdateTest, DoesNotAddInvisibleLevelAsRemoved) {
   ASSERT_THROW(update.add_removed_level(node.level()), std::logic_error);
 }
 
-/*----------------------------------------------------------------------------*/
-
 struct IncrementalDepthBuilderTest : BuilderTest {};
 
 TEST_F(IncrementalDepthBuilderTest, BuildsEmptyUpdateFromEmptyDepth) {
@@ -204,8 +199,6 @@ TEST_F(IncrementalDepthBuilderTest, CollectsAllUpdatedLevels) {
 }
 
 }  // namespace
-
-/*----------------------------------------------------------------------------*/
 
 struct LimitedIncrementalDepthBuilderTest : BuilderTest {
   constexpr static std::size_t TopOfBookLimit = 1;
@@ -409,6 +402,4 @@ TEST_F(LimitedIncrementalDepthBuilderTest,
       ElementsAre(EntryWith(Price(2), MarketEntryAction::Option::Change)));
 }
 
-/*----------------------------------------------------------------------------*/
-
-}  // namespace simulator::trading_system::matching_engine::mdata
+}  // namespace simulator::trading_system::matching_engine::mdata::test

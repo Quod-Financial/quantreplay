@@ -5,7 +5,7 @@
 #include "ih/orders/replies/cancellation_reply_builders.hpp"
 #include "protocol/app/order_cancellation_request.hpp"
 #include "protocol/types/session.hpp"
-#include "tools/order_test_tools.hpp"
+#include "tools/order_builder.hpp"
 
 namespace simulator::trading_system::matching_engine::test {
 namespace {
@@ -14,8 +14,6 @@ using namespace std::chrono_literals;
 using namespace ::testing;  // NOLINT
 
 // NOLINTBEGIN(*magic-numbers*)
-
-// region CancellationConfirmationBuilder
 
 struct CancellationConfirmationBuilder : public Test {
   const protocol::Session test_session{protocol::generator::Session{}};
@@ -160,10 +158,6 @@ TEST_F(CancellationConfirmationBuilder, SetsOrigClientOrderId) {
               Optional(Eq(OrigClientOrderId{"ORIG-123"})));
 }
 
-// endregion CancellationConfirmationBuilder
-
-// region CancellationRejectBuilder
-
 struct CancellationRejectBuilder : public Test {
   const protocol::Session test_session{protocol::generator::Session{}};
   protocol::OrderCancellationRequest request{test_session};
@@ -237,8 +231,6 @@ TEST_F(CancellationRejectBuilder, SetsOrigClientOrderId) {
   ASSERT_THAT(reject.orig_client_order_id,
               Optional(Eq(OrigClientOrderId{"ORIG-123"})));
 }
-
-// endregion CancellationRejectBuilder
 
 // NOLINTEND(*magic-numbers*)
 

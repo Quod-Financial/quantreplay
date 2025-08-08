@@ -1,14 +1,12 @@
-#include "ih/trading_phase_controller.hpp"
-
 #include <gmock/gmock.h>
 
 #include "ih/tick_event_factory.hpp"
+#include "ih/trading_phase_controller.hpp"
 
-namespace simulator::trading_system::ies {
+namespace simulator::trading_system::ies::test {
 namespace {
 
-using namespace ::testing;
-
+using namespace ::testing;  // NOLINT
 using namespace std::chrono_literals;
 
 struct TradingSystemIesTradingPhaseController : public Test {
@@ -16,24 +14,24 @@ struct TradingSystemIesTradingPhaseController : public Test {
 
   auto tick(auto time) -> void {
     auto event_tick = event_factory_.create_tick_event(core::sys_us(time));
-    controller.update(event_tick);
+    controller_.update(event_tick);
   }
 
   auto schedule(PhaseSchedule phase_schedule) -> void {
-    controller.configure(phase_schedule);
+    controller_.configure(phase_schedule);
   }
 
   auto send_halt_request(protocol::HaltPhaseRequest request = {})
       -> protocol::HaltPhaseReply {
     protocol::HaltPhaseReply reply;
-    controller.process(request, reply);
+    controller_.process(request, reply);
     return reply;
   }
 
   auto send_resume_request() -> protocol::ResumePhaseReply {
     constexpr protocol::ResumePhaseRequest request;
     protocol::ResumePhaseReply reply;
-    controller.process(request, reply);
+    controller_.process(request, reply);
     return reply;
   }
 
@@ -45,17 +43,13 @@ struct TradingSystemIesTradingPhaseController : public Test {
     return Optional(Property(&Phase::status, Eq(status)));
   }
 
-  static auto TradingStatusNe(TradingStatus status) {
-    return Optional(Property(&Phase::status, Ne(status)));
-  }
-
   auto SetUp() -> void override {
-    controller.bind(
+    controller_.bind(
         [this](event::PhaseTransition event) { phase = event.phase; });
   }
 
  private:
-  TradingPhaseController controller;
+  TradingPhaseController controller_;
   TickEventFactory event_factory_;
 };
 
@@ -224,4 +218,4 @@ TEST_F(TradingSystemIesTradingPhaseController, ResumesRequestedHalt) {
 }
 
 }  // namespace
-}  // namespace simulator::trading_system::ies
+}  // namespace simulator::trading_system::ies::test

@@ -1,8 +1,7 @@
-#include "ih/instruments_container.hpp"
-
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "ih/instruments_container.hpp"
 #include "test_utils/utils.hpp"
 
 namespace simulator::trading_system::instrument::test {

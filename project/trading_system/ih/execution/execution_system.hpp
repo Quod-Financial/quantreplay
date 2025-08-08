@@ -1,8 +1,6 @@
 #ifndef SIMULATOR_TRADING_SYSTEM_IH_EXECUTION_EXECUTION_SYSTEM_HPP_
 #define SIMULATOR_TRADING_SYSTEM_IH_EXECUTION_EXECUTION_SYSTEM_HPP_
 
-#include <functional>
-
 #include "common/market_state/snapshot.hpp"
 #include "common/trading_engine.hpp"
 #include "ih/execution/reject_notifier.hpp"

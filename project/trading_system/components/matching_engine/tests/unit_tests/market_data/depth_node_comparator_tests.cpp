@@ -5,10 +5,10 @@
 #include "ih/market_data/depth/depth_node_comparator.hpp"
 #include "tools/order_book_notification_builder.hpp"
 
-using namespace testing;  // NOLINT
-
-namespace simulator::trading_system::matching_engine::mdata {
+namespace simulator::trading_system::matching_engine::mdata::test {
 namespace {
+
+using namespace testing;  // NOLINT
 
 struct DepthNodeComparatorTest : Test {
   constexpr static std::optional<Price> NoPrice = std::nullopt;
@@ -18,8 +18,6 @@ struct DepthNodeComparatorTest : Test {
                      NewOrderAdded::init().with_order_price(price).create());
   }
 };
-
-/*----------------------------------------------------------------------------*/
 
 struct BidComparatorTest : DepthNodeComparatorTest {
   BidComparator cmp;
@@ -66,8 +64,6 @@ TEST_F(BidComparatorTest, ReturnsFalseWhenBothNodesHaveNoPrice) {
 
   ASSERT_FALSE(cmp(left, right));
 }
-
-/*----------------------------------------------------------------------------*/
 
 struct OfferComparatorTest : DepthNodeComparatorTest {
   OfferComparator cmp;
@@ -116,4 +112,4 @@ TEST_F(OfferComparatorTest, ReturnsFalseWhenBothNodesHaveNoPrice) {
 }
 
 }  // namespace
-}  // namespace simulator::trading_system::matching_engine::mdata
+}  // namespace simulator::trading_system::matching_engine::mdata::test

@@ -5,7 +5,7 @@
 #include "tests/mocks/market_data_publisher_mock.hpp"
 #include "tests/mocks/order_event_handler_mock.hpp"
 #include "tests/mocks/trading_reply_receiver_mock.hpp"
-#include "tests/tools/protocol_test_tools.hpp"
+#include "tests/tools/protocol_tools.hpp"
 
 namespace simulator::trading_system::matching_engine::command::test {
 namespace {

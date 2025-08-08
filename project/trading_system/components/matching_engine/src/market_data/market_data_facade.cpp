@@ -1,8 +1,6 @@
 #include "ih/market_data/market_data_facade.hpp"
 
-#include "core/tools/overload.hpp"
 #include "ih/market_data/cache/depth_cache.hpp"
-#include "ih/market_data/subscriptions/subscription.hpp"
 #include "ih/market_data/tools/notification_creators.hpp"
 #include "ih/market_data/validation/market_data_validator.hpp"
 #include "log/logging.hpp"

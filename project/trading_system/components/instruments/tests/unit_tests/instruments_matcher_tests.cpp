@@ -4,7 +4,7 @@
 #include "core/domain/instrument_descriptor.hpp"
 #include "ih/instruments_matcher.hpp"
 
-namespace simulator::trading_system::instrument::tests {
+namespace simulator::trading_system::instrument::test {
 namespace {
 
 struct TradingSystemInstrumentsMatcher : testing::Test {
@@ -218,4 +218,4 @@ TEST_F(TradingSystemInstrumentsMatcher,
 }
 
 }  // namespace
-}  // namespace simulator::trading_system::instrument::tests
+}  // namespace simulator::trading_system::instrument::test

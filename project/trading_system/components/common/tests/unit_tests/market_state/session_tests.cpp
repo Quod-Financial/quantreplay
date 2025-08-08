@@ -5,6 +5,7 @@
 #include "test_utils/matchers.hpp"
 
 namespace simulator::trading_system::market_state::test {
+namespace {
 
 using namespace ::testing;
 
@@ -17,7 +18,8 @@ TEST(TradingSystemCommonSessionFmt, FormatsFixToString) {
                                       fix_session};
   ASSERT_EQ(
       fmt::to_string(session),
-     "{ \"type\": \"Fix\", \"fix_session\": { BeginString=\"begin\", SenderCompID=\"sender\", TargetCompID=\"target\", ClientSubID=none } }");
+      "{ \"type\": \"Fix\", \"fix_session\": { BeginString=\"begin\", "
+      "SenderCompID=\"sender\", TargetCompID=\"target\", ClientSubID=none } }");
 }
 
 TEST(TradingSystemCommonSessionFmt, FormatsGeneratedToString) {
@@ -107,4 +109,5 @@ TEST_F(TradingSystemCommonSession, WritesGeneratorSessionToJson) {
   ASSERT_THAT(value, HasNull("fix_session"));
 }
 
+}  // namespace
 }  // namespace simulator::trading_system::market_state::test

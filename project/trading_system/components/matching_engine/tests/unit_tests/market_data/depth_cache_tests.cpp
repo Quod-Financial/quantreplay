@@ -7,15 +7,15 @@
 #include "core/domain/market_data_entry.hpp"
 #include "ih/market_data/cache/depth_cache.hpp"
 #include "ih/market_data/streaming_settings.hpp"
-#include "mocks/mock_market_entry_id_generator.hpp"
+#include "mocks/market_entry_id_generator_mock.hpp"
 #include "tools/order_book_notification_builder.hpp"
+
+namespace simulator::trading_system::matching_engine::mdata::test {
+namespace {
 
 using namespace ::testing;  // NOLINT
 
 // NOLINTBEGIN(*magic-numbers*,*non-private-member*)
-
-namespace simulator::trading_system::matching_engine::mdata {
-namespace {
 
 struct DepthCacheTest : Test {
   static auto make_update(auto&&... changes) {
@@ -62,7 +62,7 @@ struct DepthCacheTest : Test {
   StreamingSettings settings;
   std::vector<MarketDataEntry> data;
   protocol::InstrumentState state;
-  NiceMock<MockMarketEntryIdGenerator> id_generator;
+  NiceMock<MarketEntryIdGeneratorMock> id_generator;
   DepthCache cache{id_generator};
 
   constexpr static std::optional<Price> NoPrice = std::nullopt;
@@ -377,7 +377,7 @@ TEST_F(DepthCacheTest, CapturesOfferState) {
   EXPECT_THAT(state.current_offer_depth, Eq(CurrentOfferDepth(2)));
 }
 
-}  // namespace
-}  // namespace simulator::trading_system::matching_engine::mdata
-
 // NOLINTEND(*magic-numbers*,*non-private-member*)
+
+}  // namespace
+}  // namespace simulator::trading_system::matching_engine::mdata::test

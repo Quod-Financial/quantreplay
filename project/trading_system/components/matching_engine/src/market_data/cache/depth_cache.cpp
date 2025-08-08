@@ -85,7 +85,7 @@ auto DepthCache::apply(const auto& update) -> void {
     offer_depth_.apply(update);
   } else {
     log::warn(
-        "unable to apply update, cannot conveert order side to a known market "
+        "unable to apply update, cannot convert order side to a known market "
         "entry type, ignoring {}",
         update);
   }

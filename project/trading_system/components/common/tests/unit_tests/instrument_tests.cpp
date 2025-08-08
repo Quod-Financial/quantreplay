@@ -1,11 +1,10 @@
-#include "common/instrument.hpp"
-
 #include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <optional>
 
+#include "common/instrument.hpp"
 #include "common/json/instrument.hpp"
 #include "test_utils/matchers.hpp"
 

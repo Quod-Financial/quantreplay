@@ -3,10 +3,10 @@
 #include "ih/market_data/depth/full_depth_update.hpp"
 #include "tools/fake_depth_node.hpp"
 
-using namespace ::testing;  // NOLINT
-
-namespace simulator::trading_system::matching_engine::mdata {
+namespace simulator::trading_system::matching_engine::mdata::test {
 namespace {
+
+using namespace ::testing;  // NOLINT
 
 struct BuilderTest : Test {
   static auto depth_view(const auto& depth) {
@@ -237,4 +237,4 @@ TEST_F(LimitedFullDepthUpdateBuilderTest,
 }
 
 }  // namespace
-}  // namespace simulator::trading_system::matching_engine::mdata
+}  // namespace simulator::trading_system::matching_engine::mdata::test

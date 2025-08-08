@@ -10,8 +10,9 @@
 namespace simulator::trading_system::idgen {
 
 [[nodiscard]]
-auto generate_identifier(const InstrumentIdContext::Implementation&
-                             ctx) noexcept -> ExpectedId<InstrumentId>;
+auto generate_identifier(
+    const InstrumentIdContext::Implementation& ctx) noexcept
+    -> ExpectedId<InstrumentId>;
 
 auto update_counter_sequence(InstrumentIdContext::Implementation& ctx) noexcept
     -> void;

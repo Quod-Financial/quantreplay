@@ -11,8 +11,6 @@ struct InstrumentMatcherTest : testing::Test {
   Instrument instrument;
 };
 
-/*----------------------------------------------------------------------------*/
-
 struct InstrumentSymbolMatcher : InstrumentMatcherTest {
   auto SetUp() -> void override {
     descriptor.symbol = Symbol{"AAPL"};
@@ -41,8 +39,6 @@ TEST_F(InstrumentSymbolMatcher, NoMatchWhenValuesDiffer) {
 
   EXPECT_EQ(match_symbol(descriptor, instrument), MatchRate::NoMatch);
 }
-
-/*----------------------------------------------------------------------------*/
 
 struct InstrumentSedolMatcher : InstrumentMatcherTest {
   auto SetUp() -> void override {
@@ -73,8 +69,6 @@ TEST_F(InstrumentSedolMatcher, NoMatchWhenValuesDiffer) {
   EXPECT_EQ(match_sedol_id(descriptor, instrument), MatchRate::NoMatch);
 }
 
-/*----------------------------------------------------------------------------*/
-
 struct InstrumentCusipMatcher : InstrumentMatcherTest {
   auto SetUp() -> void override {
     instrument.cusip = CusipId{"CUSIP"};
@@ -103,8 +97,6 @@ TEST_F(InstrumentCusipMatcher, NoMatchWhenValuesDiffer) {
 
   EXPECT_EQ(match_cusip_id(descriptor, instrument), MatchRate::NoMatch);
 }
-
-/*----------------------------------------------------------------------------*/
 
 struct InstrumentIsinMatcher : InstrumentMatcherTest {
   auto SetUp() -> void override {
@@ -135,8 +127,6 @@ TEST_F(InstrumentIsinMatcher, NoMatchWhenValuesDiffer) {
   EXPECT_EQ(match_isin_id(descriptor, instrument), MatchRate::NoMatch);
 }
 
-/*----------------------------------------------------------------------------*/
-
 struct InstrumentRicMatcher : InstrumentMatcherTest {
   auto SetUp() -> void override {
     instrument.ric = RicId{"RIC"};
@@ -165,8 +155,6 @@ TEST_F(InstrumentRicMatcher, NoMatchWhenValuesDiffer) {
 
   EXPECT_EQ(match_ric_id(descriptor, instrument), MatchRate::NoMatch);
 }
-
-/*----------------------------------------------------------------------------*/
 
 struct InstrumentExchangeIdMatcher : InstrumentMatcherTest {
   auto SetUp() -> void override {
@@ -197,8 +185,6 @@ TEST_F(InstrumentExchangeIdMatcher, NoMatchWhenValuesDiffer) {
   EXPECT_EQ(match_exchange_id(descriptor, instrument), MatchRate::NoMatch);
 }
 
-/*----------------------------------------------------------------------------*/
-
 struct InstrumentBloombergIdMatcher : InstrumentMatcherTest {
   auto SetUp() -> void override {
     instrument.bloomberg_id = BloombergId{"BBG"};
@@ -227,8 +213,6 @@ TEST_F(InstrumentBloombergIdMatcher, NoMatchWhenValuesDiffer) {
 
   EXPECT_EQ(match_bloomberg_id(descriptor, instrument), MatchRate::NoMatch);
 }
-
-/*----------------------------------------------------------------------------*/
 
 struct InstrumentSecurityTypeMatcher : InstrumentMatcherTest {
   auto SetUp() -> void override {
@@ -259,8 +243,6 @@ TEST_F(InstrumentSecurityTypeMatcher, NoMatchWhenValuesDiffer) {
 
   EXPECT_EQ(match_security_type(descriptor, instrument), MatchRate::NoMatch);
 }
-
-/*----------------------------------------------------------------------------*/
 
 struct InstrumentSecurityExchangeMatcher : InstrumentMatcherTest {
   auto SetUp() -> void override {
@@ -294,8 +276,6 @@ TEST_F(InstrumentSecurityExchangeMatcher, NoMatchWhenValuesDiffer) {
   EXPECT_EQ(match_security_exchange(descriptor, instrument),
             MatchRate::NoMatch);
 }
-
-/*----------------------------------------------------------------------------*/
 
 struct InstrumentCurrencyMatcher : InstrumentMatcherTest {
   auto SetUp() -> void override {
@@ -343,8 +323,6 @@ TEST_F(InstrumentCurrencyMatcher, NoMatchWhenBaseCurrencyDifferForFx) {
   EXPECT_EQ(match_currency(descriptor, instrument), MatchRate::NoMatch);
 }
 
-/*----------------------------------------------------------------------------*/
-
 struct InstrumentPartyIdMatcher : InstrumentMatcherTest {
   auto SetUp() -> void override {
     instrument.party_id = PartyId{"PARTY"};
@@ -390,8 +368,6 @@ TEST_F(InstrumentPartyIdMatcher, UnmatchableWhenPartyRoleDifferent) {
   EXPECT_EQ(match_party(descriptor, instrument), MatchRate::Unmatchable);
 }
 
-/*----------------------------------------------------------------------------*/
-
 TEST(InstrumentsMatcher, CombinesMatchersResults) {
   constexpr auto matcher =
       make_matcher([](auto&&, auto&&) { return MatchRate::Match; },
@@ -400,8 +376,6 @@ TEST(InstrumentsMatcher, CombinesMatchersResults) {
 
   EXPECT_EQ(matcher(InstrumentDescriptor{}, Instrument{}), MatchRate::NoMatch);
 }
-
-/*----------------------------------------------------------------------------*/
 
 }  // namespace
 }  // namespace simulator::trading_system::instrument::lookup::test

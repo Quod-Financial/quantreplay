@@ -1,14 +1,14 @@
-#ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_VALIDATION_REQUEST_VALIDATOR_HPP_
-#define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_VALIDATION_REQUEST_VALIDATOR_HPP_
+#ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_VALIDATION_CLIENT_REQUEST_VALIDATOR_HPP_
+#define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_VALIDATION_CLIENT_REQUEST_VALIDATOR_HPP_
 
 #include <optional>
 
 #include "common/attributes.hpp"
 #include "common/market_state/snapshot.hpp"
 #include "core/tools/time.hpp"
-#include "ih/orders/validation/validator.hpp"
-#include "ih/orders/validation/errors.hpp"
 #include "ih/common/validation/validation.hpp"
+#include "ih/orders/validation/errors.hpp"
+#include "ih/orders/validation/validator.hpp"
 #include "protocol/app/order_cancellation_request.hpp"
 #include "protocol/app/order_modification_request.hpp"
 #include "protocol/app/order_placement_request.hpp"
@@ -64,4 +64,4 @@ class ClientRequestValidator : public Validator {
 
 }  // namespace simulator::trading_system::matching_engine::order
 
-#endif  // SIMULATOR_MATCHING_ENGINE_IH_ORDERS_VALIDATION_REQUEST_VALIDATOR_HPP_
+#endif  // SIMULATOR_MATCHING_ENGINE_IH_ORDERS_VALIDATION_CLIENT_REQUEST_VALIDATOR_HPP_

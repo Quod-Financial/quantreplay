@@ -1,5 +1,3 @@
-#include "ies/phase_schedule.hpp"
-
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -7,8 +5,9 @@
 
 #include "core/tools/time.hpp"
 #include "ies/phase_record.hpp"
+#include "ies/phase_schedule.hpp"
 
-namespace simulator::trading_system::ies {
+namespace simulator::trading_system::ies::test {
 namespace {
 
 using namespace ::testing;  // NOLINT
@@ -165,4 +164,4 @@ TEST_F(PhaseScheduleTest, CopiesPhaseSettingFromCurrentHaltPhase) {
 }
 
 }  // namespace
-}  // namespace simulator::trading_system::ies
+}  // namespace simulator::trading_system::ies::test

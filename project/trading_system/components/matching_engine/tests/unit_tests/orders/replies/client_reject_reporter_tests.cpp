@@ -2,9 +2,9 @@
 
 #include "common/attributes.hpp"
 #include "ih/orders/replies/client_reject_reporter.hpp"
-#include "mocks/mock_client_notification_listener.hpp"
-#include "mocks/mock_order_id_generator.hpp"
-#include "tools/protocol_test_tools.hpp"
+#include "mocks/client_notification_listener_mock.hpp"
+#include "mocks/order_id_generator_mock.hpp"
+#include "tools/protocol_tools.hpp"
 
 namespace simulator::trading_system::matching_engine::test {
 namespace {
@@ -12,8 +12,6 @@ namespace {
 // NOLINTBEGIN(*magic-numbers*,*non-private-member*)
 
 using namespace ::testing;  // NOLINT
-
-/*----------------------------------------------------------------------------*/
 
 class OrderPlacementRejectReporting : public Test {
  public:
@@ -37,8 +35,8 @@ class OrderPlacementRejectReporting : public Test {
     ON_CALL(order_id_generator_, generate).WillByDefault(Return(OrderId{1}));
   }
 
-  StrictMock<MockClientNotificationListener> listener_;
-  NiceMock<MockOrderIdGenerator> order_id_generator_;
+  StrictMock<ClientNotificationListenerMock> listener_;
+  NiceMock<OrderIdGeneratorMock> order_id_generator_;
   order::ClientRejectReporter reporter_{listener_, order_id_generator_};
 };
 
@@ -164,8 +162,6 @@ TEST_F(OrderPlacementRejectReporting, SpecifiesTimeInForce) {
   ASSERT_THAT(reject.time_in_force, Eq(request.time_in_force));
 }
 
-/*----------------------------------------------------------------------------*/
-
 class OrderModificationRejectReporting : public Test {
  public:
   auto listener() -> decltype(auto) { return (listener_); }
@@ -187,8 +183,8 @@ class OrderModificationRejectReporting : public Test {
         .WillByDefault(SaveArg<0>(&reject));
   }
 
-  StrictMock<MockOrderIdGenerator> order_id_generator_;
-  StrictMock<MockClientNotificationListener> listener_;
+  StrictMock<OrderIdGeneratorMock> order_id_generator_;
+  StrictMock<ClientNotificationListenerMock> listener_;
   order::ClientRejectReporter reporter_{listener_, order_id_generator_};
 };
 
@@ -251,8 +247,6 @@ TEST_F(OrderModificationRejectReporting, HardcodesRejectedOrderStatus) {
   ASSERT_THAT(reject.order_status, Eq(OrderStatus::Option::Rejected));
 }
 
-/*----------------------------------------------------------------------------*/
-
 class OrderCancellationRejectReporting : public Test {
  public:
   auto listener() -> decltype(auto) { return (listener_); }
@@ -274,8 +268,8 @@ class OrderCancellationRejectReporting : public Test {
         .WillByDefault(SaveArg<0>(&reject));
   }
 
-  StrictMock<MockOrderIdGenerator> order_id_generator_;
-  StrictMock<MockClientNotificationListener> listener_;
+  StrictMock<OrderIdGeneratorMock> order_id_generator_;
+  StrictMock<ClientNotificationListenerMock> listener_;
   order::ClientRejectReporter reporter_{listener_, order_id_generator_};
 };
 
@@ -337,8 +331,6 @@ TEST_F(OrderCancellationRejectReporting, HardcodesRejectedOrderStatus) {
 
   ASSERT_THAT(reject.order_status, Eq(OrderStatus::Option::Rejected));
 }
-
-/*----------------------------------------------------------------------------*/
 
 // NOLINTEND(*magic-numbers*,*non-private-member*)
 

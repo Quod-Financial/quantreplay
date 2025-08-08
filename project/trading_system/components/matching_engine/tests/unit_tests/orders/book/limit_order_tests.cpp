@@ -6,7 +6,7 @@
 #include "common/attributes.hpp"
 #include "core/tools/time.hpp"
 #include "ih/orders/book/limit_order.hpp"
-#include "tools/order_test_tools.hpp"
+#include "tools/order_builder.hpp"
 
 namespace simulator::trading_system::matching_engine::test {
 
@@ -18,8 +18,8 @@ using namespace std::chrono_literals;
 struct LimitOrderEntry : public Test {
   OrderBuilder builder;
 
-  auto make_update(OrderPrice price,
-                   OrderQuantity quantity) const -> LimitOrder::Update {
+  auto make_update(OrderPrice price, OrderQuantity quantity) const
+      -> LimitOrder::Update {
     return LimitOrder::Update{.price = price,
                               .quantity = quantity,
                               .attributes = builder.build_order_attributes()};

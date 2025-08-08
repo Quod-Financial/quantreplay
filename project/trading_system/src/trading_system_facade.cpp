@@ -9,8 +9,6 @@
 
 namespace simulator::trading_system {
 
-namespace database = data_layer::database;
-
 TradingSystemFacade::TradingSystemFacade(Config config,
                                          instrument::Cache instruments)
     : thread_pool_(runtime::ThreadPool::create_simple_thread_pool()),

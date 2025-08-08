@@ -4,10 +4,9 @@
 
 #include "core/domain/attributes.hpp"
 #include "ih/orders/tools/notification_creators.hpp"
-#include "tools/order_test_tools.hpp"
-#include "tools/protocol_test_tools.hpp"
+#include "tools/order_builder.hpp"
 
-namespace simulator::trading_system::matching_engine::order::tests {
+namespace simulator::trading_system::matching_engine::order::test {
 namespace {
 
 // NOLINTBEGIN(*non-private-members*,*magic-numbers*)
@@ -630,4 +629,4 @@ TEST_F(OrderBookNotificationTradeFromMarketLimitOrdersCreation,
 // NOLINTEND(*non-private-members*,*magic-numbers*)
 
 }  // namespace
-}  // namespace simulator::trading_system::matching_engine::order::tests
+}  // namespace simulator::trading_system::matching_engine::order::test

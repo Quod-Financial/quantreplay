@@ -11,10 +11,10 @@ struct TradingReplyReceiverMock : public middleware::TradingReplyReceiver {
   TradingReplyReceiverMock();
   ~TradingReplyReceiverMock() override;
 
-  TradingReplyReceiverMock(TradingReplyReceiverMock const&) = delete;
+  TradingReplyReceiverMock(const TradingReplyReceiverMock&) = delete;
   TradingReplyReceiverMock(TradingReplyReceiverMock&&) = delete;
 
-  auto operator=(TradingReplyReceiverMock const&)
+  auto operator=(const TradingReplyReceiverMock&)
       -> TradingReplyReceiverMock& = delete;
 
   auto operator=(TradingReplyReceiverMock&&)

@@ -18,7 +18,8 @@ constexpr auto missing(const std::optional<T>& attributes) -> bool {
 
 auto match_security_id(const InstrumentDescriptor& descriptor,
                        const Instrument& instrument,
-                       const auto Instrument::*security_id_field) -> MatchRate {
+                       const auto Instrument::* security_id_field)
+    -> MatchRate {
   if (missing(descriptor.security_id)) {
     return MatchRate::Unmatchable;
   }

@@ -5,6 +5,7 @@
 
 namespace simulator::trading_system::matching_engine::test {
 namespace {
+
 using namespace ::testing;
 
 struct MatchingEngineOrderBookStateConverterOrderAttributes

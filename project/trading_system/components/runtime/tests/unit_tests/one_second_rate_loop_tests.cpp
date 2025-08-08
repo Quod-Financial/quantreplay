@@ -1,5 +1,3 @@
-#include "ih/one_second_rate_loop.hpp"
-
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
@@ -8,10 +6,12 @@
 #include <csignal>
 #include <thread>
 
-using namespace std::chrono_literals;
+#include "ih/one_second_rate_loop.hpp"
 
-namespace simulator::trading_system::runtime {
+namespace simulator::trading_system::runtime::test {
 namespace {
+
+using namespace std::chrono_literals;
 
 TEST(OneSecondRateLoopDeathTest, TerminatesWhenTerminatedInLoopThread) {
   ASSERT_EXIT(
@@ -36,4 +36,4 @@ TEST(OneSecondRateLoopTest, ThrowsWhenAddingTaskWhileRunning) {
 }
 
 }  // namespace
-}  // namespace simulator::trading_system::runtime
+}  // namespace simulator::trading_system::runtime::test

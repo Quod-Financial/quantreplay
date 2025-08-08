@@ -11,6 +11,6 @@ add_target_tests(
     unit_tests/market_state/session_type_tests.cpp
     unit_tests/market_state/snapshot_tests.cpp
     unit_tests/events_tests.cpp
-    unit_tests/instrument_test.cpp
-    unit_tests/phase_test.cpp
+    unit_tests/instrument_tests.cpp
+    unit_tests/phase_tests.cpp
     unit_tests/trade_tests.cpp)

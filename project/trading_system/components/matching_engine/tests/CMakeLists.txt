@@ -4,18 +4,18 @@ add_target_tests(
     actions/save_copy_constructible.hpp
     mocks/event_listener_mock.hpp
     mocks/market_data_publisher_mock.hpp
-    mocks/mock_client_notification_listener.hpp
-    mocks/mock_execution_reports_listener.hpp
-    mocks/mock_market_entry_id_generator.hpp
-    mocks/mock_order_id_generator.hpp
+    mocks/client_notification_listener_mock.hpp
+    mocks/execution_reports_listener_mock.hpp
+    mocks/market_entry_id_generator_mock.hpp
+    mocks/order_id_generator_mock.hpp
     mocks/order_event_handler_mock.hpp
     mocks/regular_matcher_mock.hpp
     mocks/trading_reply_receiver_mock.hpp
     tools/fake_depth_node.hpp
     tools/matchers.hpp
     tools/order_book_notification_builder.hpp
-    tools/order_test_tools.hpp
-    tools/protocol_test_tools.hpp
+    tools/order_builder.hpp
+    tools/protocol_tools.hpp
   UNIT_TESTS
     unit_tests/commands/phase_transition_command_tests.cpp
     unit_tests/commands/tick_command_tests.cpp
@@ -35,7 +35,7 @@ add_target_tests(
     unit_tests/market_data/depth_sheet_tests.cpp
     unit_tests/market_data/depth_stats_reader_tests.cpp
     unit_tests/market_data/full_depth_update_tests.cpp
-    unit_tests/market_data/incremental_depth_update.cpp
+    unit_tests/market_data/incremental_depth_update_tests.cpp
     unit_tests/market_data/instrument_info_cache_tests.cpp
     unit_tests/market_data/instrument_px_tests.cpp
     unit_tests/market_data/streaming_settings_tests.cpp

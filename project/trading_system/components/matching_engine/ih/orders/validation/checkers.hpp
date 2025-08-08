@@ -11,7 +11,6 @@
 #include "ih/common/validation/checker_utils.hpp"
 #include "ih/orders/validation/errors.hpp"
 #include "ih/orders/validation/order_book_side.hpp"
-#include "protocol/app/order_placement_request.hpp"
 
 namespace simulator::trading_system::matching_engine::order {
 

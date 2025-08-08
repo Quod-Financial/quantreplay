@@ -1,8 +1,8 @@
-#include "common/phase.hpp"
-
 #include <gmock/gmock.h>
 
-namespace simulator::trading_system::ies {
+#include "common/phase.hpp"
+
+namespace simulator::trading_system::test {
 namespace {
 
 using namespace ::testing;
@@ -51,4 +51,4 @@ TEST(TradingSystemPhase, SetsSettingOnHaltStatus) {
 }
 
 }  // namespace
-}  // namespace simulator::trading_system::ies
+}  // namespace simulator::trading_system::test

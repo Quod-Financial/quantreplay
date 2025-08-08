@@ -18,16 +18,13 @@ class MatchRate {
       : MatchRate(fit(rate)) {}
 
   [[nodiscard]]
-  constexpr auto
-  operator==(const MatchRate& other) const -> bool = default;
+  constexpr auto operator==(const MatchRate& other) const -> bool = default;
 
   [[nodiscard]]
-  constexpr auto
-  operator<=>(const MatchRate& other) const = default;
+  constexpr auto operator<=>(const MatchRate& other) const = default;
 
   [[nodiscard]]
-  constexpr auto
-  operator+(const MatchRate& other) const -> MatchRate {
+  constexpr auto operator+(const MatchRate& other) const -> MatchRate {
     if (*this == NoMatch || other == NoMatch) {
       return NoMatch;
     }

@@ -1,8 +1,6 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_REGULAR_ORDER_ACTION_PROCESSOR_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_REGULAR_ORDER_ACTION_PROCESSOR_HPP_
 
-#include <memory>
-
 #include "ih/common/abstractions/event_listener.hpp"
 #include "ih/orders/actions/order_action_handler.hpp"
 #include "ih/orders/book/limit_order.hpp"

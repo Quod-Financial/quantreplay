@@ -1,5 +1,5 @@
-#ifndef SIMULATOR_MATCHING_ENGINE_TESTS_MOCKS_MOCK_MARKET_ENTRY_ID_GENERATOR_HPP_
-#define SIMULATOR_MATCHING_ENGINE_TESTS_MOCKS_MOCK_MARKET_ENTRY_ID_GENERATOR_HPP_
+#ifndef SIMULATOR_MATCHING_ENGINE_TESTS_MOCKS_MARKET_ENTRY_ID_GENERATOR_MOCK_HPP_
+#define SIMULATOR_MATCHING_ENGINE_TESTS_MOCKS_MARKET_ENTRY_ID_GENERATOR_MOCK_HPP_
 
 #include <gmock/gmock.h>
 
@@ -7,7 +7,7 @@
 
 namespace simulator::trading_system::matching_engine {
 
-class MockMarketEntryIdGenerator : public mdata::MarketEntryIdGenerator {
+class MarketEntryIdGeneratorMock : public mdata::MarketEntryIdGenerator {
  public:
   MOCK_METHOD(MarketEntryId, generate, ());
 
@@ -17,4 +17,4 @@ class MockMarketEntryIdGenerator : public mdata::MarketEntryIdGenerator {
 
 }  // namespace simulator::trading_system::matching_engine
 
-#endif  // SIMULATOR_MATCHING_ENGINE_TESTS_MOCKS_MOCK_MARKET_ENTRY_ID_GENERATOR_HPP_
+#endif  // SIMULATOR_MATCHING_ENGINE_TESTS_MOCKS_MARKET_ENTRY_ID_GENERATOR_MOCK_HPP_

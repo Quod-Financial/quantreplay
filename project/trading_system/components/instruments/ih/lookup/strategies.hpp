@@ -15,8 +15,7 @@ class SymbolLookup {
   SymbolLookup() = delete;
 
   [[nodiscard]]
-  auto
-  operator()(const Instrument& instrument) const -> MatchRate;
+  auto operator()(const Instrument& instrument) const -> MatchRate;
 
   [[nodiscard]]
   static auto create(const InstrumentDescriptor& descriptor)
@@ -33,8 +32,7 @@ class SedolIdLookup {
   SedolIdLookup() = delete;
 
   [[nodiscard]]
-  auto
-  operator()(const Instrument& instrument) const -> MatchRate;
+  auto operator()(const Instrument& instrument) const -> MatchRate;
 
   [[nodiscard]]
   static auto create(const InstrumentDescriptor& descriptor)
@@ -51,8 +49,7 @@ class CusipIdLookup {
   CusipIdLookup() = delete;
 
   [[nodiscard]]
-  auto
-  operator()(const Instrument& instrument) const -> MatchRate;
+  auto operator()(const Instrument& instrument) const -> MatchRate;
 
   [[nodiscard]]
   static auto create(const InstrumentDescriptor& descriptor)
@@ -69,8 +66,7 @@ class IsinIdLookup {
   IsinIdLookup() = delete;
 
   [[nodiscard]]
-  auto
-  operator()(const Instrument& instrument) const -> MatchRate;
+  auto operator()(const Instrument& instrument) const -> MatchRate;
 
   [[nodiscard]]
   static auto create(const InstrumentDescriptor& descriptor)
@@ -87,8 +83,7 @@ class RicIdLookup {
   RicIdLookup() = delete;
 
   [[nodiscard]]
-  auto
-  operator()(const Instrument& instrument) const -> MatchRate;
+  auto operator()(const Instrument& instrument) const -> MatchRate;
 
   [[nodiscard]]
   static auto create(const InstrumentDescriptor& descriptor)
@@ -105,8 +100,7 @@ class ExchangeIdLookup {
   ExchangeIdLookup() = delete;
 
   [[nodiscard]]
-  auto
-  operator()(const Instrument& instrument) const -> MatchRate;
+  auto operator()(const Instrument& instrument) const -> MatchRate;
 
   [[nodiscard]]
   static auto create(const InstrumentDescriptor& descriptor)
@@ -123,8 +117,7 @@ class BloombergIdLookup {
   BloombergIdLookup() = delete;
 
   [[nodiscard]]
-  auto
-  operator()(const Instrument& instrument) const -> MatchRate;
+  auto operator()(const Instrument& instrument) const -> MatchRate;
 
   [[nodiscard]]
   static auto create(const InstrumentDescriptor& descriptor)

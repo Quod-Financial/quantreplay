@@ -1,5 +1,5 @@
-#ifndef SIMULATOR_MATCHING_ENGINE_TESTS_MOCKS_MOCK_EXECUTION_REPORTS_LISTENER_HPP_
-#define SIMULATOR_MATCHING_ENGINE_TESTS_MOCKS_MOCK_EXECUTION_REPORTS_LISTENER_HPP_
+#ifndef SIMULATOR_MATCHING_ENGINE_TESTS_MOCKS_EXECUTION_REPORTS_LISTENER_MOCK_HPP_
+#define SIMULATOR_MATCHING_ENGINE_TESTS_MOCKS_EXECUTION_REPORTS_LISTENER_MOCK_HPP_
 
 #include <vector>
 
@@ -9,7 +9,7 @@
 
 namespace simulator::trading_system::matching_engine {
 
-struct MockExecutionReportsListener : public EventListener {
+struct ExecutionReportsListenerMock : public EventListener {
   std::vector<protocol::ExecutionReport> reports;
 
  private:
@@ -18,4 +18,4 @@ struct MockExecutionReportsListener : public EventListener {
 
 }  // namespace simulator::trading_system::matching_engine
 
-#endif  // SIMULATOR_MATCHING_ENGINE_TESTS_MOCKS_MOCK_EXECUTION_REPORTS_LISTENER_HPP_
+#endif  // SIMULATOR_MATCHING_ENGINE_TESTS_MOCKS_EXECUTION_REPORTS_LISTENER_MOCK_HPP_

@@ -1,14 +1,14 @@
 #include <variant>
 
 #include "core/tools/overload.hpp"
-#include "mocks/mock_client_notification_listener.hpp"
-#include "mocks/mock_execution_reports_listener.hpp"
-#include "mocks/mock_order_id_generator.hpp"
+#include "mocks/client_notification_listener_mock.hpp"
+#include "mocks/execution_reports_listener_mock.hpp"
+#include "mocks/order_id_generator_mock.hpp"
 #include "mocks/trading_reply_receiver_mock.hpp"
 
 namespace simulator::trading_system::matching_engine {
 
-auto MockClientNotificationListener::on(Event event) -> void {
+auto ClientNotificationListenerMock::on(Event event) -> void {
   const auto dispatcher = core::overload(
       [this](protocol::BusinessMessageReject message) {
         on_business_message_reject(std::move(message));
@@ -52,7 +52,7 @@ auto MockClientNotificationListener::on(Event event) -> void {
   }
 }
 
-auto MockExecutionReportsListener::on(Event event) -> void {
+auto ExecutionReportsListenerMock::on(Event event) -> void {
   if (!std::holds_alternative<ClientNotification>(event.value)) {
     return;
   }
@@ -66,7 +66,7 @@ auto MockExecutionReportsListener::on(Event event) -> void {
       std::get<protocol::ExecutionReport>(std::move(notification.value)));
 }
 
-auto MockOrderIdGenerator::operator()() -> OrderId { return generate(); }
+auto OrderIdGeneratorMock::operator()() -> OrderId { return generate(); }
 
 TradingReplyReceiverMock::TradingReplyReceiverMock() = default;
 TradingReplyReceiverMock::~TradingReplyReceiverMock() = default;

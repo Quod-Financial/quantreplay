@@ -14,7 +14,6 @@
 #include "ih/contexts/order_id_context.hpp"
 
 namespace simulator::trading_system::idgen::test {
-
 namespace {
 
 using namespace ::testing;  // NOLINT

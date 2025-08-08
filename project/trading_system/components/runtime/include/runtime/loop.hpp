@@ -1,7 +1,6 @@
 #ifndef SIMULATOR_TRADING_SYSTEM_COMPONENTS_RUNTIME_LOOP_HPP_
 #define SIMULATOR_TRADING_SYSTEM_COMPONENTS_RUNTIME_LOOP_HPP_
 
-#include <chrono>
 #include <functional>
 #include <memory>
 

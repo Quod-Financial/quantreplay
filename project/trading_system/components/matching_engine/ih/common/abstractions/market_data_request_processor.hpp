@@ -32,7 +32,8 @@ class MarketDataRequestProcessor {
       -> void = 0;
 
   virtual auto recover_state(std::optional<Trade> last_trade,
-                             std::optional<market_state::InstrumentInfo> info) -> void = 0;
+                             std::optional<market_state::InstrumentInfo> info)
+      -> void = 0;
 
   virtual auto stop_streaming(const protocol::Session& client_session)
       -> void = 0;

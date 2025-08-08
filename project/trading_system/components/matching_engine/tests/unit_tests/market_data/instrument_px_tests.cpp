@@ -4,7 +4,7 @@
 
 #include "ih/market_data/tools/instrument_px.hpp"
 
-namespace simulator::trading_system::matching_engine::mdata {
+namespace simulator::trading_system::matching_engine::mdata::test {
 namespace {
 
 using namespace ::testing;  // NOLINT
@@ -158,4 +158,4 @@ TYPED_TEST(InstrumentPx, DoesNotUpdateActionIfDeleted) {
 // NOLINTEND(*magic-numbers*,*non-private-members*)
 
 }  // namespace
-}  // namespace simulator::trading_system::matching_engine::mdata
+}  // namespace simulator::trading_system::matching_engine::mdata::test

@@ -10,8 +10,7 @@ template <>
 struct simulator::core::json::Struct<
     simulator::trading_system::market_state::Session> {
   static constexpr auto fields = std::make_tuple(
-      Field(&simulator::trading_system::market_state::Session::type,
-            "type"),
+      Field(&simulator::trading_system::market_state::Session::type, "type"),
       Field(&simulator::trading_system::market_state::Session::fix_session,
             "fix_session"));
 };

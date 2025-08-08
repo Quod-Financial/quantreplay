@@ -1,9 +1,8 @@
-#include "instruments/sources.hpp"
-
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "data_layer/api/models/listing.hpp"
+#include "instruments/sources.hpp"
 
 namespace simulator::trading_system::instrument::test {
 namespace {

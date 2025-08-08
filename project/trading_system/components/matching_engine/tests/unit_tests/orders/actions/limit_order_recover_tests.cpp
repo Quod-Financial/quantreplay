@@ -7,7 +7,7 @@
 #include "tests/mocks/event_listener_mock.hpp"
 #include "tests/tools/matchers.hpp"
 
-namespace simulator::trading_system::matching_engine {
+namespace simulator::trading_system::matching_engine::test {
 namespace {
 
 using namespace testing;  // NOLINT
@@ -228,4 +228,4 @@ TEST_F(MatchingEngineLimitOrderRecover, EmitsOrderAddedOnRecover) {
 }
 
 }  // namespace
-}  // namespace simulator::trading_system::matching_engine
+}  // namespace simulator::trading_system::matching_engine::test

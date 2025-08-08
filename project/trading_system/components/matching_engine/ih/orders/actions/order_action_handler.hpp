@@ -1,13 +1,7 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_ORDER_ACTION_LISTENER_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_ORDER_ACTION_LISTENER_HPP_
 
-#include <vector>
-
-#include "common/attributes.hpp"
 #include "common/market_state/snapshot.hpp"
-#include "core/domain/attributes.hpp"
-#include "core/domain/instrument_descriptor.hpp"
-#include "core/domain/party.hpp"
 #include "ih/orders/book/limit_order.hpp"
 #include "ih/orders/book/market_order.hpp"
 #include "ih/orders/book/order_updates.hpp"

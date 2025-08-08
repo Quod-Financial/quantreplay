@@ -1,9 +1,10 @@
-#include "ih/phases/states.hpp"
-
 #include <gmock/gmock.h>
 
-namespace simulator::trading_system::ies {
+#include "ih/phases/states.hpp"
+
+namespace simulator::trading_system::ies::test {
 namespace {
+
 using namespace ::testing;  // NOLINT
 
 struct TradingSystemIesState : public Test {
@@ -214,4 +215,4 @@ TEST_F(TradingSystemIesClosedState, TransformsToOpenState) {
 }
 
 }  // namespace
-}  // namespace simulator::trading_system::ies
+}  // namespace simulator::trading_system::ies::test

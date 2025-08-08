@@ -1,7 +1,7 @@
 add_target_tests(
   TARGET ${COMPONENT_NAME}
   API_TESTS
-    api_tests/api_test.cpp
+    api_tests/api_tests.cpp
   UNIT_TESTS
     unit_tests/generation/execution_id_generation_tests.cpp
     unit_tests/generation/instrument_id_generation_tests.cpp

@@ -5,8 +5,6 @@
 
 #include "core/common/unreachable.hpp"
 #include "core/domain/attributes.hpp"
-#include "core/domain/market_data_entry.hpp"
-#include "ih/market_data/depth/depth_level.hpp"
 
 namespace simulator::trading_system::matching_engine::mdata {
 

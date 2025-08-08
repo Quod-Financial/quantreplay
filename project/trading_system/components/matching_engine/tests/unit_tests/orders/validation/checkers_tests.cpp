@@ -9,7 +9,7 @@
 #include "protocol/app/order_modification_request.hpp"
 #include "protocol/app/order_placement_request.hpp"
 #include "protocol/types/session.hpp"
-#include "tools/protocol_test_tools.hpp"
+#include "tools/protocol_tools.hpp"
 
 namespace simulator::trading_system::matching_engine::order::test {
 namespace {
@@ -18,8 +18,6 @@ using namespace ::testing;  // NOLINT
 using namespace std::chrono_literals;
 
 // NOLINTBEGIN(*magic-numbers*)
-
-/*----------------------------------------------------------------------------*/
 
 using SideSpecifiedCheckerInputs = Types<protocol::OrderPlacementRequest,
                                          protocol::OrderModificationRequest,
@@ -45,8 +43,6 @@ TYPED_TEST(SideSpecifiedChecker, PassesWhenSideIsPresent) {
 
   ASSERT_THAT(this->checker(input), Eq(std::nullopt));
 }
-
-/*----------------------------------------------------------------------------*/
 
 using SideSupportedCheckerInputs = Types<protocol::OrderPlacementRequest,
                                          protocol::OrderModificationRequest,
@@ -96,8 +92,6 @@ TYPED_TEST(SideSupportedChecker, PassesWhenSideIsNotSpecified) {
 
   ASSERT_THAT(this->checker(this->input), Eq(std::nullopt));
 }
-
-/*----------------------------------------------------------------------------*/
 
 struct OrderSideSupportedChecker : public Test {
   market_state::LimitOrder order;
@@ -161,8 +155,6 @@ TEST_F(OrderSideSupportedChecker, PassedWhenBuyForBuyOrderPage) {
   ASSERT_EQ(checker(order), std::nullopt);
 }
 
-/*----------------------------------------------------------------------------*/
-
 using OrderTypeSpecifiedCheckerInputs =
     Types<protocol::OrderPlacementRequest, protocol::OrderModificationRequest>;
 
@@ -186,8 +178,6 @@ TYPED_TEST(OrderTypeSpecifiedChecker, PassesWhenOrderTypeIsPresent) {
 
   ASSERT_THAT(this->checker(this->input), Eq(std::nullopt));
 }
-
-/*----------------------------------------------------------------------------*/
 
 using OrderTypeSupportedCheckerInputs =
     Types<protocol::OrderPlacementRequest, protocol::OrderModificationRequest>;
@@ -225,8 +215,6 @@ TYPED_TEST(OrderTypeSupportedChecker, PassesWhenOrderTypeIsNotSpecified) {
   ASSERT_THAT(this->checker(this->input), Eq(std::nullopt));
 }
 
-/*----------------------------------------------------------------------------*/
-
 struct OrderStatusSupportedChecker : public Test {
   market_state::LimitOrder order;
 };
@@ -256,8 +244,6 @@ TEST_F(OrderStatusSupportedChecker, PassedWhenOrderStatusIsModified) {
   ASSERT_EQ(OrderStatusSupported{}(order), std::nullopt);
 }
 
-/*----------------------------------------------------------------------------*/
-
 using OrderQuantitySpecifiedCheckerInputs =
     Types<protocol::OrderPlacementRequest, protocol::OrderModificationRequest>;
 
@@ -282,8 +268,6 @@ TYPED_TEST(OrderQuantitySpecifiedChecker, PassesWhenQuantityIsPresent) {
 
   ASSERT_THAT(this->checker(this->input), Eq(std::nullopt));
 }
-
-/*----------------------------------------------------------------------------*/
 
 using OrderQuantityRespectsMinimumCheckerInputs =
     Types<protocol::OrderPlacementRequest, protocol::OrderModificationRequest>;
@@ -354,8 +338,6 @@ TYPED_TEST(OrderQuantityRespectsMinimumChecker, FailsWhenQuantityIsNegative) {
               Optional(Eq(ValidationError::OrderQuantityMinViolated)));
 }
 
-/*----------------------------------------------------------------------------*/
-
 using OrderQuantityRespectsMaximumCheckerInputs =
     Types<protocol::OrderPlacementRequest, protocol::OrderModificationRequest>;
 
@@ -407,8 +389,6 @@ TYPED_TEST(OrderQuantityRespectsMaximumChecker, FailsWhenQtyIsGreaterThanMax) {
   ASSERT_THAT(this->checker(this->input),
               Optional(Eq(ValidationError::OrderQuantityMaxViolated)));
 }
-
-/*----------------------------------------------------------------------------*/
 
 using OrderQuantityRespectsTickCheckerInputs =
     Types<protocol::OrderPlacementRequest, protocol::OrderModificationRequest>;
@@ -488,8 +468,6 @@ TYPED_TEST(OrderQuantityRespectsTickChecker, FailsWhenTickIsNegative) {
               Optional(Eq(ValidationError::OrderQuantityTickViolated)));
 }
 
-/*----------------------------------------------------------------------------*/
-
 struct TotalQuantityRespectsMinimumChecker : public Test {
   market_state::LimitOrder order;
 };
@@ -542,8 +520,6 @@ TEST_F(TotalQuantityRespectsMinimumChecker, SuccessWhenQtyIsGreaterThanMin) {
   ASSERT_EQ(TotalQuantityRespectsMinimum{min}(order), std::nullopt);
 }
 
-/*----------------------------------------------------------------------------*/
-
 struct TotalQuantityRespectsMaximumChecker : public Test {
   market_state::LimitOrder order;
 };
@@ -576,8 +552,6 @@ TEST_F(TotalQuantityRespectsMaximumChecker,
   ASSERT_THAT(TotalQuantityRespectsMaximum{max}(order),
               Optional(Eq(ValidationError::TotalQuantityMaxViolated)));
 }
-
-/*----------------------------------------------------------------------------*/
 
 struct TotalQuantityRespectsTickChecker : public Test {
   market_state::LimitOrder order;
@@ -641,8 +615,6 @@ TEST_F(TotalQuantityRespectsTickChecker,
               Optional(Eq(ValidationError::TotalQuantityTickViolated)));
 }
 
-/*----------------------------------------------------------------------------*/
-
 struct CumExecutedQuantityRespectsNonNegativityChecker : public Test {
   market_state::LimitOrder order;
 };
@@ -668,8 +640,6 @@ TEST_F(CumExecutedQuantityRespectsNonNegativityChecker,
 
   ASSERT_EQ(CumExecutedQuantityRespectsNonNegativity{}(order), std::nullopt);
 }
-
-/*----------------------------------------------------------------------------*/
 
 struct CumExecutedQuantityRespectsTickChecker : public Test {
   market_state::LimitOrder order;
@@ -733,8 +703,6 @@ TEST_F(CumExecutedQuantityRespectsTickChecker,
               Optional(Eq(ValidationError::CumExecutedQuantityTickViolated)));
 }
 
-/*----------------------------------------------------------------------------*/
-
 struct CumExecutedQuantityIsLessThanTotalQuantityChecker : public Test {
   market_state::LimitOrder order;
 };
@@ -769,8 +737,6 @@ TEST_F(CumExecutedQuantityIsLessThanTotalQuantityChecker,
                       CumExecutedQuantityIsLessThanTotalQuantityViolated)));
 }
 
-/*----------------------------------------------------------------------------*/
-
 using OrderPriceSpecifiedCheckerInputs =
     Types<protocol::OrderPlacementRequest, protocol::OrderModificationRequest>;
 
@@ -794,8 +760,6 @@ TYPED_TEST(OrderPriceSpecifiedChecker, PassesWhenPriceIsPresent) {
 
   ASSERT_THAT(this->checker(this->input), Eq(std::nullopt));
 }
-
-/*----------------------------------------------------------------------------*/
 
 using OrderPriceAbsentCheckerInputs =
     Types<protocol::OrderPlacementRequest, protocol::OrderModificationRequest>;
@@ -827,8 +791,6 @@ TYPED_TEST(OrderPriceAbsentChecker, ReportsNotAllowedPricePresent) {
   ASSERT_THAT(this->checker(this->input),
               Optional(Eq(ValidationError::OrderPriceNotAllowed)));
 }
-
-/*----------------------------------------------------------------------------*/
 
 using OrderPriceRespectsTickCheckerInputs =
     Types<protocol::OrderPlacementRequest, protocol::OrderModificationRequest>;
@@ -934,8 +896,6 @@ TEST_F(LimitOrderOrderPriceRespectsTickChecker, FailsWhenTickIsNegative) {
               Optional(Eq(ValidationError::OrderPriceTickViolated)));
 }
 
-/*----------------------------------------------------------------------------*/
-
 struct TimeInForceSupportedChecker : public Test {
   market_state::LimitOrder order;
 };
@@ -965,8 +925,6 @@ TEST_F(TimeInForceSupportedChecker, SuccessWhenTimeInForceIsGoodTillCancel) {
 
   ASSERT_EQ(TimeInForceSupported{}(order), std::nullopt);
 }
-
-/*----------------------------------------------------------------------------*/
 
 using OrderExpireInfoSpecifiedCheckerInputs =
     Types<protocol::OrderPlacementRequest,
@@ -1021,8 +979,6 @@ TYPED_TEST(OrderExpireInfoSpecifiedChecker,
 
   ASSERT_THAT(this->checker(this->input), Eq(std::nullopt));
 }
-
-/*----------------------------------------------------------------------------*/
 
 using OrderNotExpiredCheckerInputs =
     Types<protocol::OrderPlacementRequest, protocol::OrderModificationRequest>;
@@ -1083,8 +1039,6 @@ TYPED_TEST(OrderNotExpiredChecker, IgnoresEmptyExpiredDate) {
   ASSERT_THAT(this->checker(this->input), Eq(std::nullopt));
 }
 
-/*----------------------------------------------------------------------------*/
-
 struct DayOrderNotExpiredChecker : public Test {
   market_state::LimitOrder order;
 };
@@ -1108,8 +1062,6 @@ TEST_F(DayOrderNotExpiredChecker, SuccessWhenOrderTimeOfDayOrderIsToday) {
 
   ASSERT_EQ(DayOrderNotExpired{}(order), std::nullopt);
 }
-
-/*----------------------------------------------------------------------------*/
 
 // NOLINTEND(*magic-numbers*)
 

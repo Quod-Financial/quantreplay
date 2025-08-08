@@ -3,10 +3,10 @@
 #include "ih/market_data/depth/depth_quantity_list.hpp"
 #include "tools/order_book_notification_builder.hpp"
 
-using namespace testing;  // NOLINT
-
-namespace simulator::trading_system::matching_engine::mdata {
+namespace simulator::trading_system::matching_engine::mdata::test {
 namespace {
+
+using namespace testing;  // NOLINT
 
 // NOLINTBEGIN(*magic-number*)
 
@@ -137,4 +137,4 @@ TEST_F(DepthQuantityListTest, CalculatesPartialQuantityWithMultipleOrders) {
 // NOLINTEND(*magic-number*)
 
 }  // namespace
-}  // namespace simulator::trading_system::matching_engine::mdata
+}  // namespace simulator::trading_system::matching_engine::mdata::test

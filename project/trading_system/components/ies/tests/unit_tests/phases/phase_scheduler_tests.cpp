@@ -1,5 +1,3 @@
-#include "ih/phases/phase_scheduler.hpp"
-
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -7,11 +5,13 @@
 
 #include "common/events.hpp"
 #include "core/tools/time.hpp"
+#include "ih/phases/phase_scheduler.hpp"
+
+namespace simulator::trading_system::ies::test {
+namespace {
 
 using namespace ::testing;  // NOLINT
 using namespace std::chrono_literals;
-
-namespace simulator::trading_system::ies {
 
 struct PhaseSchedulerTest : public ::testing::Test {
   constexpr static event::Tick DefaultTick{};
@@ -96,4 +96,5 @@ TEST_F(PhaseSchedulerTest, DoesNotReportTransitionWhenSamePhaseRescheduled) {
   EXPECT_THAT(scheduler.update(make_tick(9h)), Eq(std::nullopt));
 }
 
-}  // namespace simulator::trading_system::ies
+}  // namespace
+}  // namespace simulator::trading_system::ies::test

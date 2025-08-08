@@ -34,8 +34,7 @@ class MatchingEngine::Implementation {
 
   auto dispatch_store_state_cmd(market_state::InstrumentState& state) -> void;
 
-  auto dispatch_recover_state_cmd(market_state::InstrumentState state)
-      -> void;
+  auto dispatch_recover_state_cmd(market_state::InstrumentState state) -> void;
 
   auto dispatch_tick_cmd(event::Tick tick) -> void;
 

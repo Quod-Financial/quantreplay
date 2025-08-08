@@ -15,6 +15,7 @@
 #include "protocol/types/session.hpp"
 
 namespace simulator::trading_system::matching_engine {
+namespace {
 
 using namespace ::testing;  // NOLINT
 
@@ -22,35 +23,37 @@ using namespace ::testing;  // NOLINT
 
 namespace detail::test {
 
-// region SideInterpretation
-
 TEST(SideInterpretation, ReportsMissingSide) {
-  const auto result = interpret_side(std::nullopt);
+  const auto result =
+      simulator::trading_system::matching_engine::detail::interpret_side(
+          std::nullopt);
 
   ASSERT_THAT(result.has_value(), IsFalse());
   ASSERT_THAT(result.error(), Eq(OrderRequestError::SideMissing));
 }
 
 TEST(SideInterpretation, ReportsInvalidSide) {
-  const auto result = interpret_side(static_cast<Side::Option>(0xFF));
+  const auto result =
+      simulator::trading_system::matching_engine::detail::interpret_side(
+          static_cast<Side::Option>(0xFF));
 
   ASSERT_THAT(result.has_value(), IsFalse());
   ASSERT_THAT(result.error(), Eq(OrderRequestError::SideInvalid));
 }
 
 TEST(SideInterpretation, InterpretsValidSideValue) {
-  const auto result = interpret_side(Side::Option::Buy);
+  const auto result =
+      simulator::trading_system::matching_engine::detail::interpret_side(
+          Side::Option::Buy);
 
   ASSERT_THAT(result.has_value(), IsTrue());
   ASSERT_THAT(result.value(), Eq(Side::Option::Buy));
 }
 
-// endregion SideInterpretation
-
-// region OrderTypeInterpretation
-
 TEST(OrderTypeInterpretation, ReportsMissingOrderType) {
-  const auto result = interpret_order_type(std::nullopt);
+  const auto result =
+      simulator::trading_system::matching_engine::detail::interpret_order_type(
+          std::nullopt);
 
   ASSERT_THAT(result.has_value(), IsFalse());
   ASSERT_THAT(result.error(), Eq(OrderRequestError::OrderTypeMissing));
@@ -58,32 +61,33 @@ TEST(OrderTypeInterpretation, ReportsMissingOrderType) {
 
 TEST(OrderTypeInterpretation, ReportsInvalidOrderType) {
   const auto result =
-      interpret_order_type(static_cast<OrderType::Option>(0xFF));
+      simulator::trading_system::matching_engine::detail::interpret_order_type(
+          static_cast<OrderType::Option>(0xFF));
 
   ASSERT_THAT(result.has_value(), IsFalse());
   ASSERT_THAT(result.error(), Eq(OrderRequestError::OrderTypeInvalid));
 }
 
 TEST(OrderTypeInterpretation, InterpretsMarketOrderType) {
-  const auto result = interpret_order_type(OrderType::Option::Market);
+  const auto result =
+      simulator::trading_system::matching_engine::detail::interpret_order_type(
+          OrderType::Option::Market);
 
   ASSERT_THAT(result.has_value(), IsTrue());
   ASSERT_THAT(result.value(), Eq(OrderType::Option::Market));
 }
 
 TEST(OrderTypeInterpretation, InterpretsLimitOrderType) {
-  const auto result = interpret_order_type(OrderType::Option::Limit);
+  const auto result =
+      simulator::trading_system::matching_engine::detail::interpret_order_type(
+          OrderType::Option::Limit);
 
   ASSERT_THAT(result.has_value(), IsTrue());
   ASSERT_THAT(result.value(), Eq(OrderType::Option::Limit));
 }
 
-// endregion OrderTypeInterpretation
-
-// region TimeInForceInterpretation
-
 TEST(TimeInForceInterpretation, ReportsInvalidTimeInForce) {
-  const auto result =
+  const auto result = simulator::trading_system::matching_engine::detail::
       interpret_time_in_force(static_cast<TimeInForce::Option>(0xFF));
 
   ASSERT_THAT(result.has_value(), IsFalse());
@@ -91,14 +95,15 @@ TEST(TimeInForceInterpretation, ReportsInvalidTimeInForce) {
 }
 
 TEST(TimeInForceInterpretation, InterpretsDayTimeInForce) {
-  const auto result = interpret_time_in_force(TimeInForce::Option::Day);
+  const auto result = simulator::trading_system::matching_engine::detail::
+      interpret_time_in_force(TimeInForce::Option::Day);
 
   ASSERT_THAT(result.has_value(), IsTrue());
   ASSERT_THAT(result.value(), Eq(TimeInForce::Option::Day));
 }
 
 TEST(TimeInForceInterpretation, InterpretsImmediateOrCancelTimeInForce) {
-  const auto result =
+  const auto result = simulator::trading_system::matching_engine::detail::
       interpret_time_in_force(TimeInForce::Option::ImmediateOrCancel);
 
   ASSERT_THAT(result.has_value(), IsTrue());
@@ -106,14 +111,15 @@ TEST(TimeInForceInterpretation, InterpretsImmediateOrCancelTimeInForce) {
 }
 
 TEST(TimeInForceInterpretation, InterpretsFillOrKillTimeInForce) {
-  const auto result = interpret_time_in_force(TimeInForce::Option::FillOrKill);
+  const auto result = simulator::trading_system::matching_engine::detail::
+      interpret_time_in_force(TimeInForce::Option::FillOrKill);
 
   ASSERT_THAT(result.has_value(), IsTrue());
   ASSERT_THAT(result.value(), Eq(TimeInForce::Option::FillOrKill));
 }
 
 TEST(TimeInForceInterpretation, InterpretsGoodTillDateTimeInForce) {
-  const auto result =
+  const auto result = simulator::trading_system::matching_engine::detail::
       interpret_time_in_force(TimeInForce::Option::GoodTillDate);
 
   ASSERT_THAT(result.has_value(), IsTrue());
@@ -121,7 +127,7 @@ TEST(TimeInForceInterpretation, InterpretsGoodTillDateTimeInForce) {
 }
 
 TEST(TimeInForceInterpretation, InterpretsGoodTillCancelTimeInForce) {
-  const auto result =
+  const auto result = simulator::trading_system::matching_engine::detail::
       interpret_time_in_force(TimeInForce::Option::GoodTillCancel);
 
   ASSERT_THAT(result.has_value(), IsTrue());
@@ -129,20 +135,19 @@ TEST(TimeInForceInterpretation, InterpretsGoodTillCancelTimeInForce) {
 }
 
 TEST(TimeInForceInterpretation, InterpretsMissingTimeInForceAsDay) {
-  const auto result = interpret_time_in_force(std::nullopt);
+  const auto result = simulator::trading_system::matching_engine::detail::
+      interpret_time_in_force(std::nullopt);
 
   ASSERT_THAT(result.has_value(), IsTrue());
   ASSERT_THAT(result.value(), Eq(TimeInForce::Option::Day));
 }
 
-// endregion TimeInForceInterpretation
-
-// region OrderIdInterpretation
-
 TEST(OrderIdIntepretation, InterpretsValidVenueOrderId) {
   const VenueOrderId venue_order_id{"4221"};
 
-  const auto result = interpret_order_id(venue_order_id);
+  const auto result =
+      simulator::trading_system::matching_engine::detail::interpret_order_id(
+          venue_order_id);
 
   ASSERT_THAT(result.has_value(), IsTrue());
   ASSERT_THAT(result.value(), Optional(Eq(OrderId{4221})));
@@ -151,22 +156,22 @@ TEST(OrderIdIntepretation, InterpretsValidVenueOrderId) {
 TEST(OrderIdIntepretation, ReportsInvalidVenueOrderId) {
   const VenueOrderId venue_order_id{"4221-I"};
 
-  const auto result = interpret_order_id(venue_order_id);
+  const auto result =
+      simulator::trading_system::matching_engine::detail::interpret_order_id(
+          venue_order_id);
 
   ASSERT_THAT(result.has_value(), IsFalse());
   ASSERT_THAT(result.error(), Eq(OrderRequestError::OrderIdInvalid));
 }
 
 TEST(OrderIdIntepretation, InterpretsMissingVenueOrderId) {
-  const auto result = interpret_order_id(std::nullopt);
+  const auto result =
+      simulator::trading_system::matching_engine::detail::interpret_order_id(
+          std::nullopt);
 
   ASSERT_THAT(result.has_value(), IsTrue());
   ASSERT_THAT(result.value(), Eq(std::nullopt));
 }
-
-// endregion OrderIdInterpretation
-
-// region OrderAttributesCreation
 
 template <typename RequestType>
 struct OrderAttributesCreation : public Test {
@@ -187,7 +192,8 @@ TYPED_TEST(OrderAttributesCreation, CreatesAttributesWithParties) {
                                   PartyRole::Option::ContraFirm}};
   this->request.parties = parties;
 
-  const auto attributes = OrderAttributesCreator::create_from(this->request);
+  const auto attributes = simulator::trading_system::matching_engine::detail::
+      OrderAttributesCreator::create_from(this->request);
 
   ASSERT_THAT(attributes.has_value(), IsTrue());
   ASSERT_THAT(attributes->order_parties(), ElementsAreArray(parties));
@@ -196,7 +202,8 @@ TYPED_TEST(OrderAttributesCreation, CreatesAttributesWithParties) {
 TYPED_TEST(OrderAttributesCreation, CreatesAttributesWithoutClientOrderId) {
   this->request.client_order_id = std::nullopt;
 
-  const auto attributes = OrderAttributesCreator::create_from(this->request);
+  const auto attributes = simulator::trading_system::matching_engine::detail::
+      OrderAttributesCreator::create_from(this->request);
 
   ASSERT_THAT(attributes.has_value(), IsTrue());
   ASSERT_THAT(attributes->client_order_id(), Eq(std::nullopt));
@@ -206,7 +213,8 @@ TYPED_TEST(OrderAttributesCreation, CreatesAttributesWithClientOrderId) {
   const ClientOrderId client_order_id{"CL-1"};
   this->request.client_order_id = client_order_id;
 
-  const auto attributes = OrderAttributesCreator::create_from(this->request);
+  const auto attributes = simulator::trading_system::matching_engine::detail::
+      OrderAttributesCreator::create_from(this->request);
 
   ASSERT_THAT(attributes.has_value(), IsTrue());
   ASSERT_THAT(attributes->client_order_id(), Optional(Eq(client_order_id)));
@@ -215,7 +223,8 @@ TYPED_TEST(OrderAttributesCreation, CreatesAttributesWithClientOrderId) {
 TYPED_TEST(OrderAttributesCreation, CreatesAttributesWithTimeInForceValue) {
   this->request.time_in_force = TimeInForce::Option::ImmediateOrCancel;
 
-  const auto attributes = OrderAttributesCreator::create_from(this->request);
+  const auto attributes = simulator::trading_system::matching_engine::detail::
+      OrderAttributesCreator::create_from(this->request);
 
   ASSERT_THAT(attributes.has_value(), IsTrue());
   ASSERT_THAT(attributes->time_in_force(),
@@ -226,7 +235,8 @@ TYPED_TEST(OrderAttributesCreation,
            CreatesAttributesWithShortSaleExemptionReason) {
   this->request.short_sale_exempt_reason = ShortSaleExemptionReason(0);
 
-  const auto attributes = OrderAttributesCreator::create_from(this->request);
+  const auto attributes = simulator::trading_system::matching_engine::detail::
+      OrderAttributesCreator::create_from(this->request);
 
   ASSERT_THAT(attributes.has_value(), IsTrue());
   ASSERT_THAT(attributes->short_sale_exemption_reason(),
@@ -238,7 +248,8 @@ TYPED_TEST(OrderAttributesCreation, CreatesAttributesWithExpireTime) {
   const auto now = system_clock::now();
   this->request.expire_time = ExpireTime(time_point_cast<microseconds>(now));
 
-  const auto attributes = OrderAttributesCreator::create_from(this->request);
+  const auto attributes = simulator::trading_system::matching_engine::detail::
+      OrderAttributesCreator::create_from(this->request);
 
   ASSERT_THAT(attributes.has_value(), IsTrue());
   ASSERT_THAT(attributes->expire_time(),
@@ -251,20 +262,17 @@ TYPED_TEST(OrderAttributesCreation, CreatesAttributesWithExpireDate) {
   this->request.expire_date =
       ExpireDate(local_days(time_point_cast<days>(now).time_since_epoch()));
 
-  const auto attributes = OrderAttributesCreator::create_from(this->request);
+  const auto attributes = simulator::trading_system::matching_engine::detail::
+      OrderAttributesCreator::create_from(this->request);
 
   ASSERT_THAT(attributes.has_value(), IsTrue());
   ASSERT_THAT(attributes->expire_date(),
               Optional(Eq(this->request.expire_date)));
 }
 
-// endregion OrderAttributesCreation
-
 }  // namespace detail::test
 
 namespace test {
-
-// region OrderErrorFormatting
 
 TEST(OrderErrorFormatting, ThrowsErrorForUnsupportedErrorEnumValue) {
   ASSERT_THROW(
@@ -311,10 +319,6 @@ TEST(OrderErrorFormatting, FormatsOrderIdInvalid) {
   ASSERT_THAT(convert_to_reason_text(OrderRequestError::OrderIdInvalid),
               Eq(RejectText{"invalid order identifier format"}));
 }
-
-// endregion OrderErrorFormatting
-
-// region PlacementInterpretation
 
 struct PlacementInterpretation : public Test {
   const protocol::Session session{protocol::generator::Session{}};
@@ -570,10 +574,6 @@ TEST_F(PlacementInterpretation, ImplicitlySetsIocTimeInForceForMarketOrder) {
               Eq(TimeInForce::Option::ImmediateOrCancel));
 }
 
-// endregion PlacementInterpretation
-
-// region ModificationInterpretation
-
 struct ModificationInterpretation : public Test {
   const protocol::Session session{protocol::generator::Session{}};
   protocol::OrderModificationRequest raw_request{session};
@@ -759,10 +759,6 @@ TEST_F(ModificationInterpretation, SetsClientOrderIdForLimitUpdate) {
       Eq(ClientOrderId{"CLIENT-ORDER-ID"}));
 }
 
-// endregion ModificationInterpretation
-
-// region CancellationInterpretation
-
 struct CancellationInterpretation : public Test {
   const protocol::Session session{protocol::generator::Session{}};
   protocol::OrderCancellationRequest request{session};
@@ -840,10 +836,9 @@ TEST_F(CancellationInterpretation, SetsRequestOrigClientOrderId) {
               Optional(Eq(OrigClientOrderId{"ORIG-CLIENT-ORDER-ID"})));
 }
 
-// endregion CancellationInterpretation
-
 }  // namespace test
 
 // NOLINTEND(*magic-numbers*,*non-private-member*)
 
+}  // namespace
 }  // namespace simulator::trading_system::matching_engine
