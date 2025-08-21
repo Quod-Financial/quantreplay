@@ -7,20 +7,21 @@
 #include <ostream>
 #include <string_view>
 
-#include "core/common/enum_converter.hpp"
+#include "core/common/json/enum_converter.hpp"
 
 namespace simulator::core::enumerators {
 
 template <>
-EnumConverter<ExecutionType> EnumConverter<ExecutionType>::instance_{
-    {{enumerators::ExecutionType::OrderPlaced, "OrderPlaced"},
-     {enumerators::ExecutionType::OrderModified, "OrderModified"},
-     {enumerators::ExecutionType::OrderCancelled, "OrderCancelled"},
-     {enumerators::ExecutionType::Rejected, "Rejected"},
-     {enumerators::ExecutionType::OrderTraded, "OrderTraded"}}};
+json::EnumConverter<ExecutionType>
+    json::EnumConverter<ExecutionType>::instance_{
+        {{enumerators::ExecutionType::OrderPlaced, "OrderPlaced"},
+         {enumerators::ExecutionType::OrderModified, "OrderModified"},
+         {enumerators::ExecutionType::OrderCancelled, "OrderCancelled"},
+         {enumerators::ExecutionType::Rejected, "Rejected"},
+         {enumerators::ExecutionType::OrderTraded, "OrderTraded"}}};
 
 template <>
-EnumConverter<OrderStatus> EnumConverter<OrderStatus>::instance_{
+json::EnumConverter<OrderStatus> json::EnumConverter<OrderStatus>::instance_{
     {{enumerators::OrderStatus::New, "New"},
      {enumerators::OrderStatus::PartiallyFilled, "PartiallyFilled"},
      {enumerators::OrderStatus::Filled, "Filled"},
@@ -29,13 +30,13 @@ EnumConverter<OrderStatus> EnumConverter<OrderStatus>::instance_{
      {enumerators::OrderStatus::Rejected, "Rejected"}}};
 
 template <>
-EnumConverter<OrderType> EnumConverter<OrderType>::instance_{
+json::EnumConverter<OrderType> json::EnumConverter<OrderType>::instance_{
     {{enumerators::OrderType::Limit, "Limit"},
      {enumerators::OrderType::Market, "Market"}}};
 
 // clang-format off
 template <>
-EnumConverter<PartyIdentifierSource> EnumConverter<
+json::EnumConverter<PartyIdentifierSource> json::EnumConverter<
     PartyIdentifierSource>::instance_{
     {{enumerators::PartyIdentifierSource::UKNationalInsuranceOrPensionNumber, "UKNationalInsuranceOrPensionNumber"},
      {enumerators::PartyIdentifierSource::USSocialSecurityNumber, "USSocialSecurityNumber"},
@@ -71,7 +72,7 @@ EnumConverter<PartyIdentifierSource> EnumConverter<
 
 // clang-format off
 template <>
-EnumConverter<PartyRole> EnumConverter<PartyRole>::instance_{
+json::EnumConverter<PartyRole> json::EnumConverter<PartyRole>::instance_{
     {{enumerators::PartyRole::ExecutingFirm, "ExecutingFirm"},
      {enumerators::PartyRole::BrokerOfCredit, "BrokerOfCredit"},
      {enumerators::PartyRole::ClientID, "ClientID"},
@@ -218,7 +219,7 @@ EnumConverter<PartyRole> EnumConverter<PartyRole>::instance_{
 
 // clang-format off
 template <>
-EnumConverter<SecurityIdSource> EnumConverter<SecurityIdSource>::instance_{
+json::EnumConverter<SecurityIdSource> json::EnumConverter<SecurityIdSource>::instance_{
     {{enumerators::SecurityIdSource::Cusip, "CUSIP"},
      {enumerators::SecurityIdSource::Sedol, "SEDOL"},
      {enumerators::SecurityIdSource::Isin, "ISIN"},
@@ -229,7 +230,7 @@ EnumConverter<SecurityIdSource> EnumConverter<SecurityIdSource>::instance_{
 
 // clang-format off
 template <>
-EnumConverter<SecurityType> EnumConverter<SecurityType>::instance_{
+json::EnumConverter<SecurityType> json::EnumConverter<SecurityType>::instance_{
     {{enumerators::SecurityType::CommonStock, "CommonStock"},
      {enumerators::SecurityType::Future, "Future"},
      {enumerators::SecurityType::Option, "Option"},
@@ -252,14 +253,14 @@ EnumConverter<SecurityType> EnumConverter<SecurityType>::instance_{
 // clang-format on
 
 template <>
-EnumConverter<Side> EnumConverter<Side>::instance_{
+json::EnumConverter<Side> json::EnumConverter<Side>::instance_{
     {{enumerators::Side::Buy, "Buy"},
      {enumerators::Side::Sell, "Sell"},
      {enumerators::Side::SellShort, "SellShort"},
      {enumerators::Side::SellShortExempt, "SellShortExempt"}}};
 
 template <>
-EnumConverter<TimeInForce> EnumConverter<TimeInForce>::instance_{
+json::EnumConverter<TimeInForce> json::EnumConverter<TimeInForce>::instance_{
     {{enumerators::TimeInForce::Day, "Day"},
      {enumerators::TimeInForce::ImmediateOrCancel, "ImmediateOrCancel"},
      {enumerators::TimeInForce::FillOrKill, "FillOrKill"},
@@ -267,7 +268,7 @@ EnumConverter<TimeInForce> EnumConverter<TimeInForce>::instance_{
      {enumerators::TimeInForce::GoodTillCancel, "GoodTillCancel"}}};
 
 template <>
-EnumConverter<MdEntryType> EnumConverter<MdEntryType>::instance_{
+json::EnumConverter<MdEntryType> json::EnumConverter<MdEntryType>::instance_{
     {{enumerators::MdEntryType::Bid, "Bid"},
      {enumerators::MdEntryType::Offer, "Offer"},
      {enumerators::MdEntryType::Trade, "Trade"},
@@ -276,52 +277,55 @@ EnumConverter<MdEntryType> EnumConverter<MdEntryType>::instance_{
      {enumerators::MdEntryType::HighPrice, "HighPrice"}}};
 
 template <>
-EnumConverter<MdSubscriptionRequestType>
-    EnumConverter<MdSubscriptionRequestType>::instance_{
+json::EnumConverter<MdSubscriptionRequestType>
+    json::EnumConverter<MdSubscriptionRequestType>::instance_{
         {{enumerators::MdSubscriptionRequestType::Subscribe, "Subscribe"},
          {enumerators::MdSubscriptionRequestType::Unsubscribe, "Unsubscribe"},
          {enumerators::MdSubscriptionRequestType::Snapshot, "Snapshot"}}};
 
 template <>
-EnumConverter<MarketEntryAction> EnumConverter<MarketEntryAction>::instance_{
-    {{enumerators::MarketEntryAction::New, "New"},
-     {enumerators::MarketEntryAction::Change, "Change"},
-     {enumerators::MarketEntryAction::Delete, "Delete"}}};
+json::EnumConverter<MarketEntryAction>
+    json::EnumConverter<MarketEntryAction>::instance_{
+        {{enumerators::MarketEntryAction::New, "New"},
+         {enumerators::MarketEntryAction::Change, "Change"},
+         {enumerators::MarketEntryAction::Delete, "Delete"}}};
 
 template <>
-EnumConverter<MarketDataUpdateType>
-    EnumConverter<MarketDataUpdateType>::instance_{
+json::EnumConverter<MarketDataUpdateType>
+    json::EnumConverter<MarketDataUpdateType>::instance_{
         {{enumerators::MarketDataUpdateType::Snapshot, "Snapshot"},
          {enumerators::MarketDataUpdateType::Incremental, "Incremental"}}};
 
 template <>
-EnumConverter<MdRejectReason> EnumConverter<MdRejectReason>::instance_{
-    {{enumerators::MdRejectReason::UnknownSymbol, "UnknownSymbol"},
-     {enumerators::MdRejectReason::DuplicateMdReqId, "DuplicateMdReqId"}}};
+json::EnumConverter<MdRejectReason>
+    json::EnumConverter<MdRejectReason>::instance_{
+        {{enumerators::MdRejectReason::UnknownSymbol, "UnknownSymbol"},
+         {enumerators::MdRejectReason::DuplicateMdReqId, "DuplicateMdReqId"}}};
 
 template <>
-EnumConverter<TradingStatus> EnumConverter<TradingStatus>::instance_{
-    {{enumerators::TradingStatus::Halt, "Halt"},
-     {enumerators::TradingStatus::Resume, "Resume"}}};
+json::EnumConverter<TradingStatus>
+    json::EnumConverter<TradingStatus>::instance_{
+        {{enumerators::TradingStatus::Halt, "Halt"},
+         {enumerators::TradingStatus::Resume, "Resume"}}};
 
 // clang-format off
 template <>
-EnumConverter<RejectedMessageType>
-    EnumConverter<RejectedMessageType>::instance_{
+json::EnumConverter<RejectedMessageType>
+    json::EnumConverter<RejectedMessageType>::instance_{
         {{enumerators::RejectedMessageType::SecurityStatusRequest, "SecurityStatusRequest"}}};
 // clang-format on
 
 // clang-format off
 template <>
-EnumConverter<BusinessRejectReason>
-    EnumConverter<BusinessRejectReason>::instance_{
+json::EnumConverter<BusinessRejectReason>
+    json::EnumConverter<BusinessRejectReason>::instance_{
         {{enumerators::BusinessRejectReason::Other, "Other"},
          {enumerators::BusinessRejectReason::UnknownId, "UnknownId"},
          {enumerators::BusinessRejectReason::UnknownSecurity, "UnknownSecurity"}}};
 // clang-format on
 
 template <>
-EnumConverter<TradingPhase> EnumConverter<TradingPhase>::instance_{
+json::EnumConverter<TradingPhase> json::EnumConverter<TradingPhase>::instance_{
     {{enumerators::TradingPhase::Open, "Open"},
      {enumerators::TradingPhase::Closed, "Closed"},
      {enumerators::TradingPhase::PostTrading, "PostTrading"},
@@ -361,7 +365,8 @@ auto convert_security_type_from_string(std::string_view value) noexcept
 auto convert_party_role_from_string(std::string_view value) noexcept
     -> std::optional<PartyRole> {
   try {
-    return std::make_optional(core::EnumConverter<PartyRole>::value(value));
+    return std::make_optional(
+        core::json::EnumConverter<PartyRole>::value(value));
   } catch (const std::runtime_error& ex) {
     return std::nullopt;
   }
@@ -462,7 +467,8 @@ auto fmt::formatter<simulator::core::enumerators::ExecutionType>::format(
 
   try {
     return base_formatter::format(
-        simulator::core::EnumConverter<ExecutionType>::str(execution_type),
+        simulator::core::json::EnumConverter<ExecutionType>::str(
+            execution_type),
         context);
   } catch (const std::runtime_error& ex) {
     return base_formatter::format("undefined", context);
@@ -477,7 +483,7 @@ auto fmt::formatter<simulator::core::enumerators::OrderStatus>::format(
 
   try {
     return base_formatter::format(
-        simulator::core::EnumConverter<OrderStatus>::str(order_status),
+        simulator::core::json::EnumConverter<OrderStatus>::str(order_status),
         context);
   } catch (const std::runtime_error& ex) {
     return base_formatter::format("undefined", context);
@@ -492,7 +498,8 @@ auto fmt::formatter<simulator::core::enumerators::OrderType>::format(
 
   try {
     return base_formatter::format(
-        simulator::core::EnumConverter<OrderType>::str(order_type), context);
+        simulator::core::json::EnumConverter<OrderType>::str(order_type),
+        context);
   } catch (const std::runtime_error& ex) {
     return base_formatter::format("undefined", context);
   }
@@ -506,7 +513,7 @@ auto fmt::formatter<simulator::core::enumerators::PartyIdentifierSource>::
 
   try {
     return base_formatter::format(
-        simulator::core::EnumConverter<PartyIdentifierSource>::str(
+        simulator::core::json::EnumConverter<PartyIdentifierSource>::str(
             party_id_source),
         context);
   } catch (const std::runtime_error& ex) {
@@ -522,7 +529,8 @@ auto fmt::formatter<simulator::core::enumerators::PartyRole>::format(
 
   try {
     return base_formatter::format(
-        simulator::core::EnumConverter<PartyRole>::str(party_role), context);
+        simulator::core::json::EnumConverter<PartyRole>::str(party_role),
+        context);
   } catch (const std::runtime_error& ex) {
     return base_formatter::format("undefined", context);
   }
@@ -536,7 +544,7 @@ auto fmt::formatter<simulator::core::enumerators::SecurityIdSource>::format(
 
   try {
     return base_formatter::format(
-        simulator::core::EnumConverter<SecurityIdSource>::str(
+        simulator::core::json::EnumConverter<SecurityIdSource>::str(
             security_id_source),
         context);
   } catch (const std::runtime_error& ex) {
@@ -552,7 +560,7 @@ auto fmt::formatter<simulator::core::enumerators::SecurityType>::format(
 
   try {
     return base_formatter::format(
-        simulator::core::EnumConverter<SecurityType>::str(security_type),
+        simulator::core::json::EnumConverter<SecurityType>::str(security_type),
         context);
   } catch (const std::runtime_error& ex) {
     return base_formatter::format("undefined", context);
@@ -567,7 +575,7 @@ auto fmt::formatter<simulator::core::enumerators::Side>::format(
 
   try {
     return base_formatter::format(
-        simulator::core::EnumConverter<Side>::str(side), context);
+        simulator::core::json::EnumConverter<Side>::str(side), context);
   } catch (const std::runtime_error& ex) {
     return base_formatter::format("undefined", context);
   }
@@ -581,7 +589,7 @@ auto fmt::formatter<simulator::core::enumerators::TimeInForce>::format(
 
   try {
     return base_formatter::format(
-        simulator::core::EnumConverter<TimeInForce>::str(time_in_force),
+        simulator::core::json::EnumConverter<TimeInForce>::str(time_in_force),
         context);
   } catch (const std::runtime_error& ex) {
     return base_formatter::format("undefined", context);
@@ -596,7 +604,7 @@ auto fmt::formatter<simulator::core::enumerators::MdEntryType>::format(
 
   try {
     return base_formatter::format(
-        simulator::core::EnumConverter<MdEntryType>::str(md_entry_type),
+        simulator::core::json::EnumConverter<MdEntryType>::str(md_entry_type),
         context);
   } catch (const std::runtime_error& ex) {
     return base_formatter::format("undefined", context);
@@ -611,7 +619,7 @@ auto fmt::formatter<simulator::core::enumerators::MdSubscriptionRequestType>::
 
   try {
     return base_formatter::format(
-        simulator::core::EnumConverter<MdSubscriptionRequestType>::str(
+        simulator::core::json::EnumConverter<MdSubscriptionRequestType>::str(
             subscription_type),
         context);
   } catch (const std::runtime_error& ex) {
@@ -627,7 +635,8 @@ auto fmt::formatter<simulator::core::enumerators::MdRejectReason>::format(
 
   try {
     return base_formatter::format(
-        simulator::core::EnumConverter<MdRejectReason>::str(reject_reason),
+        simulator::core::json::EnumConverter<MdRejectReason>::str(
+            reject_reason),
         context);
   } catch (const std::runtime_error& ex) {
     return base_formatter::format("undefined", context);
@@ -642,7 +651,7 @@ auto fmt::formatter<simulator::core::enumerators::MarketEntryAction>::format(
 
   try {
     return base_formatter::format(
-        simulator::core::EnumConverter<MarketEntryAction>::str(action),
+        simulator::core::json::EnumConverter<MarketEntryAction>::str(action),
         context);
   } catch (const std::runtime_error& ex) {
     return base_formatter::format("undefined", context);
@@ -658,7 +667,7 @@ auto fmt::formatter<simulator::core::enumerators::MarketDataUpdateType>::format(
 
   try {
     return base_formatter::format(
-        simulator::core::EnumConverter<MarketDataUpdateType>::str(type),
+        simulator::core::json::EnumConverter<MarketDataUpdateType>::str(type),
         context);
   } catch (const std::runtime_error& ex) {
     return base_formatter::format("undefined", context);
@@ -673,7 +682,8 @@ auto fmt::formatter<simulator::core::enumerators::TradingPhase>::format(
 
   try {
     return base_formatter::format(
-        simulator::core::EnumConverter<TradingPhase>::str(phase), context);
+        simulator::core::json::EnumConverter<TradingPhase>::str(phase),
+        context);
   } catch (const std::runtime_error& ex) {
     return base_formatter::format("undefined", context);
   }
@@ -685,12 +695,14 @@ auto fmt::formatter<simulator::core::enumerators::TradingStatus>::format(
   using base_formatter = formatter<std::string_view>;
   using TradingStatus = formattable;
 
-  try {
-    return base_formatter::format(
-        simulator::core::EnumConverter<TradingStatus>::str(status), context);
-  } catch (const std::runtime_error& ex) {
-    return base_formatter::format("undefined", context);
+  switch (status) {
+    case TradingStatus::Halt:
+      return base_formatter::format("Halt", context);
+    case TradingStatus::Resume:
+      return base_formatter::format("Resume", context);
   }
+
+  return base_formatter::format("undefined", context);
 }
 
 auto fmt::formatter<simulator::core::enumerators::RejectedMessageType>::format(
@@ -701,7 +713,7 @@ auto fmt::formatter<simulator::core::enumerators::RejectedMessageType>::format(
 
   try {
     return base_formatter::format(
-        simulator::core::EnumConverter<RejectedMessageType>::str(type),
+        simulator::core::json::EnumConverter<RejectedMessageType>::str(type),
         context);
   } catch (const std::runtime_error& ex) {
     return base_formatter::format("undefined", context);
@@ -716,7 +728,7 @@ auto fmt::formatter<simulator::core::enumerators::BusinessRejectReason>::format(
 
   try {
     return base_formatter::format(
-        simulator::core::EnumConverter<BusinessRejectReason>::str(reason),
+        simulator::core::json::EnumConverter<BusinessRejectReason>::str(reason),
         context);
   } catch (const std::runtime_error& ex) {
     return base_formatter::format("undefined", context);

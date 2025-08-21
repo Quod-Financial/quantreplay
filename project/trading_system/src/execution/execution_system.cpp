@@ -151,24 +151,24 @@ auto ExecutionSystem::execute_request(
 }
 
 auto ExecutionSystem::store_state_request(
-    std::vector<market_state::InstrumentState>& instruments) const -> void {
-  for (auto& instrument_state : instruments) {
-    unicast(instrument_state.instrument.identifier,
-            make_store_operation(instrument_state));
+    const std::vector<std::pair<InstrumentId, market_state::InstrumentState&>>&
+        instruments) const -> void {
+  for (auto& [identifier, instrument_data] : instruments) {
+    unicast(identifier, make_store_operation(instrument_data));
   }
 }
 
 auto ExecutionSystem::recover_state_request(
-    std::vector<market_state::InstrumentState> instruments) const -> void {
-  for (auto&& instrument_state : instruments) {
+    std::vector<market_state::InstrumentData> instruments) const -> void {
+  for (auto&& instrument_data : instruments) {
     const auto view =
-        instrument_resolver_.resolve_instrument(instrument_state.instrument);
+        instrument_resolver_.resolve_instrument(instrument_data.specification);
     if (view.has_value()) {
       unicast(view->instrument().identifier,
-              make_recover_operation(std::move(instrument_state)));
+              make_recover_operation(std::move(instrument_data.state)));
     } else {
       log::warn("The instrument was not found, its recovery was ignored: {}",
-                instrument_state.instrument);
+                instrument_data.specification);
     }
   }
 }

@@ -14,7 +14,7 @@ struct Type<T> {
   static auto read_json_value(const rapidjson::Value& json_value) -> T {
     if (!json_value.IsArray()) {
       throw std::runtime_error{
-          fmt::format("expected JSON array, got `{}`", json_value.GetType())};
+          fmt::format("expected JSON array, got `{}'", json_value.GetType())};
     }
 
     T result;

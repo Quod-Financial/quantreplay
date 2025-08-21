@@ -670,190 +670,182 @@ Its order book contains one buy order and two sell orders.
 [,json]
 ----
 {
-    "venue_id": "LSE",
-    "instruments": [
+    "VenueID": "LSE",
+    "Instruments": [
         {
-            "instrument": {
-                "symbol": "AAPL",
-                "price_currency": "USD",
-                "base_currency": null,
-                "security_exchange": "XLOM",
-                "party_id": null,
-                "cusip": null,
-                "sedol": "B0YQ5W0",
-                "isin": "US0378331005",
-                "ric": null,
-                "exchange_id": null,
-                "bloomberg_id": null,
-                "price_tick": 0.1,
-                "quantity_tick": 1.0,
-                "min_quantity": 1.0,
-                "max_quantity": 10000.0,
-                "party_role": null,
-                "security_type": "CommonStock"
+            "Instrument": {
+                "Symbol": "AAPL",
+                "PriceCurrency": "USD",
+                "BaseCurrency": null,
+                "SecurityExchange": "XLOM",
+                "PartyID": null,
+                "CUSIP": null,
+                "SEDOL": "B0YQ5W0",
+                "ISIN": "US0378331005",
+                "RIC": null,
+                "ExchangeSymbol": null,
+                "BloombergSymbol": null,
+                "PartyRole": null,
+                "SecurityType": "CommonStock"
             },
-            "last_trade": null,
-            "info": null,
-            "order_book": {
-                "buy_orders": [],
-                "sell_orders": []
+            "LastTrade": null,
+            "Info": null,
+            "OrderBook": {
+                "BuyOrders": [],
+                "SellOrders": []
             }
         },
         {
-            "instrument": {
-                "symbol": "VOW",
-                "price_currency": "EUR",
-                "base_currency": null,
-                "security_exchange": "XLOM",
-                "party_id": null,
-                "cusip": null,
-                "sedol": "0308908",
-                "isin": "DE0007664005",
-                "ric": null,
-                "exchange_id": null,
-                "bloomberg_id": null,
-                "price_tick": 0.00001,
-                "quantity_tick": 1.0,
-                "min_quantity": 1.0,
-                "max_quantity": 1000000000.0,
-                "party_role": null,
-                "security_type": "CommonStock"
+            "Instrument": {
+                "Symbol": "VOW",
+                "PriceCurrency": "EUR",
+                "BaseCurrency": null,
+                "SecurityExchange": "XLOM",
+                "PartyID": null,
+                "CUSIP": null,
+                "SEDOL": "0308908",
+                "ISIN": "DE0007664005",
+                "RIC": null,
+                "ExchangeSymbol": null,
+                "BloombergSymbol": null,
+                "PartyRole": null,
+                "SecurityType": "CommonStock"
             },
-            "last_trade": {
-                "buyer": "CP3",
-                "seller": "CP6",
-                "trade_price": 1.18815,
-                "traded_quantity": 290.0,
-                "aggressor_side": "Buy",
-                "trade_time": "2025-05-16 14:42:49.958327",
-                "market_phase": {
-                    "trading_phase": "Open",
-                    "trading_status": "Resume"
+            "LastTrade": {
+                "Buyer": "CP3",
+                "Seller": "CP6",
+                "TradePrice": 1.18815,
+                "TradedQuantity": 290.0,
+                "AggressorSide": "Buy",
+                "TradeTime": "20250929-14:42:49.958327",
+                "MarketPhase": {
+                    "TradingSessionSubID": "Continuous",
+                    "SecurityTradingStatus": "Resume"
                 }
             },
-            "info": {
-                "low_price": 1.18812,
-                "high_price": 1.18818
+            "Info": {
+                "TradingSessionLowPrice": 1.18812,
+                "TradingSessionHighPrice": 1.18818
             },
-            "order_book": {
-                "buy_orders": [
+            "OrderBook": {
+                "BuyOrders": [
                     {
-                        "client_instrument_descriptor": {
-                            "security_id": "DE0007664005",
-                            "symbol": "VOW",
-                            "currency": "EUR",
-                            "security_exchange": "XLOM",
-                            "parties": [],
-                            "requester_instrument_id": 1,
-                            "security_type": "CommonStock",
-                            "security_id_source": "ISIN"
+                        "ClientInstrumentDescriptor": {
+                            "SecurityID": "DE0007664005",
+                            "Symbol": "VOW",
+                            "Currency": "EUR",
+                            "SecurityExchange": "XLOM",
+                            "Parties": [],
+                            "RequesterInstrumentID": 1,
+                            "SecurityType": "CommonStock",
+                            "SecurityIDSource": "ISIN"
                         },
-                        "client_session": {
-                            "type": "Generator",
-                            "fix_session": null
+                        "ClientSession": {
+                            "Type": "Generator",
+                            "FixSession": null
                         },
-                        "client_order_id": "SIM-1747406520164373224",
-                        "order_parties": [
+                        "ClientOrderID": "SIM-1747406520164373224",
+                        "OrderParties": [
                             {
-                                "identifier": {
-                                    "party_id": "CP1",
-                                    "source": "Proprietary"
+                                "Identifier": {
+                                    "PartyID": "CP1",
+                                    "PartyIDSource": "Proprietary"
                                 },
-                                "role": "ExecutingFirm"
+                                "PartyRole": "ExecutingFirm"
                             }
                         ],
-                        "expire_time": null,
-                        "expire_date": null,
-                        "short_sale_exemption_reason": null,
-                        "time_in_force": "Day",
-                        "order_id": 250516144244000013,
-                        "order_time": "2025-05-19 14:42:48.614534",
-                        "side": "Buy",
-                        "order_status": "Modified",
-                        "order_price": 0.38799,
-                        "total_quantity": 3000000.0,
-                        "cum_executed_quantity": 1000535.0
+                        "ExpireTime": null,
+                        "ExpireDate": null,
+                        "ShortSaleExemptionReason": null,
+                        "TimeInForce": "Day",
+                        "OrderID": 250516144244000013,
+                        "OrderTime": "20250929-14:42:48.614534",
+                        "Side": "Buy",
+                        "OrdStatus": "Replaced",
+                        "Price": 0.38799,
+                        "OrderQty": 3000000.0,
+                        "CumQty": 1000535.0
                     }
                 ],
-                "sell_orders": [
+                "SellOrders": [
                     {
-                        "client_instrument_descriptor": {
-                            "security_id": "DE0007664005",
-                            "symbol": "VOW",
-                            "currency": "EUR",
-                            "security_exchange": "XLOM",
-                            "parties": [],
-                            "requester_instrument_id": 1,
-                            "security_type": "CommonStock",
-                            "security_id_source": "ISIN"
+                        "ClientInstrumentDescriptor": {
+                            "SecurityID": "DE0007664005",
+                            "Symbol": "VOW",
+                            "Currency": "EUR",
+                            "SecurityExchange": "XLOM",
+                            "Parties": [],
+                            "RequesterInstrumentID": 1,
+                            "SecurityType": "CommonStock",
+                            "SecurityIDSource": "ISIN"
                         },
-                        "client_session": {
-                            "type": "Fix",
-                            "fix_session": {
-                                "begin_string": "FIXT.1.1",
-                                "sender_comp_id": "SENDER",
-                                "target_comp_id": "TARGET",
-                                "client_sub_id": null
+                        "ClientSession": {
+                            "Type": "Fix",
+                            "FixSession": {
+                                "BeginString": "FIXT.1.1",
+                                "SenderCompID": "SENDER",
+                                "TargetCompID": "TARGET",
+                                "SenderSubID": null
                             }
                         },
-                        "client_order_id": "SIM-1747406520164373237",
-                        "order_parties": [
+                        "ClientOrderID": "SIM-1747406520164373237",
+                        "OrderParties": [
                             {
-                                "identifier": {
-                                    "party_id": "CP5",
-                                    "source": "Proprietary"
+                                "Identifier": {
+                                    "PartyID": "CP5",
+                                    "PartyIDSource": "Proprietary"
                                 },
-                                "role": "ExecutingFirm"
+                                "PartyRole": "ExecutingFirm"
                             }
                         ],
-                        "expire_time": null,
-                        "expire_date": null,
-                        "short_sale_exemption_reason": null,
-                        "time_in_force": "Day",
-                        "order_id": 250516144250000026,
-                        "order_time": "2025-05-16 14:42:51.522018",
-                        "side": "Sell",
-                        "order_status": "Modified",
-                        "order_price": 1.188,
-                        "total_quantity": 408.0,
-                        "cum_executed_quantity": 0.0
+                        "ExpireTime": null,
+                        "ExpireDate": null,
+                        "ShortSaleExemptionReason": null,
+                        "TimeInForce": "Day",
+                        "OrderID": 250516144250000026,
+                        "OrderTime": "20250929-14:42:51.522018",
+                        "Side": "Sell",
+                        "OrdStatus": "Replaced",
+                        "Price": 1.188,
+                        "OrderQty": 408.0,
+                        "CumQty": 0.0
                     },
                     {
-                        "client_instrument_descriptor": {
-                            "security_id": "DE0007664005",
-                            "symbol": "VOW",
-                            "currency": "EUR",
-                            "security_exchange": "XLOM",
-                            "parties": [],
-                            "requester_instrument_id": 1,
-                            "security_type": "CommonStock",
-                            "security_id_source": "ISIN"
+                        "ClientInstrumentDescriptor": {
+                            "SecurityID": "DE0007664005",
+                            "Symbol": "VOW",
+                            "Currency": "EUR",
+                            "SecurityExchange": "XLOM",
+                            "Parties": [],
+                            "RequesterInstrumentID": 1,
+                            "SecurityType": "CommonStock",
+                            "SecurityIDSource": "ISIN"
                         },
-                        "client_session": {
-                            "type": "Generator",
-                            "fix_session": null
+                        "ClientSession": {
+                            "Type": "Generator",
+                            "FixSession": null
                         },
-                        "client_order_id": "SIM-1747406520164373236",
-                        "order_parties": [
+                        "ClientOrderID": "SIM-1747406520164373236",
+                        "OrderParties": [
                             {
-                                "identifier": {
-                                    "party_id": "CP8",
-                                    "source": "Proprietary"
+                                "Identifier": {
+                                    "PartyID": "CP8",
+                                    "PartyIDSource": "Proprietary"
                                 },
-                                "role": "ExecutingFirm"
+                                "PartyRole": "ExecutingFirm"
                             }
                         ],
-                        "expire_time": null,
-                        "expire_date": null,
-                        "short_sale_exemption_reason": null,
-                        "time_in_force": "Day",
-                        "order_id": 250516144250000025,
-                        "order_time": "2025-05-16 14:42:50.627388",
-                        "side": "Sell",
-                        "order_status": "Modified",
-                        "order_price": 1.18812,
-                        "total_quantity": 606.0,
-                        "cum_executed_quantity": 0.0
+                        "ExpireTime": null,
+                        "ExpireDate": null,
+                        "ShortSaleExemptionReason": null,
+                        "TimeInForce": "Day",
+                        "OrderID": 250516144250000025,
+                        "OrderTime": "20250929-14:42:50.627388",
+                        "Side": "Sell",
+                        "OrdStatus": "Replaced",
+                        "Price": 1.18812,
+                        "OrderQty": 606.0,
+                        "CumQty": 0.0
                     }
                 ]
             }

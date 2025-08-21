@@ -4,7 +4,7 @@
 #include <optional>
 
 #include "common/attributes.hpp"
-#include "common/market_state/snapshot.hpp"
+#include "common/instrument_state.hpp"
 #include "ih/common/validation/validation.hpp"
 #include "ih/market_data/validation/errors.hpp"
 #include "ih/market_data/validation/validator.hpp"

@@ -1,7 +1,7 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_TOOLS_ORDER_BOOK_STATE_CONVERTER_STATE_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_TOOLS_ORDER_BOOK_STATE_CONVERTER_STATE_HPP_
 
-#include "common/market_state/snapshot.hpp"
+#include "common/instrument_state.hpp"
 #include "ih/orders/book/order_book.hpp"
 
 namespace simulator::trading_system::matching_engine {

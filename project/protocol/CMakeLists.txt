@@ -36,7 +36,6 @@ add_static_library(
     include/protocol/app/security_status.hpp
     include/protocol/app/security_status_request.hpp
     include/protocol/app/session_terminated_event.hpp
-    include/protocol/types/json/session.hpp
     include/protocol/types/session.hpp
   SOURCES
     src/admin.cpp
@@ -47,7 +46,3 @@ add_static_library(
   PUBLIC_DEPENDENCIES
     fmt::fmt
     simulator::core)
-
-#------------------------------------------------------------------------------#
-
-add_subdirectory(tests)

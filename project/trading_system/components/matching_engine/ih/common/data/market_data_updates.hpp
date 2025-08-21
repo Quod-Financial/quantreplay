@@ -4,7 +4,7 @@
 #include <fmt/base.h>
 
 #include "common/attributes.hpp"
-#include "common/market_state/snapshot.hpp"
+#include "common/instrument_state.hpp"
 #include "common/trade.hpp"
 #include "core/domain/attributes.hpp"
 

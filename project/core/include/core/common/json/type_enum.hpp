@@ -1,10 +1,9 @@
 #ifndef SIMULATOR_CORE_COMMON_JSON_TYPE_ENUM_HPP_
 #define SIMULATOR_CORE_COMMON_JSON_TYPE_ENUM_HPP_
 
-#include <fmt/format.h>
 #include <rapidjson/document.h>
 
-#include "core/common/enum_converter.hpp"
+#include "core/common/json/enum_converter.hpp"
 #include "core/common/json/type.hpp"
 #include "core/common/meta.hpp"
 

@@ -34,7 +34,7 @@ auto read_json_value(const rapidjson::Value& json_value, std::string_view key)
             Type<typename T::value_type>::read_json_value(iter->value));
       } catch (std::runtime_error& e) {
         throw std::runtime_error{
-            fmt::format("failed to parse field `{}`: {}", key, e.what())};
+            fmt::format("failed to parse field `{}': {}", key, e.what())};
       }
     }
     return std::nullopt;
@@ -44,11 +44,11 @@ auto read_json_value(const rapidjson::Value& json_value, std::string_view key)
         return Type<T>::read_json_value(iter->value);
       } catch (std::runtime_error& e) {
         throw std::runtime_error{
-            fmt::format("failed to parse field `{}`: {}", key, e.what())};
+            fmt::format("failed to parse field `{}': {}", key, e.what())};
       }
     }
     throw std::runtime_error{
-        fmt::format("missing field `{}` in JSON object", key)};
+        fmt::format("missing field `{}' in JSON object", key)};
   }
 }
 

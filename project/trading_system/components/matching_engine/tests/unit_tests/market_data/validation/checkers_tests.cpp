@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "common/attributes.hpp"
-#include "common/market_state/snapshot.hpp"
+#include "common/instrument_state.hpp"
 #include "core/domain/attributes.hpp"
 #include "ih/market_data/validation/checkers.hpp"
 #include "tests/tools/order_book_notification_builder.hpp"

@@ -13,13 +13,13 @@ TEST(TradingSystemStatePersistenceJsonSerializer,
   std::stringstream ss;
   const JsonSerializer serializer;
 
-  ASSERT_TRUE(serializer.serialize(snapshot, ss));
+  ASSERT_TRUE(serializer.serialize(snapshot, ss).has_value());
 
   // clang-format off
   const std::string expected =
 R"({
-    "venue_id": "",
-    "instruments": []
+    "VenueID": "",
+    "Instruments": []
 })";
   // clang-format on
   ASSERT_EQ(ss.str(), expected);
@@ -51,8 +51,8 @@ TEST(TradingSystemStatePersistenceJsonSerializer,
   // clang-format off
   std::stringstream ss{
 R"({
-    "venue_id": 123,
-    "instruments": []
+    "VenueID": 123,
+    "Instruments": []
 })"};
   // clang-format on
 
@@ -61,8 +61,8 @@ R"({
   ASSERT_FALSE(result.has_value());
   ASSERT_EQ(
       result.error(),
-      "Error deserializing JSON: failed to parse field `venue_id`: unexpected "
-      "data Type `rapidjson::Type::kNumberType`, `string` is expected");
+      "Error deserializing JSON: failed to parse field `VenueID': unexpected "
+      "data Type `rapidjson::Type::kNumberType', `string' is expected");
 }
 
 TEST(TradingSystemStatePersistenceJsonSerializer, ReturnsParsedSnapshot) {
@@ -70,8 +70,8 @@ TEST(TradingSystemStatePersistenceJsonSerializer, ReturnsParsedSnapshot) {
   // clang-format off
   std::stringstream ss{
 R"({
-    "venue_id": "Venue",
-    "instruments": []
+    "VenueID": "Venue",
+    "Instruments": []
 })"};
   // clang-format on
 

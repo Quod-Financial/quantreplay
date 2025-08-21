@@ -24,7 +24,7 @@ struct Cache::Implementation {
   auto find_instrument(const InstrumentDescriptor& descriptor) const
       -> tl::expected<View, LookupError>;
 
-  auto find_instrument(const Instrument& instrument) const
+  auto find_instrument(const InstrumentSpecification& specification) const
       -> tl::expected<View, LookupError>;
 
   auto container() const -> const Container& { return container_; }

@@ -76,224 +76,242 @@ struct InstrumentsInstrumentsCacheFind : InstrumentsInstrumentsCache {
     instrument.max_quantity = MaxQuantity{42.42};
     return instrument;
   }
+
+  static auto specification_sample() -> Cache::InstrumentSpecification {
+    Cache::InstrumentSpecification specification;
+    specification.symbol = Symbol{"AAPL-XLON"};
+    specification.price_currency = PriceCurrency{"USD"};
+    specification.base_currency = BaseCurrency{"EUR"};
+    specification.security_exchange = SecurityExchange{"XLON"};
+    specification.party_id = PartyId{"ContraFirm"};
+    specification.cusip = CusipId{"CUSIP"};
+    specification.sedol = SedolId{"SEDOL"};
+    specification.isin = IsinId{"ISIN"};
+    specification.ric = RicId{"RIC"};
+    specification.exchange_id = ExchangeId{"ExchangeID"};
+    specification.bloomberg_id = BloombergId{"BloombergID"};
+    specification.party_role = PartyRole::Option::ContraFirm;
+    specification.security_type = SecurityType::Option::CommonStock;
+    return specification;
+  }
 };
 
 TEST_F(InstrumentsInstrumentsCacheFind, FindsInstrumentBySymbol) {
-  Instrument instrument1 = instrument_sample();
+  auto instrument1 = instrument_sample();
   instrument1.symbol = Symbol{"first"};
   cache.add_instrument(instrument1);
 
-  Instrument instrument2 = instrument_sample();
+  auto instrument2 = instrument_sample();
   instrument2.symbol = Symbol{"second"};
   cache.add_instrument(instrument2);
 
-  Instrument instrument3 = instrument_sample();
-  instrument3.symbol = Symbol{"second"};
-  const auto result = cache.find_instrument(instrument3);
+  auto specification = specification_sample();
+  specification.symbol = Symbol{"second"};
+  const auto result = cache.find_instrument(specification);
 
   ASSERT_TRUE(result.has_value());
   ASSERT_EQ(result->instrument().symbol, Symbol{"second"});
 }
 
 TEST_F(InstrumentsInstrumentsCacheFind, FindsInstrumentByPriceCurrency) {
-  Instrument instrument1 = instrument_sample();
+  auto instrument1 = instrument_sample();
   instrument1.price_currency = PriceCurrency{"first"};
   cache.add_instrument(instrument1);
 
-  Instrument instrument2 = instrument_sample();
+  auto instrument2 = instrument_sample();
   instrument2.price_currency = PriceCurrency{"second"};
   cache.add_instrument(instrument2);
 
-  Instrument instrument3 = instrument_sample();
-  instrument3.price_currency = PriceCurrency{"second"};
-  const auto result = cache.find_instrument(instrument3);
+  auto specification = specification_sample();
+  specification.price_currency = PriceCurrency{"second"};
+  const auto result = cache.find_instrument(specification);
 
   ASSERT_TRUE(result.has_value());
   ASSERT_EQ(result->instrument().price_currency, PriceCurrency{"second"});
 }
 
 TEST_F(InstrumentsInstrumentsCacheFind, FindsInstrumentByBaseCurrency) {
-  Instrument instrument1 = instrument_sample();
+  auto instrument1 = instrument_sample();
   instrument1.base_currency = BaseCurrency{"first"};
   cache.add_instrument(instrument1);
 
-  Instrument instrument2 = instrument_sample();
+  auto instrument2 = instrument_sample();
   instrument2.base_currency = BaseCurrency{"second"};
   cache.add_instrument(instrument2);
 
-  Instrument instrument3 = instrument_sample();
-  instrument3.base_currency = BaseCurrency{"second"};
-  const auto result = cache.find_instrument(instrument3);
+  auto specification = specification_sample();
+  specification.base_currency = BaseCurrency{"second"};
+  const auto result = cache.find_instrument(specification);
 
   ASSERT_TRUE(result.has_value());
   ASSERT_EQ(result->instrument().base_currency, BaseCurrency{"second"});
 }
 
 TEST_F(InstrumentsInstrumentsCacheFind, FindsInstrumentBySecurityExchange) {
-  Instrument instrument1 = instrument_sample();
+  auto instrument1 = instrument_sample();
   instrument1.security_exchange = SecurityExchange{"first"};
   cache.add_instrument(instrument1);
 
-  Instrument instrument2 = instrument_sample();
+  auto instrument2 = instrument_sample();
   instrument2.security_exchange = SecurityExchange{"second"};
   cache.add_instrument(instrument2);
 
-  Instrument instrument3 = instrument_sample();
-  instrument3.security_exchange = SecurityExchange{"second"};
-  const auto result = cache.find_instrument(instrument3);
+  auto specification = specification_sample();
+  specification.security_exchange = SecurityExchange{"second"};
+  const auto result = cache.find_instrument(specification);
 
   ASSERT_TRUE(result.has_value());
   ASSERT_EQ(result->instrument().security_exchange, SecurityExchange{"second"});
 }
 
 TEST_F(InstrumentsInstrumentsCacheFind, FindsInstrumentByPartyId) {
-  Instrument instrument1 = instrument_sample();
+  auto instrument1 = instrument_sample();
   instrument1.party_id = PartyId{"first"};
   cache.add_instrument(instrument1);
 
-  Instrument instrument2 = instrument_sample();
+  auto instrument2 = instrument_sample();
   instrument2.party_id = PartyId{"second"};
   cache.add_instrument(instrument2);
 
-  Instrument instrument3 = instrument_sample();
-  instrument3.party_id = PartyId{"second"};
-  const auto result = cache.find_instrument(instrument3);
+  auto specification = specification_sample();
+  specification.party_id = PartyId{"second"};
+  const auto result = cache.find_instrument(specification);
 
   ASSERT_TRUE(result.has_value());
   ASSERT_EQ(result->instrument().party_id, PartyId{"second"});
 }
 
 TEST_F(InstrumentsInstrumentsCacheFind, FindsInstrumentByCusip) {
-  Instrument instrument1 = instrument_sample();
+  auto instrument1 = instrument_sample();
   instrument1.cusip = CusipId{"first"};
   cache.add_instrument(instrument1);
 
-  Instrument instrument2 = instrument_sample();
+  auto instrument2 = instrument_sample();
   instrument2.cusip = CusipId{"second"};
   cache.add_instrument(instrument2);
 
-  Instrument instrument3 = instrument_sample();
-  instrument3.cusip = CusipId{"second"};
-  const auto result = cache.find_instrument(instrument3);
+  auto specification = specification_sample();
+  specification.cusip = CusipId{"second"};
+  const auto result = cache.find_instrument(specification);
 
   ASSERT_TRUE(result.has_value());
   ASSERT_EQ(result->instrument().cusip, CusipId{"second"});
 }
 
 TEST_F(InstrumentsInstrumentsCacheFind, FindsInstrumentBySedol) {
-  Instrument instrument1 = instrument_sample();
+  auto instrument1 = instrument_sample();
   instrument1.sedol = SedolId{"first"};
   cache.add_instrument(instrument1);
 
-  Instrument instrument2 = instrument_sample();
+  auto instrument2 = instrument_sample();
   instrument2.sedol = SedolId{"second"};
   cache.add_instrument(instrument2);
 
-  Instrument instrument3 = instrument_sample();
-  instrument3.sedol = SedolId{"second"};
-  const auto result = cache.find_instrument(instrument3);
+  auto specification = specification_sample();
+  specification.sedol = SedolId{"second"};
+  const auto result = cache.find_instrument(specification);
 
   ASSERT_TRUE(result.has_value());
   ASSERT_EQ(result->instrument().sedol, SedolId{"second"});
 }
 
 TEST_F(InstrumentsInstrumentsCacheFind, FindsInstrumentByIsin) {
-  Instrument instrument1 = instrument_sample();
+  auto instrument1 = instrument_sample();
   instrument1.isin = IsinId{"first"};
   cache.add_instrument(instrument1);
 
-  Instrument instrument2 = instrument_sample();
+  auto instrument2 = instrument_sample();
   instrument2.isin = IsinId{"second"};
   cache.add_instrument(instrument2);
 
-  Instrument instrument3 = instrument_sample();
-  instrument3.isin = IsinId{"second"};
-  const auto result = cache.find_instrument(instrument3);
+  auto specification = specification_sample();
+  specification.isin = IsinId{"second"};
+  const auto result = cache.find_instrument(specification);
 
   ASSERT_TRUE(result.has_value());
   ASSERT_EQ(result->instrument().isin, IsinId{"second"});
 }
 
 TEST_F(InstrumentsInstrumentsCacheFind, FindsInstrumentByRic) {
-  Instrument instrument1 = instrument_sample();
+  auto instrument1 = instrument_sample();
   instrument1.ric = RicId{"first"};
   cache.add_instrument(instrument1);
 
-  Instrument instrument2 = instrument_sample();
+  auto instrument2 = instrument_sample();
   instrument2.ric = RicId{"second"};
   cache.add_instrument(instrument2);
 
-  Instrument instrument3 = instrument_sample();
-  instrument3.ric = RicId{"second"};
-  const auto result = cache.find_instrument(instrument3);
+  auto specification = specification_sample();
+  specification.ric = RicId{"second"};
+  const auto result = cache.find_instrument(specification);
 
   ASSERT_TRUE(result.has_value());
   ASSERT_EQ(result->instrument().ric, RicId{"second"});
 }
 
 TEST_F(InstrumentsInstrumentsCacheFind, FindsInstrumentByExchangeId) {
-  Instrument instrument1 = instrument_sample();
+  auto instrument1 = instrument_sample();
   instrument1.exchange_id = ExchangeId{"first"};
   cache.add_instrument(instrument1);
 
-  Instrument instrument2 = instrument_sample();
+  auto instrument2 = instrument_sample();
   instrument2.exchange_id = ExchangeId{"second"};
   cache.add_instrument(instrument2);
 
-  Instrument instrument3 = instrument_sample();
-  instrument3.exchange_id = ExchangeId{"second"};
-  const auto result = cache.find_instrument(instrument3);
+  auto specification = specification_sample();
+  specification.exchange_id = ExchangeId{"second"};
+  const auto result = cache.find_instrument(specification);
 
   ASSERT_TRUE(result.has_value());
   ASSERT_EQ(result->instrument().exchange_id, ExchangeId{"second"});
 }
 
 TEST_F(InstrumentsInstrumentsCacheFind, FindsInstrumentByBloombergId) {
-  Instrument instrument1 = instrument_sample();
+  auto instrument1 = instrument_sample();
   instrument1.bloomberg_id = BloombergId{"first"};
   cache.add_instrument(instrument1);
 
-  Instrument instrument2 = instrument_sample();
+  auto instrument2 = instrument_sample();
   instrument2.bloomberg_id = BloombergId{"second"};
   cache.add_instrument(instrument2);
 
-  Instrument instrument3 = instrument_sample();
-  instrument3.bloomberg_id = BloombergId{"second"};
-  const auto result = cache.find_instrument(instrument3);
+  auto specification = specification_sample();
+  specification.bloomberg_id = BloombergId{"second"};
+  const auto result = cache.find_instrument(specification);
 
   ASSERT_TRUE(result.has_value());
   ASSERT_EQ(result->instrument().bloomberg_id, BloombergId{"second"});
 }
 
 TEST_F(InstrumentsInstrumentsCacheFind, FindsInstrumentByPartyRole) {
-  Instrument instrument1 = instrument_sample();
+  auto instrument1 = instrument_sample();
   instrument1.party_role = PartyRole::Option::ContraFirm;
   cache.add_instrument(instrument1);
 
-  Instrument instrument2 = instrument_sample();
+  auto instrument2 = instrument_sample();
   instrument2.party_role = PartyRole::Option::Agent;
   cache.add_instrument(instrument2);
 
-  Instrument instrument3 = instrument_sample();
-  instrument3.party_role = PartyRole::Option::Agent;
-  const auto result = cache.find_instrument(instrument3);
+  auto specification = specification_sample();
+  specification.party_role = PartyRole::Option::Agent;
+  const auto result = cache.find_instrument(specification);
 
   ASSERT_TRUE(result.has_value());
   ASSERT_EQ(result->instrument().party_role, PartyRole::Option::Agent);
 }
 
 TEST_F(InstrumentsInstrumentsCacheFind, FindsInstrumentBySecurityType) {
-  Instrument instrument1 = instrument_sample();
+  auto instrument1 = instrument_sample();
   instrument1.security_type = SecurityType::Option::CommonStock;
   cache.add_instrument(instrument1);
 
-  Instrument instrument2 = instrument_sample();
+  auto instrument2 = instrument_sample();
   instrument2.security_type = SecurityType::Option::Future;
   cache.add_instrument(instrument2);
 
-  Instrument instrument3 = instrument_sample();
-  instrument3.security_type = SecurityType::Option::Future;
-  const auto result = cache.find_instrument(instrument3);
+  auto specification = specification_sample();
+  specification.security_type = SecurityType::Option::Future;
+  const auto result = cache.find_instrument(specification);
 
   ASSERT_TRUE(result.has_value());
   ASSERT_EQ(result->instrument().security_type, SecurityType::Option::Future);

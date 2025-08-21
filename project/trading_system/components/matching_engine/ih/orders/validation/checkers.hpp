@@ -5,7 +5,7 @@
 #include <optional>
 
 #include "common/attributes.hpp"
-#include "common/market_state/snapshot.hpp"
+#include "common/instrument_state.hpp"
 #include "core/domain/attributes.hpp"
 #include "core/tools/time.hpp"
 #include "ih/common/validation/checker_utils.hpp"

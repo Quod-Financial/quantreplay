@@ -247,6 +247,8 @@ MATCHER(IsGeneratorSession, "") {
 MATCHER_P(IsFixSession, expected, "") {
   return ExplainMatchResult(
              Eq(market_state::SessionType::Fix), arg.type, result_listener) &&
+         ExplainMatchResult(
+             Not(Eq(std::nullopt)), arg.fix_session, result_listener) &&
          ExplainMatchResult(Eq(expected), arg.fix_session, result_listener) &&
          ExplainMatchResult(Eq(expected.client_sub_id),
                             arg.fix_session->client_sub_id,

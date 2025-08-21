@@ -1,7 +1,7 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_MARKET_DATA_ACTIONS_MARKET_DATA_RECOVER_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_MARKET_DATA_ACTIONS_MARKET_DATA_RECOVER_HPP_
 
-#include "common/market_state/snapshot.hpp"
+#include "common/instrument_state.hpp"
 #include "common/trade.hpp"
 #include "ih/common/abstractions/event_listener.hpp"
 #include "ih/common/events/event_reporter.hpp"

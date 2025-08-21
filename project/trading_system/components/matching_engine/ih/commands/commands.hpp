@@ -4,7 +4,7 @@
 #include <string_view>
 
 #include "common/events.hpp"
-#include "common/market_state/snapshot.hpp"
+#include "common/instrument_state.hpp"
 #include "core/domain/attributes.hpp"
 #include "ih/commands/client_notification_cache.hpp"
 #include "ih/common/abstractions/market_data_publisher.hpp"

@@ -7,19 +7,26 @@
 #include <rapidjson/ostreamwrapper.h>
 #include <rapidjson/prettywriter.h>
 
-#include "common/market_state/json/snapshot.hpp"
+#include "ih/state_persistence/json/snapshot.hpp"
 
 namespace simulator::trading_system {
 
 auto JsonSerializer::serialize(const market_state::Snapshot& snapshot,
-                               std::ostream& os) const -> bool {
+                               std::ostream& os) const
+    -> tl::expected<void, std::string> {
   rapidjson::Document doc;
-  core::json::Type<market_state::Snapshot>::write_json_value(
-      doc, doc.GetAllocator(), snapshot);
+  if (const auto result = json::write(doc, doc.GetAllocator(), snapshot);
+      !result) {
+    return tl::unexpected{
+        fmt::format("Error serializing JSON: {}", result.error())};
+  }
 
   rapidjson::OStreamWrapper osw{os};
   rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer{osw};
-  return doc.Accept(writer);
+  if (!doc.Accept(writer)) {
+    return tl::unexpected{std::string{"Error writing JSON to output stream"}};
+  }
+  return {};
 }
 
 auto JsonSerializer::deserialize(std::istream& is) const
@@ -42,12 +49,14 @@ auto JsonSerializer::deserialize(std::istream& is) const
                     d.GetErrorOffset())};
   }
 
-  try {
-    return core::json::Type<market_state::Snapshot>::read_json_value(d);
-  } catch (const std::exception& e) {
-    return tl::unexpected{
-        fmt::format("Error deserializing JSON: {}", e.what())};
+  market_state::Snapshot snapshot;
+  const auto result = json::read(d, snapshot);
+  if (result) {
+    return snapshot;
   }
+
+  return tl::unexpected{
+      fmt::format("Error deserializing JSON: {}", result.error())};
 }
 
 }  // namespace simulator::trading_system

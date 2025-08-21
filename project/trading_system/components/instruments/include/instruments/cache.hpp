@@ -1,6 +1,8 @@
 #ifndef SIMULATOR_TRADING_SYSTEM_COMPONENTS_INSTRUMENTS_CACHE_HPP_
 #define SIMULATOR_TRADING_SYSTEM_COMPONENTS_INSTRUMENTS_CACHE_HPP_
 
+#include <fmt/format.h>
+
 #include <memory>
 #include <tl/expected.hpp>
 #include <vector>
@@ -16,6 +18,25 @@ class Cache {
  public:
   struct Implementation;
 
+  struct InstrumentSpecification {
+    std::optional<Symbol> symbol;
+    std::optional<PriceCurrency> price_currency;
+    std::optional<BaseCurrency> base_currency;
+    std::optional<SecurityExchange> security_exchange;
+    std::optional<PartyId> party_id;
+    std::optional<CusipId> cusip;
+    std::optional<SedolId> sedol;
+    std::optional<IsinId> isin;
+    std::optional<RicId> ric;
+    std::optional<ExchangeId> exchange_id;
+    std::optional<BloombergId> bloomberg_id;
+    std::optional<PartyRole> party_role;
+    std::optional<SecurityType> security_type;
+
+    [[nodiscard]]
+    auto operator==(const InstrumentSpecification&) const -> bool = default;
+  };
+
   Cache(const Cache&) = delete;
   Cache(Cache&&) noexcept;
   ~Cache() noexcept;
@@ -30,7 +51,7 @@ class Cache {
       -> tl::expected<View, LookupError>;
 
   [[nodiscard]]
-  auto find(const Instrument& instrument) const
+  auto find(const InstrumentSpecification& specification) const
       -> tl::expected<View, LookupError>;
 
   [[nodiscard]]
@@ -53,5 +74,16 @@ class Cache {
 };
 
 }  // namespace simulator::trading_system::instrument
+
+template <>
+struct fmt::formatter<
+    simulator::trading_system::instrument::Cache::InstrumentSpecification>
+    : fmt::formatter<std::string_view> {
+  using formattable =
+      simulator::trading_system::instrument::Cache::InstrumentSpecification;
+
+  auto format(const formattable& spec, format_context& ctx) const
+      -> format_context::iterator;
+};
 
 #endif  // SIMULATOR_TRADING_SYSTEM_COMPONENTS_INSTRUMENTS_CACHE_HPP_

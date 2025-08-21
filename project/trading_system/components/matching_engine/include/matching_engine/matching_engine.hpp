@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "common/events.hpp"
+#include "common/instrument.hpp"
 #include "common/trading_engine.hpp"
 #include "matching_engine/configuration.hpp"
 #include "runtime/mux.hpp"

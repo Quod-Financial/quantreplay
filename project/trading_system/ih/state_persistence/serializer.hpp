@@ -5,13 +5,14 @@
 #include <ostream>
 #include <tl/expected.hpp>
 
-#include "common/market_state/snapshot.hpp"
+#include "ih/state_persistence/snapshot.hpp"
 
 namespace simulator::trading_system {
 
 struct Serializer {
   virtual auto serialize(const market_state::Snapshot& snapshot,
-                         std::ostream& os) const -> bool = 0;
+                         std::ostream& os) const
+      -> tl::expected<void, std::string> = 0;
 
   virtual auto deserialize(std::istream& is) const
       -> tl::expected<market_state::Snapshot, std::string> = 0;
@@ -22,7 +23,7 @@ struct Serializer {
 class JsonSerializer : public Serializer {
  public:
   auto serialize(const market_state::Snapshot& snapshot, std::ostream& os) const
-      -> bool override;
+      -> tl::expected<void, std::string> override;
 
   [[nodiscard]]
   auto deserialize(std::istream& is) const

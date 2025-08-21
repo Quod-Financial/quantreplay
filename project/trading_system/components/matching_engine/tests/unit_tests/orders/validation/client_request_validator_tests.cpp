@@ -1,7 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "common/market_state/snapshot.hpp"
+#include "common/instrument_state.hpp"
 #include "ih/orders/book/order_book.hpp"
 #include "ih/orders/validation/client_request_validator.hpp"
 #include "protocol/app/order_cancellation_request.hpp"

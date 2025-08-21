@@ -51,23 +51,25 @@ auto Cache::Implementation::find_instrument(
   return tl::make_unexpected(lookup.error());
 }
 
-auto Cache::Implementation::find_instrument(const Instrument& instrument) const
+auto Cache::Implementation::find_instrument(
+    const InstrumentSpecification& specification) const
     -> tl::expected<View, LookupError> {
-  log::debug("looking for an instrument by instrument, {}", instrument);
+  log::debug("looking for an instrument by instrument, {}", specification);
 
-  const auto pred = [&instrument](const Instrument& cached) -> bool {
-    return cached.symbol == instrument.symbol &&
-           cached.price_currency == instrument.price_currency &&
-           cached.base_currency == instrument.base_currency &&
-           cached.security_exchange == instrument.security_exchange &&
-           cached.party_id == instrument.party_id &&
-           cached.cusip == instrument.cusip &&
-           cached.sedol == instrument.sedol && cached.isin == instrument.isin &&
-           cached.ric == instrument.ric &&
-           cached.exchange_id == instrument.exchange_id &&
-           cached.bloomberg_id == instrument.bloomberg_id &&
-           cached.party_role == instrument.party_role &&
-           cached.security_type == instrument.security_type;
+  const auto pred = [&specification](const Instrument& cached) -> bool {
+    return cached.symbol == specification.symbol &&
+           cached.price_currency == specification.price_currency &&
+           cached.base_currency == specification.base_currency &&
+           cached.security_exchange == specification.security_exchange &&
+           cached.party_id == specification.party_id &&
+           cached.cusip == specification.cusip &&
+           cached.sedol == specification.sedol &&
+           cached.isin == specification.isin &&
+           cached.ric == specification.ric &&
+           cached.exchange_id == specification.exchange_id &&
+           cached.bloomberg_id == specification.bloomberg_id &&
+           cached.party_role == specification.party_role &&
+           cached.security_type == specification.security_type;
   };
 
   const auto iter = std::ranges::find_if(container_, pred);
@@ -75,7 +77,7 @@ auto Cache::Implementation::find_instrument(const Instrument& instrument) const
     return View{*iter};
   }
 
-  log::debug("the instrument was not found in the cache, {}", instrument);
+  log::debug("the instrument was not found in the cache, {}", specification);
   return tl::make_unexpected(LookupError::InstrumentNotFound);
 }
 

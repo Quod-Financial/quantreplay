@@ -15,7 +15,7 @@ namespace {
 auto report_invalid_type(rapidjson::Type actual, std::string_view expected)
     -> void {
   throw std::runtime_error{fmt::format(
-      "unexpected data Type `{}`, `{}` is expected", actual, expected)};
+      "unexpected data Type `{}', `{}' is expected", actual, expected)};
 }
 
 }  // namespace
@@ -201,7 +201,8 @@ auto Type<core::local_days>::read_json_value(const rapidjson::Value& json_value)
   stream >> date::parse("%F", days);
 
   if (stream.fail() || stream.bad()) {
-    throw std::runtime_error{fmt::format("failed to parse sys_days: {}", str)};
+    throw std::runtime_error{
+        fmt::format("failed to parse local_days: {}", str)};
   }
 
   return core::local_days{days.time_since_epoch()};

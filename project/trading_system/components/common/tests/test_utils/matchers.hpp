@@ -5,7 +5,7 @@
 
 namespace simulator::trading_system::test {
 
-using namespace ::testing;
+using namespace ::testing;  // NOLINT
 
 MATCHER_P(HasNull, key, "") {
   auto iter = arg.FindMember(key);

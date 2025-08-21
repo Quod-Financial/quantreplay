@@ -1,7 +1,7 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_MARKET_DATA_CACHE_INSTRUMENT_INFO_CACHE_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_MARKET_DATA_CACHE_INSTRUMENT_INFO_CACHE_HPP_
 
-#include "common/market_state/snapshot.hpp"
+#include "common/instrument_state.hpp"
 #include "core/domain/attributes.hpp"
 #include "core/domain/market_data_entry.hpp"
 #include "ih/common/events/order_book_notification.hpp"
