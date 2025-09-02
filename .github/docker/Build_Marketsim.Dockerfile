@@ -1,8 +1,8 @@
-FROM rockylinux:8
+FROM rockylinux/rockylinux:8-minimal
 
-RUN dnf --refresh makecache
+RUN microdnf --refresh makecache
 
-RUN dnf install -y \
+RUN microdnf install -y \
     gcc-toolset-12 \
     git \
     make \

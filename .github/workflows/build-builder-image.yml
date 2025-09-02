@@ -4,7 +4,7 @@ name: Build Builder Image
 on:
   push:
     branches:
-      - master
+      - main
       - develop
     paths:
       - '.github/docker/Build_Marketsim.Dockerfile'
@@ -17,7 +17,7 @@ on:
 
 env:
   IMAGE_NAME: ghcr.io/quod-financial/build_marketsim
-  IMAGE_TAG: v0.1
+  IMAGE_TAG: v0.2
 
 jobs:
   build-builder-image:

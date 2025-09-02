@@ -65,7 +65,7 @@
     },
     {
       "name": "ci-gitlab-base-config",
-      "description": "Base cmake configuration for GiLab pipelines",
+      "description": "Base cmake configuration for GitLab pipelines",
       "hidden": true,
       "cacheVariables": {
         "CMAKE_C_COMPILER": "cc",
@@ -124,6 +124,13 @@
       "jobs": 8
     },
     {
+      "name": "ci-gitlab-release",
+      "description": "Build preset for GitLab pipeline release build",
+      "inherits": ["ci-gitlab-build-all"],
+      "configurePreset": "ci-gitlab-release-config",
+      "jobs": 8
+    },
+    {
       "name": "ci-gitlab-release-executor",
       "description": "Build preset for GitLab pipeline executor tool release build ",
       "inherits": ["ci-gitlab-build-executor"],
@@ -143,6 +150,17 @@
       "name": "ci-gitlab-release-with-debug-info-test",
       "description": "Test (ctest) preset to launch release tests built with debug metadata",
       "configurePreset": "ci-gitlab-release-with-debug-info-config",
+      "execution": {
+        "jobs": 8,
+        "noTestsAction": "ignore",
+        "timeout": 120,
+        "stopOnFailure": false
+      }
+    },
+    {
+      "name": "ci-gitlab-release-test",
+      "description": "Test (ctest) preset to launch release tests build",
+      "configurePreset": "ci-gitlab-release-config",
       "execution": {
         "jobs": 8,
         "noTestsAction": "ignore",
