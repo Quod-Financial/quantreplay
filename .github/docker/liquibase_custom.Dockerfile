@@ -1,5 +1,7 @@
 FROM liquibase/liquibase
 
+RUN lpm add postgresql --global
+
 COPY db /liquibase/project/
 
 ENV SIMULATOR_DATABASE_HOST="market-simulator-database"
