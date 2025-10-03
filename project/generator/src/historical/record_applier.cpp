@@ -102,32 +102,42 @@ void RecordApplier::process(historical::Record record) {
 
 auto RecordApplier::process(const historical::Level& level,
                             std::uint64_t level_idx) -> bool {
-  if (!RecordChecker::is_processable(level)) {
-    return false;
-  }
+  bool anything_placed = false;
 
-  if (!place_bid(level)) {
+  if (skip_bids_) {
+    log::debug(
+        "bid side is already marked as invalid, skipping bid level at index {}",
+        level_idx);
+  } else if (RecordChecker::has_valid_bid(level)) {
+    place_bid(level);
+    anything_placed = true;
+  } else {
+    skip_bids_ = true;
     log::warn(
-        "no bid data was found at the historical level at "
-        "index {}; the bid part of the level has been ignored",
+        "bid side became invalid at level index {} -> all subsequent bid "
+        "levels will be ignored",
         level_idx);
   }
 
-  if (!place_offer(level)) {
+  if (skip_offers_) {
+    log::debug(
+        "offer side is already marked as invalid, skipping offer level at "
+        "index {}",
+        level_idx);
+  } else if (RecordChecker::has_valid_offer(level)) {
+    place_offer(level);
+    anything_placed = true;
+  } else {
+    skip_offers_ = true;
     log::warn(
-        "no offer data was found at the historical level at "
-        "index {}; the offer part of the level has been ignored",
+        "offer side became invalid at level index {} -> all subsequent "
+        "offer levels will be ignored",
         level_idx);
   }
-
-  return true;
+  return anything_placed;
 }
 
-auto RecordApplier::place_bid(const historical::Level& level) -> bool {
-  if (!RecordChecker::has_bid_part(level)) {
-    return false;
-  }
-
+auto RecordApplier::place_bid(const historical::Level& level) -> void {
   constexpr auto target_side = Side::Option::Buy;
 
   assert(level.bid_price().has_value());
@@ -141,14 +151,9 @@ auto RecordApplier::place_bid(const historical::Level& level) -> bool {
                           : next_party_id();
 
   place(Order{price, target_side, quantity, std::move(party)});
-  return true;
 }
 
-auto RecordApplier::place_offer(const historical::Level& level) -> bool {
-  if (!RecordChecker::has_offer_part(level)) {
-    return false;
-  }
-
+auto RecordApplier::place_offer(const historical::Level& level) -> void {
   constexpr auto target_side = Side::Option::Sell;
 
   assert(level.offer_price().has_value());
@@ -162,7 +167,6 @@ auto RecordApplier::place_offer(const historical::Level& level) -> bool {
                           : next_party_id();
 
   place(Order{price, target_side, quantity, std::move(party)});
-  return true;
 }
 
 auto RecordApplier::place(RecordApplier::Order order) -> void {
@@ -286,44 +290,19 @@ RecordApplier::Order::Order(double order_price,
       quantity{order_quantity},
       side{order_side} {}
 
-auto RecordApplier::RecordChecker::is_processable(
+auto RecordApplier::RecordChecker::has_valid_bid(
     const historical::Level& level) noexcept -> bool {
-  const bool has_bid_px = level.bid_price().has_value();
-  const bool has_bid_qty = level.bid_quantity().has_value();
-
-  const bool has_offer_px = level.offer_price().has_value();
-  const bool has_offer_qty = level.offer_quantity().has_value();
-
-  const bool is_bid_valid = !static_cast<bool>(has_bid_px ^ has_bid_qty);
-  const bool is_offer_valid = !static_cast<bool>(has_offer_px ^ has_offer_qty);
-
-  return is_bid_valid && is_offer_valid;
+  return level.bid_price().has_value() && !is_empty(level.bid_quantity());
 }
 
-auto RecordApplier::RecordChecker::has_bid_part(
+auto RecordApplier::RecordChecker::has_valid_offer(
     const historical::Level& level) noexcept -> bool {
-  if (!is_processable(level)) {
-    return false;
-  }
-
-  const bool has_price = level.bid_price().has_value();
-  const bool has_qty = level.bid_quantity().has_value();
-
-  assert(!(has_price ^ has_qty));
-  return has_price && has_qty;
+  return level.offer_price().has_value() && !is_empty(level.offer_quantity());
 }
 
-auto RecordApplier::RecordChecker::has_offer_part(
-    const historical::Level& level) noexcept -> bool {
-  if (!is_processable(level)) {
-    return false;
-  }
-
-  const bool has_price = level.offer_price().has_value();
-  const bool has_qty = level.offer_quantity().has_value();
-
-  assert(!(has_price ^ has_qty));
-  return has_price && has_qty;
+auto RecordApplier::RecordChecker::is_empty(
+    const std::optional<double> qty) noexcept -> bool {
+  return !qty.has_value() || qty.value() <= 0.0;
 }
 
 }  // namespace simulator::generator::historical

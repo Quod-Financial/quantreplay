@@ -560,6 +560,7 @@ a 1-based index appended to indicate which bid or ask level that column of value
 For instance, if BidPrice is not specified as a mapped column of the data source, and BidPrice as a column name is not present in the data source, then it is 
 expected that BidPrice1, BidPrice2, etc will be specified as columns in the data source for each level.
 
+If any bid or ask level is missing a price or quantity value, that particular bid or ask entry, along with all subsequent entries on that side, will be considered empty. These entries will be removed from the state of the matching engine.
 If the party value for a bid or ask level is missing for data sources with multiple bid/ask levels, a default value of “CP#” is used, where # is the index for each level 
 (e.g. level 1 would use CP1, etc).
 

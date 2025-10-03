@@ -32,9 +32,9 @@ class RecordApplier {
 
   auto process(const historical::Level& level, std::uint64_t level_idx) -> bool;
 
-  auto place_bid(const historical::Level& level) -> bool;
+  auto place_bid(const historical::Level& level) -> void;
 
-  auto place_offer(const historical::Level& level) -> bool;
+  auto place_offer(const historical::Level& level) -> void;
 
   auto place(RecordApplier::Order order) -> void;
 
@@ -54,6 +54,9 @@ class RecordApplier {
   ContextPointer context_;
 
   std::uint64_t party_id_counter_{0};
+
+  bool skip_bids_{false};
+  bool skip_offers_{false};
 };
 
 struct RecordApplier::Order {
@@ -72,11 +75,12 @@ struct RecordApplier::Order {
 
 class RecordApplier::RecordChecker {
  public:
-  static auto is_processable(const historical::Level& level) noexcept -> bool;
+  static auto has_valid_bid(const historical::Level& level) noexcept -> bool;
 
-  static auto has_bid_part(const historical::Level& level) noexcept -> bool;
+  static auto has_valid_offer(const historical::Level& level) noexcept -> bool;
 
-  static auto has_offer_part(const historical::Level& level) noexcept -> bool;
+ private:
+  static auto is_empty(const std::optional<double> qty) noexcept -> bool;
 };
 
 }  // namespace simulator::generator::historical
