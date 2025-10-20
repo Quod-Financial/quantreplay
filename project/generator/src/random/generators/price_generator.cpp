@@ -123,7 +123,8 @@ auto PriceGeneratorImpl::resolve_base_price(
     // try to resolve base price as the best price for a current side
     // and return it immediately.
     resolved_price = Utils::select_price(actual_prices, price_side);
-    return core::equal(*resolved_price, 0.) ? std::nullopt : resolved_price;
+    return core::equal(resolved_price.value_or(0.), 0.) ? std::nullopt
+                                                        : resolved_price;
   }
 
   if (event.is_resting_order_event()) {
