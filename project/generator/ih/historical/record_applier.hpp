@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "ih/adaptation/generated_message.hpp"
@@ -45,11 +46,12 @@ class RecordApplier {
 
   auto cancel_offer_part() -> void;
 
-  auto cancel_other_parties(const historical::Record& record) -> void;
+  auto cancel_not_placed_orders() -> void;
 
   auto next_party_id() -> std::string;
 
   std::vector<GeneratedMessage> request_messages_;
+  std::unordered_set<std::string> placed_client_order_ids_;
 
   ContextPointer context_;
 

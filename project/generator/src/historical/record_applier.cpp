@@ -67,8 +67,6 @@ RecordApplier::RecordApplier(RecordApplier::ContextPointer context) noexcept
 
 void RecordApplier::process(historical::Record record) {
   if (record.has_levels()) {
-    cancel_other_parties(record);
-
     const std::optional<std::string>& source_name = record.source_name();
     const std::uint64_t source_row = record.source_row();
     std::size_t levels_applied = 0;
@@ -87,6 +85,8 @@ void RecordApplier::process(historical::Record record) {
             level);
       }
     });
+
+    cancel_not_placed_orders();
 
     log::debug("{} level applied from historical {}", levels_applied, record);
   } else {
@@ -147,7 +147,7 @@ auto RecordApplier::place_bid(const historical::Level& level) -> void {
   const double quantity = level.bid_quantity().value();
 
   std::string party = level.bid_counterparty().has_value()
-                          ? level.bid_counterparty().value()
+                          ? *level.bid_counterparty()
                           : next_party_id();
 
   place(Order{price, target_side, quantity, std::move(party)});
@@ -163,7 +163,7 @@ auto RecordApplier::place_offer(const historical::Level& level) -> void {
   const double quantity = level.offer_quantity().value();
 
   std::string party = level.offer_counterparty().has_value()
-                          ? level.offer_counterparty().value()
+                          ? *level.offer_counterparty()
                           : next_party_id();
 
   place(Order{price, target_side, quantity, std::move(party)});
@@ -202,6 +202,7 @@ auto RecordApplier::place(RecordApplier::Order order) -> void {
 
   auto order_message = RequestBuilder::construct(std::move(message_builder));
   OrderRegistryUpdater::update(registry, order_message);
+  placed_client_order_ids_.insert(order_message.client_order_id->value());
   request_messages_.emplace_back(std::move(order_message));
 }
 
@@ -259,20 +260,9 @@ auto RecordApplier::cancel_offer_part() -> void {
   cancel(all_offer_order);
 }
 
-auto RecordApplier::cancel_other_parties(const historical::Record& record)
-    -> void {
-  std::unordered_set<std::string> parties;
-  record.visit_levels([&parties](std::uint64_t, const Level& level) {
-    if (const auto party = level.bid_counterparty()) {
-      parties.insert(*party);
-    }
-    if (const auto party = level.offer_counterparty()) {
-      parties.insert(*party);
-    }
-  });
-
-  cancel([&parties = std::as_const(parties)](const GeneratedOrderData& order) {
-    return !parties.contains(order.get_owner_id().value());
+auto RecordApplier::cancel_not_placed_orders() -> void {
+  cancel([this](const GeneratedOrderData& order) {
+    return !placed_client_order_ids_.contains(order.get_order_id().value());
   });
 }
 
