@@ -90,6 +90,8 @@ Market Simulators use the POST request to add one or more new resources to the s
 |===
 | Status Code | Meaning
 
+| 200 OK | Request was successful, the response body contains the result of the action.
+
 | 201 CREATED | Request was successful, we added the new resource(s) and the response body contains the validated form of the resource(s) or the response to a complex request.
 
 | 400 BAD REQUEST | The request failed validation, see response body for details.
@@ -643,29 +645,25 @@ A currently halted phase can also be removed on demand through a resume request 
 
 
 [[general-persiststate]]
-=== Persisted State
+=== Persisted Market State
 The market simulator may store and recover:
 
-* The order book;
-* The last trade;
-* Low and high trade prices.
+* The order book state for actively traded listings
+* Last known L1 market data values (such as last traded price, open / high / low / close prices, etc)
 
-The settings persistenceEnabled and persistenceFilePath are used to configure the feature - if persistenceEnabled is true:
+The settings persistenceEnabled and persistenceFilePath are used to configure this feature. If persistenceEnabled is true:
 
-* The market simulator recovers its state from the file placed at persistenceFilePath on startup or by request <<admincmds-persisstate-recover,Market Simulator REST API | Recover Market State For Single Venue>> ;
-* The market simulator stores its state on clean shutdown or by request <<admincmds-persisstate-store,Market Simulator REST API | Store Market State For Single Venue>>.
-
-If the file's content is correct JSON and the instrument is found, the order book, last trade, and low and high trade prices will be removed during the recovery.
+* The market simulator stores its state to the file specified by the persistenceFilePath setting on clean shutdown of the process or by using the <<admincmds-simstate-storerecover,store>> request.
+* The market simulator recovers its state from the file specified by the persistenceFilePath setting on initial process startup or by using the <<admincmds-simstate-storerecover,recover>> request.
 
 [[general-persiststate-fileformat]]
 ==== File Format
-The data is stored in the JSON file.
+The market simulator state is stored to file in JSON format.
 
-For instance, the venue “LSE” contains two listings “AAPL” and “VOW”:
+For instance, the file content indicated below contains the state of the venue “LSE” with two listings “AAPL” and “VOW”:
 
 * “AAPL” has no orders in the order book, no last trade, and low and high prices.
-* “VOW” has the last trade, low and high prices. 
-Its order book contains one buy order and two sell orders.
+* “VOW” has an order book with one buy order and two sell orders, and the last trade, low and high prices.
 
 [,json]
 ----
@@ -855,12 +853,12 @@ Its order book contains one buy order and two sell orders.
 ----
 
 [[general-persiststate-dataverification]]
-==== Data verification
-On storing, the market simulator does the following verifications:
+==== File Verification
+On storing the market state of a simulator instance, the following verifications are performed:
 
 [cols="5,45,45"]
 |===
-|  | Verification | Actions if fail
+|  | Verification | Actions On Failure
 
 | 1 | persistenceEnabled is true | Output log info message:
 
@@ -888,11 +886,11 @@ Stop storing.
 
 |===
 
-On recovery, the market simulator does the following verifications:
+On recovery of market state of a simulator instance, the following verifications are performed:
 
 [cols="5,45,45"]
 |===
-|  | Verification | Actions if fail
+|  | Verification | Actions On Failure
 
 | 1 | persistenceEnabled is true | Output log info message:
 

@@ -7,6 +7,8 @@
 #include <memory>
 #include <string>
 
+#include "http/http.hpp"
+#include "ih/controllers/app_controller.hpp"
 #include "ih/controllers/datasource_controller.hpp"
 #include "ih/controllers/listing_controller.hpp"
 #include "ih/controllers/price_seed_controller.hpp"
@@ -27,7 +29,8 @@ class PostProcessor {
                 const PriceSeedController& price_seed_controller,
                 const SettingController& setting_controller,
                 const TradingController& trading_controller,
-                const VenueController& venue_controller);
+                const VenueController& venue_controller,
+                ControlCallbacks callbacks);
 
   auto add_venue(const Pistache::Rest::Request& request,
                  Pistache::Http::ResponseWriter response) -> void;
@@ -47,6 +50,9 @@ class PostProcessor {
   auto handle_recover_request(const Pistache::Rest::Request& request,
                               Pistache::Http::ResponseWriter response) -> void;
 
+  auto reset_app(const Pistache::Rest::Request& request,
+                 Pistache::Http::ResponseWriter response) -> void;
+
  private:
   static auto respond(const Pistache::Rest::Request& request,
                       Pistache::Http::ResponseWriter& response,
@@ -64,6 +70,7 @@ class PostProcessor {
   std::reference_wrapper<const SettingController> setting_controller_;
   std::reference_wrapper<const TradingController> trading_controller_;
   std::reference_wrapper<const VenueController> venue_controller_;
+  AppController app_controller_;
 };
 
 }  // namespace simulator::http

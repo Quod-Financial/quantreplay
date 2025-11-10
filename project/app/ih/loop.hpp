@@ -4,9 +4,13 @@
 namespace simulator {
 
 struct Loop {
-  static auto suspend_main_thread() -> void;
+  enum class State { Terminate = 1 << 0, Reset = 1 << 1 };
 
-  static auto release_main_thread() -> void;
+  static auto suspend_main_thread() -> State;
+
+  static auto terminate() -> void;
+
+  static auto reset_app_state() -> void;
 };
 
 }  // namespace simulator

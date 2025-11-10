@@ -8,6 +8,7 @@ add_target_tests(
     test_utils/matchers.hpp
     test_utils/test_server.hpp
   UNIT_TESTS
+    unit_tests/controllers/app_controller_tests.cpp
     unit_tests/controllers/trading_controller_tests.cpp
     unit_tests/headers/x_api_version_tests.cpp
     unit_tests/marshalling/json/detail/enumeration_resolver_tests.cpp

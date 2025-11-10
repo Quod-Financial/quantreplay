@@ -1,11 +1,16 @@
 #ifndef SIMULATOR_HTTP_HTTP_HPP_
 #define SIMULATOR_HTTP_HTTP_HPP_
 
+#include <functional>
 #include <memory>
 
 #include "data_layer/api/database/context.hpp"
 
 namespace simulator::http {
+
+struct ControlCallbacks {
+  std::function<void()> reset_app_state;
+};
 
 struct Server {
   struct Implementation;
@@ -24,7 +29,8 @@ struct Server {
   std::unique_ptr<Implementation> impl_;
 };
 
-auto create_http_server(data_layer::database::Context db) -> Server;
+auto create_http_server(data_layer::database::Context db,
+                        ControlCallbacks callbacks) -> Server;
 
 auto launch_http_server(Server& server) -> void;
 

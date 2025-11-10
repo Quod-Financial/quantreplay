@@ -15,6 +15,8 @@ const std::string Store{"/api/store"};
 const std::string StoreById{"/api/store/:venueId"};
 const std::string Recover{"/api/recover"};
 const std::string RecoverById{"/api/recover/:venueId"};
+const std::string Reset{"/api/reset"};
+const std::string ResetById{"/api/reset/:venueId"};
 const std::string Halt{"/api/halt/:venueId"};
 const std::string Resume{"/api/resume/:venueId"};
 const std::string Status{"/api/status"};

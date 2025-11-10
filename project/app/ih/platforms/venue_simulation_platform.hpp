@@ -8,6 +8,7 @@
 #include "ih/components/generator.hpp"
 #include "ih/components/http_server.hpp"
 #include "ih/components/trading_engine.hpp"
+#include "ih/control_callbacks.hpp"
 #include "ih/platforms/platform.hpp"
 
 namespace simulator {
@@ -15,7 +16,8 @@ namespace simulator {
 class VenueSimulationPlatform final : public Platform {
  public:
   explicit VenueSimulationPlatform(
-      const data_layer::database::Context& database);
+      const data_layer::database::Context& database,
+      const ControlCallbacks& callbacks);
 
   auto launch() -> void override;
 

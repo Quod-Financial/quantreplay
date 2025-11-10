@@ -43,12 +43,14 @@ namespace {
       "database record");
 }
 
-[[nodiscard]] auto create_server_implementation(database::Context db)
+[[nodiscard]] auto create_server_implementation(database::Context db,
+                                                ControlCallbacks callbacks)
     -> std::unique_ptr<Server::Implementation> {
   try {
     const std::uint16_t server_port =
         retrieve_configured_http_port(data_layer::select_simulated_venue(db));
-    return std::make_unique<Server::Implementation>(server_port, std::move(db));
+    return std::make_unique<Server::Implementation>(
+        server_port, std::move(db), std::move(callbacks));
   } catch (const std::exception& exception) {
     log::err("failed to create http server, an error occurred: {}",
              exception.what());
@@ -107,9 +109,10 @@ auto Server::implementation() noexcept -> Implementation& {
 }
 
 Server::Implementation::Implementation(std::uint16_t accept_port,
-                                       database::Context database)
+                                       database::Context database,
+                                       ControlCallbacks callbacks)
     : endpoint_(create_endpoint(accept_port)) {
-  setup_handler(std::move(database));
+  setup_handler(std::move(database), std::move(callbacks));
 }
 
 auto Server::Implementation::launch() -> void { endpoint_->serveThreaded(); }
@@ -121,22 +124,28 @@ auto Server::Implementation::create_endpoint(std::uint16_t accept_port)
   log::debug("creating http server endpoint");
 
   const Pistache::Address address{Pistache::Ipv4::any(), accept_port};
-  const auto options = Pistache::Http::Endpoint::options().threads(1);
+  const auto options = Pistache::Http::Endpoint::options().threads(1).flags(
+      Pistache::Tcp::Options::ReuseAddr);
 
   auto endpoint = std::make_unique<Pistache::Http::Endpoint>(address);
+  endpoint->init(options);
   log::info("created http endpoint configured to listen on port {}",
             accept_port);
 
   return endpoint;
 }
 
-auto Server::Implementation::setup_handler(database::Context database) -> void {
-  endpoint_->setHandler(std::make_shared<Router>(std::move(database)));
+auto Server::Implementation::setup_handler(database::Context database,
+                                           ControlCallbacks callbacks) -> void {
+  endpoint_->setHandler(
+      std::make_shared<Router>(std::move(database), std::move(callbacks)));
 }
 
-auto create_http_server(database::Context database) -> Server {
+auto create_http_server(database::Context database, ControlCallbacks callbacks)
+    -> Server {
   log::debug("creating http server");
-  Server server{create_server_implementation(std::move(database))};
+  Server server{
+      create_server_implementation(std::move(database), std::move(callbacks))};
   log::info("http server has been created");
   return server;
 }

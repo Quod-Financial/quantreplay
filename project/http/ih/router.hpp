@@ -4,6 +4,7 @@
 #include <pistache/router.h>
 
 #include "data_layer/api/database/context.hpp"
+#include "http/http.hpp"
 #include "ih/controllers/datasource_controller.hpp"
 #include "ih/controllers/listing_controller.hpp"
 #include "ih/controllers/price_seed_controller.hpp"
@@ -25,7 +26,8 @@ class Router : public Pistache::Http::Handler {
  public:
   HTTP_PROTOTYPE(Router)
 
-  explicit Router(data_layer::database::Context database);
+  explicit Router(data_layer::database::Context database,
+                  ControlCallbacks callbacks);
 
   auto onRequest(const Pistache::Http::Request& request,
                  Pistache::Http::ResponseWriter response) -> void override;

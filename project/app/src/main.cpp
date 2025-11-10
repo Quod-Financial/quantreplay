@@ -9,6 +9,7 @@
 #include "core/version.hpp"
 #include "ih/application.hpp"
 #include "ih/command_options.hpp"
+#include "ih/control_callbacks.hpp"
 #include "ih/loading.hpp"
 #include "ih/loop.hpp"
 
@@ -43,7 +44,7 @@ auto get_stop_signal_name(int signal_code) noexcept -> std::string_view {
 }
 
 auto terminate_application([[maybe_unused]] int signal_code) -> void {
-  Loop::release_main_thread();
+  Loop::terminate();
 }
 
 auto set_termination_signal_handler(int signal_code) -> void {
@@ -60,13 +61,16 @@ auto run_application(const simulator::CommandOptions& options) noexcept
   load_logger(options, simulator::cfg::log());
 
   // constructor launches application, destructor - terminates
-  Application app = Application::start();
+  Application app = Application::start(
+      ControlCallbacks{[]() -> void { Loop::reset_app_state(); }});
 
   set_termination_signal_handler(SIGINT);
   set_termination_signal_handler(SIGQUIT);
   set_termination_signal_handler(SIGTERM);
 
-  Loop::suspend_main_thread();
+  while (Loop::suspend_main_thread() == Loop::State::Reset) {
+    app.reset_state();
+  }
 
 } catch (const std::exception& exception) {
   fmt::println(stderr, "failed to run application: {}", exception.what());

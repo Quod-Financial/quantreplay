@@ -14,14 +14,16 @@ PostProcessor::PostProcessor(const data_bridge::VenueAccessor& venue_accessor,
                              const PriceSeedController& price_seed_controller,
                              const SettingController& setting_controller,
                              const TradingController& trading_controller,
-                             const VenueController& venue_controller)
+                             const VenueController& venue_controller,
+                             ControlCallbacks callbacks)
     : redirector_(redirect::RedirectionProcessor::create(venue_accessor)),
       datasource_controller_(datasource_controller),
       listing_controller_(listing_controller),
       price_seed_controller_(price_seed_controller),
       setting_controller_(setting_controller),
       trading_controller_(trading_controller),
-      venue_controller_(venue_controller) {}
+      venue_controller_(venue_controller),
+      app_controller_{venue_accessor, cfg::venue(), std::move(callbacks)} {}
 
 auto PostProcessor::add_venue(const Pistache::Rest::Request& request,
                               Pistache::Http::ResponseWriter response) -> void {
@@ -89,6 +91,29 @@ auto PostProcessor::handle_recover_request(
   if (instance_id.empty() || instance_id == cfg::venue().name) {
     const auto [code, body] = trading_controller_.get().recover_market_state();
     respond(request, response, code, body);
+  } else {
+    const auto redirect_response = redirect(request, instance_id);
+    respond(request,
+            response,
+            redirect_response.http_code(),
+            redirect_response.body_content());
+  }
+}
+
+auto PostProcessor::reset_app(const Pistache::Rest::Request& request,
+                              Pistache::Http::ResponseWriter response) -> void {
+  const auto instance_id = request.hasParam(":venueId")
+                               ? request.param(":venueId").as<std::string>()
+                               : std::string{};
+
+  if (instance_id.empty() || instance_id == cfg::venue().name) {
+    log::info("before reset_app_state()");
+    const auto [code, body] = app_controller_.ready_to_reset();
+
+    respond(request, response, code, body);
+    if (code == Pistache::Http::Code::Ok) {
+      app_controller_.reset_app_state();
+    }
   } else {
     const auto redirect_response = redirect(request, instance_id);
     respond(request,

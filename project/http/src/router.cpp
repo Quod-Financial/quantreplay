@@ -90,7 +90,7 @@ auto check_api_version(const Pistache::Http::Request& request) -> bool {
 }
 }  // namespace
 
-Router::Router([[maybe_unused]] database::Context database)
+Router::Router(database::Context database, ControlCallbacks callbacks)
     : datasource_accessor_(database),
       listing_accessor_(database),
       price_seed_accessor_(database),
@@ -114,7 +114,8 @@ Router::Router([[maybe_unused]] database::Context database)
                       price_seed_controller_,
                       setting_controller_,
                       trading_controller_,
-                      venue_controller_),
+                      venue_controller_,
+                      std::move(callbacks)),
       put_processor_(venue_accessor_,
                      datasource_controller_,
                      listing_controller_,
@@ -222,6 +223,18 @@ auto Router::init_admin_routes() -> void {
       endpoint::VenueStatus,
       Pistache::Rest::Routes::bind(&GetProcessor::get_venue_statuses,
                                    &get_processor_));
+
+  Pistache::Rest::Routes::Post(
+      router_,
+      endpoint::Reset,
+      Pistache::Rest::Routes::bind(&PostProcessor::reset_app,
+                                   &post_processor_));
+
+  Pistache::Rest::Routes::Post(
+      router_,
+      endpoint::ResetById,
+      Pistache::Rest::Routes::bind(&PostProcessor::reset_app,
+                                   &post_processor_));
 }
 
 auto Router::init_venue_routes() -> void {

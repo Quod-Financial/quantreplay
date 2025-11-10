@@ -29,6 +29,7 @@ add_static_library(
     ih/platforms/venue_simulation_platform.hpp
     ih/application.hpp
     ih/command_options.hpp
+    ih/control_callbacks.hpp
     ih/loading.hpp
     ih/loop.hpp
   SOURCES

@@ -17,14 +17,34 @@ auto setup_database_connection() -> database::Context {
 
 }  // namespace
 
-auto Application::start() -> Application {
+auto Application::start(ControlCallbacks callbacks) -> Application {
   log::info("starting Market Simulator, version: {}", core::version());
-  Application application{};
+  Application application{std::move(callbacks)};
   application.launch();
   return application;
 }
 
-Application::Application() {
+auto Application::reset_state() -> void {
+  log::info("resetting the simulator application state");
+  try {
+    platform_->terminate();
+    platform_.reset();
+  } catch (const std::exception& exception) {
+    log::err("an error occurred while terminating simulator application: {}",
+             exception.what());
+    throw;
+  } catch (...) {
+    log::err("unknown error occurred while terminating simulator application");
+    throw;
+  }
+
+  platform_ = create_venue_simulation_platform();
+  platform_->launch();
+  log::info("simulator application state has been reset");
+}
+
+Application::Application(ControlCallbacks callbacks)
+    : callbacks_{std::move(callbacks)} {
   log::debug("creating simulator application");
   platform_ = create_venue_simulation_platform();
   log::info("simulator application created");
@@ -50,7 +70,8 @@ auto Application::terminate() noexcept -> void try {
 
 auto Application::create_venue_simulation_platform()
     -> std::unique_ptr<Platform> {
-  return std::make_unique<VenueSimulationPlatform>(setup_database_connection());
+  return std::make_unique<VenueSimulationPlatform>(setup_database_connection(),
+                                                   callbacks_);
 }
 
 }  // namespace simulator
