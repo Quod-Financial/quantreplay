@@ -9,6 +9,8 @@ StartTime=00:00:00
 EndTime=00:00:00
 TimestampPrecision=6
 HeartBtInt=30
+ValidateUserDefinedFields=N
+AllowUnknownMsgFields=Y
 
 [SESSION]
 BeginString=FIXT.1.1
