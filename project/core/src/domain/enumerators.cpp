@@ -67,7 +67,8 @@ json::EnumConverter<PartyIdentifierSource> json::EnumConverter<
      {enumerators::PartyIdentifierSource::IndiaPermanentAccountNumber, "IndiaPermanentAccountNumber"},
      {enumerators::PartyIdentifierSource::FDID, "FDID"},
      {enumerators::PartyIdentifierSource::SPSAID, "SPSAID"},
-     {enumerators::PartyIdentifierSource::MasterSPSAID, "MasterSPSAID"}}};
+     {enumerators::PartyIdentifierSource::MasterSPSAID, "MasterSPSAID"},
+     {enumerators::PartyIdentifierSource::KoreaShortSellingRegistrationNumber, "KoreaShortSellingRegistrationNumber"}}};
 // clang-format on
 
 // clang-format off
@@ -86,6 +87,7 @@ json::EnumConverter<PartyRole> json::EnumConverter<PartyRole>::instance_{
      {enumerators::PartyRole::OrderOriginationTrader, "OrderOriginationTrader"},
      {enumerators::PartyRole::ExecutingTrader, "ExecutingTrader"},
      {enumerators::PartyRole::OrderOriginationFirm, "OrderOriginationFirm"},
+     {enumerators::PartyRole::GiveupClearingFirmDepr, "GiveupClearingFirmDepr"},
      {enumerators::PartyRole::CorrespondantClearingFirm,
       "CorrespondantClearingFirm"},
      {enumerators::PartyRole::ExecutingSystem, "ExecutingSystem"},
@@ -214,7 +216,10 @@ json::EnumConverter<PartyRole> json::EnumConverter<PartyRole>::instance_{
      {enumerators::PartyRole::Issuer, "Issuer"},
      {enumerators::PartyRole::ContraCustomerAccount, "ContraCustomerAccount"},
      {enumerators::PartyRole::ContraInvestmentDecisionMaker,
-      "ContraInvestmentDecisionMaker"}}};
+      "ContraInvestmentDecisionMaker"},
+     {enumerators::PartyRole::AuthorizingPerson, "AuthorizingPerson"},
+     {enumerators::PartyRole::PrimaryPlaceOfListing, "PrimaryPlaceOfListing"},
+     {enumerators::PartyRole::SecondaryPlaceOfListing, "SecondaryPlaceOfListing"}}};
 // clang-format on
 
 // clang-format off

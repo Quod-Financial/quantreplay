@@ -34,6 +34,7 @@ const BiMap<PartyRole::Option> party_role_bimap{
     {PartyRole::Option::OrderOriginationTrader, "OrderOriginationTrader"},
     {PartyRole::Option::ExecutingTrader, "ExecutingTrader"},
     {PartyRole::Option::OrderOriginationFirm, "OrderOriginationFirm"},
+    {PartyRole::Option::GiveupClearingFirmDepr, "GiveupClearingFirmDepr"},
     {PartyRole::Option::CorrespondantClearingFirm, "CorrespondantClearingFirm"},
     {PartyRole::Option::ExecutingSystem, "ExecutingSystem"},
     {PartyRole::Option::ContraFirm, "ContraFirm"},
@@ -156,7 +157,10 @@ const BiMap<PartyRole::Option> party_role_bimap{
     {PartyRole::Option::Issuer, "Issuer"},
     {PartyRole::Option::ContraCustomerAccount, "ContraCustomerAccount"},
     {PartyRole::Option::ContraInvestmentDecisionMaker,
-     "ContraInvestmentDecisionMaker"}};
+     "ContraInvestmentDecisionMaker"},
+    {PartyRole::Option::AuthorizingPerson, "AuthorizingPerson"},
+    {PartyRole::Option::PrimaryPlaceOfListing, "PrimaryPlaceOfListing"},
+    {PartyRole::Option::SecondaryPlaceOfListing, "SecondaryPlaceOfListing"}};
 
 const BiMap<PartyIdSource::Option> party_id_source_bimap{
     {{PartyIdSource::Option::UKNationalInsuranceOrPensionNumber,
@@ -200,7 +204,8 @@ const BiMap<PartyIdSource::Option> party_id_source_bimap{
       "IndiaPermanentAccountNumber"},
      {PartyIdSource::Option::FDID, "FDID"},
      {PartyIdSource::Option::SPSAID, "SPSAID"},
-     {PartyIdSource::Option::MasterSPSAID, "MasterSPSAID"}}};
+     {PartyIdSource::Option::MasterSPSAID, "MasterSPSAID"},
+     {PartyIdSource::Option::KoreaShortSellingRegistrationNumber, "KoreaShortSellingRegistrationNumber"}}};
 
 const BiMap<SecurityType::Option> security_type_bimap{
     {{SecurityType::Option::CommonStock, "CommonStock"},

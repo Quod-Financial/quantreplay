@@ -69,6 +69,7 @@ INSTANTIATE_TEST_SUITE_P(
            std::make_pair(PartyRole::Option::OrderOriginationTrader, "OrderOriginationTrader"),
            std::make_pair(PartyRole::Option::ExecutingTrader, "ExecutingTrader"),
            std::make_pair(PartyRole::Option::OrderOriginationFirm, "OrderOriginationFirm"),
+           std::make_pair(PartyRole::Option::GiveupClearingFirmDepr, "GiveupClearingFirmDepr"),
            std::make_pair(PartyRole::Option::CorrespondantClearingFirm, "CorrespondantClearingFirm"),
            std::make_pair(PartyRole::Option::ExecutingSystem, "ExecutingSystem"),
            std::make_pair(PartyRole::Option::ContraFirm, "ContraFirm"),
@@ -161,6 +162,7 @@ INSTANTIATE_TEST_SUITE_P(
            std::make_pair(PartyRole::Option::ExerciseNoticeReceiver, "ExerciseNoticeReceiver"),
            std::make_pair(PartyRole::Option::RateReferenceBank, "RateReferenceBank"),
            std::make_pair(PartyRole::Option::Correspondent, "Correspondent"),
+           std::make_pair(PartyRole::Option::BeneficiaryBank, "BeneficiaryBank"),
            std::make_pair(PartyRole::Option::Borrower, "Borrower"),
            std::make_pair(PartyRole::Option::PrimaryObligator, "PrimaryObligator"),
            std::make_pair(PartyRole::Option::Guarantor, "Guarantor"),
@@ -178,7 +180,10 @@ INSTANTIATE_TEST_SUITE_P(
            std::make_pair(PartyRole::Option::CSDParticipant, "CSDParticipant"),
            std::make_pair(PartyRole::Option::Issuer, "Issuer"),
            std::make_pair(PartyRole::Option::ContraCustomerAccount, "ContraCustomerAccount"),
-           std::make_pair(PartyRole::Option::ContraInvestmentDecisionMaker, "ContraInvestmentDecisionMaker")));
+           std::make_pair(PartyRole::Option::ContraInvestmentDecisionMaker, "ContraInvestmentDecisionMaker"),
+           std::make_pair(PartyRole::Option::AuthorizingPerson, "AuthorizingPerson"),
+           std::make_pair(PartyRole::Option::PrimaryPlaceOfListing, "PrimaryPlaceOfListing"),
+           std::make_pair(PartyRole::Option::SecondaryPlaceOfListing, "SecondaryPlaceOfListing")));
 // clang-format on
 
 TEST(TradingSystemJsonEnumerators, OutputsErrorOnReadIncorrectPartyIdSource) {
@@ -257,7 +262,8 @@ INSTANTIATE_TEST_SUITE_P(
            std::make_pair(PartyIdSource::Option::IndiaPermanentAccountNumber, "IndiaPermanentAccountNumber"),
            std::make_pair(PartyIdSource::Option::FDID, "FDID"),
            std::make_pair(PartyIdSource::Option::SPSAID, "SPSAID"),
-           std::make_pair(PartyIdSource::Option::MasterSPSAID, "MasterSPSAID")));
+           std::make_pair(PartyIdSource::Option::MasterSPSAID, "MasterSPSAID"),
+           std::make_pair(PartyIdSource::Option::KoreaShortSellingRegistrationNumber, "KoreaShortSellingRegistrationNumber")));
 // clang-format on
 
 TEST(TradingSystemJsonEnumerators, OutputsErrorOnReadIncorrectSecurityType) {
