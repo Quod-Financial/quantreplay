@@ -17,7 +17,7 @@ on:
 
 env:
   IMAGE_NAME: ghcr.io/quod-financial/build_marketsim
-  IMAGE_TAG: v0.2
+  IMAGE_TAG: v0.3
 
 jobs:
   build-builder-image:

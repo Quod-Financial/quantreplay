@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ (startsWith(github.ref, 'refs/tags/v') && github.ref_type == 'tag') || github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
     container:
-      image: ghcr.io/quod-financial/build_marketsim:v0.2
+      image: ghcr.io/quod-financial/build_marketsim:v0.3
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -67,7 +67,7 @@ jobs:
     needs: release-build
     if: ${{ (startsWith(github.ref, 'refs/tags/v') && github.ref_type == 'tag') || github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
     container:
-      image: ghcr.io/quod-financial/build_marketsim:v0.2
+      image: ghcr.io/quod-financial/build_marketsim:v0.3
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

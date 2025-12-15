@@ -8,7 +8,7 @@ RUN microdnf install -y \
     make \
     openssl-devel \
     perl \
-    python3-pip
+    python3.11-pip
 
 RUN pip3 install --upgrade pip
 
