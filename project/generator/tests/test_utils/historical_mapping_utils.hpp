@@ -10,10 +10,10 @@ namespace simulator::generator::historical::mapping {
 using namespace ::testing;
 
 inline auto make_column_config(data_layer::converter::ColumnFrom column_from,
-                               std::string source)
-    -> data_layer::converter::ColumnConfig {
-  return data_layer::converter::ColumnConfig{
-      std::move(column_from), std::move(source), 0};
+                               std::string column_to)
+    -> std::pair<const data_layer::converter::ColumnFrom, std::string> {
+  return std::make_pair<const data_layer::converter::ColumnFrom, std::string>(
+      std::move(column_from), std::move(column_to));
 }
 
 MATCHER_P(Resolves, column_from, "") {

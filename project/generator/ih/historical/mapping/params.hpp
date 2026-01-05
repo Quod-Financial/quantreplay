@@ -6,8 +6,6 @@
 
 #include "data_layer/api/models/column_mapping.hpp"
 #include "data_layer/api/models/datasource.hpp"
-#include "ih/historical/mapping/datasource_params.hpp"
-#include "ih/historical/mapping/depth_config.hpp"
 #include "ih/historical/mapping/specification.hpp"
 
 namespace simulator::generator::historical {
@@ -17,22 +15,24 @@ class MappingParams {
   using ColumnNames = std::vector<std::string>;
   using ColumnMappings = std::vector<data_layer::ColumnMapping>;
 
-  explicit MappingParams(ColumnMappings mapping_configs,
-                         DatasourceParams datasource_params) noexcept;
+  explicit MappingParams(ColumnMappings mapping_configs) noexcept;
 
-  auto initialize(mapping::DepthConfig depth_config) -> void;
+  auto initialize(std::uint32_t column_count, std::uint32_t max_depth_levels)
+      -> void;
 
-  auto initialize(ColumnNames column_names, mapping::DepthConfig depth_config)
+  auto initialize(ColumnNames column_names, std::uint32_t max_depth_levels)
       -> void;
 
   [[nodiscard]]
   auto column_idx(data_layer::converter::ColumnFrom column) const
       -> std::optional<std::uint32_t>;
 
+  [[nodiscard]]
+  auto max_depth() const -> std::uint32_t;
+
  private:
   mapping::Specification spec_;
   ColumnMappings column_mappings_;
-  DatasourceParams datasource_params_;
 };
 
 auto make_mapping_params(const data_layer::Datasource& datasource)

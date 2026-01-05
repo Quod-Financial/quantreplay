@@ -16,6 +16,7 @@
 #include "ih/historical/mapping/params.hpp"
 #include "ih/historical/parsing/parsing.hpp"
 #include "ih/historical/parsing/row.hpp"
+#include "mocks/historical/record.hpp"
 #include "tests/test_utils/historical_data_utils.hpp"
 
 namespace simulator::generator::historical::test {
@@ -32,25 +33,24 @@ auto make_mapping_param(std::string column_from, std::uint32_t column_to)
 }
 
 auto make_mapping(std::initializer_list<data_layer::ColumnMapping> params,
-                  mapping::DepthConfig depth_config)
-    -> historical::MappingParams {
+                  std::uint32_t column_count,
+                  std::uint32_t max_depth_levels) -> historical::MappingParams {
   using historical::MappingParams;
 
-  MappingParams mapping_params{params, DatasourceParams::CsvNoHeader};
-  mapping_params.initialize(depth_config);
+  MappingParams mapping_params{params};
+  mapping_params.initialize(column_count, max_depth_levels);
   return mapping_params;
 }
 
 struct GeneratorHistoricalParsingParseLevel : public ::testing::Test {
-  static constexpr mapping::DepthConfig DepthOne{1, 1};
-
   Level::Builder builder;
 };
 
 TEST_F(GeneratorHistoricalParsingParseLevel, ParsesNanStringBidPrice) {
   const Row row{"AB"};
-  const auto mapping =
-      make_mapping({make_mapping_param("BidPrice", 1)}, DepthOne);
+  const auto mapping = make_mapping({make_mapping_param("BidPrice", 1)},
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    1);
 
   parse_bid_level_part(row, builder, mapping, 1);
 
@@ -60,8 +60,9 @@ TEST_F(GeneratorHistoricalParsingParseLevel, ParsesNanStringBidPrice) {
 
 TEST_F(GeneratorHistoricalParsingParseLevel, ParsesDecimalStringBidPrice) {
   const Row row{"42.42"};
-  const auto mapping =
-      make_mapping({make_mapping_param("BidPrice", 1)}, DepthOne);
+  const auto mapping = make_mapping({make_mapping_param("BidPrice", 1)},
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    1);
 
   parse_bid_level_part(row, builder, mapping, 1);
 
@@ -71,8 +72,9 @@ TEST_F(GeneratorHistoricalParsingParseLevel, ParsesDecimalStringBidPrice) {
 
 TEST_F(GeneratorHistoricalParsingParseLevel, ParsesNanStringBidQuantity) {
   const Row row{"AB"};
-  const auto mapping =
-      make_mapping({make_mapping_param("BidQuantity", 1)}, DepthOne);
+  const auto mapping = make_mapping({make_mapping_param("BidQuantity", 1)},
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    1);
 
   parse_bid_level_part(row, builder, mapping, 1);
 
@@ -82,8 +84,9 @@ TEST_F(GeneratorHistoricalParsingParseLevel, ParsesNanStringBidQuantity) {
 
 TEST_F(GeneratorHistoricalParsingParseLevel, ParsesDecimalStringBidQuantity) {
   const Row row{"42.42"};
-  const auto mapping =
-      make_mapping({make_mapping_param("BidQuantity", 1)}, DepthOne);
+  const auto mapping = make_mapping({make_mapping_param("BidQuantity", 1)},
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    1);
 
   parse_bid_level_part(row, builder, mapping, 1);
 
@@ -93,8 +96,9 @@ TEST_F(GeneratorHistoricalParsingParseLevel, ParsesDecimalStringBidQuantity) {
 
 TEST_F(GeneratorHistoricalParsingParseLevel, ParsesEmptyStringBidParty) {
   const Row row{""};
-  const auto mapping =
-      make_mapping({make_mapping_param("BidParty", 1)}, DepthOne);
+  const auto mapping = make_mapping({make_mapping_param("BidParty", 1)},
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    1);
 
   parse_bid_level_part(row, builder, mapping, 1);
 
@@ -104,8 +108,9 @@ TEST_F(GeneratorHistoricalParsingParseLevel, ParsesEmptyStringBidParty) {
 
 TEST_F(GeneratorHistoricalParsingParseLevel, ParsesNotEmptyBidParty) {
   const Row row{"BidCP"};
-  const auto mapping =
-      make_mapping({make_mapping_param("BidParty", 1)}, DepthOne);
+  const auto mapping = make_mapping({make_mapping_param("BidParty", 1)},
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    1);
 
   parse_bid_level_part(row, builder, mapping, 1);
 
@@ -115,8 +120,9 @@ TEST_F(GeneratorHistoricalParsingParseLevel, ParsesNotEmptyBidParty) {
 
 TEST_F(GeneratorHistoricalParsingParseLevel, ParsesNanStringOfferPrice) {
   const Row row{"AB"};
-  const auto mapping =
-      make_mapping({make_mapping_param("AskPrice", 1)}, DepthOne);
+  const auto mapping = make_mapping({make_mapping_param("AskPrice", 1)},
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    1);
 
   parse_offer_level_part(row, builder, mapping, 1);
 
@@ -126,8 +132,9 @@ TEST_F(GeneratorHistoricalParsingParseLevel, ParsesNanStringOfferPrice) {
 
 TEST_F(GeneratorHistoricalParsingParseLevel, ParsesDecimalStringOfferPrice) {
   const Row row{"42.42"};
-  const auto mapping =
-      make_mapping({make_mapping_param("AskPrice", 1)}, DepthOne);
+  const auto mapping = make_mapping({make_mapping_param("AskPrice", 1)},
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    1);
 
   parse_offer_level_part(row, builder, mapping, 1);
 
@@ -137,8 +144,9 @@ TEST_F(GeneratorHistoricalParsingParseLevel, ParsesDecimalStringOfferPrice) {
 
 TEST_F(GeneratorHistoricalParsingParseLevel, ParsesOfferNanStringQuantity) {
   const Row row{"AB"};
-  const auto mapping =
-      make_mapping({make_mapping_param("AskQuantity", 1)}, DepthOne);
+  const auto mapping = make_mapping({make_mapping_param("AskQuantity", 1)},
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    1);
 
   parse_offer_level_part(row, builder, mapping, 1);
 
@@ -148,8 +156,9 @@ TEST_F(GeneratorHistoricalParsingParseLevel, ParsesOfferNanStringQuantity) {
 
 TEST_F(GeneratorHistoricalParsingParseLevel, ParsesDecimalStringOfferQuantity) {
   const Row row{"42.42"};
-  const auto mapping =
-      make_mapping({make_mapping_param("AskQuantity", 1)}, DepthOne);
+  const auto mapping = make_mapping({make_mapping_param("AskQuantity", 1)},
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    1);
 
   parse_offer_level_part(row, builder, mapping, 1);
 
@@ -159,8 +168,9 @@ TEST_F(GeneratorHistoricalParsingParseLevel, ParsesDecimalStringOfferQuantity) {
 
 TEST_F(GeneratorHistoricalParsingParseLevel, ParsesEmptyStringOfferParty) {
   const Row row{""};
-  const auto mapping =
-      make_mapping({make_mapping_param("AskParty", 1)}, DepthOne);
+  const auto mapping = make_mapping({make_mapping_param("AskParty", 1)},
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    1);
 
   parse_offer_level_part(row, builder, mapping, 1);
 
@@ -170,8 +180,9 @@ TEST_F(GeneratorHistoricalParsingParseLevel, ParsesEmptyStringOfferParty) {
 
 TEST_F(GeneratorHistoricalParsingParseLevel, ParsesOfferNotEmptyStringParty) {
   const Row row{"AskCP"};
-  const auto mapping =
-      make_mapping({make_mapping_param("AskParty", 1)}, DepthOne);
+  const auto mapping = make_mapping({make_mapping_param("AskParty", 1)},
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    1);
 
   parse_offer_level_part(row, builder, mapping, 1);
 
@@ -181,17 +192,35 @@ TEST_F(GeneratorHistoricalParsingParseLevel, ParsesOfferNotEmptyStringParty) {
 
 class GeneratorHistoricalRowParsing : public ::testing::Test {
  public:
-  static constexpr mapping::DepthConfig DepthOne{1, 1};
-
-  static constexpr std::string_view TestTimeString = "2023-01-20 12:00:32.345";
-
-  static constexpr auto TestTimeValue =
+  static constexpr std::string_view TestReceivedTimeString =
+      "2023-01-20 12:00:32.345";
+  static constexpr auto TestReceivedTimeValue =
       historical::Timepoint{historical::Duration{1674216032345}};
 
-  historical::Record::Builder builder;
+  static constexpr std::string_view TestMessageTimeString =
+      "2023-01-20 12:00:33.345";
+  static constexpr auto TestMessageTimeValue =
+      historical::Timepoint{historical::Duration{1674216033345}};
+
+  NiceMock<mock::RecordBuilder>* builder_mock =
+      new NiceMock<mock::RecordBuilder>();
+  std::unique_ptr<historical::Record::Builder> builder{builder_mock};
 
   GeneratorHistoricalRowParsing() {
-    builder.with_source_row(1).with_source_connection("dummy");
+    ON_CALL(*builder_mock, with_instrument(_))
+        .WillByDefault(ReturnRef(*builder_mock));
+    ON_CALL(*builder_mock, with_received_time(_))
+        .WillByDefault(ReturnRef(*builder_mock));
+    ON_CALL(*builder_mock, with_message_time(_))
+        .WillByDefault(ReturnRef(*builder_mock));
+    ON_CALL(*builder_mock, with_source_name(_))
+        .WillByDefault(ReturnRef(*builder_mock));
+    ON_CALL(*builder_mock, with_source_connection(_))
+        .WillByDefault(ReturnRef(*builder_mock));
+    ON_CALL(*builder_mock, with_source_row(_))
+        .WillByDefault(ReturnRef(*builder_mock));
+    ON_CALL(*builder_mock, add_level(_, _))
+        .WillByDefault(ReturnRef(*builder_mock));
   }
 };
 
@@ -199,112 +228,116 @@ TEST_F(GeneratorHistoricalRowParsing, DoesNotSetEmptyReceiveTimeStamp) {
   const Row row{"", "dummy"};
   const auto mapping = make_mapping({make_mapping_param("ReceivedTimeStamp", 1),
                                      make_mapping_param("Instrument", 2)},
-                                    DepthOne);
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    1);
+
+  EXPECT_CALL(*builder_mock, with_received_time(_)).Times(0);
 
   parse(row, builder, mapping, 1);
-  EXPECT_THROW((void)Record::Builder::construct(builder),
-               std::invalid_argument);
 }
 
 TEST_F(GeneratorHistoricalRowParsing, DoesNotSetIncorrectReceiveTimeStamp) {
   const Row row{"AABBCC", "dummy"};
   const auto mapping = make_mapping({make_mapping_param("ReceivedTimeStamp", 1),
                                      make_mapping_param("Instrument", 2)},
-                                    DepthOne);
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    1);
+
+  EXPECT_CALL(*builder_mock, with_received_time(_)).Times(0);
 
   parse(row, builder, mapping, 1);
-  EXPECT_THROW((void)Record::Builder::construct(builder),
-               std::invalid_argument);
 }
 
 TEST_F(GeneratorHistoricalRowParsing, SetsReceivedTimeStamp) {
-  const Row row{TestTimeString, "dummy"};
+  const Row row{TestReceivedTimeString, "dummy"};
   const auto mapping = make_mapping({make_mapping_param("ReceivedTimeStamp", 1),
                                      make_mapping_param("Instrument", 2)},
-                                    DepthOne);
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    1);
+
+  EXPECT_CALL(*builder_mock, with_received_time(TestReceivedTimeValue))
+      .Times(1);
 
   parse(row, builder, mapping, 1);
-
-  const auto record = Record::Builder::construct(builder);
-  EXPECT_EQ(record.receive_time(), TestTimeValue);
 }
 
 TEST_F(GeneratorHistoricalRowParsing, DoesNotSetEmptyMessageTimeStamp) {
-  const Row row{TestTimeString, "", "dummy"};
+  const Row row{TestReceivedTimeString, "", "dummy"};
   const auto mapping = make_mapping({make_mapping_param("ReceivedTimeStamp", 1),
                                      make_mapping_param("MessageTimeStamp", 2),
                                      make_mapping_param("Instrument", 3)},
-                                    DepthOne);
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    1);
+
+  EXPECT_CALL(*builder_mock, with_message_time(_)).Times(0);
 
   parse(row, builder, mapping, 1);
-
-  const auto record = Record::Builder::construct(builder);
-  EXPECT_EQ(record.message_time(), std::nullopt);
 }
 
-TEST_F(GeneratorHistoricalRowParsing, DoesNotSetIncorrecMessageTimeStamp) {
-  const Row row{TestTimeString, "AABBCC", "dummy"};
+TEST_F(GeneratorHistoricalRowParsing, DoesNotSetIncorrectMessageTimeStamp) {
+  const Row row{TestReceivedTimeString, "AABBCC", "dummy"};
   const auto mapping = make_mapping({make_mapping_param("ReceivedTimeStamp", 1),
                                      make_mapping_param("MessageTimeStamp", 2),
                                      make_mapping_param("Instrument", 3)},
-                                    DepthOne);
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    1);
+
+  EXPECT_CALL(*builder_mock, with_message_time(_)).Times(0);
 
   parse(row, builder, mapping, 1);
-
-  const auto record = Record::Builder::construct(builder);
-  EXPECT_EQ(record.message_time(), std::nullopt);
 }
 
 TEST_F(GeneratorHistoricalRowParsing, SetsMessageTimeStamp) {
-  const Row row{TestTimeString, TestTimeString, "dummy"};
+  const Row row{TestReceivedTimeString, TestMessageTimeString, "dummy"};
   const auto mapping = make_mapping({make_mapping_param("ReceivedTimeStamp", 1),
                                      make_mapping_param("MessageTimeStamp", 2),
                                      make_mapping_param("Instrument", 3)},
-                                    DepthOne);
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    1);
+
+  EXPECT_CALL(*builder_mock, with_message_time(TestMessageTimeValue)).Times(1);
 
   parse(row, builder, mapping, 1);
-
-  const auto record = Record::Builder::construct(builder);
-  EXPECT_THAT(record.message_time(), Optional(Eq(TestTimeValue)));
 }
 
 TEST_F(GeneratorHistoricalRowParsing, DoesNotSetEmptyInstrument) {
-  const Row row{TestTimeString, ""};
+  const Row row{TestReceivedTimeString, ""};
   const auto mapping = make_mapping({make_mapping_param("ReceivedTimeStamp", 1),
                                      make_mapping_param("Instrument", 2)},
-                                    DepthOne);
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    1);
+
+  EXPECT_CALL(*builder_mock, with_instrument(_)).Times(0);
 
   parse(row, builder, mapping, 1);
-  EXPECT_THROW((void)Record::Builder::construct(builder),
-               std::invalid_argument);
 }
 
 TEST_F(GeneratorHistoricalRowParsing, SetsInstrument) {
-  const Row row{TestTimeString, "INSTR-1"};
+  const Row row{TestReceivedTimeString, "INSTR-1"};
   const auto mapping = make_mapping({make_mapping_param("ReceivedTimeStamp", 1),
                                      make_mapping_param("Instrument", 2)},
-                                    DepthOne);
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    1);
+
+  EXPECT_CALL(*builder_mock, with_instrument("INSTR-1")).Times(1);
 
   parse(row, builder, mapping, 1);
-
-  const auto record = Record::Builder::construct(builder);
-  EXPECT_EQ(record.instrument(), "INSTR-1");
 }
 
 TEST_F(GeneratorHistoricalRowParsing, DoesNotSetLevelDataIfItIsNotPresent) {
-  const Row row{TestTimeString, "INSTR-2"};
+  const Row row{TestReceivedTimeString, "INSTR-2"};
   const auto mapping = make_mapping({make_mapping_param("ReceivedTimeStamp", 1),
                                      make_mapping_param("Instrument", 2)},
-                                    DepthOne);
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    1);
+
+  EXPECT_CALL(*builder_mock, add_level(_, _)).Times(0);
 
   parse(row, builder, mapping, 1);
-
-  const auto record = Record::Builder::construct(builder);
-  EXPECT_FALSE(record.has_levels());
 }
 
 TEST_F(GeneratorHistoricalRowParsing, SetsLevel) {
-  const Row row{TestTimeString,
+  const Row row{TestReceivedTimeString,
                 "INSTR-2",
                 "Bid_party",
                 "10",
@@ -312,11 +345,6 @@ TEST_F(GeneratorHistoricalRowParsing, SetsLevel) {
                 "52.52",
                 "20",
                 "Ask_party"};
-
-  MockFunction<void(std::uint64_t, const Level&)> level_visitor;
-  EXPECT_CALL(level_visitor,
-              Call(0, LevelEq("Bid_party", 10, 42.42, 52.52, 20, "Ask_party")))
-      .Times(1);
 
   const auto mapping = make_mapping({make_mapping_param("ReceivedTimeStamp", 1),
                                      make_mapping_param("Instrument", 2),
@@ -326,17 +354,19 @@ TEST_F(GeneratorHistoricalRowParsing, SetsLevel) {
                                      make_mapping_param("AskPrice", 6),
                                      make_mapping_param("AskQuantity", 7),
                                      make_mapping_param("AskParty", 8)},
-                                    DepthOne);
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    1);
+
+  EXPECT_CALL(
+      *builder_mock,
+      add_level(0, LevelEq("Bid_party", 10, 42.42, 52.52, 20, "Ask_party")))
+      .Times(1);
 
   parse(row, builder, mapping, 1);
-
-  const auto record = Record::Builder::construct(builder);
-  ASSERT_TRUE(record.has_levels());
-  record.visit_levels(level_visitor.AsStdFunction());
 }
 
 TEST_F(GeneratorHistoricalRowParsing, SetsTwoLevels) {
-  const Row row{TestTimeString,
+  const Row row{TestReceivedTimeString,
                 "INSTR-2",
                 "Bid_party1",
                 "10",
@@ -350,16 +380,6 @@ TEST_F(GeneratorHistoricalRowParsing, SetsTwoLevels) {
                 "72.72",
                 "40",
                 "Ask_party2"};
-
-  MockFunction<void(std::uint64_t, const Level&)> level_visitor;
-  EXPECT_CALL(
-      level_visitor,
-      Call(0, LevelEq("Bid_party1", 10, 42.42, 62.62, 30, "Ask_party1")))
-      .Times(1);
-  EXPECT_CALL(
-      level_visitor,
-      Call(1, LevelEq("Bid_party2", 20, 52.52, 72.72, 40, "Ask_party2")))
-      .Times(1);
 
   const auto mapping = make_mapping({make_mapping_param("ReceivedTimeStamp", 1),
                                      make_mapping_param("Instrument", 2),
@@ -375,13 +395,19 @@ TEST_F(GeneratorHistoricalRowParsing, SetsTwoLevels) {
                                      make_mapping_param("AskPrice2", 12),
                                      make_mapping_param("AskQuantity2", 13),
                                      make_mapping_param("AskParty2", 14)},
-                                    {2, 2});
+                                    static_cast<std::uint32_t>(row.columns()),
+                                    2);
+
+  EXPECT_CALL(
+      *builder_mock,
+      add_level(0, LevelEq("Bid_party1", 10, 42.42, 62.62, 30, "Ask_party1")))
+      .Times(1);
+  EXPECT_CALL(
+      *builder_mock,
+      add_level(1, LevelEq("Bid_party2", 20, 52.52, 72.72, 40, "Ask_party2")))
+      .Times(1);
 
   parse(row, builder, mapping, 2);
-
-  const auto record = Record::Builder::construct(builder);
-  ASSERT_TRUE(record.has_levels());
-  record.visit_levels(level_visitor.AsStdFunction());
 }
 
 }  // namespace

@@ -35,7 +35,7 @@ auto parse_offer_level_part(const Row& row,
                             std::uint32_t depth) -> void;
 
 auto parse(const Row& row,
-           Record::Builder& result_builder,
+           const std::unique_ptr<historical::Record::Builder>& result_builder,
            const MappingParams& mapping,
            std::uint32_t depth_levels_to_parse) -> void;
 

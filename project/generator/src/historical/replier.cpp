@@ -74,7 +74,7 @@ auto Replier::create_provider(const Datasources& datasources)
               datasource.name(),
               datasource.datasource_id());
   } catch (const std::exception& exception) {
-    log::warn(
+    log::err(
         "Failed to initialize a data provider for `{}' datasource "
         "(id: {}): {}",
         datasource.name(),

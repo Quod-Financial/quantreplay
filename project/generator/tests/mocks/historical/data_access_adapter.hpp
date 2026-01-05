@@ -17,7 +17,7 @@ class DataAccessAdapter : public historical::DataAccessAdapter {
 
   MOCK_METHOD(void,
               parse_next_record,
-              (historical::Record::Builder&),
+              (std::unique_ptr<historical::Record::Builder>&),
               (override));
 };
 
@@ -32,19 +32,20 @@ class DataAccessAdapter : public historical::DataAccessAdapter {
     return !assigned_records_.empty();
   }
 
-  auto parse_next_record(historical::Record::Builder& builder)
+  auto parse_next_record(std::unique_ptr<historical::Record::Builder>& builder)
       -> void override {
     assert(has_next_record());
-    builder = std::move(assigned_records_.front());
+    builder.swap(assigned_records_.front());
     assigned_records_.pop_front();
   }
 
-  auto push_record_builder(historical::Record::Builder builder) -> void {
+  auto push_record_builder(std::unique_ptr<historical::Record::Builder> builder) -> void {
     assigned_records_.emplace_back(std::move(builder));
   }
 
  private:
-  std::deque<historical::Record::Builder> assigned_records_;
+  std::deque<std::unique_ptr<historical::Record::Builder>>
+      assigned_records_;
 };
 
 }  // namespace simulator::generator::fake

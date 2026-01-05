@@ -53,8 +53,6 @@ constexpr std::string_view Postgres{"PSQL"};
 
 constexpr std::string_view DefaultCounterpartyPattern{"CP{}"};
 
-constexpr std::uint32_t AllDepthLevels{0};
-
 }  // namespace historical
 
 }  // namespace simulator::generator::constant

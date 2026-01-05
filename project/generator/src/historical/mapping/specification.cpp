@@ -2,6 +2,8 @@
 
 #include <fmt/ranges.h>
 
+#include <ranges>
+
 namespace simulator::generator::historical::mapping {
 
 auto SourceColumn::index() const noexcept -> std::uint32_t {
@@ -28,6 +30,17 @@ auto Specification::resolve_by(
   return associated_it != std::end(by_target_)
              ? std::make_optional(associated_it->second)
              : std::nullopt;
+}
+
+auto Specification::max_depth() const -> std::uint32_t {
+  std::uint32_t max_depth = 0;
+  for (const auto& column_from : std::views::keys(by_target_)) {
+    if (const auto depth = column_from.depth_level();
+        std::holds_alternative<std::uint32_t>(depth)) {
+      max_depth = std::max(max_depth, std::get<std::uint32_t>(depth));
+    }
+  }
+  return max_depth;
 }
 
 auto operator<<(std::ostream& os, const Specification& spec) -> std::ostream& {

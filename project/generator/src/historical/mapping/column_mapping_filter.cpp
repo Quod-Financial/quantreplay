@@ -7,15 +7,16 @@
 
 namespace simulator::generator::historical::mapping {
 
-auto filter(const std::vector<data_layer::ColumnMapping>& mapping_configs,
-            std::uint32_t depth_to_parse)
-    -> std::vector<data_layer::converter::ColumnConfig> {
+namespace {
+auto group_by_column_from(
+    const std::vector<data_layer::ColumnMapping>& mapping_configs)
+    -> std::map<
+        data_layer::converter::ColumnFrom::Column,
+        std::map<data_layer::converter::ColumnFrom::Depth, std::string>> {
   using namespace data_layer::converter;
 
   std::map<ColumnFrom::Column, std::map<ColumnFrom::Depth, std::string>>
       column_map;
-  const auto datasource_id =
-      mapping_configs.empty() ? 0 : mapping_configs.front().datasource_id();
 
   for (const auto& config : mapping_configs) {
     const auto column_from_exp = ColumnFrom::create(config.column_from());
@@ -31,32 +32,36 @@ auto filter(const std::vector<data_layer::ColumnMapping>& mapping_configs,
         config.column_to();
   }
 
-  std::vector<ColumnConfig> result;
+  return column_map;
+}
+
+}  // namespace
+
+auto filter(const std::vector<data_layer::ColumnMapping>& mapping_configs)
+    -> std::map<data_layer::converter::ColumnFrom, std::string> {
+  using namespace data_layer::converter;
+
+  const auto column_map = group_by_column_from(mapping_configs);
+
+  std::map<data_layer::converter::ColumnFrom, std::string> result;
   for (const auto& [column, value] : column_map) {
     const auto first_depth = value.begin()->first;
     const auto converter = core::overload(
         [&](ColumnFrom::NoDepth) {
-          result.emplace_back(
-              ColumnFrom::create(column, ColumnFrom::NoDepth{}).value(),
-              value.begin()->second,
-              datasource_id);
+          const auto key =
+              ColumnFrom::create(column, ColumnFrom::NoDepth{}).value();
+          result[key] = value.begin()->second;
         },
         [&](ColumnFrom::VariableDepth) {
-          for (std::uint32_t depth = 1; depth <= depth_to_parse; ++depth) {
-            const auto column_to =
-                data_layer::converter::extract_column_name_from_variable_depth(
-                    value.begin()->second);
-            result.emplace_back(ColumnFrom::create(column, depth).value(),
-                                fmt::format("{}{}", *column_to, depth),
-                                datasource_id);
-          }
+          const auto key =
+              ColumnFrom::create(column, ColumnFrom::VariableDepth{}).value();
+          result[key] = value.begin()->second;
         },
         [&](std::uint32_t) {
           for (const auto& [depth_level, column_to] : value) {
             auto depth = std::get<std::uint32_t>(depth_level);
-            result.emplace_back(ColumnFrom::create(column, depth).value(),
-                                column_to,
-                                datasource_id);
+            const auto key = ColumnFrom::create(column, depth).value();
+            result[key] = column_to;
           }
         });
 

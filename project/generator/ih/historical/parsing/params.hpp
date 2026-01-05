@@ -4,13 +4,7 @@
 #include <cstdint>
 #include <string>
 
-#include "ih/constants.hpp"
-
-namespace simulator::data_layer {
-
-class Datasource;
-
-}  // namespace simulator::data_layer
+#include "data_layer/api/models/datasource.hpp"
 
 namespace simulator::generator::historical {
 
@@ -44,7 +38,7 @@ class GeneralDatasourceParams {
  private:
   std::string connection_;
   std::string name_;
-  std::uint32_t max_depth_levels_{constant::historical::AllDepthLevels};
+  std::uint32_t max_depth_levels_{data_layer::Datasource::AllDepthLevels};
 };
 
 class CsvParsingParams {

@@ -438,7 +438,8 @@ In this case, if no column mappings are indicated, the following default order o
 
  ReceivedTimeStamp, MessageTimeStamp, Instrument, BidParty, BidQuantity, BidPrice, AskPrice, AskQuantity, AskParty
 
-Also in this case, if some columns are mapped but not others, any unmapped column is assumed to be at the position as indicated above by the default order of columns.
+If column mapping is not specified, their default column order or names are used.
+If column mapping is defined for at least one of the level columns (BidParty, BidPrice, BidQuantity, AskParty, AskPrice, AskQuantity), it must be specified for the rest of the BidPrice, BidQuantity, AskPrice, AskQuantity. BidParty and AskParty are optional columns.
 
 The following examples show sample generic CSV formats using these data source properties:
 
@@ -524,10 +525,11 @@ ReceivedTimeStamp,MessageTimeStamp,...
 NOTE: Note that the simulator will play back order actions with at least the same delay between values of ReceivedTimeStamp for each row, 
 though the actual delay may be longer if the simulator is unable to play back the order actions for each row for too small of a specified delay.
 
-For database format and CSV file format with a non-zero textHeaderRow value, the column mapping properties of the data source can be used to map columns by name. 
+For database format and CSV file format with a non-zero textHeaderRow value, the column mapping properties of the data source can be used to map columns by name.
 The columnFrom property of the column mapping is used to select the internal simulator field that will be mapped from, and the columnTo property indicates the data
 source column that the simulator field will be mapped to. 
-In this case, any unmapped columns are assumed to use the same values as available for the columnFrom property as the column name in the data source.
+In this case, if either ReceivedTimeStamp, MessageTimeStamp, Instrument or none of them are mapped, the unmapped columns are assumed to use the same values as available for the columnFrom property as the column name in the data source.
+However, if any level column (BidParty, BidPrice, BidQuantity, AskParty, AskPrice, AskQuantity) is mapped, the other level columns (BidPrice, BidQuantity, AskPrice, AskQuantity) must also be mapped. BidParty and AskParty columns are optional.
 
 See the section <<adminsets-data-colmapping,Market Simulator REST API | Column Mapping Sub List>> for descriptions of all possible fields that can be mapped from a data source as configured using the 
 columnFrom property of a data source column mapping. 
@@ -554,13 +556,7 @@ BidPrice, AskPrice, AskQuantity, AskParty.
 For each of these columnFrom values, a 1-based index can be appended to indicate which bid or ask level that value should be applied to, for example BidParty1 
 for the first bid level, BidParty2 for the second bid level, and so on. 
 In this case, the columnTo property still works the same way, indicating either the name or (for a CSV file format when textHeaderRow is 0 or not specified) the index 
-position of the data source column to map to. 
-If no column mapping is indicated for one of the columnFrom values listed above, then either for a database format or CSV file format with a non-zero value for textHeaderRow, 
-it is expected that column names are specified in the data source, and if that unmapped column name (from the list of BidParty, BidQuantity, BidPrice, AskPrice, 
-AskQuantity, AskParty) is not found directly as one of the columns of the data source, then that same column name is expected to be present but with 
-a 1-based index appended to indicate which bid or ask level that column of values should be applied to. 
-For instance, if BidPrice is not specified as a mapped column of the data source, and BidPrice as a column name is not present in the data source, then it is 
-expected that BidPrice1, BidPrice2, etc will be specified as columns in the data source for each level.
+position of the data source column to map to.
 
 If any bid or ask level is missing a price or quantity value, that particular bid or ask entry, along with all subsequent entries on that side, will be considered empty. These entries will be removed from the state of the matching engine.
 If the party value for a bid or ask level is missing for data sources with multiple bid/ask levels, a default value of “CP#” is used, where # is the index for each level 

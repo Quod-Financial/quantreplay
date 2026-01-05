@@ -43,8 +43,8 @@ class GeneratorHistoricalRecordApplierFixture : public testing::Test {
     constexpr std::uint64_t source_row = 1;
     const auto receive_time = std::chrono::system_clock::now();
 
-    Record::Builder builder;
-    builder.with_receive_time(receive_time)
+    Record::BuilderImpl builder;
+    builder.with_received_time(receive_time)
         .with_instrument(*listing_.symbol())
         .with_source_row(source_row);
 
@@ -53,7 +53,7 @@ class GeneratorHistoricalRecordApplierFixture : public testing::Test {
       builder.add_level(index++, level);
     }
 
-    return historical::Record::Builder::construct(std::move(builder));
+    return builder.construct();
   }
 
   static auto make_registered_order(const ClientOrderId& order_id,

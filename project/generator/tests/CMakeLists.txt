@@ -4,6 +4,7 @@ add_target_tests(
     mocks/context/order_context.hpp
     mocks/historical/data_access_adapter.hpp
     mocks/historical/provider.hpp
+    mocks/historical/record.hpp
     mocks/random/counterparty_generator.hpp
     mocks/random/price_generator.hpp
     mocks/random/quantity_generator.hpp
@@ -15,6 +16,7 @@ add_target_tests(
     test_utils/generated_message_utils.hpp
     test_utils/historical_data_utils.hpp
     test_utils/historical_mapping_utils.hpp
+    test_utils/matchers.hpp
   UNIT_TESTS
     unit_tests/adaptation/instrument_descriptor_conversion_tests.cpp
     unit_tests/adaptation/to_protocol_message_conversion_tests.cpp
@@ -26,10 +28,10 @@ add_target_tests(
     unit_tests/historical/data/provider_tests.cpp
     unit_tests/historical/data/record_tests.cpp
     unit_tests/historical/mapping/column_mapping_filter_tests.cpp
-    unit_tests/historical/mapping/configurator_default_association_tests.cpp
-    unit_tests/historical/mapping/configurator_no_source_columns_tests.cpp
+    unit_tests/historical/mapping/configurator_no_column_mapping_tests.cpp
     unit_tests/historical/mapping/configurator_tests.cpp
-    unit_tests/historical/mapping/depth_config_tests.cpp
+    unit_tests/historical/mapping/configurator_variable_depth_tests.cpp
+    unit_tests/historical/mapping/csv_no_header_configurator_tests.cpp
     unit_tests/historical/mapping/source_column_tests.cpp
     unit_tests/historical/mapping/specification_tests.cpp
     unit_tests/historical/parsing/csv_parsing_params_tests.cpp

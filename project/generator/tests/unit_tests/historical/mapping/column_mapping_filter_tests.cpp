@@ -19,12 +19,11 @@ auto column_mapping(std::string column_from, std::string column_to)
 auto column_config(data_layer::converter::ColumnFrom::Column column_from,
                    data_layer::converter::ColumnFrom::Depth depth,
                    std::string column_to)
-    -> data_layer::converter::ColumnConfig {
-  return data_layer::converter::ColumnConfig{
+    -> std::pair<const data_layer::converter::ColumnFrom, std::string> {
+  return std::make_pair<const data_layer::converter::ColumnFrom, std::string>(
       data_layer::converter::ColumnFrom::create(column_from, std::move(depth))
           .value(),
-      std::move(column_to),
-      0};
+      std::move(column_to));
 }
 
 TEST(GeneratorHistoricalMappingColumnMappingFilter,
@@ -34,27 +33,13 @@ TEST(GeneratorHistoricalMappingColumnMappingFilter,
       column_mapping("ReceivedTimeStamp", "timestamp"),
       column_mapping("BidParty42", "bid_party")};
 
-  const auto filtered = filter(mappings, 42);
+  const auto filtered = filter(mappings);
   ASSERT_THAT(filtered,
               ElementsAre(column_config(ColumnFrom::Column::ReceivedTimestamp,
                                         ColumnFrom::NoDepth{},
                                         "timestamp"),
                           column_config(
                               ColumnFrom::Column::BidParty, 42u, "bid_party")));
-}
-
-TEST(GeneratorHistoricalMappingColumnMappingFilter, UnfoldsVariableDepth) {
-  using ColumnFrom = data_layer::converter::ColumnFrom;
-
-  const std::vector<data_layer::ColumnMapping> mappings{
-      column_mapping("BidParty#", "bid_party#")};
-
-  const auto filtered = filter(mappings, 2);
-  ASSERT_THAT(
-      filtered,
-      ElementsAre(
-          column_config(ColumnFrom::Column::BidParty, 1u, "bid_party1"),
-          column_config(ColumnFrom::Column::BidParty, 2u, "bid_party2")));
 }
 
 TEST(GeneratorHistoricalMappingColumnMappingFilter,
@@ -67,12 +52,12 @@ TEST(GeneratorHistoricalMappingColumnMappingFilter,
       column_mapping("BidParty2", "ignored2"),
   };
 
-  const auto filtered = filter(mappings, 2);
-  ASSERT_THAT(
-      filtered,
-      ElementsAre(
-          column_config(ColumnFrom::Column::BidParty, 1u, "bid_party1"),
-          column_config(ColumnFrom::Column::BidParty, 2u, "bid_party2")));
+  const auto filtered = filter(mappings);
+  ASSERT_THAT(filtered,
+              ElementsAre(column_config(
+                  ColumnFrom::Column::BidParty,
+                  data_layer::converter::ColumnFrom::VariableDepth{},
+                  "bid_party#")));
 }
 
 }  // namespace

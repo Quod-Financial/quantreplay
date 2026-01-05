@@ -21,7 +21,8 @@ auto ends_with_sharp(const std::string& str) -> bool {
 
 template <typename ColumnMappingT>
 [[nodiscard]]
-auto correct_variable_depth(const std::vector<ColumnMappingT>& column_mappings)
+auto variable_depth_are_not_or_both_from_to(
+    const std::vector<ColumnMappingT>& column_mappings)
     -> tl::expected<void, std::string> {
   const auto result = std::ranges::all_of(
       column_mappings, [](const ColumnMappingT& column_mapping) {
@@ -44,9 +45,7 @@ auto all_columns_to_are_numbers(
     const std::vector<ColumnMappingT>& column_mappings) -> bool {
   return std::ranges::all_of(
       column_mappings,
-      [](const std::string& column_to) {
-        return core::is_number(column_to);
-      },
+      [](const std::string& column_to) { return core::is_number(column_to); },
       &ColumnMappingT::column_to);
 }
 
@@ -84,71 +83,150 @@ auto convert_to_column_from(const std::vector<ColumnMappingT>& columns_mapping)
   return columns_from;
 }
 
-[[nodiscard]]
-auto gaps_in_column_from(const std::vector<converter::ColumnFrom>& columns_from,
-                         std::uint32_t max_depth_levels)
-    -> tl::expected<void, std::string> {
-  std::map<converter::ColumnFrom::Column,
-           std::set<converter::ColumnFrom::Depth>>
-      depth_levels;
-
+auto any_level_column_specified(
+    const std::vector<converter::ColumnFrom>& columns_from) -> bool {
+  std::set<converter::ColumnFrom::Column> level_columns = {
+      converter::ColumnFrom::Column::BidParty,
+      converter::ColumnFrom::Column::BidQuantity,
+      converter::ColumnFrom::Column::BidPrice,
+      converter::ColumnFrom::Column::OfferPrice,
+      converter::ColumnFrom::Column::OfferQuantity,
+      converter::ColumnFrom::Column::OfferParty};
   for (const auto& column_from : columns_from) {
-    const auto column = column_from.column();
-    if (converter::ColumnFrom::has_depth(column)) {
-      depth_levels[column].insert(column_from.depth_level());
+    if (auto iter = level_columns.find(column_from.column());
+        iter != std::end(level_columns)) {
+      return true;
     }
   }
+  return false;
+}
 
-  for (const auto& [column, depths] : depth_levels) {
-    if (depths.empty()) {
-      continue;
+auto any_variable_depth(const std::vector<converter::ColumnFrom>& columns_from)
+    -> bool {
+  return std::ranges::find_if(
+             columns_from,
+             [&](const converter::ColumnFrom::Depth& depth) {
+               return std::holds_alternative<
+                   converter::ColumnFrom::VariableDepth>(depth);
+             },
+             &converter::ColumnFrom::depth_level) != std::end(columns_from);
+}
+
+auto max_depth(const std::vector<converter::ColumnFrom>& columns_from)
+    -> std::uint32_t {
+  using Depth = converter::ColumnFrom::Depth;
+
+  const auto max_column_from = std::ranges::max(
+      columns_from,
+      [](const Depth& lhs, const Depth& rhs) {
+        const auto lhs_depth = std::holds_alternative<std::uint32_t>(lhs)
+                                   ? std::get<std::uint32_t>(lhs)
+                                   : 0;
+        const auto rhs_depth = std::holds_alternative<std::uint32_t>(rhs)
+                                   ? std::get<std::uint32_t>(rhs)
+                                   : 0;
+        return lhs_depth < rhs_depth;
+      },
+      &converter::ColumnFrom::depth_level);
+
+  const auto& max_depth = max_column_from.depth_level();
+  return std::holds_alternative<std::uint32_t>(max_depth)
+             ? std::get<std::uint32_t>(max_depth)
+             : 0;
+}
+
+auto all_required_level_columns_specified(
+    const std::vector<converter::ColumnFrom>& columns_from,
+    std::uint32_t max_depth_levels) -> tl::expected<void, std::string> {
+  constexpr auto only_any_party_left =
+      [](const std::set<converter::ColumnFrom::Column>& level_columns) -> bool {
+    const auto bid_party_present =
+        level_columns.contains(converter::ColumnFrom::Column::BidParty);
+    const auto offer_party_present =
+        level_columns.contains(converter::ColumnFrom::Column::OfferParty);
+    if (level_columns.size() == 2) {
+      return bid_party_present && offer_party_present;
     }
-
-    if (std::holds_alternative<converter::ColumnFrom::VariableDepth>(
-            *std::begin(depths))) {
-      continue;
+    if (level_columns.size() == 1) {
+      return bid_party_present || offer_party_present;
     }
+    return false;
+  };
 
-    if (!std::holds_alternative<std::uint32_t>(*std::begin(depths))) {
-      return tl::unexpected(
-          fmt::format("unexpected depth type for Column From `{}', expected is "
-                      "std::uint32_t",
-                      column));
-    }
+  constexpr auto erase_parties =
+      [](std::set<converter::ColumnFrom::Column>& level_columns) -> void {
+    level_columns.erase(converter::ColumnFrom::Column::BidParty);
+    level_columns.erase(converter::ColumnFrom::Column::OfferParty);
+  };
 
-    auto prev_depth = std::get<uint32_t>(*std::begin(depths));
-    if (prev_depth != 1) {
-      return tl::unexpected(fmt::format(
-          "the minimal depth level of Column From `{}' is `{}', expected is 1",
-          column,
-          prev_depth));
-    }
+  auto columns_from_max_depth = max_depth(columns_from);
+  if (max_depth_levels != Datasource::AllDepthLevels) {
+    columns_from_max_depth = std::min(columns_from_max_depth, max_depth_levels);
+  }
 
-    for (auto it = std::next(std::begin(depths)); it != std::end(depths);
-         ++it) {
-      const auto current_depth = std::get<std::uint32_t>(*it);
-      if (current_depth - prev_depth != 1) {
-        return tl::unexpected(fmt::format(
-            "there is a gap between depth levels for Column From `{}': "
-            "`{}' and `{}'",
-            column,
-            prev_depth,
-            current_depth));
+  for (std::uint32_t depth = 1; depth <= columns_from_max_depth; ++depth) {
+    std::set<converter::ColumnFrom::Column> level_columns = {
+        converter::ColumnFrom::Column::BidParty,
+        converter::ColumnFrom::Column::BidQuantity,
+        converter::ColumnFrom::Column::BidPrice,
+        converter::ColumnFrom::Column::OfferPrice,
+        converter::ColumnFrom::Column::OfferQuantity,
+        converter::ColumnFrom::Column::OfferParty};
+    bool erased = false;
+
+    for (auto iter = std::begin(columns_from);
+         iter != std::end(columns_from) && !level_columns.empty();
+         ++iter) {
+      if (std::holds_alternative<std::uint32_t>(iter->depth_level()) &&
+          std::get<std::uint32_t>(iter->depth_level()) == depth) {
+        erased = level_columns.erase(iter->column()) != 0 || erased;
       }
-      prev_depth = current_depth;
     }
 
-    if (max_depth_levels != 0 && prev_depth < max_depth_levels) {
-      return tl::unexpected(fmt::format(
-          "the maximum depth level for Column From `{}' is `{}', which is less "
-          "than the datasource maximum depth levels `{}'",
-          column,
-          prev_depth,
-          max_depth_levels));
+    if (!level_columns.empty() && erased &&
+        !only_any_party_left(level_columns)) {
+      erase_parties(level_columns);
+
+      const auto& missing_column = *std::begin(level_columns);
+      auto missing_column_from_str = fmt::format("{}", missing_column);
+      if (columns_from_max_depth > 1) {
+        missing_column_from_str += fmt::to_string(depth);
+      }
+
+      return tl::unexpected<std::string>{fmt::format(
+          "Each level must be fully specified: missing ColumnFrom `{}'.",
+          missing_column_from_str)};
     }
   }
 
   return {};
+}
+
+auto all_level_columns_are_variable_depth(
+    const std::vector<converter::ColumnFrom>& columns_from)
+    -> tl::expected<void, std::string> {
+  std::set<converter::ColumnFrom::Column> level_columns = {
+      converter::ColumnFrom::Column::BidQuantity,
+      converter::ColumnFrom::Column::BidPrice,
+      converter::ColumnFrom::Column::OfferPrice,
+      converter::ColumnFrom::Column::OfferQuantity};
+
+  for (const auto& column_from : columns_from) {
+    if (auto iter = level_columns.find(column_from.column());
+        iter != std::end(level_columns)) {
+      if (std::holds_alternative<converter::ColumnFrom::VariableDepth>(
+              column_from.depth_level())) {
+        level_columns.erase(iter);
+      }
+    }
+  }
+
+  return level_columns.empty()
+             ? tl::expected<void, std::string>{}
+             : tl::unexpected<std::string>{fmt::format(
+                   "Variable depth must be set for all level columns: "
+                   "missing ColumnFrom `{}'.",
+                   *std::begin(level_columns))};
 }
 
 }  // namespace
@@ -167,7 +245,8 @@ auto valid(const Datasource& datasource) -> tl::expected<void, std::string> {
     }
   }
 
-  if (const auto result = correct_variable_depth(columns_mapping);
+  if (const auto result =
+          variable_depth_are_not_or_both_from_to(columns_mapping);
       !result.has_value()) {
     return tl::unexpected<std::string>{result.error()};
   }
@@ -177,11 +256,22 @@ auto valid(const Datasource& datasource) -> tl::expected<void, std::string> {
     return tl::unexpected<std::string>{columns_from.error()};
   }
 
-  const auto gaps = gaps_in_column_from(
-      columns_from.value(), datasource.max_depth_levels().value_or(0));
-  if (!gaps.has_value()) {
-    return tl::unexpected<std::string>{gaps.error()};
+  if (any_level_column_specified(columns_from.value())) {
+    if (any_variable_depth(columns_from.value())) {
+      if (const auto result =
+              all_level_columns_are_variable_depth(columns_from.value());
+          !result.has_value()) {
+        return tl::unexpected<std::string>{result.error()};
+      }
+    } else if (const auto result = all_required_level_columns_specified(
+                   columns_from.value(),
+                   datasource.max_depth_levels().value_or(
+                       Datasource::AllDepthLevels));
+               !result.has_value()) {
+      return tl::unexpected<std::string>{result.error()};
+    }
   }
+
   return {};
 }
 
@@ -200,7 +290,8 @@ auto valid(const Datasource::Patch& datasource)
       }
     }
 
-    if (const auto result = correct_variable_depth(*columns_mapping);
+    if (const auto result =
+            variable_depth_are_not_or_both_from_to(*columns_mapping);
         !result.has_value()) {
       return tl::unexpected<std::string>{result.error()};
     }
@@ -210,12 +301,23 @@ auto valid(const Datasource::Patch& datasource)
       return tl::unexpected<std::string>{columns_from.error()};
     }
 
-    const auto gaps = gaps_in_column_from(
-        columns_from.value(), datasource.max_depth_levels().value_or(0));
-    if (!gaps.has_value()) {
-      return tl::unexpected<std::string>{gaps.error()};
+    if (any_level_column_specified(columns_from.value())) {
+      if (any_variable_depth(columns_from.value())) {
+        if (const auto result =
+                all_level_columns_are_variable_depth(columns_from.value());
+            !result.has_value()) {
+          return tl::unexpected<std::string>{result.error()};
+        }
+      } else if (const auto result = all_required_level_columns_specified(
+                     columns_from.value(),
+                     datasource.max_depth_levels().value_or(
+                         Datasource::AllDepthLevels));
+                 !result.has_value()) {
+        return tl::unexpected<std::string>{result.error()};
+      }
     }
   }
+
   return {};
 }
 

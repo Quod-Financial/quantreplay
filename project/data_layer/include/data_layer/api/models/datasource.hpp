@@ -37,6 +37,8 @@ class Datasource {
 
   enum class Type { OrderBook };
 
+  static constexpr std::uint32_t AllDepthLevels{0};
+
   [[nodiscard]]
   static auto create(Datasource::Patch snapshot, std::uint64_t datasource_id)
       -> Datasource;

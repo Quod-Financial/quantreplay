@@ -40,8 +40,7 @@ add_static_library(
     ih/historical/data/time.hpp
     ih/historical/mapping/column_mapping_filter.hpp
     ih/historical/mapping/configurator.hpp
-    ih/historical/mapping/datasource_params.hpp
-    ih/historical/mapping/depth_config.hpp
+    ih/historical/mapping/csv_no_header_configurator.hpp
     ih/historical/mapping/params.hpp
     ih/historical/mapping/specification.hpp
     ih/historical/parsing/params.hpp
@@ -102,7 +101,7 @@ add_static_library(
     src/historical/data/record.cpp
     src/historical/mapping/column_mapping_filter.cpp
     src/historical/mapping/configurator.cpp
-    src/historical/mapping/datasource_params.cpp
+    src/historical/mapping/csv_no_header_configurator.cpp
     src/historical/mapping/params.cpp
     src/historical/mapping/specification.cpp
     src/historical/parsing/params.cpp
@@ -145,6 +144,7 @@ add_static_library(
     libpqxx::libpqxx
     quickfix::quickfix
     vincentlaucsb-csv-parser::vincentlaucsb-csv-parser
+    tl::expected
     simulator::core
     simulator::protocol
     simulator::middleware

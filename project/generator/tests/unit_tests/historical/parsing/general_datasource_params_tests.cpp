@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "ih/constants.hpp"
+#include "data_layer/api/models/datasource.hpp"
 #include "ih/historical/parsing/params.hpp"
 
 namespace simulator::generator::historical::test {
@@ -34,7 +34,7 @@ TEST_F(GeneratorHistoricalParsingGeneralDatasourceParams, StoresConnection) {
 TEST_F(GeneratorHistoricalParsingGeneralDatasourceParams,
        StoresAllDepthLevelsAsDefault) {
   ASSERT_EQ(general_params.max_depth_levels(),
-            constant::historical::AllDepthLevels);
+            data_layer::Datasource::AllDepthLevels);
 }
 
 TEST_F(GeneratorHistoricalParsingGeneralDatasourceParams,

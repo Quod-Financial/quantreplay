@@ -89,7 +89,7 @@ auto parse_offer_level_part(const Row& row,
 }
 
 auto parse(const Row& row,
-           historical::Record::Builder& result_builder,
+           const std::unique_ptr<historical::Record::Builder>& result_builder,
            const MappingParams& mapping,
            std::uint32_t depth_levels_to_parse) -> void {
   using ColumnFrom = data_layer::converter::ColumnFrom;
@@ -97,20 +97,21 @@ auto parse(const Row& row,
   if (auto column_idx = mapping.column_idx(ColumnFrom::ReceivedTimestamp)) {
     std::chrono::system_clock::time_point receive_time;
     if (parse_cell(row, *column_idx, receive_time)) {
-      result_builder.with_receive_time(receive_time);
+      result_builder->with_received_time(receive_time);
     }
   }
 
   if (auto column_idx = mapping.column_idx(ColumnFrom::MessageTimestamp)) {
     std::chrono::system_clock::time_point message_time;
     if (parse_cell(row, *column_idx, message_time)) {
-      result_builder.with_message_time(message_time);
+      result_builder->with_message_time(message_time);
     }
   }
+
   if (auto column_idx = mapping.column_idx(ColumnFrom::Instrument)) {
     std::string instrument;
     if (parse_cell(row, *column_idx, instrument) && !instrument.empty()) {
-      result_builder.with_instrument(std::move(instrument));
+      result_builder->with_instrument(std::move(instrument));
     }
   }
 
@@ -121,7 +122,7 @@ auto parse(const Row& row,
 
     if (!level_builder.empty()) {
       auto level = Level::Builder::construct(std::move(level_builder));
-      result_builder.add_level(depth - 1, std::move(level));
+      result_builder->add_level(depth - 1, std::move(level));
     }
   }
 }

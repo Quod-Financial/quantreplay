@@ -87,15 +87,6 @@ class ColumnFrom {
   Depth depth_;
 };
 
-struct ColumnConfig {
-  [[nodiscard]]
-  auto operator==(const ColumnConfig&) const noexcept -> bool = default;
-
-  ColumnFrom column_from;
-  std::string column_to;
-  std::uint32_t datasource_id{0};
-};
-
 auto extract_column_name_from_variable_depth(std::string_view column)
     -> std::optional<std::string_view>;
 

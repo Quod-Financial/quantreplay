@@ -24,14 +24,16 @@ class Generator_Historical_DataProvider : public testing::Test {
   using RecordAttributes =
       std::tuple<historical::Timepoint, std::string, std::uint64_t>;
 
-  static auto make_test_record_builder() -> historical::Record::Builder {
+  static auto make_test_record_builder()
+      -> std::unique_ptr<historical::Record::Builder> {
     static const std::string default_instrument{"AAPL"};
     constexpr std::uint64_t default_source_row = 3;
     constexpr auto default_time =
         historical::Timepoint{historical::Duration{100}};
 
-    historical::Record::Builder record_builder{};
-    record_builder.with_receive_time(default_time)
+    std::unique_ptr<historical::Record::Builder> record_builder =
+        std::make_unique<historical::Record::BuilderImpl>();
+    record_builder->with_received_time(default_time)
         .with_instrument(default_instrument)
         .with_source_row(default_source_row);
 
@@ -39,16 +41,17 @@ class Generator_Historical_DataProvider : public testing::Test {
   }
 
   static auto make_test_record_builder(const RecordAttributes& attributes)
-      -> historical::Record::Builder {
-    historical::Record::Builder builder{};
-    builder.with_receive_time(std::get<0>(attributes));
-    builder.with_instrument(std::get<1>(attributes));
-    builder.with_source_row(std::get<2>(attributes));
+      -> std::unique_ptr<historical::Record::Builder> {
+    std::unique_ptr<historical::Record::Builder> builder =
+        std::make_unique<historical::Record::BuilderImpl>();
+    builder->with_received_time(std::get<0>(attributes))
+        .with_instrument(std::get<1>(attributes))
+        .with_source_row(std::get<2>(attributes));
     return builder;
   }
 
   static auto make_test_record() -> historical::Record {
-    return historical::Record::Builder::construct(make_test_record_builder());
+    return make_test_record_builder()->construct();
   }
 
   static auto make_fake_data_adapter(std::uint32_t num_stored_records)

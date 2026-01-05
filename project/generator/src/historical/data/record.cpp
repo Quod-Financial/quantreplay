@@ -11,6 +11,7 @@
 
 #include "core/common/std_formatter.hpp"
 #include "ih/historical/data/time.hpp"
+#include "log/logging.hpp"
 
 namespace simulator::generator::historical {
 
@@ -97,12 +98,11 @@ auto Record::instrument() const noexcept -> const std::string& {
   return instrument_;
 }
 
-auto Record::receive_time() const noexcept -> historical::Timepoint {
+auto Record::received_time() const noexcept -> historical::Timepoint {
   return received_time_;
 }
 
-auto Record::message_time() const noexcept
-    -> std::optional<historical::Timepoint> {
+auto Record::message_time() const noexcept -> historical::Timepoint {
   return message_time_;
 }
 
@@ -139,7 +139,7 @@ auto Record::visit_levels(const LevelVisitor& visitor) const -> void {
   }
 }
 
-Record::Builder::Builder(Record base_record) noexcept
+Record::BuilderImpl::BuilderImpl(Record base_record) noexcept
     : instrument_{std::move(base_record.instrument_)},
       source_name_{std::move(base_record.source_name_)},
       source_conn_{std::move(base_record.source_conn_)},
@@ -148,43 +148,43 @@ Record::Builder::Builder(Record base_record) noexcept
       received_time_{base_record.received_time_},
       source_row_{base_record.source_row_} {}
 
-auto Record::Builder::with_instrument(std::string instrument) noexcept
+auto Record::BuilderImpl::with_instrument(std::string instrument) noexcept
     -> Record::Builder& {
   instrument_ = std::make_optional(std::move(instrument));
   return *this;
 }
 
-auto Record::Builder::with_receive_time(
-    historical::Timepoint receive_time) noexcept -> Record::Builder& {
-  received_time_ = std::make_optional(receive_time);
+auto Record::BuilderImpl::with_received_time(
+    historical::Timepoint received_time) noexcept -> Record::Builder& {
+  received_time_ = std::make_optional(received_time);
   return *this;
 }
 
-auto Record::Builder::with_message_time(
+auto Record::BuilderImpl::with_message_time(
     historical::Timepoint message_time) noexcept -> Record::Builder& {
   message_time_ = std::make_optional(message_time);
   return *this;
 }
 
-auto Record::Builder::with_source_name(std::string source_name) noexcept
+auto Record::BuilderImpl::with_source_name(std::string source_name) noexcept
     -> Record::Builder& {
   source_name_ = std::make_optional(std::move(source_name));
   return *this;
 }
 
-auto Record::Builder::with_source_connection(std::string source_conn) noexcept
+auto Record::BuilderImpl::with_source_connection(std::string source_conn) noexcept
     -> Record::Builder& {
   source_conn_ = std::make_optional(std::move(source_conn));
   return *this;
 }
 
-auto Record::Builder::with_source_row(std::uint64_t source_row) noexcept
+auto Record::BuilderImpl::with_source_row(std::uint64_t source_row) noexcept
     -> Record::Builder& {
   source_row_ = std::make_optional(source_row);
   return *this;
 }
 
-auto Record::Builder::add_level(std::uint64_t index, historical::Level level)
+auto Record::BuilderImpl::add_level(std::uint64_t index, historical::Level level)
     -> Record::Builder& {
   if (index >= levels_.size()) {
     levels_.resize(index + 1);
@@ -194,49 +194,63 @@ auto Record::Builder::add_level(std::uint64_t index, historical::Level level)
   return *this;
 }
 
-auto Record::Builder::construct(Record::Builder builder) -> Record {
+auto Record::BuilderImpl::construct() -> Record {
   Record record;
 
-  validate(builder);
+  validate();
 
-  assert(builder.source_row_.has_value());
-  record.source_row_ = *builder.source_row_;
+  assert(source_row_.has_value());
+  record.source_row_ = *source_row_;
 
-  assert(builder.received_time_.has_value());
-  record.received_time_ = *builder.received_time_;
+  if (received_time_.has_value()) {
+    record.received_time_ = *received_time_;
+  } else {
+    record.received_time_ = *message_time_;
+    log::debug(
+        "received time is empty. Message time value is used as received time "
+        "for the record at row {}",
+        record.source_row_);
+  }
 
-  assert(builder.instrument_.has_value());
-  record.instrument_ = std::move(*builder.instrument_);
+  if (message_time_.has_value()) {
+    record.message_time_ = *message_time_;
+  } else {
+    record.message_time_ = *received_time_;
+    log::debug(
+        "message time is empty. Receive time value is used as message time for "
+        "the record at row {}",
+        record.source_row_);
+  }
 
-  record.message_time_ = builder.message_time_;
-  record.source_name_ = std::move(builder.source_name_);
-  record.source_conn_ = std::move(builder.source_conn_);
+  assert(instrument_.has_value());
+  record.instrument_ = std::move(*instrument_);
 
-  record.levels_ = std::move(builder.levels_);
+  record.source_name_ = std::move(source_name_);
+  record.source_conn_ = std::move(source_conn_);
+
+  record.levels_ = std::move(levels_);
 
   return record;
 }
 
-auto Record::Builder::validate(const Builder& builder) -> void {
-  if (!builder.source_row_.has_value()) {
+auto Record::BuilderImpl::validate() -> void {
+  if (!source_row_.has_value()) {
     throw std::invalid_argument{
         "missing mandatory source row number attribute"};
   }
 
-  const auto row = *(builder.source_row_);
-
-  if (!builder.received_time_.has_value()) {
-    throw std::invalid_argument{
-        fmt::format("missing mandatory received time attribute "
-                    "(row: {})",
-                    row)};
+  if (!received_time_.has_value() &&
+      !message_time_.has_value()) {
+    throw std::invalid_argument{fmt::format(
+        "missing mandatory received and message time attribute (row: {})",
+        *source_row_)};
   }
 
-  if (!builder.instrument_.has_value()) {
+  if (!instrument_.has_value()) {
     throw std::invalid_argument{
         fmt::format("missing mandatory instrument attribute "
                     "(row: {})",
-                    row)};
+                    *source_row_)};
   }
 }
 
@@ -283,16 +297,14 @@ auto Action::update_time(Action base_action, historical::Timepoint action_time)
 
 auto Action::update_timepoints(Record&& record,
                                historical::Duration time_offset) -> Record {
-  const auto base_receive_time = record.receive_time();
+  const auto base_receive_time = record.received_time();
   const auto base_message_time = record.message_time();
 
-  Record::Builder update_builder{std::move(record)};
-  update_builder.with_receive_time(base_receive_time + time_offset);
-  if (base_message_time.has_value()) {
-    update_builder.with_message_time(*base_message_time + time_offset);
-  }
+  Record::BuilderImpl update_builder{std::move(record)};
+  update_builder.with_received_time(base_receive_time + time_offset);
+  update_builder.with_message_time(base_message_time + time_offset);
 
-  return Record::Builder::construct(std::move(update_builder));
+  return update_builder.construct();
 }
 
 auto Action::Builder::add(Record record, historical::Duration time_offset)
@@ -312,7 +324,7 @@ auto Action::Builder::construct(Action::Builder builder) -> Action {
 
   // Builder checks that all records have same ReceiveTimestamps.
   action.records_ = std::move(builder.records_);
-  action.action_time_ = action.records_.front().receive_time();
+  action.action_time_ = action.records_.front().received_time();
 
   return action;
 }
@@ -322,8 +334,8 @@ auto Action::Builder::validate(const Record& record) const -> void {
     return;
   }
 
-  const auto new_record_time = record.receive_time();
-  auto initial_record_time = records_.front().receive_time();
+  const auto new_record_time = record.received_time();
+  auto initial_record_time = records_.front().received_time();
   if (new_record_time != initial_record_time) {
     throw std::logic_error{
         "a new record's receive time does not equal to "
@@ -363,10 +375,10 @@ auto fmt::formatter<simulator::generator::historical::Record>::format(
     const formattable& record, format_context& context) const
     -> decltype(context.out()) {
   fmt::format_to(context.out(),
-                 "Record={{ Instrument={} ReceiveTime={} MessageTime={} "
+                 "Record={{ Instrument={} ReceivedTime={} MessageTime={} "
                  "RowNumber={} SourceName={} SourceConnection={}",
                  record.instrument(),
-                 record.receive_time(),
+                 record.received_time(),
                  record.message_time(),
                  record.source_row(),
                  record.source_name(),
