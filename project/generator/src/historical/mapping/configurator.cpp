@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <charconv>
-#include <limits>
 #include <optional>
 #include <ranges>
 #include <set>
@@ -44,7 +43,7 @@ auto any_level_column_specified(
 
   const auto column_from_view = std::views::keys(columns_config);
   for (const auto& level_column : level_columns) {
-    auto iter = std::ranges::find_if(
+    const auto iter = std::ranges::find_if(
         column_from_view,
         [level_column](const auto& column) -> bool {
           return column == level_column;
@@ -173,24 +172,29 @@ auto split_name_depth(std::string_view column)
 }
 
 [[nodiscard]]
-auto max_source_columns_depth(auto variable_depth_columns_to_prefix,
-                              Configurator::SourceColumnNames source_columns)
-    -> std::uint32_t {
-  std::uint32_t max_depth = 0;
+auto source_columns_depths(
+    auto variable_depth_columns_to_prefix,
+    const Configurator::SourceColumnNames& source_columns)
+    -> std::set<std::uint32_t> {
+  std::set<std::uint32_t> depths;
 
   for (const auto& column_to_prefix : variable_depth_columns_to_prefix) {
-    for (const auto& source_column : source_columns) {
-      if (source_column.starts_with(column_to_prefix)) {
-        if (auto name_depth = split_name_depth(source_column);
-            name_depth.has_value()) {
-          const auto depth = name_depth->second;
-          max_depth = std::max(max_depth, depth);
-        }
-      }
-    }
+    auto matching_columns =
+        source_columns | std::views::filter([&](const auto& source_column) {
+          return source_column.starts_with(column_to_prefix);
+        }) |
+        std::views::transform([](const auto& source_column) {
+          return split_name_depth(source_column);
+        }) |
+        std::views::filter(
+            [](const auto& name_depth) { return name_depth.has_value(); }) |
+        std::views::transform(
+            [](const auto& name_depth) { return name_depth->second; });
+
+    depths.insert(std::begin(matching_columns), std::end(matching_columns));
   }
 
-  return max_depth;
+  return depths;
 }
 
 }  // namespace
@@ -290,16 +294,16 @@ auto Configurator::unfold_variable_depth_mappings(
     const std::map<data_layer::converter::ColumnFrom, ColumnToPrefix>&
         variable_depth_mappings,
     std::map<data_layer::converter::ColumnFrom, std::string>& columns_config,
-    std::uint32_t depth) -> void {
-  for (std::uint32_t level = 1; level <= depth; ++level) {
+    const std::set<uint32_t>& depths) -> void {
+  for (const auto level : depths) {
     for (const auto& [column_from, column_to_prefix] :
          variable_depth_mappings) {
       auto column_from_with_level = data_layer::converter::ColumnFrom::create(
           column_from.column(), level);
       if (!column_from_with_level.has_value()) {
         log::debug(
-            "ignored unfolding variable depth mapping for `{}' and level `{}' "
-            "done: {}",
+            "ignored unfolding variable depth mapping for `{}' and level `{}': "
+            "{}",
             column_from.column(),
             level,
             column_from_with_level.error());
@@ -328,16 +332,23 @@ auto Configurator::transform_variable_depth_mapping(
       return tl::unexpected(variable_depth_mapping.error());
     }
 
-    const auto source_max_depth = max_source_columns_depth(
+    auto source_depths = source_columns_depths(
         *variable_depth_mapping | std::views::values, source_columns_);
+    if (source_depths.empty()) {
+      return tl::unexpected(std::string{
+          "not found variable depth columns prefixes in source columns"});
+    }
 
+    const auto source_max_depth = *std::prev(std::end(source_depths));
     const auto depth_to_use =
         max_depth_levels_ == data_layer::Datasource::AllDepthLevels
             ? source_max_depth
             : std::min(source_max_depth, max_depth_levels_);
+    source_depths.erase(source_depths.upper_bound(depth_to_use),
+                        std::end(source_depths));
 
     unfold_variable_depth_mappings(
-        *variable_depth_mapping, columns_config, depth_to_use);
+        *variable_depth_mapping, columns_config, source_depths);
   }
   return {};
 }

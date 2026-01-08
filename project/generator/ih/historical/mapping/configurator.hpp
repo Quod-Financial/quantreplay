@@ -1,8 +1,8 @@
 #ifndef SIMULATOR_GENERATOR_IH_HISTORICAL_MAPPING_CONFIGURATOR_HPP_
 #define SIMULATOR_GENERATOR_IH_HISTORICAL_MAPPING_CONFIGURATOR_HPP_
 
-#include <functional>
 #include <map>
+#include <set>
 #include <string>
 #include <string_view>
 #include <tl/expected.hpp>
@@ -42,7 +42,7 @@ class Configurator {
       const std::map<data_layer::converter::ColumnFrom, ColumnToPrefix>&
           variable_depth_mappings,
       std::map<data_layer::converter::ColumnFrom, std::string>& columns_config,
-      std::uint32_t depth) -> void;
+      const std::set<uint32_t>& depths) -> void;
 
   [[nodiscard]]
   auto transform_variable_depth_mapping(

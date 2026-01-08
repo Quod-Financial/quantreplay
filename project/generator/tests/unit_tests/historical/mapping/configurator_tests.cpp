@@ -646,7 +646,7 @@ TEST_F(GeneratorHistoricalMappingConfiguratorSourceColumnNames,
 
 TEST_F(
     GeneratorHistoricalMappingConfiguratorSourceColumnNames,
-    AppliesAssociationForLevelOneWhenOneLevelConfiguredAndMaxDepthLevelsIsOne) {
+    AppliesAssociationForLevelOneWhenLevelOneConfiguredAndMaxDepthLevelsIsOne) {
   using data_layer::converter::ColumnFrom;
   auto configurator = make_configurator({"Symbol",
                                          "Time",
@@ -668,7 +668,7 @@ TEST_F(
     make_column_config(ColumnFrom::create("AskPrice1").value(), "AskPx1"),
     make_column_config(ColumnFrom::create("AskQuantity1").value(), "AskQty1"),
     make_column_config(ColumnFrom::create("BidParty1").value(), "BidCP1"),
-    make_column_config(ColumnFrom::create("AskParty1").value(), "AskCP1"),
+    make_column_config(ColumnFrom::create("AskParty1").value(), "AskCP1")
   });
   // clang-format on
 
@@ -748,7 +748,7 @@ TEST_F(
 
 TEST_F(
     GeneratorHistoricalMappingConfiguratorSourceColumnNames,
-    AppliesAssociationForLevelOneWhenOneLevelsConfiguredAndMaxDepthLevelsIsTwo) {
+    AppliesAssociationForLevelOneWhenLevelOneConfiguredAndMaxDepthLevelsIsTwo) {
   using data_layer::converter::ColumnFrom;
   auto configurator = make_configurator({"Symbol",
                                          "Time",
@@ -776,7 +776,7 @@ TEST_F(
     make_column_config(ColumnFrom::create("AskPrice1").value(), "AskPx1"),
     make_column_config(ColumnFrom::create("AskQuantity1").value(), "AskQty1"),
     make_column_config(ColumnFrom::create("BidParty1").value(), "BidCP1"),
-    make_column_config(ColumnFrom::create("AskParty1").value(), "AskCP1"),
+    make_column_config(ColumnFrom::create("AskParty1").value(), "AskCP1")
   });
   // clang-format on
 
@@ -797,6 +797,62 @@ TEST_F(
   ASSERT_THAT(*spec, Not(Resolves(ColumnFrom::create(ColumnFrom::Column::OfferQuantity, 2u).value())));
   ASSERT_THAT(*spec, Not(Resolves(ColumnFrom::create(ColumnFrom::Column::BidParty, 2u).value())));
   ASSERT_THAT(*spec, Not(Resolves(ColumnFrom::create(ColumnFrom::Column::OfferParty, 2u).value())));
+  // clang-format on
+}
+
+TEST_F(GeneratorHistoricalMappingConfiguratorSourceColumnNames,
+       AppliesAssociationForLevelsOneAndThreeIfLevelTwoNotConfigured) {
+  using data_layer::converter::ColumnFrom;
+
+  // clang-format off
+  auto configurator = make_configurator(
+      {"Symbol", "Time", "MsgTime",
+       "BidPx1", "BidQty1", "AskPx1", "AskQty1", "BidCP1", "AskCP1",
+       "BidPx2", "BidQty2", "AskPx2", "AskQty2", "BidCP2", "AskCP2",
+       "BidPx3", "BidQty3", "AskPx3", "AskQty3", "BidCP3", "AskCP3"});
+
+  spec = configurator.configure({
+    make_column_config(ColumnFrom::create("Instrument").value(), "Symbol"),
+    make_column_config(ColumnFrom::create("ReceivedTimeStamp").value(), "Time"),
+    make_column_config(ColumnFrom::create("MessageTimeStamp").value(), "MsgTime"),
+    make_column_config(ColumnFrom::create("BidPrice1").value(), "BidPx1"),
+    make_column_config(ColumnFrom::create("BidQuantity1").value(), "BidQty1"),
+    make_column_config(ColumnFrom::create("AskPrice1").value(), "AskPx1"),
+    make_column_config(ColumnFrom::create("AskQuantity1").value(), "AskQty1"),
+    make_column_config(ColumnFrom::create("BidParty1").value(), "BidCP1"),
+    make_column_config(ColumnFrom::create("AskParty1").value(), "AskCP1"),
+    make_column_config(ColumnFrom::create("BidPrice3").value(), "BidPx3"),
+    make_column_config(ColumnFrom::create("BidQuantity3").value(), "BidQty3"),
+    make_column_config(ColumnFrom::create("AskPrice3").value(), "AskPx3"),
+    make_column_config(ColumnFrom::create("AskQuantity3").value(), "AskQty3"),
+    make_column_config(ColumnFrom::create("BidParty3").value(), "BidCP3"),
+    make_column_config(ColumnFrom::create("AskParty3").value(), "AskCP3")
+  });
+  // clang-format on
+
+  ASSERT_TRUE(spec.has_value());
+  // clang-format off
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::Instrument, 0));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::ReceivedTimestamp, 1));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::MessageTimestamp, 2));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::BidPrice, 1u).value(), 3));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::BidQuantity, 1u).value(), 4));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::OfferPrice, 1u).value(), 5));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::OfferQuantity, 1u).value(), 6));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::BidParty, 1u).value(), 7));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::OfferParty, 1u).value(), 8));
+  ASSERT_THAT(*spec, Not(Resolves(ColumnFrom::create(ColumnFrom::Column::BidQuantity, 2u).value())));
+  ASSERT_THAT(*spec, Not(Resolves(ColumnFrom::create(ColumnFrom::Column::BidPrice, 2u).value())));
+  ASSERT_THAT(*spec, Not(Resolves(ColumnFrom::create(ColumnFrom::Column::OfferPrice, 2u).value())));
+  ASSERT_THAT(*spec, Not(Resolves(ColumnFrom::create(ColumnFrom::Column::OfferQuantity, 2u).value())));
+  ASSERT_THAT(*spec, Not(Resolves(ColumnFrom::create(ColumnFrom::Column::BidParty, 2u).value())));
+  ASSERT_THAT(*spec, Not(Resolves(ColumnFrom::create(ColumnFrom::Column::OfferParty, 2u).value())));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::BidPrice, 3u).value(), 15));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::BidQuantity, 3u).value(), 16));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::OfferPrice, 3u).value(), 17));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::OfferQuantity, 3u).value(), 18));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::BidParty, 3u).value(), 19));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::OfferParty, 3u).value(), 20));
   // clang-format on
 }
 

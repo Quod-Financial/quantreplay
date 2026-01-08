@@ -283,5 +283,53 @@ TEST_F(
   ASSERT_THAT(spec, IsUnexpected("Column To `AskQty2' does not exist"));
 }
 
+TEST_F(
+    GeneratorHistoricalMappingConfiguratorVariableDepth,
+    AppliesAssociationForLevelsOneAndThreeIfLevelTwoNotListedInColumnNamesAndMaxDepthLevelsIsAll) {
+  auto configurator = make_configurator({"Symbol",
+                                         "Time",
+                                         "MsgTime",
+                                         "BidPx1",
+                                         "BidQty1",
+                                         "AskPx1",
+                                         "AskQty1",
+                                         "BidCP1",
+                                         "AskCP1",
+                                         "BidPx3",
+                                         "BidQty3",
+                                         "AskPx3",
+                                         "AskQty3",
+                                         "BidCP3",
+                                         "AskCP3"},
+                                        data_layer::Datasource::AllDepthLevels);
+
+  spec = configurator.configure(FullColumnsConfig);
+
+  ASSERT_TRUE(spec.has_value());
+  // clang-format off
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::Instrument, 0));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::ReceivedTimestamp, 1));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::MessageTimestamp, 2));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::BidPrice, 1u).value(), 3));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::BidQuantity, 1u).value(), 4));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::OfferPrice, 1u).value(), 5));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::OfferQuantity, 1u).value(), 6));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::BidParty, 1u).value(), 7));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::OfferParty, 1u).value(), 8));
+  ASSERT_THAT(*spec, Not(Resolves(ColumnFrom::create(ColumnFrom::Column::BidQuantity, 2u).value())));
+  ASSERT_THAT(*spec, Not(Resolves(ColumnFrom::create(ColumnFrom::Column::BidPrice, 2u).value())));
+  ASSERT_THAT(*spec, Not(Resolves(ColumnFrom::create(ColumnFrom::Column::OfferPrice, 2u).value())));
+  ASSERT_THAT(*spec, Not(Resolves(ColumnFrom::create(ColumnFrom::Column::OfferQuantity, 2u).value())));
+  ASSERT_THAT(*spec, Not(Resolves(ColumnFrom::create(ColumnFrom::Column::BidParty, 2u).value())));
+  ASSERT_THAT(*spec, Not(Resolves(ColumnFrom::create(ColumnFrom::Column::OfferParty, 2u).value())));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::BidPrice, 3u).value(), 9));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::BidQuantity, 3u).value(), 10));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::OfferPrice, 3u).value(), 11));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::OfferQuantity, 3u).value(), 12));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::BidParty, 3u).value(), 13));
+  ASSERT_THAT(*spec, ResolvesColumnFromAndIndexIs(ColumnFrom::create(ColumnFrom::Column::OfferParty, 3u).value(), 14));
+  // clang-format on
+}
+
 }  // namespace
 }  // namespace simulator::generator::historical::mapping::test
