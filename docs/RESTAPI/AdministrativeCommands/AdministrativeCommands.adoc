@@ -241,14 +241,14 @@ Start or stop random order generation and historical data playback for a single 
 _Resource URI_
 
 ----
-PUT /api/[genstart|genstop]/{venueId}
+POST /api/[genstart|genstop]/{venueId}
 ----
 
 _Example_: Request to start generation for a single venue
 
 [,http]
 ----
-PUT /api/genstart/XETRA HTTP/1.1
+POST /api/genstart/XETRA HTTP/1.1
 Accept: application/json;charset=UTF-8
 Host: localhost
 ----
@@ -270,7 +270,7 @@ _Example_: Request to stop generation for a single instance
 
 [,http]
 ----
-PUT /api/genstop/XETRA HTTP/1.1
+POST /api/genstop/XETRA HTTP/1.1
 Accept: application/json;charset=UTF-8
 Host: localhost
 ----
@@ -322,14 +322,14 @@ The market simulator's response is OrderCancelReject (35=9), in which OrdStatus 
 _Resource URI_
 
 ----
-PUT /api/[halt|resume]/{venueId}
+POST /api/[halt|resume]/{venueId}
 ----
 
 _Example_: Halt market for a single venue
 
 [,http]
 ----
-PUT /api/halt/LSE HTTP/1.1
+POST /api/halt/LSE HTTP/1.1
 Accept: application/json;charset=UTF-8
 Host: localhost
 
@@ -394,7 +394,7 @@ _Example_: Resume market for a single venue
 
 [,http]
 ----
-PUT /api/resume/LSE HTTP/1.1
+POST /api/resume/LSE HTTP/1.1
 Accept: application/json;charset=UTF-8
 Host: localhost
 ----

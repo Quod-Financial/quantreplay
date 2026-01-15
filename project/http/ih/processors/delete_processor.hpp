@@ -4,19 +4,27 @@
 #include <pistache/http.h>
 #include <pistache/router.h>
 
-#include <functional>
-
 #include "ih/controllers/price_seed_controller.hpp"
 
 namespace simulator::http {
 
 class DeleteProcessor {
  public:
-  explicit DeleteProcessor(
-      const PriceSeedController& price_seed_controller) noexcept;
+  virtual ~DeleteProcessor() = default;
+
+  virtual auto delete_price_seed(const Pistache::Rest::Request& request,
+                                 Pistache::Http::ResponseWriter response)
+      -> void = 0;
+};
+
+class DeleteProcessorImpl : public DeleteProcessor {
+ public:
+  explicit DeleteProcessorImpl(
+      std::shared_ptr<PriceSeedController> price_seed_controller) noexcept;
 
   auto delete_price_seed(const Pistache::Rest::Request& request,
-                         Pistache::Http::ResponseWriter response) -> void;
+                         Pistache::Http::ResponseWriter response)
+      -> void override;
 
  private:
   static auto respond(const Pistache::Rest::Request& request,
@@ -24,7 +32,7 @@ class DeleteProcessor {
                       Pistache::Http::Code code,
                       const std::string& body) -> void;
 
-  std::reference_wrapper<const PriceSeedController> price_seed_controller_;
+  std::shared_ptr<PriceSeedController> price_seed_controller_;
 };
 
 }  // namespace simulator::http

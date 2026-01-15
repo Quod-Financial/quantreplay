@@ -3,8 +3,6 @@
 
 #include <pistache/http_defs.h>
 
-#include <cstdint>
-#include <functional>
 #include <string>
 #include <utility>
 
@@ -18,8 +16,8 @@ class PriceSeedController {
   using Result = std::pair<Pistache::Http::Code, std::string>;
 
   PriceSeedController(
-      const data_bridge::PriceSeedAccessor& seed_accessor,
-      const data_bridge::SettingAccessor& setting_accessor) noexcept;
+      std::unique_ptr<data_bridge::PriceSeedAccessor> seed_accessor,
+      std::shared_ptr<data_bridge::SettingAccessor> setting_accessor) noexcept;
 
   [[nodiscard]]
   auto select_price_seed(std::uint64_t seed_id) const -> Result;
@@ -44,8 +42,8 @@ class PriceSeedController {
   static auto format_error_response(data_bridge::Failure failure)
       -> std::string;
 
-  std::reference_wrapper<const data_bridge::PriceSeedAccessor> seed_accessor_;
-  std::reference_wrapper<const data_bridge::SettingAccessor> setting_accessor_;
+  std::unique_ptr<data_bridge::PriceSeedAccessor> seed_accessor_;
+  std::shared_ptr<data_bridge::SettingAccessor> setting_accessor_;
 
   static const std::string ConnectionSetting;
   static const std::string SyncTimeSetting;

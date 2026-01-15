@@ -1557,14 +1557,14 @@ Retrieve and update price seeds from an external database
 
 _Resource URI_
 ----
-PUT /api/syncpriceseeds
+POST /api/syncpriceseeds
 ----
 
 _Example_: Sync price seeds
 
 [,http]
 ----
-PUT /api/syncpriceseeds HTTP/1.1
+POST /api/syncpriceseeds HTTP/1.1
 Accept: application/json;charset=UTF-8
 Host: localhost
 ----

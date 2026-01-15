@@ -18,101 +18,105 @@
 
 namespace simulator::http {
 
-GetProcessor::GetProcessor(const data_bridge::VenueAccessor& venue_accessor,
-                           const DatasourceController& datasource_controller,
-                           const ListingController& listing_controller,
-                           const PriceSeedController& price_seed_controller,
-                           const SettingController& setting_controller,
-                           const VenueController& venue_controller)
-    : redirector_(redirect::RedirectionProcessor::create(venue_accessor)),
-      venue_accessor_(venue_accessor),
-      datasource_controller_(datasource_controller),
-      listing_controller_(listing_controller),
-      price_seed_controller_(price_seed_controller),
-      setting_controller_(setting_controller),
-      venue_controller_(venue_controller) {}
+GetProcessorImpl::GetProcessorImpl(
+    std::shared_ptr<data_bridge::VenueAccessor> venue_accessor,
+    std::shared_ptr<DatasourceController> datasource_controller,
+    std::shared_ptr<ListingController> listing_controller,
+    std::shared_ptr<PriceSeedController> price_seed_controller,
+    std::shared_ptr<SettingController> setting_controller,
+    std::shared_ptr<VenueController> venue_controller)
+    : redirector_{redirect::RedirectionProcessor::create(venue_accessor)},
+      venue_accessor_{std::move(venue_accessor)},
+      datasource_controller_{std::move(datasource_controller)},
+      listing_controller_{std::move(listing_controller)},
+      price_seed_controller_{std::move(price_seed_controller)},
+      setting_controller_{std::move(setting_controller)},
+      venue_controller_{std::move(venue_controller)} {}
 
-auto GetProcessor::get_venue(const Pistache::Rest::Request& request,
-                             Pistache::Http::ResponseWriter response) -> void {
+auto GetProcessorImpl::get_venue(const Pistache::Rest::Request& request,
+                                 Pistache::Http::ResponseWriter response)
+    -> void {
   const auto venue_id = request.param(":id").as<std::string>();
   log::info("requested venue - {}", venue_id);
 
-  auto [code, body] = venue_controller_.get().select_venue(venue_id);
+  auto [code, body] = venue_controller_->select_venue(venue_id);
   respond(request, response, code, body);
 }
 
-auto GetProcessor::get_venues(const Pistache::Rest::Request& request,
-                              Pistache::Http::ResponseWriter response) -> void {
+auto GetProcessorImpl::get_venues(const Pistache::Rest::Request& request,
+                                  Pistache::Http::ResponseWriter response)
+    -> void {
   log::info("requested all venues");
 
-  auto [code, body] = venue_controller_.get().select_all_venues();
+  auto [code, body] = venue_controller_->select_all_venues();
   respond(request, response, code, body);
 }
 
-auto GetProcessor::get_listing(const Pistache::Rest::Request& request,
-                               Pistache::Http::ResponseWriter response)
+auto GetProcessorImpl::get_listing(const Pistache::Rest::Request& request,
+                                   Pistache::Http::ResponseWriter response)
     -> void {
   const auto symbol = request.param(":symbol").as<std::string>();
   const auto key = std::regex_replace(symbol, std::regex("%2F"), "/");
   log::info("requested listing - {}", key);
 
-  auto [code, body] = listing_controller_.get().select_listing(key);
+  auto [code, body] = listing_controller_->select_listing(key);
   respond(request, response, code, body);
 }
 
-auto GetProcessor::get_listings(const Pistache::Rest::Request& request,
-                                Pistache::Http::ResponseWriter response)
+auto GetProcessorImpl::get_listings(const Pistache::Rest::Request& request,
+                                    Pistache::Http::ResponseWriter response)
     -> void {
   log::info("requested all listings");
 
-  auto [code, body] = listing_controller_.get().select_all_listings();
+  auto [code, body] = listing_controller_->select_all_listings();
   respond(request, response, code, body);
 }
 
-auto GetProcessor::get_data_source(const Pistache::Rest::Request& request,
-                                   Pistache::Http::ResponseWriter response)
+auto GetProcessorImpl::get_data_source(const Pistache::Rest::Request& request,
+                                       Pistache::Http::ResponseWriter response)
     -> void {
   const auto source_id = request.param(":id").as<std::uint64_t>();
   log::info("requested a data source with identifier - {}", source_id);
 
-  auto [code, body] = datasource_controller_.get().select_datasource(source_id);
+  auto [code, body] = datasource_controller_->select_datasource(source_id);
   respond(request, response, code, body);
 }
 
-auto GetProcessor::get_data_sources(const Pistache::Rest::Request&,
-                                    Pistache::Http::ResponseWriter response)
+auto GetProcessorImpl::get_data_sources(const Pistache::Rest::Request&,
+                                        Pistache::Http::ResponseWriter response)
     -> void {
   log::info("requested all data sources");
 
-  auto [code, body] = datasource_controller_.get().select_all_datasources();
+  auto [code, body] = datasource_controller_->select_all_datasources();
   response.send(code, body);
 }
 
-auto GetProcessor::get_price_seed(const Pistache::Rest::Request& request,
-                                  Pistache::Http::ResponseWriter response)
+auto GetProcessorImpl::get_price_seed(const Pistache::Rest::Request& request,
+                                      Pistache::Http::ResponseWriter response)
     -> void {
   const auto id = request.param(":id").as<std::uint64_t>();
   log::info("requested price seed - {}", id);
 
-  auto [code, body] = price_seed_controller_.get().select_price_seed(id);
+  auto [code, body] = price_seed_controller_->select_price_seed(id);
   respond(request, response, code, body);
 }
 
-auto GetProcessor::get_price_seeds(const Pistache::Rest::Request& request,
-                                   Pistache::Http::ResponseWriter response)
+auto GetProcessorImpl::get_price_seeds(const Pistache::Rest::Request& request,
+                                       Pistache::Http::ResponseWriter response)
     -> void {
   log::info("requested all price seeds");
 
-  auto [code, body] = price_seed_controller_.get().select_all_price_seeds();
+  auto [code, body] = price_seed_controller_->select_all_price_seeds();
   respond(request, response, code, body);
 }
 
-auto GetProcessor::get_status(const Pistache::Rest::Request& request,
-                              Pistache::Http::ResponseWriter response) -> void {
+auto GetProcessorImpl::get_status(const Pistache::Rest::Request& request,
+                                  Pistache::Http::ResponseWriter response)
+    -> void {
   Pistache::Http::Code response_code{};
   std::string response_body;
 
-  const auto result = venue_accessor_.get().select_single(cfg::venue().name);
+  const auto result = venue_accessor_->select_single(cfg::venue().name);
   if (result) {
     bool available = false;
     response_body = get_venue_status_str(result.value(), false, available);
@@ -126,8 +130,8 @@ auto GetProcessor::get_status(const Pistache::Rest::Request& request,
   respond(request, response, response_code, response_body);
 }
 
-auto GetProcessor::get_venue_status(const Pistache::Rest::Request& request,
-                                    Pistache::Http::ResponseWriter response)
+auto GetProcessorImpl::get_venue_status(const Pistache::Rest::Request& request,
+                                        Pistache::Http::ResponseWriter response)
     -> void {
   const auto venue_id = request.param(":id").as<std::string>();
   log::info("requested status of venue - {}", venue_id);
@@ -135,7 +139,7 @@ auto GetProcessor::get_venue_status(const Pistache::Rest::Request& request,
   Pistache::Http::Code response_code{};
   std::string response_body;
 
-  const auto result = venue_accessor_.get().select_single(venue_id);
+  const auto result = venue_accessor_->select_single(venue_id);
   if (result) {
     bool available = false;
     response_body = get_venue_status_str(result.value(), true, available);
@@ -149,16 +153,16 @@ auto GetProcessor::get_venue_status(const Pistache::Rest::Request& request,
   respond(request, response, response_code, response_body);
 }
 
-auto GetProcessor::get_venue_statuses(const Pistache::Rest::Request& request,
-                                      Pistache::Http::ResponseWriter response)
-    -> void {
+auto GetProcessorImpl::get_venue_statuses(
+    const Pistache::Rest::Request& request,
+    Pistache::Http::ResponseWriter response) -> void {
   log::info("requested statuses of all venues");
 
   Pistache::Http::Code response_code{};
   std::string response_body;
   bool available = false;
 
-  const auto result = venue_accessor_.get().select_all();
+  const auto result = venue_accessor_->select_all();
   if (!result) {
     response_code = Pistache::Http::Code::Service_Unavailable;
     response_body = format_result_response("failed to select venues");
@@ -180,9 +184,10 @@ auto GetProcessor::get_venue_statuses(const Pistache::Rest::Request& request,
   respond(request, response, response_code, response_body);
 }
 
-auto GetProcessor::get_venue_status_str(const data_layer::Venue& venue,
-                                        bool send_response_code,
-                                        bool& available) const -> std::string {
+auto GetProcessorImpl::get_venue_status_str(const data_layer::Venue& venue,
+                                            bool send_response_code,
+                                            bool& available) const
+    -> std::string {
   available = false;
   const auto& venue_id = venue.venue_id();
 
@@ -203,18 +208,18 @@ auto GetProcessor::get_venue_status_str(const data_layer::Venue& venue,
       venue, send_response_code ? static_cast<int>(response_code) : 0);
 }
 
-auto GetProcessor::get_settings(
+auto GetProcessorImpl::get_settings(
     [[maybe_unused]] const Pistache::Rest::Request& request,
     Pistache::Http::ResponseWriter response) -> void {
   log::info("requested all settings");
 
-  auto [code, body] = setting_controller_.get().select_all_settings();
+  auto [code, body] = setting_controller_->select_all_settings();
   respond(request, response, code, body);
 }
 
-auto GetProcessor::get_order_gen_status(const Pistache::Rest::Request& request,
-                                        Pistache::Http::ResponseWriter response)
-    -> void {
+auto GetProcessorImpl::get_order_gen_status(
+    const Pistache::Rest::Request& request,
+    Pistache::Http::ResponseWriter response) -> void {
   const auto instance_id = request.param(":venueId").as<std::string>();
   log::info("received request to retrieve random order generator status for {}",
             instance_id);
@@ -230,7 +235,7 @@ auto GetProcessor::get_order_gen_status(const Pistache::Rest::Request& request,
   }
 }
 
-auto GetProcessor::handle_generation_status_request(
+auto GetProcessorImpl::handle_generation_status_request(
     const Pistache::Rest::Request& request,
     Pistache::Http::ResponseWriter response) -> void {
   protocol::GenerationStatusReply reply;
@@ -259,10 +264,10 @@ auto GetProcessor::handle_generation_status_request(
   }
 }
 
-auto GetProcessor::respond(const Pistache::Rest::Request& request,
-                           Pistache::Http::ResponseWriter& response,
-                           Pistache::Http::Code code,
-                           const std::string& body) -> void {
+auto GetProcessorImpl::respond(const Pistache::Rest::Request& request,
+                               Pistache::Http::ResponseWriter& response,
+                               Pistache::Http::Code code,
+                               const std::string& body) -> void {
   log::debug("sending response on {} {} from {}:{} with code: {} ({})",
              Pistache::Http::methodString(request.method()),
              request.resource(),
@@ -274,8 +279,8 @@ auto GetProcessor::respond(const Pistache::Rest::Request& request,
   response.send(code, body);
 }
 
-auto GetProcessor::redirect(const Pistache::Rest::Request& request,
-                            const std::string& instance_id) const
+auto GetProcessorImpl::redirect(const Pistache::Rest::Request& request,
+                                const std::string& instance_id) const
     -> redirect::Result {
   assert(redirector_);
   return redirector_->redirect_to_venue(

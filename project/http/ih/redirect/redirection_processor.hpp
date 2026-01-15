@@ -18,7 +18,7 @@ class RedirectionProcessor {
   RedirectionProcessor() = delete;
 
   explicit RedirectionProcessor(
-      const data_bridge::VenueAccessor& venue_accessor);
+      std::shared_ptr<data_bridge::VenueAccessor> venue_accessor);
 
   RedirectionProcessor(std::shared_ptr<Resolver> resolver,
                        std::shared_ptr<Redirector> redirector) noexcept;
@@ -27,7 +27,7 @@ class RedirectionProcessor {
                          Pistache::Http::Method method,
                          const std::string& url) const -> Result;
 
-  static auto create(const data_bridge::VenueAccessor& venue_accessor)
+  static auto create(std::shared_ptr<data_bridge::VenueAccessor> venue_accessor)
       -> std::shared_ptr<RedirectionProcessor>;
 
  private:

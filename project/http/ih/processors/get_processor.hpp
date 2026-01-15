@@ -4,7 +4,6 @@
 #include <pistache/http.h>
 #include <pistache/router.h>
 
-#include <functional>
 #include <memory>
 
 #include "data_layer/api/models/venue.hpp"
@@ -21,55 +20,119 @@ namespace simulator::http {
 
 class GetProcessor {
  public:
-  explicit GetProcessor(const data_bridge::VenueAccessor& venue_accessor,
-                        const DatasourceController& datasource_controller,
-                        const ListingController& listing_controller,
-                        const PriceSeedController& price_seed_controller,
-                        const SettingController& setting_controller,
-                        const VenueController& venue_controller);
+  virtual ~GetProcessor() = default;
+
+  virtual auto get_venue(const Pistache::Rest::Request& request,
+                         Pistache::Http::ResponseWriter response) -> void = 0;
+
+  virtual auto get_venues(const Pistache::Rest::Request& request,
+                          Pistache::Http::ResponseWriter response) -> void = 0;
+
+  virtual auto get_listing(const Pistache::Rest::Request& request,
+                           Pistache::Http::ResponseWriter response) -> void = 0;
+
+  virtual auto get_listings(const Pistache::Rest::Request& request,
+                            Pistache::Http::ResponseWriter response)
+      -> void = 0;
+
+  virtual auto get_data_source(const Pistache::Rest::Request& request,
+                               Pistache::Http::ResponseWriter response)
+      -> void = 0;
+
+  virtual auto get_data_sources(const Pistache::Rest::Request& request,
+                                Pistache::Http::ResponseWriter response)
+      -> void = 0;
+
+  virtual auto get_price_seed(const Pistache::Rest::Request& request,
+                              Pistache::Http::ResponseWriter response)
+      -> void = 0;
+
+  virtual auto get_price_seeds(const Pistache::Rest::Request& request,
+                               Pistache::Http::ResponseWriter response)
+      -> void = 0;
+
+  virtual auto get_status(const Pistache::Rest::Request& request,
+                          Pistache::Http::ResponseWriter response) -> void = 0;
+
+  virtual auto get_venue_status(const Pistache::Rest::Request& request,
+                                Pistache::Http::ResponseWriter response)
+      -> void = 0;
+
+  virtual auto get_venue_statuses(const Pistache::Rest::Request& request,
+                                  Pistache::Http::ResponseWriter response)
+      -> void = 0;
+
+  virtual auto get_settings(const Pistache::Rest::Request& request,
+                            Pistache::Http::ResponseWriter response)
+      -> void = 0;
+
+  virtual auto get_order_gen_status(const Pistache::Rest::Request& request,
+                                    Pistache::Http::ResponseWriter response)
+      -> void = 0;
+
+  virtual auto get_venue_status_str(const data_layer::Venue& venue,
+                                    bool send_response_code,
+                                    bool& available) const -> std::string = 0;
+};
+
+class GetProcessorImpl : public GetProcessor {
+ public:
+  explicit GetProcessorImpl(
+      std::shared_ptr<data_bridge::VenueAccessor> venue_accessor,
+      std::shared_ptr<DatasourceController> datasource_controller,
+      std::shared_ptr<ListingController> listing_controller,
+      std::shared_ptr<PriceSeedController> price_seed_controller,
+      std::shared_ptr<SettingController> setting_controller,
+      std::shared_ptr<VenueController> venue_controller);
 
   auto get_venue(const Pistache::Rest::Request& request,
-                 Pistache::Http::ResponseWriter response) -> void;
+                 Pistache::Http::ResponseWriter response) -> void override;
 
   auto get_venues(const Pistache::Rest::Request& request,
-                  Pistache::Http::ResponseWriter response) -> void;
+                  Pistache::Http::ResponseWriter response) -> void override;
 
   auto get_listing(const Pistache::Rest::Request& request,
-                   Pistache::Http::ResponseWriter response) -> void;
+                   Pistache::Http::ResponseWriter response) -> void override;
 
   auto get_listings(const Pistache::Rest::Request& request,
-                    Pistache::Http::ResponseWriter response) -> void;
+                    Pistache::Http::ResponseWriter response) -> void override;
 
   auto get_data_source(const Pistache::Rest::Request& request,
-                       Pistache::Http::ResponseWriter response) -> void;
+                       Pistache::Http::ResponseWriter response)
+      -> void override;
 
   auto get_data_sources(const Pistache::Rest::Request& request,
-                        Pistache::Http::ResponseWriter response) -> void;
+                        Pistache::Http::ResponseWriter response)
+      -> void override;
 
   auto get_price_seed(const Pistache::Rest::Request& request,
-                      Pistache::Http::ResponseWriter response) -> void;
+                      Pistache::Http::ResponseWriter response) -> void override;
 
   auto get_price_seeds(const Pistache::Rest::Request& request,
-                       Pistache::Http::ResponseWriter response) -> void;
+                       Pistache::Http::ResponseWriter response)
+      -> void override;
 
   auto get_status(const Pistache::Rest::Request& request,
-                  Pistache::Http::ResponseWriter response) -> void;
+                  Pistache::Http::ResponseWriter response) -> void override;
 
   auto get_venue_status(const Pistache::Rest::Request& request,
-                        Pistache::Http::ResponseWriter response) -> void;
+                        Pistache::Http::ResponseWriter response)
+      -> void override;
 
   auto get_venue_statuses(const Pistache::Rest::Request& request,
-                          Pistache::Http::ResponseWriter response) -> void;
+                          Pistache::Http::ResponseWriter response)
+      -> void override;
 
   auto get_settings(const Pistache::Rest::Request& request,
-                    Pistache::Http::ResponseWriter response) -> void;
+                    Pistache::Http::ResponseWriter response) -> void override;
 
   auto get_order_gen_status(const Pistache::Rest::Request& request,
-                            Pistache::Http::ResponseWriter response) -> void;
+                            Pistache::Http::ResponseWriter response)
+      -> void override;
 
   auto get_venue_status_str(const data_layer::Venue& venue,
                             bool send_response_code,
-                            bool& available) const -> std::string;
+                            bool& available) const -> std::string override;
 
  private:
   auto handle_generation_status_request(const Pistache::Rest::Request& request,
@@ -86,13 +149,13 @@ class GetProcessor {
 
   std::shared_ptr<redirect::RedirectionProcessor> redirector_;
 
-  std::reference_wrapper<const data_bridge::VenueAccessor> venue_accessor_;
+  std::shared_ptr<data_bridge::VenueAccessor> venue_accessor_;
 
-  std::reference_wrapper<const DatasourceController> datasource_controller_;
-  std::reference_wrapper<const ListingController> listing_controller_;
-  std::reference_wrapper<const PriceSeedController> price_seed_controller_;
-  std::reference_wrapper<const SettingController> setting_controller_;
-  std::reference_wrapper<const VenueController> venue_controller_;
+  std::shared_ptr<DatasourceController> datasource_controller_;
+  std::shared_ptr<ListingController> listing_controller_;
+  std::shared_ptr<PriceSeedController> price_seed_controller_;
+  std::shared_ptr<SettingController> setting_controller_;
+  std::shared_ptr<VenueController> venue_controller_;
 };
 
 }  // namespace simulator::http

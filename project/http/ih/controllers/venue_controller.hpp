@@ -3,7 +3,6 @@
 
 #include <pistache/http_defs.h>
 
-#include <functional>
 #include <string>
 #include <utility>
 
@@ -15,7 +14,8 @@ class VenueController {
  public:
   using Result = std::pair<Pistache::Http::Code, std::string>;
 
-  explicit VenueController(data_bridge::VenueAccessor& data_accessor) noexcept;
+  explicit VenueController(
+      std::shared_ptr<data_bridge::VenueAccessor> data_accessor) noexcept;
 
   [[nodiscard]]
   auto select_venue(const std::string& venue_id) const -> Result;
@@ -34,7 +34,7 @@ class VenueController {
   static auto format_error_response(data_bridge::Failure failure)
       -> std::string;
 
-  std::reference_wrapper<const data_bridge::VenueAccessor> data_accessor_;
+  std::shared_ptr<data_bridge::VenueAccessor> data_accessor_;
 };
 
 }  // namespace simulator::http

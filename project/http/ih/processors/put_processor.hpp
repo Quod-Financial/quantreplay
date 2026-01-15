@@ -4,8 +4,6 @@
 #include <pistache/http.h>
 #include <pistache/router.h>
 
-#include <functional>
-
 #include "ih/controllers/datasource_controller.hpp"
 #include "ih/controllers/listing_controller.hpp"
 #include "ih/controllers/price_seed_controller.hpp"
@@ -20,53 +18,58 @@ namespace simulator::http {
 
 class PutProcessor {
  public:
-  PutProcessor(const data_bridge::VenueAccessor& venue_accessor,
-               const DatasourceController& datasource_controller,
-               const ListingController& listing_controller,
-               const PriceSeedController& price_seed_controller,
-               const SettingController& setting_controller,
-               const TradingController& trading_controller,
-               const VenueController& venue_controller);
+  virtual ~PutProcessor() = default;
+
+  virtual auto update_venue(const Pistache::Rest::Request& request,
+                            Pistache::Http::ResponseWriter response)
+      -> void = 0;
+
+  virtual auto update_listing(const Pistache::Rest::Request& request,
+                              Pistache::Http::ResponseWriter response)
+      -> void = 0;
+
+  virtual auto update_data_source(const Pistache::Rest::Request& request,
+                                  Pistache::Http::ResponseWriter response)
+      -> void = 0;
+
+  virtual auto update_price_seed(const Pistache::Rest::Request& request,
+                                 Pistache::Http::ResponseWriter response)
+      -> void = 0;
+
+  virtual auto update_settings(const Pistache::Rest::Request& request,
+                               Pistache::Http::ResponseWriter response)
+      -> void = 0;
+};
+
+class PutProcessorImpl : public PutProcessor {
+ public:
+  PutProcessorImpl(std::shared_ptr<data_bridge::VenueAccessor> venue_accessor,
+                   std::shared_ptr<DatasourceController> datasource_controller,
+                   std::shared_ptr<ListingController> listing_controller,
+                   std::shared_ptr<PriceSeedController> price_seed_controller,
+                   std::shared_ptr<SettingController> setting_controller,
+                   std::shared_ptr<TradingController> trading_controller,
+                   std::shared_ptr<VenueController> venue_controller);
 
   auto update_venue(const Pistache::Rest::Request& request,
-                    Pistache::Http::ResponseWriter response) -> void;
+                    Pistache::Http::ResponseWriter response) -> void override;
 
   auto update_listing(const Pistache::Rest::Request& request,
-                      Pistache::Http::ResponseWriter response) -> void;
+                      Pistache::Http::ResponseWriter response) -> void override;
 
   auto update_data_source(const Pistache::Rest::Request& request,
-                          Pistache::Http::ResponseWriter response) -> void;
+                          Pistache::Http::ResponseWriter response)
+      -> void override;
 
   auto update_price_seed(const Pistache::Rest::Request& request,
-                         Pistache::Http::ResponseWriter response) -> void;
-
-  auto sync_price_seeds(const Pistache::Rest::Request& request,
-                        Pistache::Http::ResponseWriter response) -> void;
+                         Pistache::Http::ResponseWriter response)
+      -> void override;
 
   auto update_settings(const Pistache::Rest::Request& request,
-                       Pistache::Http::ResponseWriter response) -> void;
-
-  auto stop_order_gen(const Pistache::Rest::Request& request,
-                      Pistache::Http::ResponseWriter response) -> void;
-
-  auto start_order_gen(const Pistache::Rest::Request& request,
-                       Pistache::Http::ResponseWriter response) -> void;
-
-  auto halt_phase(const Pistache::Rest::Request& request,
-                  Pistache::Http::ResponseWriter response) -> void;
-
-  auto resume_phase(const Pistache::Rest::Request& request,
-                    Pistache::Http::ResponseWriter response) -> void;
+                       Pistache::Http::ResponseWriter response)
+      -> void override;
 
  private:
-  auto handle_generation_start_request(const Pistache::Rest::Request& request,
-                                       Pistache::Http::ResponseWriter response)
-      -> void;
-
-  auto handle_generation_stop_request(const Pistache::Rest::Request& request,
-                                      Pistache::Http::ResponseWriter response)
-      -> void;
-
   static auto respond(const Pistache::Rest::Request& request,
                       Pistache::Http::ResponseWriter& response,
                       Pistache::Http::Code code,
@@ -77,12 +80,12 @@ class PutProcessor {
 
   std::shared_ptr<redirect::RedirectionProcessor> redirector_;
 
-  std::reference_wrapper<const DatasourceController> datasource_controller_;
-  std::reference_wrapper<const ListingController> listing_controller_;
-  std::reference_wrapper<const PriceSeedController> price_seed_controller_;
-  std::reference_wrapper<const SettingController> setting_controller_;
-  std::reference_wrapper<const TradingController> trading_controller_;
-  std::reference_wrapper<const VenueController> venue_controller_;
+  std::shared_ptr<DatasourceController> datasource_controller_;
+  std::shared_ptr<ListingController> listing_controller_;
+  std::shared_ptr<PriceSeedController> price_seed_controller_;
+  std::shared_ptr<SettingController> setting_controller_;
+  std::shared_ptr<TradingController> trading_controller_;
+  std::shared_ptr<VenueController> venue_controller_;
 };
 
 }  // namespace simulator::http

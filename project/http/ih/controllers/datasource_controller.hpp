@@ -3,8 +3,6 @@
 
 #include <pistache/http_defs.h>
 
-#include <cstdint>
-#include <functional>
 #include <string>
 #include <utility>
 
@@ -17,7 +15,7 @@ class DatasourceController {
   using Result = std::pair<Pistache::Http::Code, std::string>;
 
   explicit DatasourceController(
-      data_bridge::DatasourceAccessor& data_accessor) noexcept;
+      std::unique_ptr<data_bridge::DatasourceAccessor> data_accessor) noexcept;
 
   [[nodiscard]]
   auto select_datasource(std::uint64_t datasource_id) const -> Result;
@@ -33,9 +31,10 @@ class DatasourceController {
                          const std::string& body) const -> Result;
 
  private:
-  static auto format_error_response(data_bridge::FailureInfo failure_info) -> std::string;
+  static auto format_error_response(data_bridge::FailureInfo failure_info)
+      -> std::string;
 
-  std::reference_wrapper<const data_bridge::DatasourceAccessor> data_accessor_;
+  std::unique_ptr<data_bridge::DatasourceAccessor> data_accessor_;
 };
 
 }  // namespace simulator::http

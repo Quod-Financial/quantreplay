@@ -13,7 +13,7 @@
 namespace simulator::http::redirect {
 
 RedirectionProcessor::RedirectionProcessor(
-    const data_bridge::VenueAccessor& venue_accessor)
+    std::shared_ptr<data_bridge::VenueAccessor> venue_accessor)
     : RedirectionProcessor(DestinationResolver::create(venue_accessor),
                            RequestRedirector::create()) {}
 
@@ -41,9 +41,9 @@ auto RedirectionProcessor::redirect_to_venue(const std::string& venue_id,
 }
 
 auto RedirectionProcessor::create(
-    const data_bridge::VenueAccessor& venue_accessor)
+    std::shared_ptr<data_bridge::VenueAccessor> venue_accessor)
     -> std::shared_ptr<RedirectionProcessor> {
-  return std::make_shared<RedirectionProcessor>(venue_accessor);
+  return std::make_shared<RedirectionProcessor>(std::move(venue_accessor));
 }
 
 auto RedirectionProcessor::process_resolve_error(Resolver::Status status,

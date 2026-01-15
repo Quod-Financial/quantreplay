@@ -137,8 +137,59 @@ auto Server::Implementation::create_endpoint(std::uint16_t accept_port)
 
 auto Server::Implementation::setup_handler(database::Context database,
                                            ControlCallbacks callbacks) -> void {
-  endpoint_->setHandler(
-      std::make_shared<Router>(std::move(database), std::move(callbacks)));
+  auto listing_accessor =
+      std::make_unique<data_bridge::DataLayerListingAccessor>(database);
+  auto setting_accessor =
+      std::make_shared<data_bridge::DataLayerSettingAccessor>(database);
+
+  auto datasource_controller = std::make_shared<DatasourceController>(
+      std::make_unique<data_bridge::DataLayerDatasourceAccessor>(database));
+
+  auto listing_controller =
+      std::make_shared<ListingController>(std::move(listing_accessor));
+
+  auto price_seed_controller = std::make_shared<PriceSeedController>(
+      std::make_unique<data_bridge::DataLayerPriceSeedAccessor>(database),
+      setting_accessor);
+  auto setting_controller =
+      std::make_shared<SettingController>(setting_accessor);
+
+  auto trading_controller = std::make_shared<TradingController>();
+
+  auto venue_accessor =
+      std::make_shared<data_bridge::DataLayerVenueAccessor>(database);
+  auto venue_controller = std::make_shared<VenueController>(venue_accessor);
+
+  auto get_processor = std::make_shared<GetProcessorImpl>(venue_accessor,
+                                                          datasource_controller,
+                                                          listing_controller,
+                                                          price_seed_controller,
+                                                          setting_controller,
+                                                          venue_controller);
+  auto post_processor =
+      std::make_shared<PostProcessorImpl>(venue_accessor,
+                                          datasource_controller,
+                                          listing_controller,
+                                          price_seed_controller,
+                                          setting_controller,
+                                          trading_controller,
+                                          venue_controller,
+                                          std::move(callbacks));
+  auto put_processor = std::make_shared<PutProcessorImpl>(venue_accessor,
+                                                          datasource_controller,
+                                                          listing_controller,
+                                                          price_seed_controller,
+                                                          setting_controller,
+                                                          trading_controller,
+                                                          venue_controller);
+
+  auto delete_processor =
+      std::make_shared<DeleteProcessorImpl>(price_seed_controller);
+
+  endpoint_->setHandler(std::make_shared<Router>(std::move(get_processor),
+                                                 std::move(post_processor),
+                                                 std::move(put_processor),
+                                                 std::move(delete_processor)));
 }
 
 auto create_http_server(database::Context database, ControlCallbacks callbacks)

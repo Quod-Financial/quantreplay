@@ -3,7 +3,6 @@
 
 #include <pistache/http_defs.h>
 
-#include <functional>
 #include <string>
 #include <utility>
 
@@ -16,7 +15,7 @@ class SettingController {
   using Result = std::pair<Pistache::Http::Code, std::string>;
 
   explicit SettingController(
-      data_bridge::SettingAccessor& data_accessor) noexcept;
+      std::shared_ptr<data_bridge::SettingAccessor> data_accessor) noexcept;
 
   [[nodiscard]]
   auto select_all_settings() const -> Result;
@@ -25,9 +24,6 @@ class SettingController {
   auto update_settings(const std::string& body) const -> Result;
 
  private:
-  [[nodiscard]]
-  auto setting_accessor() const noexcept -> const data_bridge::SettingAccessor&;
-
   static auto format_error_response(data_bridge::Failure failure)
       -> std::string;
 
@@ -35,7 +31,7 @@ class SettingController {
 
   static auto is_readonly_setting(std::string_view setting_key) -> bool;
 
-  std::reference_wrapper<const data_bridge::SettingAccessor> settings_accessor_;
+  std::shared_ptr<data_bridge::SettingAccessor> settings_accessor_;
 
   static const std::string DisplayNameSetting;
   static const std::string ExternalPriceSeedConnectionSetting;

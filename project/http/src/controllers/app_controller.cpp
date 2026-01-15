@@ -4,14 +4,15 @@
 
 namespace simulator::http {
 
-AppController::AppController(const data_bridge::VenueAccessor& data_accessor,
-                             const cfg::VenueConfiguration& venue_cfg,
-                             ControlCallbacks callbacks)
-    : data_accessor_{data_accessor},
+AppController::AppController(
+    std::shared_ptr<data_bridge::VenueAccessor> data_accessor,
+    const cfg::VenueConfiguration& venue_cfg,
+    ControlCallbacks callbacks)
+    : data_accessor_{std::move(data_accessor)},
       venue_id_{venue_cfg.name},
       venue_rest_port_{0},
       callbacks_{std::move(callbacks)} {
-  if (auto result = data_accessor_.select_single(venue_id_)) {
+  if (auto result = data_accessor_->select_single(venue_id_)) {
     const auto& venue = *result;
     if (venue.rest_port().has_value()) {
       venue_rest_port_ = *venue.rest_port();
@@ -32,7 +33,7 @@ AppController::AppController(const data_bridge::VenueAccessor& data_accessor,
 }
 
 auto AppController::ready_to_reset() const -> Result {
-  const auto result = data_accessor_.select_single(venue_id_);
+  const auto result = data_accessor_->select_single(venue_id_);
   if (!result) {
     return {Pistache::Http::Code::Conflict,
             format_result_response(fmt::format(
