@@ -438,8 +438,11 @@ In this case, if no column mappings are indicated, the following default order o
 
  ReceivedTimeStamp, MessageTimeStamp, Instrument, BidParty, BidQuantity, BidPrice, AskPrice, AskQuantity, AskParty
 
-If column mapping is not specified, their default column order or names are used.
-If column mapping is defined for at least one of the level columns (BidParty, BidPrice, BidQuantity, AskParty, AskPrice, AskQuantity), it must be specified for the rest of the BidPrice, BidQuantity, AskPrice, AskQuantity. BidParty and AskParty are optional columns.
+If some columns are mapped but not others, any unmapped column is by default mapped to its corresponding position or name as indicated above by the default list of columns.
+
+If at least one of the columns for a depth level is defined (BidParty, BidPrice, BidQuantity, AskParty, AskPrice, AskQuantity), the other columns for price and quantity for that depth level must be also be specified. For instance if BidParty is defined, then BidPrice and BidQuantity must also be defined. If BidPrice is defined, then BidQuantity must also be defined. BidParty and AskParty are optional columns for each depth level.
+
+Specifically, one of ReceivedTimeStamp or MessageTimeStamp must be mapped either explicitly or implicitly. If only one is specified, its value is used for the other.
 
 The following examples show sample generic CSV formats using these data source properties:
 
@@ -528,8 +531,12 @@ though the actual delay may be longer if the simulator is unable to play back th
 For database format and CSV file format with a non-zero textHeaderRow value, the column mapping properties of the data source can be used to map columns by name.
 The columnFrom property of the column mapping is used to select the internal simulator field that will be mapped from, and the columnTo property indicates the data
 source column that the simulator field will be mapped to. 
-In this case, if either ReceivedTimeStamp, MessageTimeStamp, Instrument or none of them are mapped, the unmapped columns are assumed to use the same values as available for the columnFrom property as the column name in the data source.
-However, if any level column (BidParty, BidPrice, BidQuantity, AskParty, AskPrice, AskQuantity) is mapped, the other level columns (BidPrice, BidQuantity, AskPrice, AskQuantity) must also be mapped. BidParty and AskParty columns are optional.
+
+If some columns are mapped but not others, any unmapped column is by default mapped to its corresponding name as indicated by the available columnFrom possible values
+
+If at least one of the columns for a depth level is defined (BidParty, BidPrice, BidQuantity, AskParty, AskPrice, AskQuantity), the other columns for price and quantity for that depth level must be also be specified. For instance if BidParty is defined, then BidPrice and BidQuantity must also be defined. If BidPrice is defined, then BidQuantity must also be defined. BidParty and AskParty are optional columns for each depth level.
+
+Specifically, one of ReceivedTimeStamp or MessageTimeStamp must be mapped either explicitly or implicitly. If only one is specified, its value is used for the other.
 
 See the section <<adminsets-data-colmapping,Market Simulator REST API | Column Mapping Sub List>> for descriptions of all possible fields that can be mapped from a data source as configured using the 
 columnFrom property of a data source column mapping. 

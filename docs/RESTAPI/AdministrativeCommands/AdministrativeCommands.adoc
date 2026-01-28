@@ -553,7 +553,7 @@ Reset configured initial state for a single market simulator venue instance from
 
 The simulator XML file configuration and FIX file configuration will not be reloaded during a reset. A physical restart of the market simulator process is required to reload these settings.
 
-NOTE: Changing the venueId of the venue associated with the simulator instance or the configured restPort for a live running market simulator instance before resetting the configured state is not supported and will likely have unstable results.
+WARNING: Changing the venueId of the venue associated with the simulator instance or the configured restPort for a live running market simulator instance before resetting the configured state is not supported and will likely have unstable results.
 
 Reset configured state for current market simulator venue.
 
