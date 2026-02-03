@@ -301,10 +301,10 @@ Invoke-RestMethod -Uri "http://localhost:9050/api/venuestatus" -Method GET | Con
 ```
 * Insert a new venue:
 ```
-curl -X POST -d '{"id": "NewExchange", "name": "NewExchange", "engineType": "Matching", "supportTimeInSales": false, "supportTifIoc": false, "supportTifFok": false, "supportTifDay": false, "includeOwnOrders": false, "restPort": 9087, "orderOnStartup": true, "randomPartyCount": 1}' http://localhost:9050/api/venues
+curl -X POST -d '{"id": "NewExchange", "name": "NewExchange", "engineType": "Matching", "timeAndSalesEnabled": false, "supportTifIoc": false, "supportTifFok": false, "supportTifDay": false, "includeOwnOrders": false, "restPort": 9087, "orderOnStartup": true, "randomPartyCount": 1}' http://localhost:9050/api/venues
 ```
 ```powershell
-Invoke-RestMethod -Uri "http://localhost:9050/api/venues" -Method POST -Body '{"id": "NewExchange", "name": "NewExchange", "engineType": "Matching", "supportTimeInSales": false, "supportTifIoc": false, "supportTifFok": false, "supportTifDay": false, "includeOwnOrders": false, "restPort": 9087, "orderOnStartup": true, "randomPartyCount": 1}' | ConvertTo-Json -Depth 100
+Invoke-RestMethod -Uri "http://localhost:9050/api/venues" -Method POST -Body '{"id": "NewExchange", "name": "NewExchange", "engineType": "Matching", "timeAndSalesEnabled": false, "supportTifIoc": false, "supportTifFok": false, "supportTifDay": false, "includeOwnOrders": false, "restPort": 9087, "orderOnStartup": true, "randomPartyCount": 1}' | ConvertTo-Json -Depth 100
 ```
 
 ## Community Support
