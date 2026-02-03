@@ -389,7 +389,7 @@ Content-Length: XXX
     "id" : "NewExchange",
     "name" : "NewExchange Description",
     "engineType" : "Matching",
-    "supportTimeInSales" : false,
+    "timeAndSalesEnabled" : false,
     "supportTifIoc" : false,
     "supportTifFok" : false,
     "supportTifDay" : false,
@@ -404,12 +404,12 @@ _Example_: Positive reply
 
 [,http]
 ----
-HTTP/1.1 200 OK
+HTTP/1.1 201 Created
 Connection: Keep-Alive
 Content-Length: XXX
 
 {
-    "result" : "Requested insert of the venue - NewExchange"
+    "result":"Successfully inserted a new Venue"
 }
 ----
 
@@ -422,7 +422,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "There is already such venue"
+    "result":"Requested operation violates data integrity constraints"
 }
 ----
 
@@ -656,7 +656,7 @@ Request all market simulator listings entities.
 _Resource URI_
 
 ----
-GET /api/listings/
+GET /api/listings
 ----
 
 _Example_: Request multiple listings
@@ -757,7 +757,7 @@ Add a new market simulator listing entity.
 _Resource URI_
 
 ----
-POST /api/listings/
+POST /api/listings
 ----
 
 _Example_: Request to add a new listing
@@ -794,7 +794,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "Requested insert of the listing - AAPL"
+    "result":"Successfully inserted a new Listing"
 }
 ----
 
@@ -807,7 +807,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "There is already such listing"
+    "result":"Requested operation violates data integrity constraints"
 }
 ----
 
@@ -1175,7 +1175,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "Requested insert of the data source - XETRA-NEW"
+    "result":"Successfully inserted a new datasource"
 }
 ----
 
@@ -1188,7 +1188,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "There is already such data source"
+    "result":"Requested operation violates data integrity constraints"
 }
 ----
 
@@ -1445,7 +1445,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "Successfully added a new price seed"
+    "result":"Successfully inserted new price seed"
 }
 ----
 
