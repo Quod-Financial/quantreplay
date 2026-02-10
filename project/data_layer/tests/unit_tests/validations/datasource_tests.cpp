@@ -36,13 +36,36 @@ TEST_F(DataLayerValidationDatasourcePatchValid, ReturnsVoidIfNoColumnMapping) {
 }
 
 TEST_F(DataLayerValidationDatasourcePatchValid,
+       ReturnsErrorMessageIfCsvNullTextHeaderRowHasValidVariableDepth) {
+  patch.with_format(Datasource::Format::Csv)
+      .with_text_header_row(std::nullopt)
+      .with_column_mapping(c_m_patch("BidParty#", "column_to#"));
+  ASSERT_THAT(
+      valid(patch),
+      IsUnexpected("All values in ColumnTo must be numeric if textHeaderRow is "
+                   "zero or not specified and the format is CSV."));
+}
+
+TEST_F(DataLayerValidationDatasourcePatchValid,
        ReturnsErrorMessageIfCsvNoHeaderColumnMappingHasValidVariableDepth) {
   patch.with_format(Datasource::Format::Csv)
       .with_text_header_row(0)
       .with_column_mapping(c_m_patch("BidParty#", "column_to#"));
-  ASSERT_THAT(valid(patch),
-              IsUnexpected("All values in ColumnTo must be numeric if "
-                           "textHeaderRow is zero and the format is CSV."));
+  ASSERT_THAT(
+      valid(patch),
+      IsUnexpected("All values in ColumnTo must be numeric if textHeaderRow is "
+                   "zero or not specified and the format is CSV."));
+}
+
+TEST_F(DataLayerValidationDatasourcePatchValid,
+       ReturnsErrorMessageIfCsvNullHeaderRowAndColumnToNotNumber) {
+  patch.with_format(Datasource::Format::Csv)
+      .with_text_header_row(std::nullopt)
+      .with_column_mapping(c_m_patch("BidParty", "column_to"));
+  ASSERT_THAT(
+      valid(patch),
+      IsUnexpected("All values in ColumnTo must be numeric if textHeaderRow is "
+                   "zero or not specified and the format is CSV."));
 }
 
 TEST_F(DataLayerValidationDatasourcePatchValid,
@@ -50,9 +73,20 @@ TEST_F(DataLayerValidationDatasourcePatchValid,
   patch.with_format(Datasource::Format::Csv)
       .with_text_header_row(0)
       .with_column_mapping(c_m_patch("BidParty", "column_to"));
-  ASSERT_THAT(valid(patch),
-              IsUnexpected("All values in ColumnTo must be numeric if "
-                           "textHeaderRow is zero and the format is CSV."));
+  ASSERT_THAT(
+      valid(patch),
+      IsUnexpected("All values in ColumnTo must be numeric if textHeaderRow is "
+                   "zero or not specified and the format is CSV."));
+}
+
+TEST_F(DataLayerValidationDatasourcePatchValid,
+       ReturnsVoidIfCsvHeaderRowNotSetAndColumnToIsNumber) {
+  patch.with_format(Datasource::Format::Csv)
+      .with_column_mapping(c_m_patch("BidQuantity", "1"))
+      .with_column_mapping(c_m_patch("BidPrice", "1"))
+      .with_column_mapping(c_m_patch("AskQuantity", "1"))
+      .with_column_mapping(c_m_patch("AskPrice", "1"));
+  ASSERT_TRUE(valid(patch).has_value());
 }
 
 TEST_F(DataLayerValidationDatasourcePatchValid,
@@ -94,6 +128,20 @@ TEST_F(DataLayerValidationDatasourcePatchValid,
       .with_column_mapping(c_m_patch("BidPrice", "column_to_without_depth"))
       .with_column_mapping(c_m_patch("AskQuantity", "column_to_without_depth"))
       .with_column_mapping(c_m_patch("AskPrice", "column_to_without_depth"));
+
+  ASSERT_TRUE(valid(patch).has_value());
+}
+
+TEST_F(DataLayerValidationDatasourcePatchValid,
+       ReturnsVoidIfCsvNullHeaderRowAndColumnToIsNumber) {
+  init_required_column_mappings(patch);
+
+  patch.with_format(Datasource::Format::Csv)
+      .with_text_header_row(std::nullopt)
+      .with_column_mapping(c_m_patch("BidQuantity", "1"))
+      .with_column_mapping(c_m_patch("BidPrice", "1"))
+      .with_column_mapping(c_m_patch("AskQuantity", "1"))
+      .with_column_mapping(c_m_patch("AskPrice", "1"));
 
   ASSERT_TRUE(valid(patch).has_value());
 }
@@ -291,9 +339,10 @@ TEST_F(DataLayerValidationDatasourceValid,
   patch.with_format(Datasource::Format::Csv)
       .with_text_header_row(0)
       .with_column_mapping(c_m_patch("BidParty#", "column_to#"));
-  ASSERT_THAT(valid(create_datasource(patch)),
-              IsUnexpected("All values in ColumnTo must be numeric if "
-                           "textHeaderRow is zero and the format is CSV."));
+  ASSERT_THAT(
+      valid(create_datasource(patch)),
+      IsUnexpected("All values in ColumnTo must be numeric if textHeaderRow is "
+                   "zero or not specified and the format is CSV."));
 }
 
 TEST_F(DataLayerValidationDatasourceValid,
@@ -301,9 +350,10 @@ TEST_F(DataLayerValidationDatasourceValid,
   patch.with_format(Datasource::Format::Csv)
       .with_text_header_row(0)
       .with_column_mapping(c_m_patch("BidParty", "column_to"));
-  ASSERT_THAT(valid(create_datasource(patch)),
-              IsUnexpected("All values in ColumnTo must be numeric if "
-                           "textHeaderRow is zero and the format is CSV."));
+  ASSERT_THAT(
+      valid(create_datasource(patch)),
+      IsUnexpected("All values in ColumnTo must be numeric if textHeaderRow is "
+                   "zero or not specified and the format is CSV."));
 }
 
 TEST_F(DataLayerValidationDatasourceValid,
@@ -344,6 +394,20 @@ TEST_F(DataLayerValidationDatasourceValid,
       .with_column_mapping(c_m_patch("BidPrice", "column_to_without_depth"))
       .with_column_mapping(c_m_patch("AskQuantity", "column_to_without_depth"))
       .with_column_mapping(c_m_patch("AskPrice", "column_to_without_depth"));
+
+  ASSERT_TRUE(valid(create_datasource(patch)).has_value());
+}
+
+TEST_F(DataLayerValidationDatasourceValid,
+       ReturnsVoidIfCsvNullHeaderRowAndColumnToIsNumber) {
+  init_required_column_mappings(patch);
+
+  patch.with_format(Datasource::Format::Csv)
+      .with_text_header_row(std::nullopt)
+      .with_column_mapping(c_m_patch("BidQuantity", "1"))
+      .with_column_mapping(c_m_patch("BidPrice", "1"))
+      .with_column_mapping(c_m_patch("AskQuantity", "1"))
+      .with_column_mapping(c_m_patch("AskPrice", "1"));
 
   ASSERT_TRUE(valid(create_datasource(patch)).has_value());
 }

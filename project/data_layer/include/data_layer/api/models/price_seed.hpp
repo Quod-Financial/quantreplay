@@ -5,6 +5,7 @@
 #include <optional>
 #include <string>
 
+#include "data_layer/api/models/patch_field.hpp"
 #include "data_layer/api/predicate/definitions.hpp"
 
 namespace simulator::data_layer {
@@ -91,57 +92,61 @@ class PriceSeed::Patch {
   using Attribute = PriceSeed::Attribute;
 
   [[nodiscard]]
-  auto symbol() const noexcept -> const std::optional<std::string>&;
-  auto with_symbol(std::string symbol) noexcept -> Patch&;
+  auto symbol() const noexcept -> const PatchField<std::string>&;
+  auto with_symbol(std::optional<std::string> symbol) noexcept -> Patch&;
 
   [[nodiscard]]
-  auto security_type() const noexcept -> const std::optional<std::string>&;
-  auto with_security_type(std::string type) noexcept -> Patch&;
+  auto security_type() const noexcept -> const PatchField<std::string>&;
+  auto with_security_type(std::optional<std::string> type) noexcept -> Patch&;
 
   [[nodiscard]]
-  auto price_currency() const noexcept -> const std::optional<std::string>&;
-  auto with_price_currency(std::string currency) noexcept -> Patch&;
+  auto price_currency() const noexcept -> const PatchField<std::string>&;
+  auto with_price_currency(std::optional<std::string> currency) noexcept
+      -> Patch&;
 
   [[nodiscard]]
-  auto security_id() const noexcept -> const std::optional<std::string>&;
-  auto with_security_id(std::string id) noexcept -> Patch&;
+  auto security_id() const noexcept -> const PatchField<std::string>&;
+  auto with_security_id(std::optional<std::string> id) noexcept -> Patch&;
 
   [[nodiscard]]
-  auto security_id_source() const noexcept -> const std::optional<std::string>&;
-  auto with_security_id_source(std::string source) noexcept -> Patch&;
+  auto security_id_source() const noexcept -> const PatchField<std::string>&;
+  auto with_security_id_source(std::optional<std::string> source) noexcept
+      -> Patch&;
 
   [[nodiscard]]
-  auto instrument_symbol() const noexcept -> const std::optional<std::string>&;
-  auto with_instrument_symbol(std::string symbol) noexcept -> Patch&;
+  auto instrument_symbol() const noexcept -> const PatchField<std::string>&;
+  auto with_instrument_symbol(std::optional<std::string> symbol) noexcept
+      -> Patch&;
 
   [[nodiscard]]
-  auto mid_price() const noexcept -> std::optional<double>;
-  auto with_mid_price(double price) noexcept -> Patch&;
+  auto mid_price() const noexcept -> PatchField<double>;
+  auto with_mid_price(std::optional<double> price) noexcept -> Patch&;
 
   [[nodiscard]]
-  auto bid_price() const noexcept -> std::optional<double>;
-  auto with_bid_price(double price) noexcept -> Patch&;
+  auto bid_price() const noexcept -> PatchField<double>;
+  auto with_bid_price(std::optional<double> price) noexcept -> Patch&;
 
   [[nodiscard]]
-  auto offer_price() const noexcept -> std::optional<double>;
-  auto with_offer_price(double price) noexcept -> Patch&;
+  auto offer_price() const noexcept -> PatchField<double>;
+  auto with_offer_price(std::optional<double> price) noexcept -> Patch&;
 
   [[nodiscard]]
-  auto last_update() const noexcept -> const std::optional<std::string>&;
-  auto with_last_update(std::string update_timestamp) noexcept -> Patch&;
+  auto last_update() const noexcept -> const PatchField<std::string>&;
+  auto with_last_update(std::optional<std::string> update_timestamp) noexcept
+      -> Patch&;
 
  private:
-  std::optional<std::string> symbol_;
-  std::optional<std::string> security_type_;
-  std::optional<std::string> price_currency_;
-  std::optional<std::string> security_id_;
-  std::optional<std::string> security_id_source_;
-  std::optional<std::string> instrument_symbol_;
-  std::optional<std::string> last_update_;
+  PatchField<std::string> symbol_;
+  PatchField<std::string> security_type_;
+  PatchField<std::string> price_currency_;
+  PatchField<std::string> security_id_;
+  PatchField<std::string> security_id_source_;
+  PatchField<std::string> instrument_symbol_;
+  PatchField<std::string> last_update_;
 
-  std::optional<double> mid_price_;
-  std::optional<double> bid_price_;
-  std::optional<double> offer_price_;
+  PatchField<double> mid_price_;
+  PatchField<double> bid_price_;
+  PatchField<double> offer_price_;
 };
 
 }  // namespace simulator::data_layer

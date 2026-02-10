@@ -12,6 +12,14 @@ MATCHER_P(IsUnexpected, error_message, "") {
          ExplainMatchResult(StrEq(error_message), arg.error(), result_listener);
 }
 
+MATCHER_P(IsPatchFieldWithValue, matcher, "") {
+  if (!arg.has_value()) {
+    *result_listener << "which has no value";
+    return false;
+  }
+  return ExplainMatchResult(matcher, arg.value(), result_listener);
+}
+
 }  // namespace simulator::data_layer
 
 #endif  // SIMULATOR_DATA_LAYER_TESTS_TEST_UTILS_MATCHERS_HPP_

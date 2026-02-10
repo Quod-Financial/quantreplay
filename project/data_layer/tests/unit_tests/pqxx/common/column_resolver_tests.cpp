@@ -7,6 +7,7 @@
 #include "api/models/venue.hpp"
 #include "ih/common/exceptions.hpp"
 #include "ih/pqxx/common/column_resolver.hpp"
+#include "test_utils/utils.hpp"
 
 namespace simulator::data_layer::internal_pqxx::test {
 namespace {
@@ -254,7 +255,8 @@ struct DataLayerMarketPhaseResolver : public ::testing::Test {
 };
 
 TEST_F(DataLayerMarketPhaseResolver, ResolvesUndefined) {
-  EXPECT_THROW(resolver(static_cast<Column>(-1)), ColumnNameEncodingError);
+  EXPECT_THROW(resolver(data_layer::test::invalid_enum_value<Column>()),
+               ColumnNameEncodingError);
 }
 
 TEST_F(DataLayerMarketPhaseResolver, ResolvesPhase) {

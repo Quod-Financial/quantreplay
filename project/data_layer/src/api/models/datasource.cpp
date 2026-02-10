@@ -120,12 +120,14 @@ auto Datasource::max_depth_levels() const noexcept
   return max_depth_levels_;
 }
 
-auto Datasource::Patch::enabled_flag() const noexcept -> std::optional<bool> {
+auto Datasource::Patch::enabled_flag() const noexcept
+    -> const PatchField<bool>& {
   return enabled_flag_;
 }
 
-auto Datasource::Patch::with_enabled_flag(bool flag) noexcept -> Patch& {
-  enabled_flag_ = flag;
+auto Datasource::Patch::with_enabled_flag(std::optional<bool> flag) noexcept
+    -> Patch& {
+  enabled_flag_ = std::move(flag);
   return *this;
 }
 
@@ -178,53 +180,56 @@ auto Datasource::Patch::with_type(Type type) noexcept -> Patch& {
   return *this;
 }
 
-auto Datasource::Patch::repeat_flag() const noexcept -> std::optional<bool> {
+auto Datasource::Patch::repeat_flag() const noexcept
+    -> const PatchField<bool>& {
   return repeat_flag_;
 }
 
-auto Datasource::Patch::with_repeat_flag(bool flag) noexcept -> Patch& {
-  repeat_flag_ = flag;
+auto Datasource::Patch::with_repeat_flag(std::optional<bool> flag) noexcept
+    -> Patch& {
+  repeat_flag_ = std::move(flag);
   return *this;
 }
 
-auto Datasource::Patch::text_delimiter() const noexcept -> std::optional<char> {
+auto Datasource::Patch::text_delimiter() const noexcept
+    -> const PatchField<char>& {
   return text_delimiter_;
 }
 
-auto Datasource::Patch::with_text_delimiter(char delimiter) noexcept -> Patch& {
-  text_delimiter_ = delimiter;
+auto Datasource::Patch::with_text_delimiter(
+    std::optional<char> delimiter) noexcept -> Patch& {
+  text_delimiter_ = std::move(delimiter);
   return *this;
 }
 
 auto Datasource::Patch::text_header_row() const noexcept
-    -> std::optional<std::uint64_t> {
+    -> const PatchField<std::uint64_t>& {
   return text_header_row_;
 }
 
-auto Datasource::Patch::with_text_header_row(std::uint64_t row) noexcept
-    -> Patch& {
-  text_header_row_ = row;
+auto Datasource::Patch::with_text_header_row(
+    std::optional<std::uint64_t> row) noexcept -> Patch& {
+  text_header_row_ = std::move(row);
   return *this;
 }
 
 auto Datasource::Patch::text_data_row() const noexcept
-    -> std::optional<std::uint64_t> {
+    -> const PatchField<std::uint64_t>& {
   return text_data_row_;
 }
 
-auto Datasource::Patch::with_text_data_row(std::uint64_t row) noexcept
-    -> Patch& {
-  text_data_row_ = row;
+auto Datasource::Patch::with_text_data_row(
+    std::optional<std::uint64_t> row) noexcept -> Patch& {
+  text_data_row_ = std::move(row);
   return *this;
 }
 
-auto Datasource::Patch::table_name() const
-    -> const std::optional<std::string>& {
+auto Datasource::Patch::table_name() const -> const PatchField<std::string>& {
   return table_name_;
 }
 
-auto Datasource::Patch::with_table_name(std::string table_name) noexcept
-    -> Patch& {
+auto Datasource::Patch::with_table_name(
+    std::optional<std::string> table_name) noexcept -> Patch& {
   table_name_ = std::move(table_name);
   return *this;
 }
@@ -249,13 +254,13 @@ auto Datasource::Patch::without_column_mapping() noexcept -> Patch& {
 }
 
 auto Datasource::Patch::max_depth_levels() const noexcept
-    -> std::optional<std::uint32_t> {
+    -> const PatchField<std::uint32_t>& {
   return max_depth_levels_;
 }
 
-auto Datasource::Patch::with_max_depth_levels(std::uint32_t levels) noexcept
-    -> Patch& {
-  max_depth_levels_ = levels;
+auto Datasource::Patch::with_max_depth_levels(
+    std::optional<std::uint32_t> levels) noexcept -> Patch& {
+  max_depth_levels_ = std::move(levels);
   return *this;
 }
 

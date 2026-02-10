@@ -149,171 +149,178 @@ auto Venue::Patch::with_venue_id(std::string venue_id) noexcept -> Patch& {
   return *this;
 }
 
-auto Venue::Patch::name() const noexcept -> const std::optional<std::string>& {
+auto Venue::Patch::name() const noexcept -> const PatchField<std::string>& {
   return patched_name_;
 }
 
-auto Venue::Patch::with_name(std::string name) noexcept -> Patch& {
+auto Venue::Patch::with_name(std::optional<std::string> name) noexcept
+    -> Patch& {
   patched_name_ = std::move(name);
   return *this;
 }
 
-auto Venue::Patch::engine_type() const noexcept -> std::optional<EngineType> {
+auto Venue::Patch::engine_type() const noexcept -> PatchField<EngineType> {
   return patched_engine_type_;
 }
 
-auto Venue::Patch::with_engine_type(EngineType engine_type) noexcept -> Patch& {
-  patched_engine_type_ = engine_type;
+auto Venue::Patch::with_engine_type(
+    std::optional<EngineType> engine_type) noexcept -> Patch& {
+  patched_engine_type_ = std::move(engine_type);
   return *this;
 }
 
-auto Venue::Patch::support_tif_ioc_flag() const noexcept
-    -> std::optional<bool> {
+auto Venue::Patch::support_tif_ioc_flag() const noexcept -> PatchField<bool> {
   return patched_support_tif_ioc_flag_;
 }
 
-auto Venue::Patch::with_support_tif_ioc_flag(bool flag) noexcept -> Patch& {
-  patched_support_tif_ioc_flag_ = flag;
+auto Venue::Patch::with_support_tif_ioc_flag(std::optional<bool> flag) noexcept
+    -> Patch& {
+  patched_support_tif_ioc_flag_ = std::move(flag);
   return *this;
 }
 
-auto Venue::Patch::support_tif_fok_flag() const noexcept
-    -> std::optional<bool> {
+auto Venue::Patch::support_tif_fok_flag() const noexcept -> PatchField<bool> {
   return patched_support_tif_fok_flag_;
 }
 
-auto Venue::Patch::with_support_tif_fok_flag(bool flag) noexcept -> Patch& {
-  patched_support_tif_fok_flag_ = flag;
+auto Venue::Patch::with_support_tif_fok_flag(std::optional<bool> flag) noexcept
+    -> Patch& {
+  patched_support_tif_fok_flag_ = std::move(flag);
   return *this;
 }
 
-auto Venue::Patch::support_tif_day_flag() const noexcept
-    -> std::optional<bool> {
+auto Venue::Patch::support_tif_day_flag() const noexcept -> PatchField<bool> {
   return patched_support_tif_day_flag_;
 }
 
-auto Venue::Patch::with_support_tif_day_flag(bool flag) noexcept -> Patch& {
-  patched_support_tif_day_flag_ = flag;
+auto Venue::Patch::with_support_tif_day_flag(std::optional<bool> flag) noexcept
+    -> Patch& {
+  patched_support_tif_day_flag_ = std::move(flag);
   return *this;
 }
 
 auto Venue::Patch::include_own_orders_flag() const noexcept
-    -> std::optional<bool> {
+    -> PatchField<bool> {
   return patched_include_own_orders_flag_;
 }
 
-auto Venue::Patch::with_include_own_orders_flag(bool flag) noexcept -> Patch& {
-  patched_include_own_orders_flag_ = flag;
+auto Venue::Patch::with_include_own_orders_flag(
+    std::optional<bool> flag) noexcept -> Patch& {
+  patched_include_own_orders_flag_ = std::move(flag);
   return *this;
 }
 
-auto Venue::Patch::rest_port() const noexcept -> std::optional<std::uint16_t> {
+auto Venue::Patch::rest_port() const noexcept -> PatchField<std::uint16_t> {
   return patched_rest_port_;
 }
 
-auto Venue::Patch::with_rest_port(std::uint32_t port) noexcept -> Patch& {
-  patched_rest_port_ = port;
+auto Venue::Patch::with_rest_port(std::optional<std::uint32_t> port) noexcept
+    -> Patch& {
+  patched_rest_port_ = std::move(port);
   return *this;
 }
 
-auto Venue::Patch::orders_on_startup_flag() const noexcept
-    -> std::optional<bool> {
+auto Venue::Patch::orders_on_startup_flag() const noexcept -> PatchField<bool> {
   return patched_order_on_startup_flag_;
 }
 
-auto Venue::Patch::with_orders_on_startup_flag(bool flag) noexcept -> Patch& {
-  patched_order_on_startup_flag_ = flag;
+auto Venue::Patch::with_orders_on_startup_flag(
+    std::optional<bool> flag) noexcept -> Patch& {
+  patched_order_on_startup_flag_ = std::move(flag);
   return *this;
 }
 
 auto Venue::Patch::random_parties_count() const noexcept
-    -> std::optional<std::uint32_t> {
+    -> PatchField<std::uint32_t> {
   return patched_random_parties_count_;
 }
 
-auto Venue::Patch::with_random_parties_count(std::uint32_t count) noexcept
-    -> Patch& {
-  patched_random_parties_count_ = count;
+auto Venue::Patch::with_random_parties_count(
+    std::optional<std::uint32_t> count) noexcept -> Patch& {
+  patched_random_parties_count_ = std::move(count);
   return *this;
 }
 
-auto Venue::Patch::tns_enabled_flag() const noexcept -> std::optional<bool> {
+auto Venue::Patch::tns_enabled_flag() const noexcept -> PatchField<bool> {
   return patched_tns_enabled_flag_;
 }
 
-auto Venue::Patch::with_tns_enabled_flag(bool flag) noexcept -> Patch& {
-  patched_tns_enabled_flag_ = flag;
+auto Venue::Patch::with_tns_enabled_flag(std::optional<bool> flag) noexcept
+    -> Patch& {
+  patched_tns_enabled_flag_ = std::move(flag);
   return *this;
 }
 
-auto Venue::Patch::tns_qty_enabled_flag() const noexcept
-    -> std::optional<bool> {
+auto Venue::Patch::tns_qty_enabled_flag() const noexcept -> PatchField<bool> {
   return patched_tns_qty_enabled_flag_;
 }
 
-auto Venue::Patch::with_tns_qty_enabled_flag(bool flag) noexcept -> Patch& {
-  patched_tns_qty_enabled_flag_ = flag;
+auto Venue::Patch::with_tns_qty_enabled_flag(std::optional<bool> flag) noexcept
+    -> Patch& {
+  patched_tns_qty_enabled_flag_ = std::move(flag);
   return *this;
 }
 
-auto Venue::Patch::tns_side_enabled_flag() const noexcept
-    -> std::optional<bool> {
+auto Venue::Patch::tns_side_enabled_flag() const noexcept -> PatchField<bool> {
   return patched_tns_side_enabled_flag_;
 }
 
-auto Venue::Patch::with_tns_side_enabled_flag(bool flag) noexcept -> Patch& {
-  patched_tns_side_enabled_flag_ = flag;
+auto Venue::Patch::with_tns_side_enabled_flag(std::optional<bool> flag) noexcept
+    -> Patch& {
+  patched_tns_side_enabled_flag_ = std::move(flag);
   return *this;
 }
 
 auto Venue::Patch::tns_parties_enabled_flag() const noexcept
-    -> std::optional<bool> {
+    -> PatchField<bool> {
   return patched_tns_parties_enabled_flag_;
 }
 
-auto Venue::Patch::with_tns_parties_enabled_flag(bool flag) noexcept -> Patch& {
-  patched_tns_parties_enabled_flag_ = flag;
+auto Venue::Patch::with_tns_parties_enabled_flag(
+    std::optional<bool> flag) noexcept -> Patch& {
+  patched_tns_parties_enabled_flag_ = std::move(flag);
   return *this;
 }
 
-auto Venue::Patch::timezone() const noexcept
-    -> const std::optional<std::string>& {
+auto Venue::Patch::timezone() const noexcept -> const PatchField<std::string>& {
   return patched_timezone_;
 }
 
-auto Venue::Patch::with_timezone(std::string timezone) noexcept -> Patch& {
+auto Venue::Patch::with_timezone(std::optional<std::string> timezone) noexcept
+    -> Patch& {
   patched_timezone_ = std::move(timezone);
   return *this;
 }
 
 auto Venue::Patch::cancel_on_disconnect_flag() const noexcept
-    -> std::optional<bool> {
+    -> PatchField<bool> {
   return patched_cancel_on_disconnect_flag_;
 }
 
-auto Venue::Patch::with_cancel_on_disconnect_flag(bool flag) noexcept
-    -> Patch& {
-  patched_cancel_on_disconnect_flag_ = flag;
+auto Venue::Patch::with_cancel_on_disconnect_flag(
+    std::optional<bool> flag) noexcept -> Patch& {
+  patched_cancel_on_disconnect_flag_ = std::move(flag);
   return *this;
 }
 
 auto Venue::Patch::persistence_enabled_flag() const noexcept
-    -> std::optional<bool> {
+    -> PatchField<bool> {
   return patched_persistence_enabled_flag_;
 }
 
-auto Venue::Patch::with_persistence_enabled_flag(bool flag) noexcept -> Patch& {
-  patched_persistence_enabled_flag_ = flag;
+auto Venue::Patch::with_persistence_enabled_flag(
+    std::optional<bool> flag) noexcept -> Patch& {
+  patched_persistence_enabled_flag_ = std::move(flag);
   return *this;
 }
 
 auto Venue::Patch::persistence_file_path() const noexcept
-    -> const std::optional<std::string>& {
+    -> const PatchField<std::string>& {
   return patched_persistence_file_path_;
 }
 
-auto Venue::Patch::with_persistence_file_path(std::string path) noexcept
-    -> Patch& {
+auto Venue::Patch::with_persistence_file_path(
+    std::optional<std::string> path) noexcept -> Patch& {
   patched_persistence_file_path_ = std::move(path);
   return *this;
 }

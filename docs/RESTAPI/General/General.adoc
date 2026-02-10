@@ -170,6 +170,20 @@ Market Simulators use the DELETE request to remove one or more existing resource
 [[general-dataformat]]
 === Data Format
 
+The following data types are used in the request and response bodies of the Market Simulator REST API:
+
+* <<general-dataformat-strings>>;
+* <<general-dataformat-numbers>>;
+* <<general-dataformat-datetime>>.
+
+In the case where an indication of "no value" is required, a null property value may be specified.
+
+A null property value is represented in the database as NULL or as a default value.
+There is a different behaviour if the property is omitted:
+
+* In a POST request, the default value for that property is used (if any) or is NULL;
+* In a PUT request, the property is not updated and retains its previous value.
+
 [[general-dataformat-requestheaders]]
 ==== Request Headers
 
@@ -204,7 +218,7 @@ All property names in the response body will be double quoted. See below for fur
 
 [[general-dataformat-strings]]
 ==== Strings
-Any string values sent as part of a JSON request or response must be wrapped in double quotes. In the case where an indication of "no value" is required, a null property value may be specified.
+Any string values sent as part of a JSON request or response must be wrapped in double quotes.
 
 _Example_
 
@@ -219,8 +233,7 @@ _Example_
 [[general-dataformat-numbers]]
 ==== Numbers
 Any numerical fields (Integer or Float) sent as part of a JSON request or response must not be wrapped in double quotes. 
-In the case of Float values, a period ( "." ) must be used as the decimal separator, regardless of a user's regional settings. 
-In the case where an indication of "no value" is required, a null property value may be specified.
+In the case of Float values, a period ( "." ) must be used as the decimal separator, regardless of a user's regional settings.
 
 _Example_
 

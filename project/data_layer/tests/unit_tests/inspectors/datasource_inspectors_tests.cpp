@@ -6,6 +6,7 @@
 #include "api/inspectors/datasource.hpp"
 #include "api/models/datasource.hpp"
 #include "common/marshaller.hpp"
+#include "tests/test_utils/matchers.hpp"
 
 namespace simulator::data_layer::test {
 namespace {
@@ -221,10 +222,20 @@ class DataLayerInspectorsDatasourcePatchReader : public ::testing::Test {
   MarshallerType marshaller_;
 };
 
-TEST_F(DataLayerInspectorsDatasourcePatchReader, ReadsEnabledFlag) {
-  patch.with_enabled_flag(true);
+TEST_F(DataLayerInspectorsDatasourcePatchReader,
+       SetsEnabledFlagToTrueIfItIsNull) {
+  patch.with_enabled_flag(std::nullopt);
 
   EXPECT_CALL(marshaller(), boolean(Eq(Attribute::Enabled), Eq(true))).Times(1);
+
+  make_reader().read(patch);
+}
+
+TEST_F(DataLayerInspectorsDatasourcePatchReader, ReadsEnabledFlag) {
+  patch.with_enabled_flag(false);
+
+  EXPECT_CALL(marshaller(), boolean(Eq(Attribute::Enabled), Eq(false)))
+      .Times(1);
 
   make_reader().read(patch);
 }
@@ -277,10 +288,29 @@ TEST_F(DataLayerInspectorsDatasourcePatchReader, ReadsType) {
   make_reader().read(patch);
 }
 
+TEST_F(DataLayerInspectorsDatasourcePatchReader,
+       SetsRepeatFlagToFalseIfItIsNull) {
+  patch.with_repeat_flag(std::nullopt);
+
+  EXPECT_CALL(marshaller(), boolean(Eq(Attribute::Repeat), Eq(false))).Times(1);
+
+  make_reader().read(patch);
+}
+
 TEST_F(DataLayerInspectorsDatasourcePatchReader, ReadsRepeatFlag) {
   patch.with_repeat_flag(true);
 
   EXPECT_CALL(marshaller(), boolean(Eq(Attribute::Repeat), Eq(true))).Times(1);
+
+  make_reader().read(patch);
+}
+
+TEST_F(DataLayerInspectorsDatasourcePatchReader,
+       SetsTextDelimiterToTrueIfItIsNull) {
+  patch.with_text_delimiter(std::nullopt);
+
+  EXPECT_CALL(marshaller(), character(Eq(Attribute::TextDelimiter), Eq(',')))
+      .Times(1);
 
   make_reader().read(patch);
 }
@@ -294,11 +324,30 @@ TEST_F(DataLayerInspectorsDatasourcePatchReader, ReadsTextDelimiter) {
   make_reader().read(patch);
 }
 
+TEST_F(DataLayerInspectorsDatasourcePatchReader,
+       SetsTextHeaderRowToZeroIfItIsNull) {
+  patch.with_text_header_row(std::nullopt);
+
+  EXPECT_CALL(marshaller(), uint64(Eq(Attribute::TextHeaderRow), Eq(0)))
+      .Times(1);
+
+  make_reader().read(patch);
+}
+
 TEST_F(DataLayerInspectorsDatasourcePatchReader, ReadsTextHeaderRow) {
   patch.with_text_header_row(42);
 
   EXPECT_CALL(marshaller(), uint64(Eq(Attribute::TextHeaderRow), Eq(42)))
       .Times(1);
+
+  make_reader().read(patch);
+}
+
+TEST_F(DataLayerInspectorsDatasourcePatchReader,
+       SetsTextDataRowToOneIfItIsNull) {
+  patch.with_text_data_row(std::nullopt);
+
+  EXPECT_CALL(marshaller(), uint64(Eq(Attribute::TextDataRow), Eq(1))).Times(1);
 
   make_reader().read(patch);
 }
@@ -315,7 +364,8 @@ TEST_F(DataLayerInspectorsDatasourcePatchReader, ReadsTextDataRow) {
 TEST_F(DataLayerInspectorsDatasourcePatchReader, ReadsTableName) {
   patch.with_table_name("table");
 
-  EXPECT_CALL(marshaller(), string(Eq(Attribute::TableName), Eq("table")))
+  EXPECT_CALL(marshaller(),
+              optional_string(Eq(Attribute::TableName), Eq("table")))
       .Times(1);
 
   make_reader().read(patch);
@@ -324,7 +374,8 @@ TEST_F(DataLayerInspectorsDatasourcePatchReader, ReadsTableName) {
 TEST_F(DataLayerInspectorsDatasourcePatchReader, ReadsMaxDepthLevels) {
   patch.with_max_depth_levels(42);
 
-  EXPECT_CALL(marshaller(), uint32(Eq(Attribute::MaxDepthLevels), Eq(42)))
+  EXPECT_CALL(marshaller(),
+              optional_uint32(Eq(Attribute::MaxDepthLevels), Eq(42)))
       .Times(1);
 
   make_reader().read(patch);
@@ -374,6 +425,26 @@ class DataLayerInspectorsDatasourcePatchWriter : public ::testing::Test {
     EXPECT_CALL(unmarshaller(), datasource_type)
         .Times(AnyNumber())
         .WillRepeatedly(Return(false));
+
+    EXPECT_CALL(unmarshaller(), optional_boolean)
+        .Times(AnyNumber())
+        .WillRepeatedly(Return(false));
+
+    EXPECT_CALL(unmarshaller(), optional_character)
+        .Times(AnyNumber())
+        .WillRepeatedly(Return(false));
+
+    EXPECT_CALL(unmarshaller(), optional_uint32)
+        .Times(AnyNumber())
+        .WillRepeatedly(Return(false));
+
+    EXPECT_CALL(unmarshaller(), optional_uint64)
+        .Times(AnyNumber())
+        .WillRepeatedly(Return(false));
+
+    EXPECT_CALL(unmarshaller(), optional_string)
+        .Times(AnyNumber())
+        .WillRepeatedly(Return(false));
   }
 
  private:
@@ -381,11 +452,11 @@ class DataLayerInspectorsDatasourcePatchWriter : public ::testing::Test {
 };
 
 TEST_F(DataLayerInspectorsDatasourcePatchWriter, WritesEnabledFlag) {
-  EXPECT_CALL(unmarshaller(), boolean(Eq(Attribute::Enabled), _))
+  EXPECT_CALL(unmarshaller(), optional_boolean(Eq(Attribute::Enabled), _))
       .WillOnce(DoAll(SetArgReferee<1>(false), Return(true)));
 
   make_writer().write(patch);
-  EXPECT_THAT(patch.enabled_flag(), Optional(Eq(false)));
+  EXPECT_THAT(patch.enabled_flag(), IsPatchFieldWithValue(Optional(Eq(false))));
 }
 
 TEST_F(DataLayerInspectorsDatasourcePatchWriter, WritesName) {
@@ -429,51 +500,72 @@ TEST_F(DataLayerInspectorsDatasourcePatchWriter, WritesType) {
 }
 
 TEST_F(DataLayerInspectorsDatasourcePatchWriter, WritesRepeatFlag) {
-  EXPECT_CALL(unmarshaller(), boolean(Eq(Attribute::Repeat), _))
+  EXPECT_CALL(unmarshaller(), optional_boolean(Eq(Attribute::Repeat), _))
       .WillOnce(DoAll(SetArgReferee<1>(true), Return(true)));
 
   make_writer().write(patch);
-  EXPECT_THAT(patch.repeat_flag(), Optional(Eq(true)));
+  EXPECT_THAT(patch.repeat_flag(), IsPatchFieldWithValue(Optional(Eq(true))));
 }
 
 TEST_F(DataLayerInspectorsDatasourcePatchWriter, WritesTextDelimiter) {
-  EXPECT_CALL(unmarshaller(), character(Eq(Attribute::TextDelimiter), _))
+  EXPECT_CALL(unmarshaller(),
+              optional_character(Eq(Attribute::TextDelimiter), _))
       .WillOnce(DoAll(SetArgReferee<1>('\t'), Return(true)));
 
   make_writer().write(patch);
-  EXPECT_THAT(patch.text_delimiter(), Optional(Eq('\t')));
+  EXPECT_THAT(patch.text_delimiter(),
+              IsPatchFieldWithValue(Optional(Eq('\t'))));
 }
 
 TEST_F(DataLayerInspectorsDatasourcePatchWriter, WritesTextHeaderRow) {
-  EXPECT_CALL(unmarshaller(), uint64(Eq(Attribute::TextHeaderRow), _))
+  EXPECT_CALL(unmarshaller(), optional_uint64(Eq(Attribute::TextHeaderRow), _))
       .WillOnce(DoAll(SetArgReferee<1>(42), Return(true)));
 
   make_writer().write(patch);
-  EXPECT_THAT(patch.text_header_row(), Optional(Eq(42)));
+  EXPECT_THAT(patch.text_header_row(), IsPatchFieldWithValue(Optional(Eq(42))));
 }
 
 TEST_F(DataLayerInspectorsDatasourcePatchWriter, WritesTextDataRow) {
-  EXPECT_CALL(unmarshaller(), uint64(Eq(Attribute::TextDataRow), _))
+  EXPECT_CALL(unmarshaller(), optional_uint64(Eq(Attribute::TextDataRow), _))
       .WillOnce(DoAll(SetArgReferee<1>(42), Return(true)));
 
   make_writer().write(patch);
-  EXPECT_THAT(patch.text_data_row(), Optional(Eq(42)));
+  EXPECT_THAT(patch.text_data_row(), IsPatchFieldWithValue(Optional(Eq(42))));
+}
+
+TEST_F(DataLayerInspectorsDatasourcePatchWriter, WritesTableNameNull) {
+  EXPECT_CALL(unmarshaller(), optional_string(Eq(Attribute::TableName), _))
+      .WillOnce(DoAll(SetArgReferee<1>(std::nullopt), Return(true)));
+
+  make_writer().write(patch);
+  EXPECT_THAT(patch.table_name(), IsPatchFieldWithValue(Eq(std::nullopt)));
 }
 
 TEST_F(DataLayerInspectorsDatasourcePatchWriter, WritesTableName) {
-  EXPECT_CALL(unmarshaller(), string(Eq(Attribute::TableName), _))
+  EXPECT_CALL(unmarshaller(), optional_string(Eq(Attribute::TableName), _))
       .WillOnce(DoAll(SetArgReferee<1>("historical_table"), Return(true)));
 
   make_writer().write(patch);
-  EXPECT_THAT(patch.table_name(), Optional(Eq("historical_table")));
+  EXPECT_THAT(patch.table_name(),
+              IsPatchFieldWithValue(Optional(Eq("historical_table"))));
+}
+
+TEST_F(DataLayerInspectorsDatasourcePatchWriter, WritesMaxDepthLevelsNull) {
+  EXPECT_CALL(unmarshaller(), optional_uint32(Eq(Attribute::MaxDepthLevels), _))
+      .WillOnce(DoAll(SetArgReferee<1>(std::nullopt), Return(true)));
+
+  make_writer().write(patch);
+  EXPECT_THAT(patch.max_depth_levels(),
+              IsPatchFieldWithValue(Eq(std::nullopt)));
 }
 
 TEST_F(DataLayerInspectorsDatasourcePatchWriter, WritesMaxDepthLevels) {
-  EXPECT_CALL(unmarshaller(), uint32(Eq(Attribute::MaxDepthLevels), _))
+  EXPECT_CALL(unmarshaller(), optional_uint32(Eq(Attribute::MaxDepthLevels), _))
       .WillOnce(DoAll(SetArgReferee<1>(42), Return(true)));
 
   make_writer().write(patch);
-  EXPECT_THAT(patch.max_depth_levels(), Optional(Eq(42)));
+  EXPECT_THAT(patch.max_depth_levels(),
+              IsPatchFieldWithValue(Optional(Eq(42))));
 }
 
 // NOLINTEND(*magic-numbers*)

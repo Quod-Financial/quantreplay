@@ -82,102 +82,108 @@ auto PriceSeed::last_update() const noexcept
 }
 
 auto PriceSeed::Patch::symbol() const noexcept
-    -> const std::optional<std::string>& {
+    -> const PatchField<std::string>& {
   return symbol_;
 }
 
-auto PriceSeed::Patch::with_symbol(std::string symbol) noexcept -> Patch& {
+auto PriceSeed::Patch::with_symbol(std::optional<std::string> symbol) noexcept
+    -> Patch& {
   symbol_ = std::move(symbol);
   return *this;
 }
 
 auto PriceSeed::Patch::security_type() const noexcept
-    -> const std::optional<std::string>& {
+    -> const PatchField<std::string>& {
   return security_type_;
 }
 
-auto PriceSeed::Patch::with_security_type(std::string type) noexcept -> Patch& {
+auto PriceSeed::Patch::with_security_type(
+    std::optional<std::string> type) noexcept -> Patch& {
   security_type_ = std::move(type);
   return *this;
 }
 
 auto PriceSeed::Patch::price_currency() const noexcept
-    -> const std::optional<std::string>& {
+    -> const PatchField<std::string>& {
   return price_currency_;
 }
 
-auto PriceSeed::Patch::with_price_currency(std::string currency) noexcept
-    -> Patch& {
+auto PriceSeed::Patch::with_price_currency(
+    std::optional<std::string> currency) noexcept -> Patch& {
   price_currency_ = std::move(currency);
   return *this;
 }
 
 auto PriceSeed::Patch::security_id() const noexcept
-    -> const std::optional<std::string>& {
+    -> const PatchField<std::string>& {
   return security_id_;
 }
 
-auto PriceSeed::Patch::with_security_id(std::string id) noexcept -> Patch& {
+auto PriceSeed::Patch::with_security_id(std::optional<std::string> id) noexcept
+    -> Patch& {
   security_id_ = std::move(id);
   return *this;
 }
 
 auto PriceSeed::Patch::security_id_source() const noexcept
-    -> const std::optional<std::string>& {
+    -> const PatchField<std::string>& {
   return security_id_source_;
 }
 
-auto PriceSeed::Patch::with_security_id_source(std::string source) noexcept
-    -> Patch& {
+auto PriceSeed::Patch::with_security_id_source(
+    std::optional<std::string> source) noexcept -> Patch& {
   security_id_source_ = std::move(source);
   return *this;
 }
 
 auto PriceSeed::Patch::instrument_symbol() const noexcept
-    -> const std::optional<std::string>& {
+    -> const PatchField<std::string>& {
   return instrument_symbol_;
 }
 
-auto PriceSeed::Patch::with_instrument_symbol(std::string symbol) noexcept
-    -> Patch& {
+auto PriceSeed::Patch::with_instrument_symbol(
+    std::optional<std::string> symbol) noexcept -> Patch& {
   instrument_symbol_ = std::move(symbol);
   return *this;
 }
 
-auto PriceSeed::Patch::mid_price() const noexcept -> std::optional<double> {
+auto PriceSeed::Patch::mid_price() const noexcept -> PatchField<double> {
   return mid_price_;
 }
 
-auto PriceSeed::Patch::with_mid_price(double price) noexcept -> Patch& {
-  mid_price_ = price;
+auto PriceSeed::Patch::with_mid_price(std::optional<double> price) noexcept
+    -> Patch& {
+  mid_price_ = std::move(price);
   return *this;
 }
 
-auto PriceSeed::Patch::bid_price() const noexcept -> std::optional<double> {
+auto PriceSeed::Patch::bid_price() const noexcept -> PatchField<double> {
   return bid_price_;
 }
 
-auto PriceSeed::Patch::with_bid_price(double price) noexcept -> Patch& {
-  bid_price_ = price;
+auto PriceSeed::Patch::with_bid_price(std::optional<double> price) noexcept
+    -> Patch& {
+  bid_price_ = std::move(price);
   return *this;
 }
 
-auto PriceSeed::Patch::offer_price() const noexcept -> std::optional<double> {
+auto PriceSeed::Patch::offer_price() const noexcept -> PatchField<double> {
   return offer_price_;
 }
 
-auto PriceSeed::Patch::with_offer_price(double price) noexcept -> Patch& {
-  offer_price_ = price;
+auto PriceSeed::Patch::with_offer_price(std::optional<double> price) noexcept
+    -> Patch& {
+  offer_price_ = std::move(price);
   return *this;
 }
 
 auto PriceSeed::Patch::last_update() const noexcept
-    -> const std::optional<std::string>& {
+    -> const PatchField<std::string>& {
   return last_update_;
 }
 
-auto PriceSeed::Patch::with_last_update(std::string update_timestamp) noexcept
-    -> Patch& {
+auto PriceSeed::Patch::with_last_update(
+    std::optional<std::string> update_timestamp) noexcept -> Patch& {
   last_update_ = std::move(update_timestamp);
   return *this;
 }

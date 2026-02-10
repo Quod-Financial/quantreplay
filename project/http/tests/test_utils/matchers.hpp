@@ -47,6 +47,14 @@ MATCHER_P2(HasUInt64, key, expected, "") {
              Eq(expected), iter->value.GetUint64(), result_listener);
 }
 
+MATCHER_P(IsPatchFieldWithValue, matcher, "") {
+  if (!arg.has_value()) {
+    *result_listener << "which has no value";
+    return false;
+  }
+  return ExplainMatchResult(matcher, arg.value(), result_listener);
+}
+
 }  // namespace simulator::http::json::test
 
 #endif  // SIMULATOR_HTTP_TESTS_TEST_UTILS_MATCHERS_HPP_

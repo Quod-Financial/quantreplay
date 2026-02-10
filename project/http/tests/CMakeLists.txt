@@ -12,6 +12,7 @@ add_target_tests(
     test_utils/matchers.hpp
     test_utils/processors.hpp
     test_utils/test_server.hpp
+    test_utils/utils.hpp
   UNIT_TESTS
     unit_tests/controllers/app_controller_tests.cpp
     unit_tests/controllers/trading_controller_tests.cpp

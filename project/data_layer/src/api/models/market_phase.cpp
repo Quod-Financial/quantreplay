@@ -25,9 +25,16 @@ auto MarketPhase::create(Patch snapshot, std::string venue_id) -> MarketPhase {
   market_phase.start_time_ = std::move(*snapshot.start_time_);
   market_phase.end_time_ = std::move(*snapshot.end_time_);
   market_phase.venue_id_ = std::move(venue_id);
-  market_phase.end_time_range_ = snapshot.end_time_range();
+
+  if (const auto& range = snapshot.end_time_range()) {
+    market_phase.end_time_range_ = range.value();
+  }
+
   market_phase.phase_ = *snapshot.phase_;
-  market_phase.allow_cancels_ = snapshot.allow_cancels();
+
+  if (const auto& allow_cancels = snapshot.allow_cancels()) {
+    market_phase.allow_cancels_ = allow_cancels.value();
+  }
 
   return market_phase;
 }
@@ -87,23 +94,23 @@ auto MarketPhase::Patch::with_end_time(std::string end_time) noexcept
 }
 
 auto MarketPhase::Patch::end_time_range() const noexcept
-    -> std::optional<std::int32_t> {
+    -> PatchField<int32_t> {
   return end_time_range_;
 }
 
-auto MarketPhase::Patch::with_end_time_range(std::int32_t range) noexcept
-    -> Patch& {
-  end_time_range_ = range;
+auto MarketPhase::Patch::with_end_time_range(
+    std::optional<int32_t> range) noexcept -> Patch& {
+  end_time_range_ = std::move(range);
   return *this;
 }
 
-auto MarketPhase::Patch::allow_cancels() const noexcept -> std::optional<bool> {
+auto MarketPhase::Patch::allow_cancels() const noexcept -> PatchField<bool> {
   return allow_cancels_;
 }
 
-auto MarketPhase::Patch::with_allow_cancels(bool allow_cancels) noexcept
-    -> Patch& {
-  allow_cancels_ = allow_cancels;
+auto MarketPhase::Patch::with_allow_cancels(
+    std::optional<bool> allow_cancels) noexcept -> Patch& {
+  allow_cancels_ = std::move(allow_cancels);
   return *this;
 }
 

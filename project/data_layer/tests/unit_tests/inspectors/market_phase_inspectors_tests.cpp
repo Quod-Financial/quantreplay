@@ -4,6 +4,7 @@
 #include "api/inspectors/market_phase.hpp"
 #include "api/models/market_phase.hpp"
 #include "common/marshaller.hpp"
+#include "tests/test_utils/matchers.hpp"
 
 namespace simulator::data_layer::test {
 namespace {
@@ -12,7 +13,7 @@ namespace {
 
 using namespace ::testing;
 
-class DataLayer_Inspectors_MarketPhaseReader : public ::testing::Test {
+class DataLayerInspectorsMarketPhaseReader : public ::testing::Test {
  public:
   using MarshallerType = Marshaller<MarketPhase>;
   using ReaderType = MarketPhaseReader<MarshallerType>;
@@ -23,7 +24,12 @@ class DataLayer_Inspectors_MarketPhaseReader : public ::testing::Test {
 
   auto make_reader() -> ReaderType { return ReaderType{marshaller_}; }
 
-  MarketPhase::Patch patch;
+  static auto make_default_patch() -> MarketPhase::Patch {
+    return MarketPhase::Patch{}
+        .with_phase(MarketPhase::Phase::Closed)
+        .with_start_time("12:00:00")
+        .with_end_time("18:00:00");
+  }
 
  protected:
   auto SetUp() -> void override {
@@ -35,7 +41,93 @@ class DataLayer_Inspectors_MarketPhaseReader : public ::testing::Test {
   MarshallerType marshaller_;
 };
 
-class DataLayer_Inspectors_MarketPhasePatchWriter : public ::testing::Test {
+TEST_F(DataLayerInspectorsMarketPhaseReader, ReadsPhase) {
+  const auto patch =
+      make_default_patch().with_phase(MarketPhase::Phase::Closed);
+  const MarketPhase phase = MarketPhase::create(patch, "LSE");
+
+  EXPECT_CALL(
+      marshaller(),
+      market_phase_type(Eq(Attribute::Phase), Eq(MarketPhase::Phase::Closed)))
+      .Times(1);
+
+  make_reader().read(phase);
+}
+
+TEST_F(DataLayerInspectorsMarketPhaseReader, ReadsStartTime) {
+  const auto patch = make_default_patch().with_start_time("12:00:00");
+  const MarketPhase phase = MarketPhase::create(patch, "LSE");
+
+  EXPECT_CALL(marshaller(), string(Eq(Attribute::StartTime), Eq("12:00:00")))
+      .Times(1);
+
+  make_reader().read(phase);
+}
+
+TEST_F(DataLayerInspectorsMarketPhaseReader, ReadsEndTime) {
+  const auto patch = make_default_patch().with_end_time("18:00:00");
+  const MarketPhase phase = MarketPhase::create(patch, "LSE");
+
+  EXPECT_CALL(marshaller(), string(Eq(Attribute::EndTime), Eq("18:00:00")))
+      .Times(1);
+
+  make_reader().read(phase);
+}
+
+TEST_F(DataLayerInspectorsMarketPhaseReader, DoesNotReadAllowCancelsIfNotSet) {
+  MarketPhase::Patch patch;
+  patch.with_phase(MarketPhase::Phase::Closed)
+      .with_start_time("12:00:00")
+      .with_end_time("18:00:00");
+  const auto phase = MarketPhase::create(patch, "LSE");
+
+  EXPECT_CALL(marshaller(), boolean(Eq(Attribute::AllowCancels), _)).Times(0);
+
+  make_reader().read(phase);
+}
+
+TEST_F(DataLayerInspectorsMarketPhaseReader, ReadsAllowCancels) {
+  const auto patch = make_default_patch().with_allow_cancels(true);
+  const auto phase = MarketPhase::create(patch, "LSE");
+
+  EXPECT_CALL(marshaller(), boolean(Eq(Attribute::AllowCancels), Eq(true)))
+      .Times(1);
+
+  make_reader().read(phase);
+}
+
+TEST_F(DataLayerInspectorsMarketPhaseReader, ReadsVenueID) {
+  const auto patch = make_default_patch();
+  const MarketPhase phase = MarketPhase::create(patch, "LSE");
+
+  EXPECT_CALL(marshaller(), string(Eq(Attribute::VenueId), Eq("LSE"))).Times(1);
+
+  make_reader().read(phase);
+}
+
+TEST_F(DataLayerInspectorsMarketPhaseReader, DoesNotReadEndTimeRangeIfNotSet) {
+  MarketPhase::Patch patch;
+  patch.with_phase(MarketPhase::Phase::Closed)
+      .with_start_time("12:00:00")
+      .with_end_time("18:00:00");
+  const MarketPhase phase = MarketPhase::create(patch, "LSE");
+
+  EXPECT_CALL(marshaller(), int32(Eq(Attribute::EndTimeRange), _)).Times(0);
+
+  make_reader().read(phase);
+}
+
+TEST_F(DataLayerInspectorsMarketPhaseReader, ReadsEndTimeRange) {
+  const auto patch = make_default_patch().with_end_time_range(42);
+  const MarketPhase phase = MarketPhase::create(patch, "LSE");
+
+  EXPECT_CALL(marshaller(), int32(Eq(Attribute::EndTimeRange), Eq(42)))
+      .Times(1);
+
+  make_reader().read(phase);
+}
+
+class DataLayerInspectorsMarketPhasePatchWriter : public ::testing::Test {
  public:
   using UnmarshallerType = Unmarshaller<MarketPhase>;
   using WriterType = MarketPhasePatchWriter<UnmarshallerType>;
@@ -65,117 +157,21 @@ class DataLayer_Inspectors_MarketPhasePatchWriter : public ::testing::Test {
     EXPECT_CALL(unmarshaller(), market_phase_type)
         .Times(AnyNumber())
         .WillRepeatedly(Return(false));
+
+    EXPECT_CALL(unmarshaller(), optional_int32)
+        .Times(AnyNumber())
+        .WillRepeatedly(Return(false));
+
+    EXPECT_CALL(unmarshaller(), optional_boolean)
+        .Times(AnyNumber())
+        .WillRepeatedly(Return(false));
   }
 
  private:
   UnmarshallerType unmarshaller_;
 };
 
-TEST_F(DataLayer_Inspectors_MarketPhaseReader, Read_Phase) {
-  patch.with_phase(MarketPhase::Phase::Closed)
-      .with_start_time("12:00:00")
-      .with_end_time("18:00:00");
-  const MarketPhase phase = MarketPhase::create(patch, "LSE");
-  ASSERT_EQ(phase.phase(), MarketPhase::Phase::Closed);
-
-  auto& expect = EXPECT_CALL(
-      marshaller(),
-      market_phase_type(Eq(Attribute::Phase), Eq(MarketPhase::Phase::Closed)));
-  expect.Times(1);
-
-  make_reader().read(phase);
-}
-
-TEST_F(DataLayer_Inspectors_MarketPhaseReader, Read_StartTime) {
-  patch.with_phase(MarketPhase::Phase::Closed)
-      .with_start_time("12:00:00")
-      .with_end_time("18:00:00");
-  const MarketPhase phase = MarketPhase::create(patch, "LSE");
-  ASSERT_EQ(phase.start_time(), "12:00:00");
-
-  EXPECT_CALL(marshaller(), string(Eq(Attribute::StartTime), Eq("12:00:00")))
-      .Times(1);
-
-  make_reader().read(phase);
-}
-
-TEST_F(DataLayer_Inspectors_MarketPhaseReader, Read_EndTime) {
-  patch.with_phase(MarketPhase::Phase::Closed)
-      .with_start_time("12:00:00")
-      .with_end_time("18:00:00");
-  const MarketPhase phase = MarketPhase::create(patch, "LSE");
-  ASSERT_EQ(phase.end_time(), "18:00:00");
-
-  EXPECT_CALL(marshaller(), string(Eq(Attribute::EndTime), Eq("18:00:00")))
-      .Times(1);
-
-  make_reader().read(phase);
-}
-
-TEST_F(DataLayer_Inspectors_MarketPhaseReader, Read_AllowCancels_Missing) {
-  patch.with_phase(MarketPhase::Phase::Closed)
-      .with_start_time("12:00:00")
-      .with_end_time("18:00:00");
-  const auto phase = MarketPhase::create(patch, "LSE");
-
-  EXPECT_CALL(marshaller(), boolean(Eq(Attribute::AllowCancels), _)).Times(0);
-
-  make_reader().read(phase);
-}
-
-TEST_F(DataLayer_Inspectors_MarketPhaseReader, Read_AllowCancels) {
-  patch.with_phase(MarketPhase::Phase::Closed)
-      .with_start_time("12:00:00")
-      .with_end_time("18:00:00")
-      .with_allow_cancels(true);
-  const auto phase = MarketPhase::create(patch, "LSE");
-  ASSERT_EQ(phase.allow_cancels(), true);
-
-  EXPECT_CALL(marshaller(), boolean(Eq(Attribute::AllowCancels), Eq(true)))
-      .Times(1);
-
-  make_reader().read(phase);
-}
-
-TEST_F(DataLayer_Inspectors_MarketPhaseReader, Read_VenueID) {
-  patch.with_phase(MarketPhase::Phase::Closed)
-      .with_start_time("12:00:00")
-      .with_end_time("18:00:00");
-  const MarketPhase phase = MarketPhase::create(patch, "LSE");
-  ASSERT_EQ(phase.venue_id(), "LSE");
-
-  EXPECT_CALL(marshaller(), string(Eq(Attribute::VenueId), Eq("LSE"))).Times(1);
-
-  make_reader().read(phase);
-}
-
-TEST_F(DataLayer_Inspectors_MarketPhaseReader, Read_EndTimeRange_Missing) {
-  patch.with_phase(MarketPhase::Phase::Closed)
-      .with_start_time("12:00:00")
-      .with_end_time("18:00:00");
-  const MarketPhase phase = MarketPhase::create(patch, "LSE");
-  ASSERT_EQ(phase.end_time_range(), std::nullopt);
-
-  EXPECT_CALL(marshaller(), int32(Eq(Attribute::EndTimeRange), _)).Times(0);
-
-  make_reader().read(phase);
-}
-
-TEST_F(DataLayer_Inspectors_MarketPhaseReader, Read_EndTimeRange_Present) {
-  patch.with_phase(MarketPhase::Phase::Closed)
-      .with_start_time("12:00:00")
-      .with_end_time("18:00:00")
-      .with_end_time_range(42);
-  const MarketPhase phase = MarketPhase::create(patch, "LSE");
-  ASSERT_THAT(phase.end_time_range(), Optional(Eq(42)));
-
-  EXPECT_CALL(marshaller(), int32(Eq(Attribute::EndTimeRange), Eq(42)))
-      .Times(1);
-
-  make_reader().read(phase);
-}
-
-TEST_F(DataLayer_Inspectors_MarketPhasePatchWriter, Write_Phase) {
+TEST_F(DataLayerInspectorsMarketPhasePatchWriter, WritesPhase) {
   EXPECT_CALL(unmarshaller(), market_phase_type(Eq(Attribute::Phase), _))
       .WillOnce(
           DoAll(SetArgReferee<1>(MarketPhase::Phase::Closed), Return(true)));
@@ -185,7 +181,7 @@ TEST_F(DataLayer_Inspectors_MarketPhasePatchWriter, Write_Phase) {
   EXPECT_EQ(patch.phase(), MarketPhase::Phase::Closed);
 }
 
-TEST_F(DataLayer_Inspectors_MarketPhasePatchWriter, Write_StartTime) {
+TEST_F(DataLayerInspectorsMarketPhasePatchWriter, WritesStartTime) {
   EXPECT_CALL(unmarshaller(), string(Eq(Attribute::StartTime), _))
       .WillOnce(DoAll(SetArgReferee<1>("12:09:20"), Return(true)));
 
@@ -194,7 +190,7 @@ TEST_F(DataLayer_Inspectors_MarketPhasePatchWriter, Write_StartTime) {
   EXPECT_EQ(patch.start_time(), "12:09:20");
 }
 
-TEST_F(DataLayer_Inspectors_MarketPhasePatchWriter, Write_EndTime) {
+TEST_F(DataLayerInspectorsMarketPhasePatchWriter, WritesEndTime) {
   EXPECT_CALL(unmarshaller(), string(Eq(Attribute::EndTime), _))
       .WillOnce(DoAll(SetArgReferee<1>("21:20:12"), Return(true)));
 
@@ -203,22 +199,40 @@ TEST_F(DataLayer_Inspectors_MarketPhasePatchWriter, Write_EndTime) {
   EXPECT_EQ(patch.end_time(), "21:20:12");
 }
 
-TEST_F(DataLayer_Inspectors_MarketPhasePatchWriter, Write_AllowCancels) {
-  EXPECT_CALL(unmarshaller(), boolean(Eq(Attribute::AllowCancels), _))
+TEST_F(DataLayerInspectorsMarketPhasePatchWriter, WritesAllowCancelsNull) {
+  EXPECT_CALL(unmarshaller(), optional_boolean(Eq(Attribute::AllowCancels), _))
+      .WillOnce(DoAll(SetArgReferee<1>(std::nullopt), Return(true)));
+
+  make_writer().write(patch);
+
+  ASSERT_THAT(patch.allow_cancels(), IsPatchFieldWithValue(std::nullopt));
+}
+
+TEST_F(DataLayerInspectorsMarketPhasePatchWriter, WritesAllowCancels) {
+  EXPECT_CALL(unmarshaller(), optional_boolean(Eq(Attribute::AllowCancels), _))
       .WillOnce(DoAll(SetArgReferee<1>(true), Return(true)));
 
   make_writer().write(patch);
 
-  EXPECT_EQ(patch.allow_cancels(), true);
+  ASSERT_THAT(patch.allow_cancels(), IsPatchFieldWithValue(Optional(true)));
 }
 
-TEST_F(DataLayer_Inspectors_MarketPhasePatchWriter, Write_EndTimeRange) {
-  EXPECT_CALL(unmarshaller(), int32(Eq(Attribute::EndTimeRange), _))
+TEST_F(DataLayerInspectorsMarketPhasePatchWriter, WritesEndTimeRangeNull) {
+  EXPECT_CALL(unmarshaller(), optional_int32(Eq(Attribute::EndTimeRange), _))
+      .WillOnce(DoAll(SetArgReferee<1>(std::nullopt), Return(true)));
+
+  make_writer().write(patch);
+
+  ASSERT_THAT(patch.end_time_range(), IsPatchFieldWithValue(std::nullopt));
+}
+
+TEST_F(DataLayerInspectorsMarketPhasePatchWriter, WritesEndTimeRange) {
+  EXPECT_CALL(unmarshaller(), optional_int32(Eq(Attribute::EndTimeRange), _))
       .WillOnce(DoAll(SetArgReferee<1>(42), Return(true)));
 
   make_writer().write(patch);
 
-  EXPECT_EQ(patch.end_time_range(), 42);
+  ASSERT_THAT(patch.end_time_range(), IsPatchFieldWithValue(Optional(42)));
 }
 
 // NOLINTEND(*magic-numbers*)

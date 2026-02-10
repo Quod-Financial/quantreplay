@@ -9,6 +9,7 @@
 #include "data_layer/api/models/market_phase.hpp"
 #include "data_layer/api/models/venue.hpp"
 #include "ih/marshalling/json/venue.hpp"
+#include "tests/test_utils/matchers.hpp"
 
 namespace simulator::http::json::test {
 namespace {
@@ -368,6 +369,15 @@ struct HttpJsonVenueUnmarshaller : public ::testing::Test {
   data_layer::Venue::Patch patch;
 };
 
+TEST_F(HttpJsonVenueUnmarshaller, ThrowsExceptionOnUnmarshallingVenueIDNull) {
+  constexpr std::string_view json{R"({"id":null})"};
+
+  ASSERT_THAT(
+      [&] { VenueUnmarshaller::unmarshall(json, patch); },
+      ThrowsMessage<std::runtime_error>(
+          "unexpected data type received for `id', string is expected"));
+}
+
 TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsVenueID) {
   constexpr std::string_view json{R"({"id":"VenueID"})"};
 
@@ -375,11 +385,25 @@ TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsVenueID) {
   EXPECT_THAT(patch.venue_id(), Optional(Eq("VenueID")));
 }
 
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsNameNull) {
+  constexpr std::string_view json{R"({"name":null})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.name(), IsPatchFieldWithValue(std::nullopt));
+}
+
 TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsName) {
   constexpr std::string_view json{R"({"name":"VenueName"})"};
 
   VenueUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.name(), Optional(Eq("VenueName")));
+  EXPECT_THAT(patch.name(), IsPatchFieldWithValue(Optional(Eq("VenueName"))));
+}
+
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsEngineTypeNull) {
+  constexpr std::string_view json{R"({"engineType":null})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.engine_type(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsEngineType) {
@@ -387,151 +411,329 @@ TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsEngineType) {
   constexpr std::string_view json{R"({"engineType":"Quoting"})"};
 
   VenueUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.engine_type(), Optional(Eq(EngineType::Quoting)));
+  EXPECT_THAT(patch.engine_type(),
+              IsPatchFieldWithValue(Optional(Eq(EngineType::Quoting))));
+}
+
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsSupportTifIocNull) {
+  constexpr std::string_view json{R"({"supportTifIoc":null})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.support_tif_ioc_flag(),
+              IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsSupportTifIoc) {
   constexpr std::string_view json{R"({"supportTifIoc":true})"};
 
   VenueUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.support_tif_ioc_flag(), Optional(Eq(true)));
+  EXPECT_THAT(patch.support_tif_ioc_flag(),
+              IsPatchFieldWithValue(Optional(Eq(true))));
+}
+
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsSupportTifFokNull) {
+  constexpr std::string_view json{R"({"supportTifFok":null})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.support_tif_fok_flag(),
+              IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsSupportTifFok) {
   constexpr std::string_view json{R"({"supportTifFok":false})"};
 
   VenueUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.support_tif_fok_flag(), Optional(Eq(false)));
+  EXPECT_THAT(patch.support_tif_fok_flag(),
+              IsPatchFieldWithValue(Optional(Eq(false))));
+}
+
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsSupportTifDayNull) {
+  constexpr std::string_view json{R"({"supportTifDay":null})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.support_tif_day_flag(),
+              IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsSupportTifDay) {
   constexpr std::string_view json{R"({"supportTifDay":true})"};
 
   VenueUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.support_tif_day_flag(), Optional(Eq(true)));
+  EXPECT_THAT(patch.support_tif_day_flag(),
+              IsPatchFieldWithValue(Optional(Eq(true))));
+}
+
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsIncludeOwnOrdersNull) {
+  constexpr std::string_view json{R"({"includeOwnOrders":null})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.include_own_orders_flag(),
+              IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsIncludeOwnOrders) {
   constexpr std::string_view json{R"({"includeOwnOrders":false})"};
 
   VenueUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.include_own_orders_flag(), Optional(Eq(false)));
+  EXPECT_THAT(patch.include_own_orders_flag(),
+              IsPatchFieldWithValue(Optional(Eq(false))));
+}
+
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsRestPortNull) {
+  constexpr std::string_view json{R"({"restPort":null})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.rest_port(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsRestPort) {
   constexpr std::string_view json{R"({"restPort":42})"};
 
   VenueUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.rest_port(), Optional(Eq(42)));
+  EXPECT_THAT(patch.rest_port(), IsPatchFieldWithValue(Optional(Eq(42))));
+}
+
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsOrdersOnStartupNull) {
+  constexpr std::string_view json{R"({"orderOnStartup":null})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.orders_on_startup_flag(),
+              IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsOrdersOnStartup) {
   constexpr std::string_view json{R"({"orderOnStartup":true})"};
 
   VenueUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.orders_on_startup_flag(), Optional(Eq(true)));
+  EXPECT_THAT(patch.orders_on_startup_flag(),
+              IsPatchFieldWithValue(Optional(Eq(true))));
+}
+
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsRandomPartiesCountNull) {
+  constexpr std::string_view json{R"({"randomPartyCount":null})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.random_parties_count(),
+              IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsRandomPartiesCount) {
   constexpr std::string_view json{R"({"randomPartyCount":42})"};
 
   VenueUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.random_parties_count(), Optional(Eq(42)));
+  EXPECT_THAT(patch.random_parties_count(),
+              IsPatchFieldWithValue(Optional(Eq(42))));
+}
+
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsTnsEnabledNull) {
+  constexpr std::string_view json{R"({"timeAndSalesEnabled":null})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.tns_enabled_flag(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsTnsEnabled) {
   constexpr std::string_view json{R"({"timeAndSalesEnabled":true})"};
 
   VenueUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.tns_enabled_flag(), Optional(Eq(true)));
+  EXPECT_THAT(patch.tns_enabled_flag(),
+              IsPatchFieldWithValue(Optional(Eq(true))));
+}
+
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsTnsQtyEnabledNull) {
+  constexpr std::string_view json{R"({"timeAndSalesQuantityEnabled":null})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.tns_qty_enabled_flag(),
+              IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsTnsQtyEnabled) {
   constexpr std::string_view json{R"({"timeAndSalesQuantityEnabled":true})"};
 
   VenueUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.tns_qty_enabled_flag(), Optional(Eq(true)));
+  EXPECT_THAT(patch.tns_qty_enabled_flag(),
+              IsPatchFieldWithValue(Optional(Eq(true))));
+}
+
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsTnsSideEnabledNull) {
+  constexpr std::string_view json{R"({"timeAndSalesSideEnabled":null})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.tns_side_enabled_flag(),
+              IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsTnsSideEnabled) {
   constexpr std::string_view json{R"({"timeAndSalesSideEnabled":true})"};
 
   VenueUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.tns_side_enabled_flag(), Optional(Eq(true)));
+  EXPECT_THAT(patch.tns_side_enabled_flag(),
+              IsPatchFieldWithValue(Optional(Eq(true))));
+}
+
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsTnsPartiesEnabledNull) {
+  constexpr std::string_view json{R"({"timeAndSalesPartiesEnabled":null})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.tns_parties_enabled_flag(),
+              IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsTnsPartiesEnabled) {
   constexpr std::string_view json{R"({"timeAndSalesPartiesEnabled":false})"};
 
   VenueUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.tns_parties_enabled_flag(), Optional(Eq(false)));
+  EXPECT_THAT(patch.tns_parties_enabled_flag(),
+              IsPatchFieldWithValue(Optional(Eq(false))));
+}
+
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsTimezoneNull) {
+  constexpr std::string_view json{R"({"timezone":null})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.timezone(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsTimezone) {
   constexpr std::string_view json{R"({"timezone":"GMT"})"};
 
   VenueUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.timezone(), Optional(Eq("GMT")));
+  EXPECT_THAT(patch.timezone(), IsPatchFieldWithValue(Optional(Eq("GMT"))));
+}
+
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsCancelOnDisconnectNull) {
+  constexpr std::string_view json{R"({"cancelOnDisconnect":null})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.cancel_on_disconnect_flag(),
+              IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsCancelOnDisconnect) {
   constexpr std::string_view json{R"({"cancelOnDisconnect":true})"};
 
   VenueUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.cancel_on_disconnect_flag(), Optional(Eq(true)));
+  EXPECT_THAT(patch.cancel_on_disconnect_flag(),
+              IsPatchFieldWithValue(Optional(Eq(true))));
+}
+
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsPersistenceEnabledNull) {
+  constexpr std::string_view json{R"({"persistenceEnabled":null})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.persistence_enabled_flag(),
+              IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsPersistenceEnabled) {
   constexpr std::string_view json{R"({"persistenceEnabled":true})"};
 
   VenueUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.persistence_enabled_flag(), Optional(Eq(true)));
+  EXPECT_THAT(patch.persistence_enabled_flag(),
+              IsPatchFieldWithValue(Optional(Eq(true))));
+}
+
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsPersistenceFilePathNull) {
+  constexpr std::string_view json{R"({"persistenceFilePath":null})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.persistence_file_path(),
+              IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsPersistenceFilePath) {
   constexpr std::string_view json{R"({"persistenceFilePath":"/file.csv"})"};
 
   VenueUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.persistence_file_path(), Optional(Eq("/file.csv")));
+  EXPECT_THAT(patch.persistence_file_path(),
+              IsPatchFieldWithValue(Optional(Eq("/file.csv"))));
 }
 
-TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsMarketPhases_KeyNotExist) {
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsMarketPhasesKeyNotExist) {
   constexpr std::string_view json{"{}"};
 
   VenueUnmarshaller::unmarshall(json, patch);
   EXPECT_FALSE(patch.market_phases().has_value());
 }
 
-TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsMarketPhases_NotAnArray) {
+TEST_F(HttpJsonVenueUnmarshaller,
+       ThrowsExceptionOnUnmarshallingMarketPhasesNotAnArray) {
   constexpr std::string_view json{R"({"phases":{}})"};
 
   EXPECT_THROW(VenueUnmarshaller::unmarshall(json, patch), std::runtime_error);
 }
 
-TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsMarketPhases_InvalidElemType) {
+TEST_F(HttpJsonVenueUnmarshaller,
+       ThrowsExceptionOnUnmarshallingMarketPhasesInvalidElemType) {
   constexpr std::string_view json{R"({"phases":[5, 1, 2]})"};
 
   EXPECT_THROW(VenueUnmarshaller::unmarshall(json, patch), std::runtime_error);
 }
 
-TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsMarketPhasesAllowCancelsIsFalse) {
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsMarketPhasesEmptyArray) {
+  constexpr std::string_view json{R"({"phases":[]})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+
+  const auto& phases = patch.market_phases();
+  ASSERT_TRUE(phases.has_value());
+  ASSERT_TRUE(phases->empty());
+}
+
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsMarketPhasesAllowCancelsNull) {
+  constexpr std::string_view json{R"({"phases":[{"allowCancels":null}]})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+
+  const auto& phases = patch.market_phases();
+  ASSERT_EQ(phases->size(), 1);
+  ASSERT_THAT(phases->at(0).allow_cancels(),
+              IsPatchFieldWithValue(std::nullopt));
+}
+
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsMarketPhasesAllowCancelsFalse) {
   constexpr std::string_view json{R"({"phases":[{"allowCancels":false}]})"};
 
   VenueUnmarshaller::unmarshall(json, patch);
 
   const auto& phases = patch.market_phases();
   ASSERT_EQ(phases->size(), 1);
-  ASSERT_EQ(phases->at(0).allow_cancels(), false);
+  ASSERT_THAT(phases->at(0).allow_cancels(),
+              IsPatchFieldWithValue(Optional(false)));
 }
 
-TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsMarketPhasesAllowCancelsIsTrue) {
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsMarketPhasesAllowCancelsTrue) {
   constexpr std::string_view json{R"({"phases":[{"allowCancels":true}]})"};
 
   VenueUnmarshaller::unmarshall(json, patch);
 
   const auto& phases = patch.market_phases();
   ASSERT_EQ(phases->size(), 1);
-  ASSERT_EQ(phases->at(0).allow_cancels(), true);
+  ASSERT_THAT(phases->at(0).allow_cancels(),
+              IsPatchFieldWithValue(Optional(true)));
+}
+
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsMarketPhasesEndTimeRangeNull) {
+  constexpr std::string_view json{R"({"phases":[{"endTimeRange":null}]})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+
+  const auto& phases = patch.market_phases();
+  ASSERT_EQ(phases->size(), 1);
+  ASSERT_THAT(phases->at(0).end_time_range(),
+              IsPatchFieldWithValue(std::nullopt));
+}
+
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsMarketPhasesEndTimeRange) {
+  constexpr std::string_view json{R"({"phases":[{"endTimeRange":42}]})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+
+  const auto& phases = patch.market_phases();
+  ASSERT_EQ(phases->size(), 1);
+  ASSERT_THAT(phases->at(0).end_time_range(),
+              IsPatchFieldWithValue(Optional(42)));
 }
 
 TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsMarketPhases) {

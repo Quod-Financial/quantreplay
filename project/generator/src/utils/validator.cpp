@@ -19,7 +19,8 @@ auto Validator::is_acceptable(const data_layer::Listing& listing) -> bool {
     return false;
   }
 
-  if (!listing.enabled_flag().value_or(constant::DefaultListingEnabledFlag)) {
+  if (!listing.enabled_flag().value_or(
+          data_layer::Listing::DefaultEnabledFlag)) {
     log::info(
         "listing '{}' (id: {}) can not be accepted for random orders "
         "generation: listing is disabled",
@@ -41,7 +42,7 @@ auto Validator::is_acceptable_for_random_generation(
   const auto& symbol = listing.symbol();
 
   if (!listing.random_orders_enabled_flag().value_or(
-          constant::DefaultListingRandomOrdersEnabled)) {
+          data_layer::Listing::DefaultRandomOrdersEnabledFlag)) {
     log::info(
         "listing '{}' (id: {}) can not be accepted for random orders "
         "generation: random orders generation is disabled for the listing",

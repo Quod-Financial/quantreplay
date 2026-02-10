@@ -96,13 +96,13 @@ inline auto MarketPhasePatchWriter<Unmarshaller>::write(
     patch.with_end_time(std::move(end_time));
   }
 
-  bool allow_cancels = false;
+  std::optional<bool> allow_cancels;
   static_assert(can_unmarshall_v<decltype(allow_cancels)>);
   if (unmarshaller_(Attribute::AllowCancels, allow_cancels)) {
     patch.with_allow_cancels(allow_cancels);
   }
 
-  std::int32_t end_time_range{};
+  std::optional<std::int32_t> end_time_range;
   static_assert(can_unmarshall_v<decltype(end_time_range)>);
   if (unmarshaller_(Attribute::EndTimeRange, end_time_range)) {
     patch.with_end_time_range(end_time_range);

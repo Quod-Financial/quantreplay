@@ -7,6 +7,7 @@
 
 #include "data_layer/api/models/price_seed.hpp"
 #include "ih/marshalling/json/price_seed.hpp"
+#include "tests/test_utils/matchers.hpp"
 
 namespace simulator::http::json::test {
 namespace {
@@ -200,12 +201,28 @@ struct HttpJsonPriceSeedUnmarshaller : public ::testing::Test {
   data_layer::PriceSeed::Patch patch;
 };
 
+TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsSymbolNull) {
+  constexpr std::string_view json = R"({"symbol":null})";
+
+  PriceSeedUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.symbol(), IsPatchFieldWithValue(std::nullopt));
+}
+
 TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsSymbol) {
   constexpr std::string_view json = R"({"symbol":"AAPL"})";
 
   PriceSeedUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.symbol(), Optional(Eq("AAPL")));
+  ASSERT_THAT(patch.symbol(), IsPatchFieldWithValue(Optional(Eq("AAPL"))));
+}
+
+TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsSecurityTypeNull) {
+  constexpr std::string_view json = R"({"securityType":null})";
+
+  PriceSeedUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.security_type(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsSecurityType) {
@@ -213,7 +230,16 @@ TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsSecurityType) {
 
   PriceSeedUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.security_type(), Optional(Eq("Equity")));
+  ASSERT_THAT(patch.security_type(),
+              IsPatchFieldWithValue(Optional(Eq("Equity"))));
+}
+
+TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsPriceCurrencyNull) {
+  constexpr std::string_view json = R"({"priceCurrency":null})";
+
+  PriceSeedUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.price_currency(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsPriceCurrency) {
@@ -221,7 +247,16 @@ TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsPriceCurrency) {
 
   PriceSeedUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.price_currency(), Optional(Eq("USD")));
+  ASSERT_THAT(patch.price_currency(),
+              IsPatchFieldWithValue(Optional(Eq("USD"))));
+}
+
+TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsSecurityIDNull) {
+  constexpr std::string_view json = R"({"securityId":null})";
+
+  PriceSeedUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.security_id(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsSecurityID) {
@@ -229,7 +264,16 @@ TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsSecurityID) {
 
   PriceSeedUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.security_id(), Optional(Eq("IsinNumber")));
+  ASSERT_THAT(patch.security_id(),
+              IsPatchFieldWithValue(Optional(Eq("IsinNumber"))));
+}
+
+TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsSecurityIDSourceNull) {
+  constexpr std::string_view json = R"({"securityIdSource":null})";
+
+  PriceSeedUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.security_id_source(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsSecurityIDSource) {
@@ -237,7 +281,16 @@ TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsSecurityIDSource) {
 
   PriceSeedUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.security_id_source(), Optional(Eq("ISIN")));
+  ASSERT_THAT(patch.security_id_source(),
+              IsPatchFieldWithValue(Optional(Eq("ISIN"))));
+}
+
+TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsInstrumentSymbolNull) {
+  constexpr std::string_view json = R"({"instrumentSymbol":null})";
+
+  PriceSeedUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.instrument_symbol(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsInstrumentSymbol) {
@@ -245,7 +298,16 @@ TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsInstrumentSymbol) {
 
   PriceSeedUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.instrument_symbol(), Optional(Eq("AAPL")));
+  ASSERT_THAT(patch.instrument_symbol(),
+              IsPatchFieldWithValue(Optional(Eq("AAPL"))));
+}
+
+TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsMidPriceNull) {
+  constexpr std::string_view json = R"({"midPrice":null})";
+
+  PriceSeedUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.mid_price(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsMidPrice) {
@@ -253,7 +315,16 @@ TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsMidPrice) {
 
   PriceSeedUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.mid_price(), Optional(DoubleEq(42.42)));
+  ASSERT_THAT(patch.mid_price(),
+              IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
+}
+
+TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsBidPriceNull) {
+  constexpr std::string_view json = R"({"bidPrice":null})";
+
+  PriceSeedUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.bid_price(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsBidPrice) {
@@ -261,7 +332,16 @@ TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsBidPrice) {
 
   PriceSeedUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.bid_price(), Optional(DoubleEq(42.42)));
+  ASSERT_THAT(patch.bid_price(),
+              IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
+}
+
+TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsOfferPriceNull) {
+  constexpr std::string_view json = R"({"offerPrice":null})";
+
+  PriceSeedUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.offer_price(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsOfferPrice) {
@@ -269,7 +349,16 @@ TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsOfferPrice) {
 
   PriceSeedUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.offer_price(), Optional(DoubleEq(42.42)));
+  ASSERT_THAT(patch.offer_price(),
+              IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
+}
+
+TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsLastUpdateNull) {
+  constexpr std::string_view json = R"({"lastUpdate":null})";
+
+  PriceSeedUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.last_update(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsLastUpdate) {
@@ -277,7 +366,8 @@ TEST_F(HttpJsonPriceSeedUnmarshaller, UnmarshallsLastUpdate) {
 
   PriceSeedUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.last_update(), Optional(Eq("2023-09-01")));
+  ASSERT_THAT(patch.last_update(),
+              IsPatchFieldWithValue(Optional(Eq("2023-09-01"))));
 }
 
 }  // namespace

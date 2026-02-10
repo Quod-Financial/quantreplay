@@ -1,3 +1,4 @@
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <rapidjson/document.h>
 
@@ -6,9 +7,12 @@
 #include <string>
 
 #include "ih/marshalling/json/detail/unmarshaller.hpp"
+#include "tests/test_utils/utils.hpp"
 
 namespace simulator::http::json::test {
 namespace {
+
+using namespace ::testing;
 
 class HttpJsonUnmarshaller : public ::testing::Test {
  public:
@@ -27,9 +31,18 @@ class HttpJsonUnmarshaller : public ::testing::Test {
     doc.AddMember(json_key, json_value, doc.GetAllocator());
   }
 
-  auto add_member(const char* key,
-                  const std::string& value,
-                  rapidjson::Document& doc) -> void {
+  static auto add_null_member(const char* key, rapidjson::Document& doc)
+      -> void {
+    if (!doc.IsObject()) {
+      doc.SetObject();
+    }
+    rapidjson::Value json_key{key, doc.GetAllocator()};
+    doc.AddMember(json_key, rapidjson::Value{}, doc.GetAllocator());
+  }
+
+  static auto add_member(const char* key,
+                         const std::string& value,
+                         rapidjson::Document& doc) -> void {
     if (!doc.IsObject()) {
       doc.SetObject();
     }
@@ -58,7 +71,8 @@ TEST_F(HttpJsonUnmarshaller, CreatesWithObjectValue) {
 
 TEST_F(HttpJsonUnmarshaller,
        ThrowsExceptionWhenUnmarshallingBadAttributeValue) {
-  constexpr auto bad_attribute = static_cast<Venue::Attribute>(-1);
+  constexpr auto bad_attribute =
+      http::test::util::invalid_enum_value<Venue::Attribute>();
 
   add_member(Key, true, document);
 
@@ -77,6 +91,26 @@ TEST_F(HttpJsonUnmarshaller,
   bool decoded{};
 
   ASSERT_THROW(unmarshaller(Attribute, decoded), std::runtime_error);
+}
+
+TEST_F(HttpJsonUnmarshaller, UnmarshallsOptionalBooleanNullByAttribute) {
+  add_null_member(Key, document);
+
+  Unmarshaller unmarshaller{document};
+  std::optional<bool> decoded;
+
+  ASSERT_TRUE(unmarshaller(Attribute, decoded));
+  ASSERT_EQ(decoded, std::nullopt);
+}
+
+TEST_F(HttpJsonUnmarshaller, UnmarshallsOptionalBooleanByAttribute) {
+  add_member(Key, true, document);
+
+  Unmarshaller unmarshaller{document};
+  std::optional<bool> decoded;
+
+  ASSERT_TRUE(unmarshaller(Attribute, decoded));
+  ASSERT_THAT(decoded, Optional(true));
 }
 
 TEST_F(HttpJsonUnmarshaller, UnmarshallsBooleanByKey) {
@@ -131,6 +165,27 @@ TEST_F(HttpJsonUnmarshaller, UnmarshallsSingleCharacter) {
   ASSERT_EQ(decoded, ';');
 }
 
+TEST_F(HttpJsonUnmarshaller, UnmarshallsOptionalSingleCharacterNull) {
+  add_null_member(Key, document);
+
+  Unmarshaller unmarshaller{document};
+  std::optional<char> decoded;
+
+  ASSERT_TRUE(unmarshaller(Attribute, decoded));
+  ASSERT_EQ(decoded, std::nullopt);
+}
+
+TEST_F(HttpJsonUnmarshaller, UnmarshallsOptionalSingleCharacter) {
+  const std::string value = ";";
+  add_member(Key, value, document);
+
+  Unmarshaller unmarshaller{document};
+  std::optional<char> decoded;
+
+  ASSERT_TRUE(unmarshaller(Attribute, decoded));
+  ASSERT_THAT(decoded, Optional(';'));
+}
+
 TEST_F(HttpJsonUnmarshaller, ThrowsExceptionWhenUnmarshallingStringAsDouble) {
   const std::string value = "bad_type";
   add_member(Key, value, document);
@@ -152,6 +207,17 @@ TEST_F(HttpJsonUnmarshaller, UnmarshallsIntegerAsDouble) {
   ASSERT_DOUBLE_EQ(decoded, 42.0);
 }
 
+TEST_F(HttpJsonUnmarshaller, UnmarshallsOptionalIntegerAsDouble) {
+  add_member(Key, 42, document);  // NOLINT
+  ASSERT_TRUE(document[Key].IsInt64());
+
+  Unmarshaller unmarshaller{document};
+  std::optional<double> decoded;
+
+  ASSERT_TRUE(unmarshaller(Attribute, decoded));
+  ASSERT_THAT(decoded, Optional(DoubleEq(42.0)));
+}
+
 TEST_F(HttpJsonUnmarshaller, UnmarshallsUnsignedIntegerAsDouble) {
   add_member(Key, 42U, document);  // NOLINT
 
@@ -162,6 +228,16 @@ TEST_F(HttpJsonUnmarshaller, UnmarshallsUnsignedIntegerAsDouble) {
   ASSERT_DOUBLE_EQ(decoded, 42.0);
 }
 
+TEST_F(HttpJsonUnmarshaller, UnmarshallsOptionalUnsignedIntegerAsDouble) {
+  add_member(Key, 42U, document);  // NOLINT
+
+  Unmarshaller unmarshaller{document};
+  std::optional<double> decoded;
+
+  ASSERT_TRUE(unmarshaller(Attribute, decoded));
+  ASSERT_THAT(decoded, Optional(DoubleEq(42.0)));
+}
+
 TEST_F(HttpJsonUnmarshaller, UnmarshallsDouble) {
   add_member(Key, 42.42, document);  // NOLINT
 
@@ -170,6 +246,26 @@ TEST_F(HttpJsonUnmarshaller, UnmarshallsDouble) {
 
   ASSERT_TRUE(unmarshaller(Attribute, decoded));
   ASSERT_DOUBLE_EQ(decoded, 42.42);
+}
+
+TEST_F(HttpJsonUnmarshaller, UnmarshallsOptionalDoubleNull) {
+  add_null_member(Key, document);
+
+  Unmarshaller unmarshaller{document};
+  std::optional<double> decoded;
+
+  ASSERT_TRUE(unmarshaller(Attribute, decoded));
+  ASSERT_EQ(decoded, std::nullopt);
+}
+
+TEST_F(HttpJsonUnmarshaller, UnmarshallsOptionalDouble) {
+  add_member(Key, 42.42, document);  // NOLINT
+
+  Unmarshaller unmarshaller{document};
+  std::optional<double> decoded;
+
+  ASSERT_TRUE(unmarshaller(Attribute, decoded));
+  ASSERT_THAT(decoded, Optional(DoubleEq(42.42)));
 }
 
 TEST_F(HttpJsonUnmarshaller, ThrowsExceptionWhenUnmarshallingBoolAsString) {
@@ -190,6 +286,27 @@ TEST_F(HttpJsonUnmarshaller, UnmarshallsString) {
 
   ASSERT_TRUE(unmarshaller(Attribute, decoded));
   ASSERT_EQ(decoded, value);
+}
+
+TEST_F(HttpJsonUnmarshaller, UnmarshallsOptionalStringNull) {
+  add_null_member(Key, document);
+
+  Unmarshaller unmarshaller{document};
+  std::optional<std::string> decoded;
+
+  ASSERT_TRUE(unmarshaller(Attribute, decoded));
+  ASSERT_EQ(decoded, std::nullopt);
+}
+
+TEST_F(HttpJsonUnmarshaller, UnmarshallsOptionalString) {
+  const std::string value = "string_value";
+  add_member(Key, value, document);
+
+  Unmarshaller unmarshaller{document};
+  std::optional<std::string> decoded;
+
+  ASSERT_TRUE(unmarshaller(Attribute, decoded));
+  ASSERT_THAT(decoded, Optional(value));
 }
 
 TEST_F(
@@ -215,6 +332,27 @@ TEST_F(HttpJsonUnmarshaller, Unmarshalls32BitSingedInteger) {
   ASSERT_EQ(decoded, -42);
 }
 
+TEST_F(HttpJsonUnmarshaller, UnmarshallsOptional32BitSingedIntegerNull) {
+  add_null_member(Key, document);  // NOLINT
+
+  Unmarshaller unmarshaller{document};
+  std::optional<std::int32_t> decoded;
+
+  ASSERT_TRUE(unmarshaller(Attribute, decoded));
+  ASSERT_EQ(decoded, std::nullopt);
+}
+
+TEST_F(HttpJsonUnmarshaller, UnmarshallsOptional32BitSingedInteger) {
+  add_member(Key, -42, document);  // NOLINT
+  ASSERT_TRUE(document[Key].IsInt64());
+
+  Unmarshaller unmarshaller{document};
+  std::optional<std::int32_t> decoded;
+
+  ASSERT_TRUE(unmarshaller(Attribute, decoded));
+  ASSERT_THAT(decoded, Optional(-42));
+}
+
 TEST_F(HttpJsonUnmarshaller,
        ThrowsExceptionWhenUnmarshallingSingedIntegerAsUnsigned) {
   add_member(Key, -1, document);
@@ -222,6 +360,17 @@ TEST_F(HttpJsonUnmarshaller,
 
   Unmarshaller unmarshaller{document};
   std::uint32_t decoded{};
+
+  ASSERT_THROW(unmarshaller(Attribute, decoded), std::runtime_error);
+}
+
+TEST_F(HttpJsonUnmarshaller,
+       ThrowsExceptionWhenUnmarshallingSingedIntegerAsOptionalUnsigned) {
+  add_member(Key, -1, document);
+  ASSERT_FALSE(document[Key].IsUint64());
+
+  Unmarshaller unmarshaller{document};
+  std::optional<std::uint32_t> decoded;
 
   ASSERT_THROW(unmarshaller(Attribute, decoded), std::runtime_error);
 }
@@ -235,6 +384,59 @@ TEST_F(HttpJsonUnmarshaller, Unmarshalls64BitUnsignedInteger) {
 
   ASSERT_TRUE(unmarshaller(Attribute, decoded));
   ASSERT_EQ(decoded, value);
+}
+
+TEST_F(HttpJsonUnmarshaller, UnmarshallsOptional64BitUnsignedIntegerNull) {
+  add_null_member(Key, document);
+
+  Unmarshaller unmarshaller{document};
+  std::optional<std::uint64_t> decoded;
+
+  ASSERT_TRUE(unmarshaller(Attribute, decoded));
+  ASSERT_EQ(decoded, std::nullopt);
+}
+
+TEST_F(HttpJsonUnmarshaller, UnmarshallsOptional64BitUnsignedInteger) {
+  constexpr auto value = std::numeric_limits<std::uint64_t>::max();
+  add_member(Key, value, document);  // NOLINT
+
+  Unmarshaller unmarshaller{document};
+  std::optional<std::uint64_t> decoded;
+
+  ASSERT_TRUE(unmarshaller(Attribute, decoded));
+  ASSERT_THAT(decoded, Optional(value));
+}
+
+TEST_F(HttpJsonUnmarshaller, Unmarshalls32BitUnsignedInteger) {
+  constexpr auto value = std::numeric_limits<std::uint32_t>::max();
+  add_member(Key, value, document);  // NOLINT
+
+  Unmarshaller unmarshaller{document};
+  std::uint32_t decoded{};
+
+  ASSERT_TRUE(unmarshaller(Attribute, decoded));
+  ASSERT_EQ(decoded, value);
+}
+
+TEST_F(HttpJsonUnmarshaller, UnmarshallsOptional32BitUnsignedIntegerNull) {
+  add_null_member(Key, document);
+
+  Unmarshaller unmarshaller{document};
+  std::optional<std::uint32_t> decoded;
+
+  ASSERT_TRUE(unmarshaller(Attribute, decoded));
+  ASSERT_EQ(decoded, std::nullopt);
+}
+
+TEST_F(HttpJsonUnmarshaller, UnmarshallsOptional32BitUnsignedInteger) {
+  constexpr auto value = std::numeric_limits<std::uint32_t>::max();
+  add_member(Key, value, document);  // NOLINT
+
+  Unmarshaller unmarshaller{document};
+  std::optional<std::uint32_t> decoded;
+
+  ASSERT_TRUE(unmarshaller(Attribute, decoded));
+  ASSERT_THAT(decoded, Optional(value));
 }
 
 TEST_F(HttpJsonUnmarshaller, ThrowsExceptionWhenUnmarshallingBoolAsEnum) {
@@ -266,6 +468,27 @@ TEST_F(HttpJsonUnmarshaller, UnmarshallsEnumFromString) {
 
   ASSERT_TRUE(unmarshaller(Attribute, decoded));
   ASSERT_EQ(decoded, Venue::EngineType::Quoting);
+}
+
+TEST_F(HttpJsonUnmarshaller, UnmarshallsOptionalEnumNull) {
+  add_null_member(Key, document);
+
+  Unmarshaller unmarshaller{document};
+  auto decoded = std::make_optional(Venue::EngineType::Matching);
+
+  ASSERT_TRUE(unmarshaller(Attribute, decoded));
+  ASSERT_EQ(decoded, std::nullopt);
+}
+
+TEST_F(HttpJsonUnmarshaller, UnmarshallsOptionalEnumFromString) {
+  const std::string value = "Quoting";
+  add_member(Key, value, document);
+
+  Unmarshaller unmarshaller{document};
+  auto decoded = std::make_optional(Venue::EngineType::Matching);
+
+  ASSERT_TRUE(unmarshaller(Attribute, decoded));
+  ASSERT_THAT(decoded, Optional(Venue::EngineType::Quoting));
 }
 
 }  // namespace

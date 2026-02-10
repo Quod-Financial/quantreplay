@@ -53,3 +53,45 @@ databaseChangeLog:
             tableName: listing
             columnName: random_orders_enabled
             defaultValueBoolean: true
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_constraint_listing_4
+      labels: schema,v11
+      comment: Add NOT NULL constraint listing_enabled_not_null on listing.enabled
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: enabled
+      changes:
+        - addNotNullConstraint:
+            constraintName: listing_enabled_not_null
+            tableName: listing
+            columnName: enabled
+            columnDataType: bool
+            defaultNullValue: true
+            validate: true
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_constraint_listing_5
+      labels: schema,v11
+      comment: Add NOT NULL constraint listing_random_orders_enabled_not_null on listing.random_orders_enabled
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_orders_enabled
+      changes:
+        - addNotNullConstraint:
+            constraintName: listing_random_orders_enabled_not_null
+            tableName: listing
+            columnName: random_orders_enabled
+            columnDataType: bool
+            defaultNullValue: true
+            validate: true

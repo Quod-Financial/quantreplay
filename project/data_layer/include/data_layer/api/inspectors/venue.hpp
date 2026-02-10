@@ -207,8 +207,10 @@ inline auto VenuePatchReader<Marshaller>::read(const Venue::Patch& patch)
   }
 
   if (const auto& value = patch.orders_on_startup_flag()) {
-    static_assert(can_marshall_v<decltype(*value)>);
-    marshaller_(Attribute::OrderOnStartup, *value);
+    static_assert(
+        can_marshall_v<std::remove_cvref_t<decltype(value)>::value_type>);
+    marshaller_(Attribute::OrderOnStartup,
+                value.inner_value_or(Venue::DefaultOrderOnStartupFlag));
   }
 
   if (const auto& value = patch.random_parties_count()) {
@@ -247,8 +249,10 @@ inline auto VenuePatchReader<Marshaller>::read(const Venue::Patch& patch)
   }
 
   if (const auto& value = patch.persistence_enabled_flag()) {
-    static_assert(can_marshall_v<decltype(*value)>);
-    marshaller_(Attribute::PersistenceEnabled, *value);
+    static_assert(
+        can_marshall_v<std::remove_cvref_t<decltype(value)>::value_type>);
+    marshaller_(Attribute::PersistenceEnabled,
+                value.inner_value_or(Venue::DefaultPersistenceEnabledFlag));
   }
 
   if (const auto& value = patch.persistence_file_path()) {
@@ -265,103 +269,103 @@ inline auto VenuePatchWriter<Unmarshaller>::write(Venue::Patch& patch) -> void {
     patch.with_venue_id(std::move(venue_id));
   }
 
-  std::string name{};
+  std::optional<std::string> name;
   static_assert(can_unmarshall_v<decltype(name)>);
   if (unmarshaller_(Attribute::Name, name)) {
     patch.with_name(std::move(name));
   }
 
-  Venue::EngineType engine_type{};
+  std::optional<Venue::EngineType> engine_type;
   static_assert(can_unmarshall_v<decltype(engine_type)>);
   if (unmarshaller_(Attribute::EngineType, engine_type)) {
     patch.with_engine_type(engine_type);
   }
 
-  bool support_tif_ioc{};
+  std::optional<bool> support_tif_ioc;
   static_assert(can_unmarshall_v<decltype(support_tif_ioc)>);
   if (unmarshaller_(Attribute::SupportTifIoc, support_tif_ioc)) {
     patch.with_support_tif_ioc_flag(support_tif_ioc);
   }
 
-  bool support_tif_fok{};
+  std::optional<bool> support_tif_fok;
   static_assert(can_unmarshall_v<decltype(support_tif_fok)>);
   if (unmarshaller_(Attribute::SupportTifFok, support_tif_fok)) {
     patch.with_support_tif_fok_flag(support_tif_fok);
   }
 
-  bool support_tif_day{};
+  std::optional<bool> support_tif_day;
   static_assert(can_unmarshall_v<decltype(support_tif_day)>);
   if (unmarshaller_(Attribute::SupportTifDay, support_tif_day)) {
     patch.with_support_tif_day_flag(support_tif_day);
   }
 
-  bool include_own_orders{};
+  std::optional<bool> include_own_orders;
   static_assert(can_unmarshall_v<decltype(include_own_orders)>);
   if (unmarshaller_(Attribute::IncludeOwnOrders, include_own_orders)) {
     patch.with_include_own_orders_flag(include_own_orders);
   }
 
-  std::uint16_t rest_port{};
+  std::optional<std::uint16_t> rest_port;
   static_assert(can_unmarshall_v<decltype(rest_port)>);
   if (unmarshaller_(Attribute::RestPort, rest_port)) {
     patch.with_rest_port(rest_port);
   }
 
-  bool orders_on_startup{};
+  std::optional<bool> orders_on_startup;
   static_assert(can_unmarshall_v<decltype(orders_on_startup)>);
   if (unmarshaller_(Attribute::OrderOnStartup, orders_on_startup)) {
     patch.with_orders_on_startup_flag(orders_on_startup);
   }
 
-  std::uint32_t random_parties_count{};
+  std::optional<std::uint32_t> random_parties_count;
   static_assert(can_unmarshall_v<decltype(random_parties_count)>);
   if (unmarshaller_(Attribute::RandomPartiesCount, random_parties_count)) {
     patch.with_random_parties_count(random_parties_count);
   }
 
-  bool tns_enabled{};
+  std::optional<bool> tns_enabled;
   static_assert(can_unmarshall_v<decltype(tns_enabled)>);
   if (unmarshaller_(Attribute::TnsEnabled, tns_enabled)) {
     patch.with_tns_enabled_flag(tns_enabled);
   }
 
-  bool tns_qty_enabled{};
+  std::optional<bool> tns_qty_enabled;
   static_assert(can_unmarshall_v<decltype(tns_qty_enabled)>);
   if (unmarshaller_(Attribute::TnsQtyEnabled, tns_qty_enabled)) {
     patch.with_tns_qty_enabled_flag(tns_qty_enabled);
   }
 
-  bool tns_side_enabled{};
+  std::optional<bool> tns_side_enabled;
   static_assert(can_unmarshall_v<decltype(tns_side_enabled)>);
   if (unmarshaller_(Attribute::TnsSideEnabled, tns_side_enabled)) {
     patch.with_tns_side_enabled_flag(tns_side_enabled);
   }
 
-  bool tns_parties_enabled{};
+  std::optional<bool> tns_parties_enabled;
   static_assert(can_unmarshall_v<decltype(tns_parties_enabled)>);
   if (unmarshaller_(Attribute::TnsPartiesEnabled, tns_parties_enabled)) {
     patch.with_tns_parties_enabled_flag(tns_parties_enabled);
   }
 
-  std::string timezone{};
+  std::optional<std::string> timezone;
   static_assert(can_unmarshall_v<decltype(timezone)>);
   if (unmarshaller_(Attribute::Timezone, timezone)) {
     patch.with_timezone(std::move(timezone));
   }
 
-  bool cancel_on_disconnect{};
+  std::optional<bool> cancel_on_disconnect;
   static_assert(can_unmarshall_v<decltype(cancel_on_disconnect)>);
   if (unmarshaller_(Attribute::CancelOnDisconnect, cancel_on_disconnect)) {
     patch.with_cancel_on_disconnect_flag(cancel_on_disconnect);
   }
 
-  bool persistence_enabled{};
+  std::optional<bool> persistence_enabled;
   static_assert(can_unmarshall_v<decltype(persistence_enabled)>);
   if (unmarshaller_(Attribute::PersistenceEnabled, persistence_enabled)) {
     patch.with_persistence_enabled_flag(persistence_enabled);
   }
 
-  std::string persistence_file_path{};
+  std::optional<std::string> persistence_file_path;
   static_assert(can_unmarshall_v<decltype(persistence_file_path)>);
   if (unmarshaller_(Attribute::PersistenceFilePath, persistence_file_path)) {
     patch.with_persistence_file_path(std::move(persistence_file_path));

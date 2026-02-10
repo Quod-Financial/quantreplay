@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "data_layer/api/models/column_mapping.hpp"
+#include "data_layer/api/models/patch_field.hpp"
 #include "data_layer/api/predicate/definitions.hpp"
 
 namespace simulator::data_layer {
@@ -38,6 +39,12 @@ class Datasource {
   enum class Type { OrderBook };
 
   static constexpr std::uint32_t AllDepthLevels{0};
+
+  static constexpr std::uint64_t NoTextHeaderRow{0};
+  static constexpr bool DefaultEnabledFlag{true};
+  static constexpr bool DefaultRepeatFlag{false};
+  static constexpr char DefaultTextDelimiter{','};
+  static constexpr std::uint64_t DefaultTextDataRow{1};
 
   [[nodiscard]]
   static auto create(Datasource::Patch snapshot, std::uint64_t datasource_id)
@@ -117,8 +124,8 @@ class Datasource::Patch {
   using Attribute = Datasource::Attribute;
 
   [[nodiscard]]
-  auto enabled_flag() const noexcept -> std::optional<bool>;
-  auto with_enabled_flag(bool flag) noexcept -> Patch&;
+  auto enabled_flag() const noexcept -> const PatchField<bool>&;
+  auto with_enabled_flag(std::optional<bool> flag) noexcept -> Patch&;
 
   [[nodiscard]]
   auto name() const noexcept -> const std::optional<std::string>&;
@@ -141,24 +148,26 @@ class Datasource::Patch {
   auto with_type(Type type) noexcept -> Patch&;
 
   [[nodiscard]]
-  auto repeat_flag() const noexcept -> std::optional<bool>;
-  auto with_repeat_flag(bool flag) noexcept -> Patch&;
+  auto repeat_flag() const noexcept -> const PatchField<bool>&;
+  auto with_repeat_flag(std::optional<bool> flag) noexcept -> Patch&;
 
   [[nodiscard]]
-  auto text_delimiter() const noexcept -> std::optional<char>;
-  auto with_text_delimiter(char delimiter) noexcept -> Patch&;
+  auto text_delimiter() const noexcept -> const PatchField<char>&;
+  auto with_text_delimiter(std::optional<char> delimiter) noexcept -> Patch&;
 
   [[nodiscard]]
-  auto text_header_row() const noexcept -> std::optional<std::uint64_t>;
-  auto with_text_header_row(std::uint64_t row) noexcept -> Patch&;
+  auto text_header_row() const noexcept -> const PatchField<std::uint64_t>&;
+  auto with_text_header_row(std::optional<std::uint64_t> row) noexcept
+      -> Patch&;
 
   [[nodiscard]]
-  auto text_data_row() const noexcept -> std::optional<std::uint64_t>;
-  auto with_text_data_row(std::uint64_t row) noexcept -> Patch&;
+  auto text_data_row() const noexcept -> const PatchField<std::uint64_t>&;
+  auto with_text_data_row(std::optional<std::uint64_t> row) noexcept -> Patch&;
 
   [[nodiscard]]
-  auto table_name() const -> const std::optional<std::string>&;
-  auto with_table_name(std::string table_name) noexcept -> Patch&;
+  auto table_name() const -> const PatchField<std::string>&;
+  auto with_table_name(std::optional<std::string> table_name) noexcept
+      -> Patch&;
 
   [[nodiscard]]
   auto columns_mapping() const noexcept
@@ -167,27 +176,28 @@ class Datasource::Patch {
   auto without_column_mapping() noexcept -> Patch&;
 
   [[nodiscard]]
-  auto max_depth_levels() const noexcept -> std::optional<std::uint32_t>;
-  auto with_max_depth_levels(std::uint32_t levels) noexcept -> Patch&;
+  auto max_depth_levels() const noexcept -> const PatchField<std::uint32_t>&;
+  auto with_max_depth_levels(std::optional<std::uint32_t> levels) noexcept
+      -> Patch&;
 
  private:
-  std::optional<std::string> table_name_;
+  PatchField<std::string> table_name_;
   std::optional<std::string> name_;
   std::optional<std::string> venue_id_;
   std::optional<std::string> connection_;
 
   std::optional<std::vector<ColumnMapping::Patch>> columns_mapping_;
 
-  std::optional<std::uint64_t> text_header_row_;
-  std::optional<std::uint64_t> text_data_row_;
-  std::optional<std::uint32_t> max_depth_levels_;
+  PatchField<std::uint64_t> text_header_row_;
+  PatchField<std::uint64_t> text_data_row_;
+  PatchField<std::uint32_t> max_depth_levels_;
 
   std::optional<Format> format_;
   std::optional<Type> type_;
 
-  std::optional<char> text_delimiter_;
-  std::optional<bool> enabled_flag_;
-  std::optional<bool> repeat_flag_;
+  PatchField<char> text_delimiter_;
+  PatchField<bool> enabled_flag_;
+  PatchField<bool> repeat_flag_;
 };
 
 }  // namespace simulator::data_layer

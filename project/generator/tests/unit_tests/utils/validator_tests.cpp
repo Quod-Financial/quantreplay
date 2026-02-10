@@ -30,7 +30,7 @@ TEST_F(GeneratorValidator, Listing_IsAcceptable_SymbolAbsent) {
 }
 
 TEST_F(GeneratorValidator, Listing_IsAcceptable_SymbolIsEmpty) {
-  listing_patch.with_symbol({});
+  listing_patch.with_symbol(std::string{});
   const auto listing = data_layer::Listing::create(listing_patch, listing_id);
   ASSERT_TRUE(listing.symbol());
 

@@ -55,11 +55,12 @@ auto csv_no_header_numeric_column_to(Datasource::Format format,
                                      std::uint64_t text_header_row,
                                      ColumnMappingT columns_mapping)
     -> tl::expected<void, std::string> {
-  if (format == Datasource::Format::Csv && text_header_row == 0 &&
+  if (format == Datasource::Format::Csv &&
+      text_header_row == Datasource::NoTextHeaderRow &&
       !all_columns_to_are_numbers(columns_mapping)) {
     return tl::unexpected<std::string>{
-        "All values in ColumnTo must be numeric if textHeaderRow is zero and "
-        "the format is CSV."};
+        "All values in ColumnTo must be numeric if textHeaderRow is zero or "
+        "not specified and the format is CSV."};
   }
   return {};
 }
@@ -282,9 +283,11 @@ auto valid(const Datasource::Patch& datasource)
     const auto format = datasource.format();
     const auto text_header_row = datasource.text_header_row();
 
-    if (format.has_value() && text_header_row.has_value()) {
+    if (format.has_value()) {
       const auto result = csv_no_header_numeric_column_to(
-          *format, *text_header_row, *columns_mapping);
+          *format,
+          text_header_row.inner_value_or(Datasource::NoTextHeaderRow),
+          *columns_mapping);
       if (!result.has_value()) {
         return tl::unexpected<std::string>{result.error()};
       }
@@ -310,7 +313,7 @@ auto valid(const Datasource::Patch& datasource)
         }
       } else if (const auto result = all_required_level_columns_specified(
                      columns_from.value(),
-                     datasource.max_depth_levels().value_or(
+                     datasource.max_depth_levels().inner_value_or(
                          Datasource::AllDepthLevels));
                  !result.has_value()) {
         return tl::unexpected<std::string>{result.error()};

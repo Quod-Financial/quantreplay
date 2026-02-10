@@ -5,6 +5,8 @@
 #include <optional>
 #include <string>
 
+#include "data_layer/api/models/patch_field.hpp"
+
 namespace simulator::data_layer {
 
 class MarketPhase {
@@ -78,19 +80,19 @@ class MarketPhase::Patch {
   auto with_end_time(std::string end_time) noexcept -> Patch&;
 
   [[nodiscard]]
-  auto end_time_range() const noexcept -> std::optional<std::int32_t>;
-  auto with_end_time_range(std::int32_t range) noexcept -> Patch&;
+  auto end_time_range() const noexcept -> PatchField<int32_t>;
+  auto with_end_time_range(std::optional<int32_t> range) noexcept -> Patch&;
 
   [[nodiscard]]
-  auto allow_cancels() const noexcept -> std::optional<bool>;
-  auto with_allow_cancels(bool allow_cancels) noexcept -> Patch&;
+  auto allow_cancels() const noexcept -> PatchField<bool>;
+  auto with_allow_cancels(std::optional<bool> allow_cancels) noexcept -> Patch&;
 
  private:
   std::optional<std::string> start_time_;
   std::optional<std::string> end_time_;
-  std::optional<std::int32_t> end_time_range_;
+  PatchField<std::int32_t> end_time_range_;
   std::optional<Phase> phase_;
-  std::optional<bool> allow_cancels_;
+  PatchField<bool> allow_cancels_;
 };
 
 }  // namespace simulator::data_layer

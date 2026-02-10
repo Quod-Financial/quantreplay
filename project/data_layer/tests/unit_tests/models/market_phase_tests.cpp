@@ -5,6 +5,7 @@
 
 #include "api/models/market_phase.hpp"
 #include "ih/common/exceptions.hpp"
+#include "tests/test_utils/matchers.hpp"
 
 namespace simulator::data_layer::test {
 namespace {
@@ -35,24 +36,42 @@ TEST_F(DataLayerModelsMarketPhasePatch, SetsEndTime) {
   EXPECT_THAT(patch.end_time(), Optional(Eq("14:56:42")));
 }
 
+TEST_F(DataLayerModelsMarketPhasePatch, SetsEndTimeRangeNull) {
+  ASSERT_FALSE(patch.end_time_range().has_value());
+  patch.with_end_time_range(std::nullopt);
+  EXPECT_THAT(patch.end_time_range(), IsPatchFieldWithValue(std::nullopt));
+}
+
 TEST_F(DataLayerModelsMarketPhasePatch, SetsEndTimeRange) {
-  ASSERT_EQ(patch.end_time_range(), std::nullopt);
+  ASSERT_FALSE(patch.end_time_range().has_value());
   patch.with_end_time_range(-1);
-  EXPECT_THAT(patch.end_time_range(), Optional(Eq(-1)));
+  EXPECT_THAT(patch.end_time_range(), IsPatchFieldWithValue(Optional(Eq(-1))));
+}
+
+TEST_F(DataLayerModelsMarketPhasePatch, SetsAllowCancelsNull) {
+  ASSERT_FALSE(patch.allow_cancels().has_value());
+  patch.with_allow_cancels(std::nullopt);
+  EXPECT_THAT(patch.allow_cancels(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(DataLayerModelsMarketPhasePatch, SetsAllowCancels) {
-  ASSERT_EQ(patch.allow_cancels(), std::nullopt);
+  ASSERT_FALSE(patch.allow_cancels().has_value());
   patch.with_allow_cancels(true);
-  EXPECT_THAT(patch.allow_cancels(), Optional(Eq(true)));
+  EXPECT_THAT(patch.allow_cancels(), IsPatchFieldWithValue(Optional(Eq(true))));
 }
 
 struct DataLayerModelsMarketPhase : public Test {
-  MarketPhase::Patch patch;
+  static auto make_default_patch() -> MarketPhase::Patch {
+    return MarketPhase::Patch{}
+        .with_phase(MarketPhase::Phase::Open)
+        .with_start_time("12:00:00")
+        .with_end_time("18:00:00");
+  }
 };
 
 TEST_F(DataLayerModelsMarketPhase,
        ThrowsRequiredAttributeMissingOnCreationWhenPhaseIsMissed) {
+  MarketPhase::Patch patch;
   patch.with_start_time("12:00:00").with_end_time("18:00:00");
 
   ASSERT_EQ(patch.phase(), std::nullopt);
@@ -61,6 +80,7 @@ TEST_F(DataLayerModelsMarketPhase,
 }
 
 TEST_F(DataLayerModelsMarketPhase, CreatesWhenPhaseIsSet) {
+  MarketPhase::Patch patch;
   patch.with_phase(MarketPhase::Phase::Open)
       .with_start_time("12:00:00")
       .with_end_time("18:00:00");
@@ -71,6 +91,7 @@ TEST_F(DataLayerModelsMarketPhase, CreatesWhenPhaseIsSet) {
 
 TEST_F(DataLayerModelsMarketPhase,
        ThrowsRequiredAttributeMissingOnCreationWhenStartTimeIsMissed) {
+  MarketPhase::Patch patch;
   patch.with_phase(MarketPhase::Phase::Open).with_end_time("18:00:00");
 
   ASSERT_EQ(patch.start_time(), std::nullopt);
@@ -79,9 +100,7 @@ TEST_F(DataLayerModelsMarketPhase,
 }
 
 TEST_F(DataLayerModelsMarketPhase, CreatesWhenStartTimeIsSet) {
-  patch.with_phase(MarketPhase::Phase::Open)
-      .with_start_time("12:00:00")
-      .with_end_time("18:00:00");
+  const auto patch = make_default_patch();
 
   const auto market_phase = MarketPhase::create(patch, "LSE");
   EXPECT_EQ(market_phase.start_time(), "12:00:00");
@@ -89,6 +108,7 @@ TEST_F(DataLayerModelsMarketPhase, CreatesWhenStartTimeIsSet) {
 
 TEST_F(DataLayerModelsMarketPhase,
        ThrowsRequiredAttributeMissingOnCreationWhenEndTimeIsMissed) {
+  MarketPhase::Patch patch;
   patch.with_phase(MarketPhase::Phase::Open).with_start_time("12:00:00");
 
   ASSERT_EQ(patch.end_time(), std::nullopt);
@@ -97,6 +117,7 @@ TEST_F(DataLayerModelsMarketPhase,
 }
 
 TEST_F(DataLayerModelsMarketPhase, CreatesWhenEndTimeIsSet) {
+  MarketPhase::Patch patch;
   patch.with_phase(MarketPhase::Phase::Open)
       .with_start_time("12:00:00")
       .with_end_time("18:00:00");
@@ -106,39 +127,29 @@ TEST_F(DataLayerModelsMarketPhase, CreatesWhenEndTimeIsSet) {
 }
 
 TEST_F(DataLayerModelsMarketPhase, CreatesWhenAllowCancelsIsSet) {
-  patch.with_phase(MarketPhase::Phase::Open)
-      .with_start_time("12:00:00")
-      .with_end_time("18:00:00")
-      .with_allow_cancels(true);
+  const auto patch = make_default_patch().with_allow_cancels(true);
 
   const auto market_phase = MarketPhase::create(patch, "LSE");
   EXPECT_EQ(market_phase.allow_cancels(), true);
 }
 
 TEST_F(DataLayerModelsMarketPhase, CreatesWhenEndTimeRangeIsMissed) {
-  patch.with_phase(MarketPhase::Phase::Open)
-      .with_start_time("12:00:00")
-      .with_end_time("18:00:00");
-  ASSERT_EQ(patch.end_time_range(), std::nullopt);
+  const auto patch = make_default_patch();
+  ASSERT_FALSE(patch.end_time_range().has_value());
 
   const auto market_phase = MarketPhase::create(patch, "LSE");
   EXPECT_EQ(market_phase.end_time_range(), std::nullopt);
 }
 
 TEST_F(DataLayerModelsMarketPhase, CreatesWhenEndTimeRangeIsSet) {
-  patch.with_phase(MarketPhase::Phase::Open)
-      .with_start_time("12:00:00")
-      .with_end_time("18:00:00")
-      .with_end_time_range(42);
+  const auto patch = make_default_patch().with_end_time_range(42);
 
   const auto market_phase = MarketPhase::create(patch, "LSE");
   EXPECT_THAT(market_phase.end_time_range(), Optional(Eq(42)));
 }
 
 TEST_F(DataLayerModelsMarketPhase, SetsVenueIDOnCreation) {
-  patch.with_phase(MarketPhase::Phase::Open)
-      .with_start_time("12:00:00")
-      .with_end_time("18:00:00");
+  const auto patch = make_default_patch();
 
   const auto market_phase = MarketPhase::create(patch, "LSE");
   EXPECT_EQ(market_phase.venue_id(), "LSE");

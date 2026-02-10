@@ -7,10 +7,10 @@
 
 #include "data_layer/api/models/listing.hpp"
 #include "ih/marshalling/json/listing.hpp"
+#include "tests/test_utils/matchers.hpp"
 
 namespace simulator::http::json::test {
 namespace {
-
 using namespace testing;
 
 // NOLINTBEGIN(*magic-numbers*)
@@ -571,12 +571,30 @@ struct HttpJsonListingUnmarshaller : public ::testing::Test {
   data_layer::Listing::Patch patch;
 };
 
+TEST_F(HttpJsonListingUnmarshaller, ThrowsExceptionOnUnmarshallingSymbolNull) {
+  constexpr std::string_view json{R"({"symbol":null})"};
+
+  ASSERT_THAT(
+      [&] { ListingUnmarshaller::unmarshall(json, patch); },
+      ThrowsMessage<std::runtime_error>(
+          "unexpected data type received for `symbol', string is expected"));
+}
+
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsSymbol) {
   constexpr std::string_view json{R"({"symbol":"AAPL"})"};
 
   ListingUnmarshaller::unmarshall(json, patch);
 
   ASSERT_THAT(patch.symbol(), Optional(Eq("AAPL")));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, ThrowsExceptionOnUnmarshallingVenueIDNull) {
+  constexpr std::string_view json{R"({"venueId":null})"};
+
+  ASSERT_THAT(
+      [&] { ListingUnmarshaller::unmarshall(json, patch); },
+      ThrowsMessage<std::runtime_error>(
+          "unexpected data type received for `venueId', string is expected"));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsVenueID) {
@@ -587,12 +605,28 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsVenueID) {
   ASSERT_THAT(patch.venue_id(), Optional(Eq("NASDAQ")));
 }
 
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsSecurityTypeNull) {
+  constexpr std::string_view json{R"({"securityType":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.security_type(), IsPatchFieldWithValue(std::nullopt));
+}
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsSecurityType) {
   constexpr std::string_view json{R"({"securityType":"Equity"})"};
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.security_type(), Optional(Eq("Equity")));
+  ASSERT_THAT(patch.security_type(),
+              IsPatchFieldWithValue(Optional(Eq("Equity"))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsPriceCurrencyNull) {
+  constexpr std::string_view json{R"({"priceCurrency":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.price_currency(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsPriceCurrency) {
@@ -600,7 +634,16 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsPriceCurrency) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.price_currency(), Optional(Eq("USD")));
+  ASSERT_THAT(patch.price_currency(),
+              IsPatchFieldWithValue(Optional(Eq("USD"))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsFxBaseCurrencyNull) {
+  constexpr std::string_view json{R"({"fxBaseCurrency":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.fx_base_currency(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsFxBaseCurrency) {
@@ -608,7 +651,16 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsFxBaseCurrency) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.fx_base_currency(), Optional(Eq("USD")));
+  ASSERT_THAT(patch.fx_base_currency(),
+              IsPatchFieldWithValue(Optional(Eq("USD"))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsInstrSymbolNull) {
+  constexpr std::string_view json{R"({"instrSymbol":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.instr_symbol(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsInstrSymbol) {
@@ -616,7 +668,16 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsInstrSymbol) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.instr_symbol(), Optional(Eq("AAPL")));
+  ASSERT_THAT(patch.instr_symbol(),
+              IsPatchFieldWithValue(Optional(Eq("AAPL"))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsQtyMinimumNull) {
+  constexpr std::string_view json{R"({"qtyMinimum":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.qty_minimum(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsQtyMinimum) {
@@ -624,7 +685,16 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsQtyMinimum) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.qty_minimum(), Optional(DoubleEq(42.42)));
+  ASSERT_THAT(patch.qty_minimum(),
+              IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsQtyMaximumNull) {
+  constexpr std::string_view json{R"({"qtyMaximum":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.qty_maximum(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsQtyMaximum) {
@@ -632,7 +702,16 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsQtyMaximum) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.qty_maximum(), Optional(DoubleEq(42.42)));
+  ASSERT_THAT(patch.qty_maximum(),
+              IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsQtyMultipleNull) {
+  constexpr std::string_view json{R"({"qtyMultiple":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.qty_multiple(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsQtyMultiple) {
@@ -640,7 +719,16 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsQtyMultiple) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.qty_multiple(), Optional(DoubleEq(42.42)));
+  ASSERT_THAT(patch.qty_multiple(),
+              IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsPriceTickSizeNull) {
+  constexpr std::string_view json{R"({"priceTickSize":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.price_tick_size(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsPriceTickSize) {
@@ -648,7 +736,16 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsPriceTickSize) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.price_tick_size(), Optional(DoubleEq(42.42)));
+  ASSERT_THAT(patch.price_tick_size(),
+              IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsEnabledNull) {
+  constexpr std::string_view json{R"({"enabled":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.enabled_flag(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsEnabled) {
@@ -656,7 +753,15 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsEnabled) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.enabled_flag(), Optional(Eq(true)));
+  ASSERT_THAT(patch.enabled_flag(), IsPatchFieldWithValue(Optional(true)));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomQtyMaximumNull) {
+  constexpr std::string_view json{R"({"randomQtyMaximum":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.random_qty_maximum(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomQtyMaximum) {
@@ -664,7 +769,16 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomQtyMaximum) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.random_qty_maximum(), Optional(DoubleEq(42.42)));
+  ASSERT_THAT(patch.random_qty_maximum(),
+              IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomDepthLevelsNull) {
+  constexpr std::string_view json{R"({"randomDepthLevels":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.random_depth_levels(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomDepthLevels) {
@@ -672,7 +786,16 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomDepthLevels) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.random_depth_levels(), Optional(Eq(42)));
+  ASSERT_THAT(patch.random_depth_levels(), IsPatchFieldWithValue(Optional(42)));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomOrdersSpreadNull) {
+  constexpr std::string_view json{R"({"randomOrdersSpread":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.random_orders_spread(),
+              IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomOrdersSpread) {
@@ -680,7 +803,16 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomOrdersSpread) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.random_orders_spread(), Optional(DoubleEq(42.42)));
+  ASSERT_THAT(patch.random_orders_spread(),
+              IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomOrdersRateNull) {
+  constexpr std::string_view json{R"({"randomOrdersRate":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.random_orders_rate(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomOrdersRate) {
@@ -688,7 +820,15 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomOrdersRate) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.random_orders_rate(), Optional(Eq(42)));
+  ASSERT_THAT(patch.random_orders_rate(), IsPatchFieldWithValue(Optional(42)));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomTickRangeNull) {
+  constexpr std::string_view json{R"({"randomTickRange":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.random_tick_range(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomTickRange) {
@@ -696,7 +836,15 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomTickRange) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.random_tick_range(), Optional(Eq(42)));
+  ASSERT_THAT(patch.random_tick_range(), IsPatchFieldWithValue(Optional(42)));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsSecurityExchangeNull) {
+  constexpr std::string_view json{R"({"securityExchange":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.security_exchange(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsSecurityExchange) {
@@ -704,7 +852,16 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsSecurityExchange) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.security_exchange(), Optional(Eq("NASDAQ")));
+  ASSERT_THAT(patch.security_exchange(),
+              IsPatchFieldWithValue(Optional(Eq("NASDAQ"))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsPartyIDNull) {
+  constexpr std::string_view json{R"({"partyId":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.party_id(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsPartyID) {
@@ -712,7 +869,15 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsPartyID) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.party_id(), Optional(Eq("PartyID")));
+  ASSERT_THAT(patch.party_id(), IsPatchFieldWithValue(Optional(Eq("PartyID"))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsPartyRoleNull) {
+  constexpr std::string_view json{R"({"partyRole":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.party_role(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsPartyRole) {
@@ -720,7 +885,16 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsPartyRole) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.party_role(), Optional(Eq("PartyRole")));
+  ASSERT_THAT(patch.party_role(),
+              IsPatchFieldWithValue(Optional(Eq("PartyRole"))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsCusipIDNull) {
+  constexpr std::string_view json{R"({"cusipId":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.cusip_id(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsCusipID) {
@@ -728,7 +902,15 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsCusipID) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.cusip_id(), Optional(Eq("Cusip")));
+  ASSERT_THAT(patch.cusip_id(), IsPatchFieldWithValue(Optional(Eq("Cusip"))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsSedolIDNull) {
+  constexpr std::string_view json{R"({"sedolId":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.sedol_id(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsSedolID) {
@@ -736,7 +918,15 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsSedolID) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.sedol_id(), Optional(Eq("Sedol")));
+  ASSERT_THAT(patch.sedol_id(), IsPatchFieldWithValue(Optional(Eq("Sedol"))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsIsinIDNull) {
+  constexpr std::string_view json{R"({"isinId":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.isin_id(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsIsinID) {
@@ -744,7 +934,15 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsIsinID) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.isin_id(), Optional(Eq("Isin")));
+  ASSERT_THAT(patch.isin_id(), IsPatchFieldWithValue(Optional(Eq("Isin"))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRicIDNull) {
+  constexpr std::string_view json{R"({"ricId":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.ric_id(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRicID) {
@@ -752,7 +950,15 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRicID) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.ric_id(), Optional(Eq("Ric")));
+  ASSERT_THAT(patch.ric_id(), IsPatchFieldWithValue(Optional(Eq("Ric"))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsExchangeSymbolIDNull) {
+  constexpr std::string_view json{R"({"exchangeSymbolId":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.exchange_symbol_id(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsExchangeSymbolID) {
@@ -760,7 +966,16 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsExchangeSymbolID) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.exchange_symbol_id(), Optional(Eq("EXC")));
+  ASSERT_THAT(patch.exchange_symbol_id(),
+              IsPatchFieldWithValue(Optional(Eq("EXC"))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsBloombergSymbolIDNull) {
+  constexpr std::string_view json{R"({"bloombergSymbolId":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.bloomberg_symbol_id(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsBloombergSymbolID) {
@@ -768,7 +983,16 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsBloombergSymbolID) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.bloomberg_symbol_id(), Optional(Eq("BBG")));
+  ASSERT_THAT(patch.bloomberg_symbol_id(),
+              IsPatchFieldWithValue(Optional(Eq("BBG"))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomQtyMinimumNull) {
+  constexpr std::string_view json{R"({"randomQtyMinimum":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.random_qty_minimum(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomQtyMinimum) {
@@ -776,7 +1000,16 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomQtyMinimum) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.random_qty_minimum(), Optional(DoubleEq(42.42)));
+  ASSERT_THAT(patch.random_qty_minimum(),
+              IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomAmtMinimumNull) {
+  constexpr std::string_view json{R"({"randomAmtMinimum":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.random_amt_minimum(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomAmtMinimum) {
@@ -784,7 +1017,16 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomAmtMinimum) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.random_amt_minimum(), Optional(DoubleEq(42.42)));
+  ASSERT_THAT(patch.random_amt_minimum(),
+              IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomAmtMaximumNull) {
+  constexpr std::string_view json{R"({"randomAmtMaximum":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.random_amt_maximum(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomAmtMaximum) {
@@ -792,7 +1034,17 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomAmtMaximum) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.random_amt_maximum(), Optional(DoubleEq(42.42)));
+  ASSERT_THAT(patch.random_amt_maximum(),
+              IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomOrdersEnabledNull) {
+  constexpr std::string_view json{R"({"randomOrdersEnabled":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.random_orders_enabled_flag(),
+              IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomOrdersEnabled) {
@@ -800,7 +1052,17 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomOrdersEnabled) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.random_orders_enabled_flag(), Optional(Eq(true)));
+  ASSERT_THAT(patch.random_orders_enabled_flag(),
+              IsPatchFieldWithValue(Optional(true)));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomAggressiveQtyMinimumNull) {
+  constexpr std::string_view json{R"({"randomAggQtyMinimum":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.random_aggressive_qty_minimum(),
+              IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomAggressiveQtyMinimum) {
@@ -808,7 +1070,17 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomAggressiveQtyMinimum) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.random_aggressive_qty_minimum(), Optional(DoubleEq(42.42)));
+  ASSERT_THAT(patch.random_aggressive_qty_minimum(),
+              IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomAggressiveQtyMaximumNull) {
+  constexpr std::string_view json{R"({"randomAggQtyMaximum":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.random_aggressive_qty_maximum(),
+              IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomAggressiveQtyMaximum) {
@@ -816,7 +1088,17 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomAggressiveQtyMaximum) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.random_aggressive_qty_maximum(), Optional(DoubleEq(42.42)));
+  ASSERT_THAT(patch.random_aggressive_qty_maximum(),
+              IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomAggressiveAmtMinimumNull) {
+  constexpr std::string_view json{R"({"randomAggAmtMinimum":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.random_aggressive_amt_minimum(),
+              IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomAggressiveAmtMinimum) {
@@ -824,7 +1106,17 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomAggressiveAmtMinimum) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.random_aggressive_amt_minimum(), Optional(DoubleEq(42.42)));
+  ASSERT_THAT(patch.random_aggressive_amt_minimum(),
+              IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomAggressiveAmtMaximumNull) {
+  constexpr std::string_view json{R"({"randomAggAmtMaximum":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.random_aggressive_amt_maximum(),
+              IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomAggressiveAmtMaximum) {
@@ -832,7 +1124,8 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomAggressiveAmtMaximum) {
 
   ListingUnmarshaller::unmarshall(json, patch);
 
-  ASSERT_THAT(patch.random_aggressive_amt_maximum(), Optional(DoubleEq(42.42)));
+  ASSERT_THAT(patch.random_aggressive_amt_maximum(),
+              IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
 }
 
 // NOLINTEND(*magic-numbers*)
