@@ -62,5 +62,6 @@ jobs:
         with:
           context: .github/docker
           file: .github/docker/Postgres_Marketsim.Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ env.POSTGRES_IMAGE_TAGS }}

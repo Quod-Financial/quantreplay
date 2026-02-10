@@ -69,5 +69,6 @@ jobs:
         with:
           context: .
           file: .github/docker/liquibase_custom.Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ env.LIQUIBASE_IMAGE_TAGS }}

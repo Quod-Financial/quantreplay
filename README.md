@@ -123,6 +123,7 @@ networks:
 services:
   XETRA:
     image: ghcr.io/quod-financial/deploy_marketsim:latest
+    platform: linux/amd64
     container_name: XETRA
     networks:
       - market-simulator-net
