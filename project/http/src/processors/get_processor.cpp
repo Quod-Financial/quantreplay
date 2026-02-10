@@ -8,7 +8,6 @@
 #include <regex>
 #include <utility>
 
-#include "cfg/api/cfg.hpp"
 #include "ih/endpoint.hpp"
 #include "ih/marshalling/json/venue.hpp"
 #include "ih/utils/response_formatters.hpp"
@@ -20,23 +19,26 @@ namespace simulator::http {
 
 GetProcessorImpl::GetProcessorImpl(
     std::shared_ptr<data_bridge::VenueAccessor> venue_accessor,
+    std::shared_ptr<redirect::RedirectionProcessor> redirector,
     std::shared_ptr<DatasourceController> datasource_controller,
     std::shared_ptr<ListingController> listing_controller,
     std::shared_ptr<PriceSeedController> price_seed_controller,
     std::shared_ptr<SettingController> setting_controller,
-    std::shared_ptr<VenueController> venue_controller)
-    : redirector_{redirect::RedirectionProcessor::create(venue_accessor)},
+    std::shared_ptr<VenueController> venue_controller,
+    std::string venue_name)
+    : redirector_{std::move(redirector)},
       venue_accessor_{std::move(venue_accessor)},
       datasource_controller_{std::move(datasource_controller)},
       listing_controller_{std::move(listing_controller)},
       price_seed_controller_{std::move(price_seed_controller)},
       setting_controller_{std::move(setting_controller)},
-      venue_controller_{std::move(venue_controller)} {}
+      venue_controller_{std::move(venue_controller)},
+      venue_id_{std::move(venue_name)} {}
 
 auto GetProcessorImpl::get_venue(const Pistache::Rest::Request& request,
                                  Pistache::Http::ResponseWriter response)
     -> void {
-  const auto venue_id = request.param(":id").as<std::string>();
+  const auto venue_id = request.param(":venueId").as<std::string>();
   log::info("requested venue - {}", venue_id);
 
   auto [code, body] = venue_controller_->select_venue(venue_id);
@@ -110,31 +112,19 @@ auto GetProcessorImpl::get_price_seeds(const Pistache::Rest::Request& request,
   respond(request, response, code, body);
 }
 
-auto GetProcessorImpl::get_status(const Pistache::Rest::Request& request,
-                                  Pistache::Http::ResponseWriter response)
-    -> void {
-  Pistache::Http::Code response_code{};
-  std::string response_body;
-
-  const auto result = venue_accessor_->select_single(cfg::venue().name);
-  if (result) {
-    bool available = false;
-    response_body = get_venue_status_str(result.value(), false, available);
-    response_code = available ? Pistache::Http::Code::Ok
-                              : Pistache::Http::Code::Service_Unavailable;
-  } else {
-    response_code = Pistache::Http::Code::Service_Unavailable;
-    response_body = format_result_response("failed to select venue");
-  }
-
-  respond(request, response, response_code, response_body);
-}
-
 auto GetProcessorImpl::get_venue_status(const Pistache::Rest::Request& request,
                                         Pistache::Http::ResponseWriter response)
     -> void {
-  const auto venue_id = request.param(":id").as<std::string>();
-  log::info("requested status of venue - {}", venue_id);
+  auto venue_id = request.hasParam(":venueId")
+                      ? request.param(":venueId").as<std::string>()
+                      : std::string{};
+
+  if (venue_id.empty()) {
+    venue_id = venue_id_;
+    log::info("requested status of current venue - {}", venue_id);
+  } else {
+    log::info("requested status of venue - {}", venue_id);
+  }
 
   Pistache::Http::Code response_code{};
   std::string response_body;
@@ -153,7 +143,7 @@ auto GetProcessorImpl::get_venue_status(const Pistache::Rest::Request& request,
   respond(request, response, response_code, response_body);
 }
 
-auto GetProcessorImpl::get_venue_statuses(
+auto GetProcessorImpl::get_all_venues_status(
     const Pistache::Rest::Request& request,
     Pistache::Http::ResponseWriter response) -> void {
   log::info("requested statuses of all venues");
@@ -191,7 +181,7 @@ auto GetProcessorImpl::get_venue_status_str(const data_layer::Venue& venue,
   available = false;
   const auto& venue_id = venue.venue_id();
 
-  if (venue_id == cfg::venue().name) {
+  if (venue_id == venue_id_) {
     available = true;
   } else {
     auto result = redirector_->redirect_to_venue(
@@ -220,14 +210,27 @@ auto GetProcessorImpl::get_settings(
 auto GetProcessorImpl::get_order_gen_status(
     const Pistache::Rest::Request& request,
     Pistache::Http::ResponseWriter response) -> void {
-  const auto instance_id = request.param(":venueId").as<std::string>();
-  log::info("received request to retrieve random order generator status for {}",
-            instance_id);
+  auto venue_id = request.hasParam(":venueId")
+                      ? request.param(":venueId").as<std::string>()
+                      : std::string{};
 
-  if (instance_id == cfg::venue().name) {
+  if (venue_id.empty()) {
+    venue_id = venue_id_;
+    log::info(
+        "received request to retrieve random order generator status for "
+        "current venue - {}",
+        venue_id);
+  } else {
+    log::info(
+        "received request to retrieve random order generator status for venue "
+        "- {}",
+        venue_id);
+  }
+
+  if (venue_id == venue_id_) {
     handle_generation_status_request(request, std::move(response));
   } else {
-    const auto redirect_response = redirect(request, instance_id);
+    const auto redirect_response = redirect(request, venue_id);
     respond(request,
             response,
             redirect_response.http_code(),

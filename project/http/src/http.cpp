@@ -154,29 +154,39 @@ auto Server::Implementation::setup_handler(database::Context database,
   auto setting_controller =
       std::make_shared<SettingController>(setting_accessor);
 
-  auto trading_controller = std::make_shared<TradingController>();
+  auto trading_controller = std::make_shared<TradingControllerImpl>();
 
   auto venue_accessor =
       std::make_shared<data_bridge::DataLayerVenueAccessor>(database);
   auto venue_controller = std::make_shared<VenueController>(venue_accessor);
 
+  auto redirector =
+      std::make_shared<redirect::RedirectionProcessorImpl>(venue_accessor);
+
+  const auto venue_name = cfg::venue().name;
+
+  auto app_controller = std::make_unique<AppControllerImpl>(
+      venue_accessor, venue_name, std::move(callbacks));
+
   auto get_processor = std::make_shared<GetProcessorImpl>(venue_accessor,
+                                                          redirector,
                                                           datasource_controller,
                                                           listing_controller,
                                                           price_seed_controller,
                                                           setting_controller,
-                                                          venue_controller);
+                                                          venue_controller,
+                                                          venue_name);
   auto post_processor =
-      std::make_shared<PostProcessorImpl>(venue_accessor,
+      std::make_shared<PostProcessorImpl>(redirector,
                                           datasource_controller,
                                           listing_controller,
                                           price_seed_controller,
                                           setting_controller,
                                           trading_controller,
                                           venue_controller,
-                                          std::move(callbacks));
-  auto put_processor = std::make_shared<PutProcessorImpl>(venue_accessor,
-                                                          datasource_controller,
+                                          std::move(app_controller),
+                                          venue_name);
+  auto put_processor = std::make_shared<PutProcessorImpl>(datasource_controller,
                                                           listing_controller,
                                                           price_seed_controller,
                                                           setting_controller,

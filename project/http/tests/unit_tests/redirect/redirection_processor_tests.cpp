@@ -49,8 +49,8 @@ class HttpRedirectionProcessor : public testing::Test {
   void SetUp() override {
     resolver_ = std::make_shared<mock::Resolver>();
     redirector_ = std::make_shared<mock::Redirector>();
-    processor_ = std::make_unique<redirect::RedirectionProcessor>(resolver_,
-                                                                  redirector_);
+    processor_ = std::make_unique<redirect::RedirectionProcessorImpl>(
+        resolver_, redirector_);
   }
 
  private:

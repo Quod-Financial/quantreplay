@@ -72,14 +72,15 @@ class PostProcessor {
 
 class PostProcessorImpl : public PostProcessor {
  public:
-  PostProcessorImpl(std::shared_ptr<data_bridge::VenueAccessor> venue_accessor,
+  PostProcessorImpl(std::shared_ptr<redirect::RedirectionProcessor> redirector,
                     std::shared_ptr<DatasourceController> datasource_controller,
                     std::shared_ptr<ListingController> listing_controller,
                     std::shared_ptr<PriceSeedController> price_seed_controller,
                     std::shared_ptr<SettingController> setting_controller,
                     std::shared_ptr<TradingController> trading_controller,
                     std::shared_ptr<VenueController> venue_controller,
-                    ControlCallbacks callbacks);
+                    std::unique_ptr<AppController> app_controller,
+                    std::string venue_name);
 
   auto add_venue(const Pistache::Rest::Request& request,
                  Pistache::Http::ResponseWriter response) -> void override;
@@ -147,7 +148,8 @@ class PostProcessorImpl : public PostProcessor {
   std::shared_ptr<SettingController> setting_controller_;
   std::shared_ptr<TradingController> trading_controller_;
   std::shared_ptr<VenueController> venue_controller_;
-  AppController app_controller_;
+  std::unique_ptr<AppController> app_controller_;
+  std::string venue_id_;
 };
 
 }  // namespace simulator::http

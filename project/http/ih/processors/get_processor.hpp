@@ -5,6 +5,7 @@
 #include <pistache/router.h>
 
 #include <memory>
+#include <string>
 
 #include "data_layer/api/models/venue.hpp"
 #include "ih/controllers/datasource_controller.hpp"
@@ -51,15 +52,12 @@ class GetProcessor {
                                Pistache::Http::ResponseWriter response)
       -> void = 0;
 
-  virtual auto get_status(const Pistache::Rest::Request& request,
-                          Pistache::Http::ResponseWriter response) -> void = 0;
-
   virtual auto get_venue_status(const Pistache::Rest::Request& request,
                                 Pistache::Http::ResponseWriter response)
       -> void = 0;
 
-  virtual auto get_venue_statuses(const Pistache::Rest::Request& request,
-                                  Pistache::Http::ResponseWriter response)
+  virtual auto get_all_venues_status(const Pistache::Rest::Request& request,
+                                     Pistache::Http::ResponseWriter response)
       -> void = 0;
 
   virtual auto get_settings(const Pistache::Rest::Request& request,
@@ -69,21 +67,19 @@ class GetProcessor {
   virtual auto get_order_gen_status(const Pistache::Rest::Request& request,
                                     Pistache::Http::ResponseWriter response)
       -> void = 0;
-
-  virtual auto get_venue_status_str(const data_layer::Venue& venue,
-                                    bool send_response_code,
-                                    bool& available) const -> std::string = 0;
 };
 
 class GetProcessorImpl : public GetProcessor {
  public:
   explicit GetProcessorImpl(
       std::shared_ptr<data_bridge::VenueAccessor> venue_accessor,
+      std::shared_ptr<redirect::RedirectionProcessor> redirector,
       std::shared_ptr<DatasourceController> datasource_controller,
       std::shared_ptr<ListingController> listing_controller,
       std::shared_ptr<PriceSeedController> price_seed_controller,
       std::shared_ptr<SettingController> setting_controller,
-      std::shared_ptr<VenueController> venue_controller);
+      std::shared_ptr<VenueController> venue_controller,
+      std::string venue_name);
 
   auto get_venue(const Pistache::Rest::Request& request,
                  Pistache::Http::ResponseWriter response) -> void override;
@@ -112,15 +108,12 @@ class GetProcessorImpl : public GetProcessor {
                        Pistache::Http::ResponseWriter response)
       -> void override;
 
-  auto get_status(const Pistache::Rest::Request& request,
-                  Pistache::Http::ResponseWriter response) -> void override;
-
   auto get_venue_status(const Pistache::Rest::Request& request,
                         Pistache::Http::ResponseWriter response)
       -> void override;
 
-  auto get_venue_statuses(const Pistache::Rest::Request& request,
-                          Pistache::Http::ResponseWriter response)
+  auto get_all_venues_status(const Pistache::Rest::Request& request,
+                             Pistache::Http::ResponseWriter response)
       -> void override;
 
   auto get_settings(const Pistache::Rest::Request& request,
@@ -130,11 +123,11 @@ class GetProcessorImpl : public GetProcessor {
                             Pistache::Http::ResponseWriter response)
       -> void override;
 
+ private:
   auto get_venue_status_str(const data_layer::Venue& venue,
                             bool send_response_code,
-                            bool& available) const -> std::string override;
+                            bool& available) const -> std::string;
 
- private:
   auto handle_generation_status_request(const Pistache::Rest::Request& request,
                                         Pistache::Http::ResponseWriter response)
       -> void;
@@ -156,6 +149,7 @@ class GetProcessorImpl : public GetProcessor {
   std::shared_ptr<PriceSeedController> price_seed_controller_;
   std::shared_ptr<SettingController> setting_controller_;
   std::shared_ptr<VenueController> venue_controller_;
+  std::string venue_id_;
 };
 
 }  // namespace simulator::http

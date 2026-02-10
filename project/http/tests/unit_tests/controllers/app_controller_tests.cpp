@@ -26,58 +26,58 @@ struct HttpAppControllerTest : Test {
 
   std::shared_ptr<mock::VenueAccessor> venue_accessor =
       std::make_shared<mock::VenueAccessor>();
-  cfg::VenueConfiguration venue_cfg{.name = "TEST_VENUE", .start_time = {}};
+  std::string venue_name = "TEST_VENUE";
 };
 
 TEST_F(HttpAppControllerTest, ConstructorThrowsExceptionIfVenueNotFound) {
   const mock::VenueAccessor::VenueResult error_reply{
       tl::unexpected{data_bridge::Failure::ResponseCardinalityError}};
 
-  EXPECT_CALL(*venue_accessor, select_single(Eq(venue_cfg.name)))
+  EXPECT_CALL(*venue_accessor, select_single(Eq(venue_name)))
       .Times(1)
       .WillOnce(Return(error_reply));
 
   ASSERT_THROW(
-      (AppController{venue_accessor, venue_cfg, ControlCallbacks{[] {}}}),
+      (AppControllerImpl{venue_accessor, venue_name, ControlCallbacks{[] {}}}),
       std::runtime_error);
 }
 
 TEST_F(HttpAppControllerTest, ConstructorThrowsExceptionIfVenueRestPortIsNull) {
   const mock::VenueAccessor::VenueResult successful_reply{
-      make_venue(venue_cfg.name, std::nullopt)};
+      make_venue(venue_name, std::nullopt)};
 
-  EXPECT_CALL(*venue_accessor, select_single(Eq(venue_cfg.name)))
+  EXPECT_CALL(*venue_accessor, select_single(Eq(venue_name)))
       .Times(1)
       .WillOnce(Return(successful_reply));
 
   ASSERT_THROW(
-      (AppController{venue_accessor, venue_cfg, ControlCallbacks{[] {}}}),
+      (AppControllerImpl{venue_accessor, venue_name, ControlCallbacks{[] {}}}),
       std::runtime_error);
 }
 
 TEST_F(HttpAppControllerTest,
        ConstructorThrowsExceptionIfCallbackResetAppIsNotSet) {
   const mock::VenueAccessor::VenueResult successful_reply{
-      make_venue(venue_cfg.name, 1234)};
+      make_venue(venue_name, 1234)};
 
-  EXPECT_CALL(*venue_accessor, select_single(Eq(venue_cfg.name)))
+  EXPECT_CALL(*venue_accessor, select_single(Eq(venue_name)))
       .Times(1)
       .WillOnce(Return(successful_reply));
 
-  ASSERT_THROW((AppController{venue_accessor, venue_cfg, ControlCallbacks{}}),
+  ASSERT_THROW((AppControllerImpl{venue_accessor, venue_name, ControlCallbacks{}}),
                std::runtime_error);
 }
 
 TEST_F(HttpAppControllerTest, ConstructorNoThrowsException) {
   const mock::VenueAccessor::VenueResult accessor_reply{
-      make_venue(venue_cfg.name, 1234)};
+      make_venue(venue_name, 1234)};
 
-  EXPECT_CALL(*venue_accessor, select_single(Eq(venue_cfg.name)))
+  EXPECT_CALL(*venue_accessor, select_single(Eq(venue_name)))
       .Times(1)
       .WillOnce(Return(accessor_reply));
 
   ASSERT_NO_THROW(
-      (AppController{venue_accessor, venue_cfg, ControlCallbacks{[] {}}}));
+      (AppControllerImpl{venue_accessor, venue_name, ControlCallbacks{[] {}}}));
 }
 
 struct HttpAppControllerReadyToReset : HttpAppControllerTest {};
@@ -94,9 +94,9 @@ TEST_F(HttpAppControllerReadyToReset, ReturnsConflictIfVenueIDIsNotFoundInDB) {
       .WillOnce(Return(constructor_successful_reply))
       .WillOnce(Return(reset_app_error_reply));
 
-  venue_cfg.name = "LSE";
-  const AppController controller{
-      venue_accessor, venue_cfg, ControlCallbacks{[] {}}};
+  venue_name = "LSE";
+  const AppControllerImpl controller{
+      venue_accessor, venue_name, ControlCallbacks{[] {}}};
 
   auto [code, body] = controller.ready_to_reset();
   ASSERT_EQ(code, Pistache::Http::Code::Conflict);
@@ -118,9 +118,9 @@ TEST_F(HttpAppControllerReadyToReset, ReturnsConflictIfVenueRestPortIsNull) {
       .WillOnce(Return(constructor_successful_reply))
       .WillOnce(Return(reset_app_successful_reply));
 
-  venue_cfg.name = "LSE";
-  const AppController controller{
-      venue_accessor, venue_cfg, ControlCallbacks{[] {}}};
+  venue_name = "LSE";
+  const AppControllerImpl controller{
+      venue_accessor, venue_name, ControlCallbacks{[] {}}};
 
   auto [code, body] = controller.ready_to_reset();
   ASSERT_EQ(code, Pistache::Http::Code::Conflict);
@@ -143,9 +143,9 @@ TEST_F(HttpAppControllerReadyToReset,
       .WillOnce(Return(constructor_successful_reply))
       .WillOnce(Return(reset_app_successful_reply));
 
-  venue_cfg.name = "LSE";
-  const AppController controller{
-      venue_accessor, venue_cfg, ControlCallbacks{[] {}}};
+  venue_name = "LSE";
+  const AppControllerImpl controller{
+      venue_accessor, venue_name, ControlCallbacks{[] {}}};
 
   auto [code, body] = controller.ready_to_reset();
   ASSERT_EQ(code, Pistache::Http::Code::Conflict);
@@ -168,9 +168,9 @@ TEST_F(HttpAppControllerReadyToReset,
       .WillOnce(Return(constructor_successful_reply))
       .WillOnce(Return(reset_app_successful_reply));
 
-  venue_cfg.name = "LSE";
-  const AppController controller{
-      venue_accessor, venue_cfg, ControlCallbacks{[] {}}};
+  venue_name = "LSE";
+  const AppControllerImpl controller{
+      venue_accessor, venue_name, ControlCallbacks{[] {}}};
 
   auto [code, body] = controller.ready_to_reset();
   ASSERT_EQ(code, Pistache::Http::Code::Ok);
@@ -192,10 +192,10 @@ TEST_F(HttpAppControllerResetAppState,
 
   EXPECT_CALL(mock_reset_app, Call).Times(1);
 
-  venue_cfg.name = "LSE";
-  const AppController controller{
+  venue_name = "LSE";
+  const AppControllerImpl controller{
       venue_accessor,
-      venue_cfg,
+      venue_name,
       ControlCallbacks{mock_reset_app.AsStdFunction()}};
 
   controller.reset_app_state();

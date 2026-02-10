@@ -130,6 +130,12 @@ auto Router::init_generator_admin_routers() -> void {
       Pistache::Rest::Routes::bind(&GetProcessor::get_order_gen_status,
                                    get_processor_.get()));
 
+  Pistache::Rest::Routes::Get(
+      router_,
+      endpoint::GenStatusByVenueId,
+      Pistache::Rest::Routes::bind(&GetProcessor::get_order_gen_status,
+                                   get_processor_.get()));
+
   Pistache::Rest::Routes::Post(
       router_,
       endpoint::GenStart,
@@ -138,7 +144,19 @@ auto Router::init_generator_admin_routers() -> void {
 
   Pistache::Rest::Routes::Post(
       router_,
+      endpoint::GenStartByVenueId,
+      Pistache::Rest::Routes::bind(&PostProcessor::start_order_gen,
+                                   post_processor_.get()));
+
+  Pistache::Rest::Routes::Post(
+      router_,
       endpoint::GenStop,
+      Pistache::Rest::Routes::bind(&PostProcessor::stop_order_gen,
+                                   post_processor_.get()));
+
+  Pistache::Rest::Routes::Post(
+      router_,
+      endpoint::GenStopByVenueId,
       Pistache::Rest::Routes::bind(&PostProcessor::stop_order_gen,
                                    post_processor_.get()));
 }
@@ -152,7 +170,7 @@ auto Router::init_matching_engine_admin_routes() -> void {
 
   Pistache::Rest::Routes::Post(
       router_,
-      endpoint::StoreById,
+      endpoint::StoreByVenueId,
       Pistache::Rest::Routes::bind(&PostProcessor::handle_store_request,
                                    post_processor_.get()));
 
@@ -164,7 +182,7 @@ auto Router::init_matching_engine_admin_routes() -> void {
 
   Pistache::Rest::Routes::Post(
       router_,
-      endpoint::RecoverById,
+      endpoint::RecoverByVenueId,
       Pistache::Rest::Routes::bind(&PostProcessor::handle_recover_request,
                                    post_processor_.get()));
 
@@ -176,18 +194,23 @@ auto Router::init_matching_engine_admin_routes() -> void {
 
   Pistache::Rest::Routes::Post(
       router_,
+      endpoint::HaltByVenueId,
+      Pistache::Rest::Routes::bind(&PostProcessor::halt_phase,
+                                   post_processor_.get()));
+
+  Pistache::Rest::Routes::Post(
+      router_,
       endpoint::Resume,
+      Pistache::Rest::Routes::bind(&PostProcessor::resume_phase,
+                                   post_processor_.get()));
+  Pistache::Rest::Routes::Post(
+      router_,
+      endpoint::ResumeByVenueId,
       Pistache::Rest::Routes::bind(&PostProcessor::resume_phase,
                                    post_processor_.get()));
 }
 
 auto Router::init_admin_routes() -> void {
-  Pistache::Rest::Routes::Get(
-      router_,
-      endpoint::Status,
-      Pistache::Rest::Routes::bind(&GetProcessor::get_status,
-                                   get_processor_.get()));
-
   Pistache::Rest::Routes::Get(
       router_,
       endpoint::VenueStatusByVenueId,
@@ -197,7 +220,13 @@ auto Router::init_admin_routes() -> void {
   Pistache::Rest::Routes::Get(
       router_,
       endpoint::VenueStatus,
-      Pistache::Rest::Routes::bind(&GetProcessor::get_venue_statuses,
+      Pistache::Rest::Routes::bind(&GetProcessor::get_venue_status,
+                                   get_processor_.get()));
+
+  Pistache::Rest::Routes::Get(
+      router_,
+      endpoint::AllVenueStatus,
+      Pistache::Rest::Routes::bind(&GetProcessor::get_all_venues_status,
                                    get_processor_.get()));
 
   Pistache::Rest::Routes::Post(
@@ -208,7 +237,7 @@ auto Router::init_admin_routes() -> void {
 
   Pistache::Rest::Routes::Post(
       router_,
-      endpoint::ResetById,
+      endpoint::ResetByVenueId,
       Pistache::Rest::Routes::bind(&PostProcessor::reset_app,
                                    post_processor_.get()));
 }
@@ -216,7 +245,7 @@ auto Router::init_admin_routes() -> void {
 auto Router::init_venue_routes() -> void {
   Pistache::Rest::Routes::Get(
       router_,
-      endpoint::VenuesById,
+      endpoint::VenuesByVenueId,
       Pistache::Rest::Routes::bind(&GetProcessor::get_venue,
                                    get_processor_.get()));
 
@@ -234,7 +263,7 @@ auto Router::init_venue_routes() -> void {
 
   Pistache::Rest::Routes::Put(
       router_,
-      endpoint::VenuesById,
+      endpoint::VenuesByVenueId,
       Pistache::Rest::Routes::bind(&PutProcessor::update_venue,
                                    put_processor_.get()));
 }

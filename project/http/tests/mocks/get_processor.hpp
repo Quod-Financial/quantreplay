@@ -58,19 +58,13 @@ class GetProcessor : public http::GetProcessor {
               (override));
 
   MOCK_METHOD(void,
-              get_status,
-              (const Pistache::Rest::Request& request,
-               Pistache::Http::ResponseWriter response),
-              (override));
-
-  MOCK_METHOD(void,
               get_venue_status,
               (const Pistache::Rest::Request& request,
                Pistache::Http::ResponseWriter response),
               (override));
 
   MOCK_METHOD(void,
-              get_venue_statuses,
+              get_all_venues_status,
               (const Pistache::Rest::Request& request,
                Pistache::Http::ResponseWriter response),
               (override));
@@ -86,13 +80,6 @@ class GetProcessor : public http::GetProcessor {
               (const Pistache::Rest::Request& request,
                Pistache::Http::ResponseWriter response),
               (override));
-
-  MOCK_METHOD(std::string,
-              get_venue_status_str,
-              (const data_layer::Venue& venue,
-               bool send_response_code,
-               bool& available),
-              (const, override));
 };
 
 }  // namespace simulator::http::test::mock

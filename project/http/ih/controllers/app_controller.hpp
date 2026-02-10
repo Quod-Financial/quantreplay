@@ -3,7 +3,8 @@
 
 #include <pistache/http_defs.h>
 
-#include "cfg/api/cfg.hpp"
+#include <string>
+
 #include "http.hpp"
 #include "ih/data_bridge/venue_accessor.hpp"
 
@@ -13,13 +14,21 @@ class AppController {
  public:
   using Result = std::pair<Pistache::Http::Code, std::string>;
 
-  explicit AppController(
+  virtual ~AppController() = default;
+
+  virtual auto ready_to_reset() const -> Result = 0;
+  virtual auto reset_app_state() const -> void = 0;
+};
+
+class AppControllerImpl : public AppController {
+ public:
+  explicit AppControllerImpl(
       std::shared_ptr<data_bridge::VenueAccessor> data_accessor,
-      const cfg::VenueConfiguration& venue_cfg,
+      std::string venue_name,
       ControlCallbacks callbacks);
 
-  auto ready_to_reset() const -> Result;
-  auto reset_app_state() const -> void;
+  auto ready_to_reset() const -> Result override;
+  auto reset_app_state() const -> void override;
 
  private:
   std::shared_ptr<data_bridge::VenueAccessor> data_accessor_;

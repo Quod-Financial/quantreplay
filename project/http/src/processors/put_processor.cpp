@@ -12,16 +12,13 @@
 
 namespace simulator::http {
 PutProcessorImpl::PutProcessorImpl(
-    std::shared_ptr<data_bridge::VenueAccessor> venue_accessor,
     std::shared_ptr<DatasourceController> datasource_controller,
     std::shared_ptr<ListingController> listing_controller,
     std::shared_ptr<PriceSeedController> price_seed_controller,
     std::shared_ptr<SettingController> setting_controller,
     std::shared_ptr<TradingController> trading_controller,
     std::shared_ptr<VenueController> venue_controller)
-    : redirector_{
-          redirect::RedirectionProcessor::create(std::move(venue_accessor))},
-      datasource_controller_{std::move(datasource_controller)},
+    : datasource_controller_{std::move(datasource_controller)},
       listing_controller_{std::move(listing_controller)},
       price_seed_controller_{std::move(price_seed_controller)},
       setting_controller_{std::move(setting_controller)},
@@ -31,7 +28,7 @@ PutProcessorImpl::PutProcessorImpl(
 auto PutProcessorImpl::update_venue(const Pistache::Rest::Request& request,
                                     Pistache::Http::ResponseWriter response)
     -> void {
-  const auto venue_id = request.param(":id").as<std::string>();
+  const auto venue_id = request.param(":venueId").as<std::string>();
   log::info("requested update of the venue - {}", venue_id);
 
   auto [code, body] = venue_controller_->update_venue(venue_id, request.body());
@@ -93,14 +90,6 @@ auto PutProcessorImpl::respond(const Pistache::Rest::Request& request,
              static_cast<int>(code));
 
   response.send(code, body);
-}
-
-auto PutProcessorImpl::redirect(const Pistache::Rest::Request& request,
-                                const std::string& instance_id) const
-    -> redirect::Result {
-  assert(redirector_);
-  return redirector_->redirect_to_venue(
-      instance_id, request.method(), request.resource());
 }
 
 }  // namespace simulator::http

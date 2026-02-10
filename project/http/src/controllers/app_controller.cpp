@@ -4,12 +4,12 @@
 
 namespace simulator::http {
 
-AppController::AppController(
+AppControllerImpl::AppControllerImpl(
     std::shared_ptr<data_bridge::VenueAccessor> data_accessor,
-    const cfg::VenueConfiguration& venue_cfg,
+    std::string venue_name,
     ControlCallbacks callbacks)
     : data_accessor_{std::move(data_accessor)},
-      venue_id_{venue_cfg.name},
+      venue_id_{std::move(venue_name)},
       venue_rest_port_{0},
       callbacks_{std::move(callbacks)} {
   if (auto result = data_accessor_->select_single(venue_id_)) {
@@ -32,7 +32,7 @@ AppController::AppController(
   }
 }
 
-auto AppController::ready_to_reset() const -> Result {
+auto AppControllerImpl::ready_to_reset() const -> Result {
   const auto result = data_accessor_->select_single(venue_id_);
   if (!result) {
     return {Pistache::Http::Code::Conflict,
@@ -67,7 +67,7 @@ auto AppController::ready_to_reset() const -> Result {
           format_result_response("Resetting the venue state starts.")};
 }
 
-auto AppController::reset_app_state() const -> void {
+auto AppControllerImpl::reset_app_state() const -> void {
   callbacks_.reset_app_state();
 }
 

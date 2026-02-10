@@ -10,9 +10,6 @@
 #include "ih/controllers/setting_controller.hpp"
 #include "ih/controllers/trading_controller.hpp"
 #include "ih/controllers/venue_controller.hpp"
-#include "ih/data_bridge/venue_accessor.hpp"
-#include "ih/redirect/redirection_processor.hpp"
-#include "ih/redirect/result.hpp"
 
 namespace simulator::http {
 
@@ -43,8 +40,7 @@ class PutProcessor {
 
 class PutProcessorImpl : public PutProcessor {
  public:
-  PutProcessorImpl(std::shared_ptr<data_bridge::VenueAccessor> venue_accessor,
-                   std::shared_ptr<DatasourceController> datasource_controller,
+  PutProcessorImpl(std::shared_ptr<DatasourceController> datasource_controller,
                    std::shared_ptr<ListingController> listing_controller,
                    std::shared_ptr<PriceSeedController> price_seed_controller,
                    std::shared_ptr<SettingController> setting_controller,
@@ -74,11 +70,6 @@ class PutProcessorImpl : public PutProcessor {
                       Pistache::Http::ResponseWriter& response,
                       Pistache::Http::Code code,
                       const std::string& body) -> void;
-
-  auto redirect(const Pistache::Rest::Request& request,
-                const std::string& instance_id) const -> redirect::Result;
-
-  std::shared_ptr<redirect::RedirectionProcessor> redirector_;
 
   std::shared_ptr<DatasourceController> datasource_controller_;
   std::shared_ptr<ListingController> listing_controller_;

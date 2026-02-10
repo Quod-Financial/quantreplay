@@ -17,7 +17,7 @@ struct HttpTradingControllerTest : Test {
     middleware::bind_trading_admin_channel(receiver_pointer);
   }
 
-  TradingController controller;
+  TradingControllerImpl controller;
 
  protected:
   NiceMock<mock::TradingAdminRequestReceiver> receiver_;
@@ -41,7 +41,7 @@ struct HttpTradingControllerHaltTest : HttpTradingControllerTest {
 
 TEST_F(HttpTradingControllerHaltTest,
        RepliesInternalServerErrorOnHaltRequestWithoutJsonBody) {
-  const auto [code, body] = TradingController{}.halt("body");
+  const auto [code, body] = TradingControllerImpl{}.halt("body");
 
   ASSERT_EQ(code, Pistache::Http::Code::Internal_Server_Error);
   ASSERT_EQ(
@@ -52,7 +52,7 @@ TEST_F(HttpTradingControllerHaltTest,
 
 TEST_F(HttpTradingControllerHaltTest,
        RepliesInternalServerErrorOnHaltRequestWithoutAllowCancelsField) {
-  const auto [code, body] = TradingController{}.halt("{}");
+  const auto [code, body] = TradingControllerImpl{}.halt("{}");
 
   ASSERT_EQ(code, Pistache::Http::Code::Internal_Server_Error);
   ASSERT_EQ(

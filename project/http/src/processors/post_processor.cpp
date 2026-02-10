@@ -10,23 +10,24 @@
 namespace simulator::http {
 
 PostProcessorImpl::PostProcessorImpl(
-    std::shared_ptr<data_bridge::VenueAccessor> venue_accessor,
+    std::shared_ptr<redirect::RedirectionProcessor> redirector,
     std::shared_ptr<DatasourceController> datasource_controller,
     std::shared_ptr<ListingController> listing_controller,
     std::shared_ptr<PriceSeedController> price_seed_controller,
     std::shared_ptr<SettingController> setting_controller,
     std::shared_ptr<TradingController> trading_controller,
     std::shared_ptr<VenueController> venue_controller,
-    ControlCallbacks callbacks)
-    : redirector_{redirect::RedirectionProcessor::create(venue_accessor)},
+    std::unique_ptr<AppController> app_controller,
+    std::string venue_name)
+    : redirector_{std::move(redirector)},
       datasource_controller_{std::move(datasource_controller)},
       listing_controller_{std::move(listing_controller)},
       price_seed_controller_{std::move(price_seed_controller)},
       setting_controller_{std::move(setting_controller)},
       trading_controller_{std::move(trading_controller)},
       venue_controller_{std::move(venue_controller)},
-      app_controller_{
-          std::move(venue_accessor), cfg::venue(), std::move(callbacks)} {}
+      app_controller_{std::move(app_controller)},
+      venue_id_{std::move(venue_name)} {}
 
 auto PostProcessorImpl::add_venue(const Pistache::Rest::Request& request,
                                   Pistache::Http::ResponseWriter response)
@@ -76,13 +77,22 @@ auto PostProcessorImpl::sync_price_seeds(
 auto PostProcessorImpl::stop_order_gen(const Pistache::Rest::Request& request,
                                        Pistache::Http::ResponseWriter response)
     -> void {
-  const auto instance_id = request.param(":venueId").as<std::string>();
-  log::info("requested to stop order generation for {}", instance_id);
+  auto venue_id = request.hasParam(":venueId")
+                      ? request.param(":venueId").as<std::string>()
+                      : std::string{};
 
-  if (instance_id == cfg::venue().name) {
+  if (venue_id.empty()) {
+    venue_id = venue_id_;
+    log::info("requested to stop order generation for current venue - {}",
+              venue_id);
+  } else {
+    log::info("requested to stop order generation for venue - {}", venue_id);
+  }
+
+  if (venue_id == venue_id_) {
     handle_generation_stop_request(request, std::move(response));
   } else {
-    const auto redirect_response = redirect(request, instance_id);
+    const auto redirect_response = redirect(request, venue_id);
     respond(request,
             response,
             redirect_response.http_code(),
@@ -93,13 +103,22 @@ auto PostProcessorImpl::stop_order_gen(const Pistache::Rest::Request& request,
 auto PostProcessorImpl::start_order_gen(const Pistache::Rest::Request& request,
                                         Pistache::Http::ResponseWriter response)
     -> void {
-  const auto instance_id = request.param(":venueId").as<std::string>();
-  log::info("requested to start order generation for {}", instance_id);
+  auto venue_id = request.hasParam(":venueId")
+                      ? request.param(":venueId").as<std::string>()
+                      : std::string{};
 
-  if (instance_id == cfg::venue().name) {
+  if (venue_id.empty()) {
+    venue_id = venue_id_;
+    log::info("requested to start order generation for current venue - {}",
+              venue_id);
+  } else {
+    log::info("requested to start order generation for venue - {}", venue_id);
+  }
+
+  if (venue_id == venue_id_) {
     handle_generation_start_request(request, std::move(response));
   } else {
-    const auto redirect_response = redirect(request, instance_id);
+    const auto redirect_response = redirect(request, venue_id);
     respond(request,
             response,
             redirect_response.http_code(),
@@ -110,12 +129,23 @@ auto PostProcessorImpl::start_order_gen(const Pistache::Rest::Request& request,
 auto PostProcessorImpl::halt_phase(const Pistache::Rest::Request& request,
                                    Pistache::Http::ResponseWriter response)
     -> void {
-  const auto instance_id = request.param(":venueId").as<std::string>();
-  if (instance_id == cfg::venue().name) {
+  auto venue_id = request.hasParam(":venueId")
+                      ? request.param(":venueId").as<std::string>()
+                      : std::string{};
+
+  if (venue_id.empty()) {
+    venue_id = venue_id_;
+    log::info("requested halt current market phase for current venue - {}",
+              venue_id);
+  } else {
+    log::info("requested halt current market phase for venue - {}", venue_id);
+  }
+
+  if (venue_id == venue_id_) {
     const auto [code, body] = trading_controller_->halt(request.body());
     respond(request, response, code, body);
   } else {
-    const auto redirect_response = redirect(request, instance_id);
+    const auto redirect_response = redirect(request, venue_id);
     respond(request,
             response,
             redirect_response.http_code(),
@@ -126,12 +156,25 @@ auto PostProcessorImpl::halt_phase(const Pistache::Rest::Request& request,
 auto PostProcessorImpl::resume_phase(const Pistache::Rest::Request& request,
                                      Pistache::Http::ResponseWriter response)
     -> void {
-  const auto instance_id = request.param(":venueId").as<std::string>();
-  if (instance_id == cfg::venue().name) {
+  auto venue_id = request.hasParam(":venueId")
+                      ? request.param(":venueId").as<std::string>()
+                      : std::string{};
+
+  if (venue_id.empty()) {
+    venue_id = venue_id_;
+    log::info(
+        "requested resume the phase that was halted for current venue - {}",
+        venue_id);
+  } else {
+    log::info("requested resume the phase that was halted for venue - {}",
+              venue_id);
+  }
+
+  if (venue_id == venue_id_) {
     const auto [code, body] = trading_controller_->resume();
     respond(request, response, code, body);
   } else {
-    const auto redirect_response = redirect(request, instance_id);
+    const auto redirect_response = redirect(request, venue_id);
     respond(request,
             response,
             redirect_response.http_code(),
@@ -146,7 +189,7 @@ auto PostProcessorImpl::handle_store_request(
                                ? request.param(":venueId").as<std::string>()
                                : std::string{};
 
-  if (instance_id.empty() || instance_id == cfg::venue().name) {
+  if (instance_id.empty() || instance_id == venue_id_) {
     const auto [code, body] = trading_controller_->store_market_state();
     respond(request, response, code, body);
   } else {
@@ -165,7 +208,7 @@ auto PostProcessorImpl::handle_recover_request(
                                ? request.param(":venueId").as<std::string>()
                                : std::string{};
 
-  if (instance_id.empty() || instance_id == cfg::venue().name) {
+  if (instance_id.empty() || instance_id == venue_id_) {
     const auto [code, body] = trading_controller_->recover_market_state();
     respond(request, response, code, body);
   } else {
@@ -184,13 +227,13 @@ auto PostProcessorImpl::reset_app(const Pistache::Rest::Request& request,
                                ? request.param(":venueId").as<std::string>()
                                : std::string{};
 
-  if (instance_id.empty() || instance_id == cfg::venue().name) {
+  if (instance_id.empty() || instance_id == venue_id_) {
     log::info("before reset_app_state()");
-    const auto [code, body] = app_controller_.ready_to_reset();
+    const auto [code, body] = app_controller_->ready_to_reset();
 
     respond(request, response, code, body);
     if (code == Pistache::Http::Code::Ok) {
-      app_controller_.reset_app_state();
+      app_controller_->reset_app_state();
     }
   } else {
     const auto redirect_response = redirect(request, instance_id);

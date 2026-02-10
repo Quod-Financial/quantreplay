@@ -8,7 +8,7 @@
 
 namespace simulator::http::test::util {
 
-auto has_content_length(
+inline auto has_content_length(
     const std::vector<std::pair<std::string, std::string>>& headers) -> bool {
   constexpr std::string_view content_length{"content-length"};
 
@@ -22,7 +22,7 @@ auto has_content_length(
   });
 }
 
-auto make_request(
+inline auto make_request(
     const std::string& method,
     const std::string& target,
     const std::vector<std::pair<std::string, std::string>>& headers =
@@ -77,7 +77,7 @@ class NullTcpHandler : public Pistache::Tcp::Handler {
       -> void override {}
 };
 
-auto make_response_writer(Pistache::Http::Handler& handler)
+inline auto make_response_writer(Pistache::Http::Handler& handler)
     -> DummyResponseWriter {
   constexpr int empty_fd = -1;
 
