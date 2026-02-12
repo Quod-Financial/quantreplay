@@ -26,9 +26,15 @@ class GeneratedOrdersRegistry {
   virtual ~GeneratedOrdersRegistry() = default;
 
   /// Searches for an order associated with a specified owner id (PartyID)
+  /// Note: If multiple orders exist for an owner, returns the first one found.
   [[nodiscard]]
   virtual auto find_by_owner(std::string_view owner_id) const
       -> std::optional<OrderData> = 0;
+
+  /// Searches for all orders associated with a specified owner id (PartyID)
+  [[nodiscard]]
+  virtual auto find_all_by_owner(std::string_view owner_id) const
+      -> std::vector<OrderData> = 0;
 
   /// Searches for an order associated with a specified OrderID
   [[nodiscard]]
@@ -37,19 +43,12 @@ class GeneratedOrdersRegistry {
 
   virtual auto add(OrderData&& new_order_data) -> bool = 0;
 
-  /// Updates an order associated with an owner id (PartyID).
-  /// OrderID-to-order association shall be updated by the implementation.
-  virtual auto update_by_owner(std::string_view owner_id,
-                               OrderData::Patch&& patch) -> bool = 0;
-
   /// Updates an order associated with an identifier.
   /// A last-known order identifier is expected by the container
   /// to resolve target order.
   /// OrderID-to-order association shall be updated by the implementation.
   virtual auto update_by_identifier(std::string_view identifier,
                                     OrderData::Patch&& patch) -> bool = 0;
-
-  virtual auto remove_by_owner(std::string_view owner_id) -> bool = 0;
 
   virtual auto remove_by_identifier(std::string_view identifier) -> bool = 0;
 

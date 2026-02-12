@@ -204,18 +204,35 @@ TEST_F(GeneratorOrderRegistryUpdaterRestingOrderCancelReplaceRequest,
 }
 
 TEST_F(GeneratorOrderRegistryUpdaterRestingOrderCancelReplaceRequest,
-       UpdatesByOwnerOnUpdate) {
+       UpdatesByIdentifierOnUpdate) {
   constexpr OrderPrice price{123.432};
   constexpr Quantity quantity{334.34};
 
   resting_order_cancel_replace_request.order_price = price;
   resting_order_cancel_replace_request.quantity = quantity;
+  resting_order_cancel_replace_request.orig_client_order_id =
+      OrigClientOrderId{order_id.value()};
 
-  EXPECT_CALL(registry, update_by_owner(Eq(owner_id.value()), testing::_))
+  EXPECT_CALL(registry, update_by_identifier(Eq(order_id.value()), testing::_))
       .Times(1);
 
   EXPECT_NO_THROW(OrderRegistryUpdater::update(
       registry, resting_order_cancel_replace_request));
+}
+
+TEST_F(GeneratorOrderRegistryUpdaterRestingOrderCancelReplaceRequest,
+       UsesClientOrderIdAsFallbackWhenOrigClientOrderIdNotProvided) {
+  constexpr OrderPrice price{123.432};
+  constexpr Quantity quantity{334.34};
+
+  resting_order_cancel_replace_request.order_price = price;
+  resting_order_cancel_replace_request.quantity = quantity;
+  resting_order_cancel_replace_request.orig_client_order_id = std::nullopt;
+
+  EXPECT_CALL(registry, update_by_identifier(Eq(order_id.value()), testing::_))
+      .Times(1);
+
+  OrderRegistryUpdater::update(registry, resting_order_cancel_replace_request);
 }
 
 struct GeneratorOrderRegistryUpdaterOrderCancelRequest
@@ -264,11 +281,32 @@ TEST_F(GeneratorOrderRegistryUpdaterOrderCancelRequest,
 }
 
 TEST_F(GeneratorOrderRegistryUpdaterOrderCancelRequest,
-       CallsRemoveByOwnerOnUpdate) {
-  EXPECT_CALL(registry, remove_by_owner(Eq(owner_id.value()))).Times(1);
+       CallsRemoveByIdentifierOnUpdate) {
+  resting_order_cancel_request.orig_client_order_id =
+      OrigClientOrderId{order_id.value()};
+
+  EXPECT_CALL(registry, remove_by_identifier(Eq(order_id.value()))).Times(1);
 
   EXPECT_NO_THROW(
       OrderRegistryUpdater::update(registry, resting_order_cancel_request));
+}
+
+TEST_F(GeneratorOrderRegistryUpdaterOrderCancelRequest,
+       DoesNotCallRemoveWhenOrigClientOrderIdNotProvided) {
+  resting_order_cancel_request.orig_client_order_id = std::nullopt;
+
+  EXPECT_CALL(registry, remove_by_identifier(testing::_)).Times(0);
+
+  OrderRegistryUpdater::update(registry, resting_order_cancel_request);
+}
+
+TEST_F(GeneratorOrderRegistryUpdaterOrderCancelRequest,
+       DoesNotCallRemoveWhenOrigClientOrderIdIsEmpty) {
+  resting_order_cancel_request.orig_client_order_id = OrigClientOrderId{""};
+
+  EXPECT_CALL(registry, remove_by_identifier(testing::_)).Times(0);
+
+  OrderRegistryUpdater::update(registry, resting_order_cancel_request);
 }
 
 struct GeneratorOrderRegistryUpdaterExecutionReport

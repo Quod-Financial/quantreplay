@@ -503,12 +503,14 @@ If the randomOrdersEnabled property of a listing is true, then both random order
 
 In processing each data source row, the simulator compares the current state of the matching engine for the given listing of each row, and generates a series of order actions 
 (new orders, amends, cancels) to modify the current state of the matching engine to change to a state that matches the values from the current data source row being processed. 
+Multiple orders for the same counter party are supported on either one or both sides of the order book.
+When applying changes from a new order book snapshot, the actions are performed in a specific sequence: first all necessary cancels, then new orders, and finally amends.
+
 The following logic is applied to derive order actions from each row of a data source:
 
 * Any existing orders from counter parties that do not match the party of the data source row being processed are canceled.
 * Any existing orders for the same party as the data source row being processed without a corresponding bid or ask entry in the data source are canceled.
-* Any existing orders for the same party as the data source row being processed with a corresponding bid or ask entry in the data source are amended to the same 
-price and quantity as the corresponding bid or ask entry in the data source.
+* Any existing orders for the same party and side as the data source row, but with a different price or quantity, are amended to the same price and quantity as the corresponding bid or ask entry in the data source.
 * Any bid or ask entries in the data source without a corresponding existing order for the same party results in a new order with the properties of that bid or ask entry 
 in the data source.
 

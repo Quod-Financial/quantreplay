@@ -67,28 +67,16 @@ RecordApplier::RecordApplier(RecordApplier::ContextPointer context) noexcept
 
 void RecordApplier::process(historical::Record record) {
   if (record.has_levels()) {
-    const std::optional<std::string>& source_name = record.source_name();
-    const std::uint64_t source_row = record.source_row();
-    std::size_t levels_applied = 0;
+    std::vector<Order> incoming_orders = collect_orders(record);
 
-    record.steal_levels([this, &levels_applied, &source_name, source_row](
-                            std::uint64_t level_idx, historical::Level level) {
-      if (process(level, level_idx)) {
-        ++levels_applied;
-      } else {
-        log::warn(
-            "level at index {} has been skipped in a record from "
-            "`{}' datasource at row {}: {}",
-            level_idx,
-            source_name.value_or("undefined"),
-            source_row,
-            level);
-      }
-    });
+    apply_orders(std::move(incoming_orders));
 
     cancel_not_placed_orders();
 
-    log::debug("{} level applied from historical {}", levels_applied, record);
+    sort_messages();
+
+    log::debug("{} orders processed from historical record",
+               placed_client_order_ids_.size());
   } else {
     cancel_bid_part();
     cancel_offer_part();
@@ -100,110 +88,130 @@ void RecordApplier::process(historical::Record record) {
   }
 }
 
-auto RecordApplier::process(const historical::Level& level,
-                            std::uint64_t level_idx) -> bool {
-  bool anything_placed = false;
+auto RecordApplier::collect_orders(historical::Record& record)
+    -> std::vector<Order> {
+  std::vector<Order> orders;
 
-  if (skip_bids_) {
-    log::debug(
-        "bid side is already marked as invalid, skipping bid level at index {}",
-        level_idx);
-  } else if (RecordChecker::has_valid_bid(level)) {
-    place_bid(level);
-    anything_placed = true;
-  } else {
-    skip_bids_ = true;
-    log::warn(
-        "bid side became invalid at level index {} -> all subsequent bid "
-        "levels will be ignored",
-        level_idx);
-  }
+  record.steal_levels([this, &orders](std::uint64_t level_idx,
+                                      historical::Level level) {
+    if (skip_bids_) {
+      log::debug(
+          "bid side is already marked as invalid, skipping bid at index {}",
+          level_idx);
+    } else if (RecordChecker::has_valid_bid(level)) {
+      std::string party = level.bid_counterparty().has_value()
+                              ? *level.bid_counterparty()
+                              : next_party_id();
+      orders.emplace_back(*level.bid_price(),
+                          Side::Option::Buy,
+                          *level.bid_quantity(),
+                          std::move(party));
+    } else {
+      skip_bids_ = true;
+      log::warn(
+          "bid side became invalid at level index {} -> all subsequent bid "
+          "levels will be ignored",
+          level_idx);
+    }
 
-  if (skip_offers_) {
-    log::debug(
-        "offer side is already marked as invalid, skipping offer level at "
-        "index {}",
-        level_idx);
-  } else if (RecordChecker::has_valid_offer(level)) {
-    place_offer(level);
-    anything_placed = true;
-  } else {
-    skip_offers_ = true;
-    log::warn(
-        "offer side became invalid at level index {} -> all subsequent "
-        "offer levels will be ignored",
-        level_idx);
-  }
-  return anything_placed;
+    if (skip_offers_) {
+      log::debug(
+          "offer side is already marked as invalid, skipping offer at index {}",
+          level_idx);
+    } else if (RecordChecker::has_valid_offer(level)) {
+      std::string party = level.offer_counterparty().has_value()
+                              ? *level.offer_counterparty()
+                              : next_party_id();
+      orders.emplace_back(*level.offer_price(),
+                          Side::Option::Sell,
+                          *level.offer_quantity(),
+                          std::move(party));
+    } else {
+      skip_offers_ = true;
+      log::warn(
+          "offer side became invalid at level index {} -> all subsequent "
+          "offer levels will be ignored",
+          level_idx);
+    }
+  });
+
+  return orders;
 }
 
-auto RecordApplier::place_bid(const historical::Level& level) -> void {
-  constexpr auto target_side = Side::Option::Buy;
+auto RecordApplier::apply_orders(std::vector<Order> incoming_orders) -> void {
+  filter_already_placed_orders(incoming_orders);
 
-  assert(level.bid_price().has_value());
-  const double price = level.bid_price().value();
-
-  assert(level.bid_quantity().has_value());
-  const double quantity = level.bid_quantity().value();
-
-  std::string party = level.bid_counterparty().has_value()
-                          ? *level.bid_counterparty()
-                          : next_party_id();
-
-  place(Order{price, target_side, quantity, std::move(party)});
-}
-
-auto RecordApplier::place_offer(const historical::Level& level) -> void {
-  constexpr auto target_side = Side::Option::Sell;
-
-  assert(level.offer_price().has_value());
-  const double price = level.offer_price().value();
-
-  assert(level.offer_quantity().has_value());
-  const double quantity = level.offer_quantity().value();
-
-  std::string party = level.offer_counterparty().has_value()
-                          ? *level.offer_counterparty()
-                          : next_party_id();
-
-  place(Order{price, target_side, quantity, std::move(party)});
-}
-
-auto RecordApplier::place(RecordApplier::Order order) -> void {
   auto& context = *context_;
   auto& registry = context.take_registry();
 
-  const std::optional<GeneratedOrderData> existing_order =
-      registry.find_by_owner(order.counterparty_id);
+  for (auto& incoming_order : incoming_orders) {
+    auto reusable_order = find_same_party_side_order(incoming_order);
 
-  RequestBuilder message_builder;
-  message_builder.with_resting_attributes()
-      .with_price(OrderPrice{order.price})
-      .with_quantity(Quantity{order.quantity})
-      .with_side(order.side)
-      .with_counterparty(PartyId{std::move(order.counterparty_id)});
+    RequestBuilder message_builder;
+    message_builder.with_resting_attributes()
+        .with_price(OrderPrice{incoming_order.price})
+        .with_quantity(Quantity{incoming_order.quantity})
+        .with_side(incoming_order.side)
+        .with_counterparty(PartyId{std::move(incoming_order.counterparty_id)});
 
-  if (existing_order.has_value() &&
-      existing_order->get_order_side() == order.side) {
-    message_builder.make_modification_request()
-        .with_clordid(existing_order->get_order_id())
-        .with_orig_clordid(existing_order->get_orig_order_id());
-  } else {
-    if (existing_order.has_value()) {
-      const auto& target_ord_id = existing_order->get_order_id();
-      cancel([&target_ord_id](const GeneratedOrderData& placed_order) {
-        return placed_order.get_order_id() == target_ord_id;
-      });
+    if (reusable_order.has_value()) {
+      message_builder.make_modification_request()
+          .with_clordid(reusable_order->get_order_id())
+          .with_orig_clordid(reusable_order->get_orig_order_id());
+    } else {
+      message_builder.make_new_order_request().with_clordid(
+          ClientOrderId{context.get_synthetic_identifier()});
     }
 
-    message_builder.make_new_order_request().with_clordid(
-        ClientOrderId{context.get_synthetic_identifier()});
-  }
+    auto order_message = RequestBuilder::construct(std::move(message_builder));
+    OrderRegistryUpdater::update(registry, order_message);
 
-  auto order_message = RequestBuilder::construct(std::move(message_builder));
-  OrderRegistryUpdater::update(registry, order_message);
-  placed_client_order_ids_.insert(order_message.client_order_id->value());
-  request_messages_.emplace_back(std::move(order_message));
+    const auto& new_order_id = order_message.client_order_id->value();
+    matched_order_ids_.insert(new_order_id);
+    placed_client_order_ids_.insert(new_order_id);
+    request_messages_.emplace_back(std::move(order_message));
+  }
+}
+
+auto RecordApplier::filter_already_placed_orders(
+    std::vector<Order>& incoming_orders) -> void {
+  auto& context = *context_;
+  auto& registry = context.take_registry();
+
+  auto matches_existing_order = [this,
+                                 &registry](const Order& incoming) -> bool {
+    for (const auto& existing :
+         registry.find_all_by_owner(incoming.counterparty_id)) {
+      if (matched_order_ids_.contains(existing.get_order_id().value())) {
+        continue;
+      }
+      if (existing.get_order_side() == incoming.side &&
+          existing.get_order_px() == OrderPrice{incoming.price} &&
+          existing.get_order_qty() == Quantity{incoming.quantity}) {
+        const auto& order_id = existing.get_order_id().value();
+        matched_order_ids_.insert(order_id);
+        placed_client_order_ids_.insert(order_id);
+        return true;
+      }
+    }
+    return false;
+  };
+
+  std::erase_if(incoming_orders, matches_existing_order);
+}
+
+auto RecordApplier::find_same_party_side_order(const Order& order)
+    -> std::optional<GeneratedOrderData> {
+  auto& context = *context_;
+  auto& registry = context.take_registry();
+
+  const auto orders = registry.find_all_by_owner(order.counterparty_id);
+  auto it = std::ranges::find_if(orders, [this, &order](const auto& existing) {
+    return !matched_order_ids_.contains(existing.get_order_id().value()) &&
+           existing.get_order_side() == order.side;
+  });
+
+  return it != orders.end() ? std::optional{*it} : std::nullopt;
 }
 
 auto RecordApplier::cancel(
@@ -264,6 +272,31 @@ auto RecordApplier::cancel_not_placed_orders() -> void {
   cancel([this](const GeneratedOrderData& order) {
     return !placed_client_order_ids_.contains(order.get_order_id().value());
   });
+}
+
+auto RecordApplier::sort_messages() -> void {
+  std::ranges::stable_sort(
+      request_messages_,
+      [](const GeneratedMessage& a, const GeneratedMessage& b) {
+        static constexpr int cancel_priority = 0;
+        static constexpr int new_priority = 1;
+        static constexpr int modify_priority = 2;
+
+        auto get_priority = [](const GeneratedMessage& msg) -> int {
+          switch (msg.message_type) {
+            case MessageType::OrderCancelRequest:
+              return cancel_priority;
+            case MessageType::NewOrderSingle:
+              return new_priority;
+            case MessageType::OrderCancelReplaceRequest:
+              return modify_priority;
+            default:
+              return modify_priority;
+          }
+        };
+
+        return get_priority(a) < get_priority(b);
+      });
 }
 
 auto RecordApplier::next_party_id() -> std::string {

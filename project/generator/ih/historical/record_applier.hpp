@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -31,13 +32,18 @@ class RecordApplier {
 
   auto process(historical::Record record) -> void;
 
-  auto process(const historical::Level& level, std::uint64_t level_idx) -> bool;
+  auto collect_orders(historical::Record& record) -> std::vector<Order>;
 
-  auto place_bid(const historical::Level& level) -> void;
+  /// Applies incoming orders in two passes to minimize messages:
+  /// Pass 1: Mark all exact matches (same party+side+price+qty) - no messages
+  /// Pass 2: For remaining, reuse same-side orders or create new
+  auto apply_orders(std::vector<Order> incoming_orders) -> void;
 
-  auto place_offer(const historical::Level& level) -> void;
+  auto filter_already_placed_orders(std::vector<Order>& incoming_orders)
+      -> void;
 
-  auto place(RecordApplier::Order order) -> void;
+  auto find_same_party_side_order(const Order& order)
+      -> std::optional<GeneratedOrderData>;
 
   auto cancel(const GeneratedOrdersRegistry::Predicate& cancel_criteria)
       -> void;
@@ -48,10 +54,18 @@ class RecordApplier {
 
   auto cancel_not_placed_orders() -> void;
 
+  /// Sorts messages in order: Cancel → New → Modify
+  auto sort_messages() -> void;
+
   auto next_party_id() -> std::string;
 
   std::vector<GeneratedMessage> request_messages_;
   std::unordered_set<std::string> placed_client_order_ids_;
+
+  /// Tracks order IDs that have been matched/modified in the current record
+  /// processing. This prevents the same existing order from being reused
+  /// when the same counterparty appears multiple times in the data.
+  std::unordered_set<std::string> matched_order_ids_;
 
   ContextPointer context_;
 
