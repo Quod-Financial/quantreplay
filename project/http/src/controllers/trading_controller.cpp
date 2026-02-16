@@ -134,7 +134,7 @@ auto response_attributes(const protocol::RecoverMarketStateReply& reply)
 
 }  // namespace
 
-auto TradingController::halt(const std::string& body) const -> Result {
+auto TradingControllerImpl::halt(const std::string& body) const -> Result {
   auto code = Pistache::Http::Code::Internal_Server_Error;
   std::string message;
 
@@ -162,7 +162,7 @@ auto TradingController::halt(const std::string& body) const -> Result {
   return std::make_pair(code, format_result_response(message));
 }
 
-auto TradingController::resume() const -> Result {
+auto TradingControllerImpl::resume() const -> Result {
   auto code = Pistache::Http::Code::Internal_Server_Error;
   std::string message;
 
@@ -186,7 +186,7 @@ auto TradingController::resume() const -> Result {
   return std::make_pair(code, format_result_response(message));
 }
 
-auto TradingController::store_market_state() const -> Result {
+auto TradingControllerImpl::store_market_state() const -> Result {
   auto code = Pistache::Http::Code::Internal_Server_Error;
   std::string message;
 
@@ -209,7 +209,7 @@ auto TradingController::store_market_state() const -> Result {
   return std::make_pair(code, format_result_response(message));
 }
 
-auto TradingController::recover_market_state() const -> Result {
+auto TradingControllerImpl::recover_market_state() const -> Result {
   auto code = Pistache::Http::Code::Internal_Server_Error;
   std::string message;
 

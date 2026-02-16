@@ -22,6 +22,7 @@ add_static_library(
   ALIAS simulator::http
   HEADERS
     ih/constants.hpp
+    ih/controllers/app_controller.hpp
     ih/controllers/datasource_controller.hpp
     ih/controllers/listing_controller.hpp
     ih/controllers/price_seed_controller.hpp
@@ -69,6 +70,7 @@ add_static_library(
     ih/server.hpp
     include/http/http.hpp
   SOURCES
+    src/controllers/app_controller.cpp
     src/controllers/datasource_controller.cpp
     src/controllers/listing_controller.cpp
     src/controllers/price_seed_controller.cpp

@@ -10,6 +10,7 @@
 #include "data_layer/api/models/setting.hpp"
 #include "data_layer/api/models/venue.hpp"
 #include "ih/marshalling/json/detail/key_resolver.hpp"
+#include "tests/test_utils/utils.hpp"
 
 namespace simulator::http::json::test {
 namespace {
@@ -269,7 +270,8 @@ struct HttpJsonKeyResolverMarketPhase : public ::testing::Test {
 };
 
 TEST_F(HttpJsonKeyResolverMarketPhase, ThrowsExceptionOnResolvingUndefinedKey) {
-  EXPECT_THROW((void)KeyResolver::resolve_key(static_cast<Attribute>(-1)),
+  EXPECT_THROW((void)KeyResolver::resolve_key(
+                   http::test::util::invalid_enum_value<Attribute>()),
                std::logic_error);
 }
 

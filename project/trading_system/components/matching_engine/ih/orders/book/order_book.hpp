@@ -1,7 +1,6 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_BOOK_ORDER_BOOK_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_BOOK_ORDER_BOOK_HPP_
 
-#include <functional>
 #include <vector>
 
 #include "core/domain/attributes.hpp"

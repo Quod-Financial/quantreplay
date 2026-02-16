@@ -415,7 +415,8 @@ TEST_F(Generator_Random_OrderGenerationAlgorithm,
 
   EXPECT_CALL(quantity_generator(), generate_random_qty).Times(0);
 
-  EXPECT_CALL(registry(), update_by_owner(Eq(party.value()), testing::_))
+  EXPECT_CALL(registry(),
+              update_by_identifier(Eq(order_id.value()), testing::_))
       .Times(1)
       .WillOnce(Return(true));
 
@@ -477,7 +478,8 @@ TEST_F(Generator_Random_OrderGenerationAlgorithm,
       .Times(1)
       .WillOnce(Return(mock::QuantityGenerator::make_output(new_quantity)));
 
-  EXPECT_CALL(registry(), update_by_owner(Eq(party.value()), testing::_))
+  EXPECT_CALL(registry(),
+              update_by_identifier(Eq(order_id.value()), testing::_))
       .Times(1)
       .WillOnce(Return(true));
 
@@ -535,7 +537,7 @@ TEST_F(Generator_Random_OrderGenerationAlgorithm,
 
   EXPECT_CALL(quantity_generator(), generate_random_qty).Times(0);
 
-  EXPECT_CALL(registry(), remove_by_owner(Eq(party.value())))
+  EXPECT_CALL(registry(), remove_by_identifier(Eq(order_id.value())))
       .Times(1)
       .WillOnce(Return(true));
 

@@ -15,15 +15,15 @@ namespace {
 using namespace ::testing;
 
 ACTION(CreateValidRecord) {
-  historical::Record::Builder& record_builder = arg0;
-  record_builder.with_receive_time(std::chrono::system_clock::now())
+  std::unique_ptr<historical::Record::Builder>& record_builder = arg0;
+  record_builder->with_received_time(std::chrono::system_clock::now())
       .with_instrument("AAPL")
       .with_source_row(1);
 }
 
 ACTION(CreateMalformedRecord) {
-  historical::Record::Builder& record_builder = arg0;
-  record_builder.with_receive_time(std::chrono::system_clock::now())
+  std::unique_ptr<historical::Record::Builder>& record_builder = arg0;
+  record_builder->with_received_time(std::chrono::system_clock::now())
       .with_source_row(1);
 }
 

@@ -19,28 +19,28 @@ TEST(GeneratorHistoricalAction, FormatsToString) {
   auto level_appl_1 = make_level(120.1, 202.1, "BCP", 120.2, 202.2, "OCP");
   auto level_appl_2 = make_level(220.1, 302.1, "BCP2", 220.2, 302.2, "OCP2");
 
-  Record::Builder appl_builder;
+  Record::BuilderImpl appl_builder;
   appl_builder.with_instrument("AAPL")
-      .with_receive_time(receive_time)
+      .with_received_time(receive_time)
       .with_message_time(receive_time + std::chrono::nanoseconds(123456789))
       .with_source_name("AAPL_source_name")
       .with_source_connection("AAPL_source_connection")
       .with_source_row(100)
       .add_level(0, std::move(level_appl_1))
       .add_level(1, std::move(level_appl_2));
-  auto record_appl = Record::Builder::construct(std::move(appl_builder));
+  auto record_appl = appl_builder.construct();
 
   auto level_vow_1 = make_level(320.1, 402.1, "BCP3", 320.2, 402.2, "OCP3");
 
-  Record::Builder vow_builder;
+  Record::BuilderImpl vow_builder;
   vow_builder.with_instrument("VOW")
-      .with_receive_time(receive_time)
+      .with_received_time(receive_time)
       .with_message_time(receive_time + std::chrono::nanoseconds(987654321))
       .with_source_name("VOW_source_name")
       .with_source_connection("VOW_source_connection")
       .with_source_row(200)
       .add_level(0, std::move(level_vow_1));
-  const auto record_vow = Record::Builder::construct(std::move(vow_builder));
+  const auto record_vow = vow_builder.construct();
 
   Action::Builder builder;
   builder.add(std::move(record_appl), time_offset);
@@ -55,7 +55,7 @@ TEST(GeneratorHistoricalAction, FormatsToString) {
             "Records=[ "
             "Record={ "
             "Instrument=AAPL "
-            "ReceiveTime=2023-06-13 13:10:53.000000000 "
+            "ReceivedTime=2023-06-13 13:10:53.000000000 "
             "MessageTime=2023-06-13 13:10:53.123456789 "
             "RowNumber=100 "
             "SourceName=AAPL_source_name "
@@ -69,7 +69,7 @@ TEST(GeneratorHistoricalAction, FormatsToString) {
             "Offer={ Price=220.2 Qty=302.2 Counterparty=OCP2 } } } ] }, "
             "Record={ "
             "Instrument=VOW "
-            "ReceiveTime=2023-06-13 13:10:53.000000000 "
+            "ReceivedTime=2023-06-13 13:10:53.000000000 "
             "MessageTime=2023-06-13 13:10:53.987654321 "
             "RowNumber=200 "
             "SourceName=VOW_source_name "
@@ -86,12 +86,12 @@ struct GeneratorHistoricalActionBuilder : public Test {
     constexpr std::uint64_t default_source_row = 100;
     const std::string default_instrument{"AAPL"};
 
-    historical::Record::Builder builder;
-    builder.with_receive_time(receive_time)
+    historical::Record::BuilderImpl builder;
+    builder.with_received_time(receive_time)
         .with_message_time(receive_time)
         .with_instrument(default_instrument)
         .with_source_row(default_source_row);
-    return historical::Record::Builder::construct(std::move(builder));
+    return builder.construct();
   }
 
   historical::Action::Builder action_builder;
@@ -205,8 +205,8 @@ TEST_F(GeneratorHistoricalActionBuilder, UpdatesTime) {
   EXPECT_EQ(updated_action.action_time(), new_time);
 
   auto checker = [&new_time](const Record& record_arg) {
-    EXPECT_EQ(record_arg.receive_time(), new_time);
-    EXPECT_THAT(record_arg.message_time(), Optional(Eq(new_time)));
+    EXPECT_EQ(record_arg.received_time(), new_time);
+    EXPECT_EQ(record_arg.message_time(), new_time);
   };
   updated_action.steal_records(checker);
 }

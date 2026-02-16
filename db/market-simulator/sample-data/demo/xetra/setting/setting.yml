@@ -79,3 +79,30 @@ databaseChangeLog:
                   name: value
                   value: "2024-03-14 14:35:06"
             where: key='SeedPricesLastUpdated'
+
+  - changeSet:
+      id: market_simulator_sample_data_demo_setting_setting_4
+      author: kbahatki
+      labels: sample-data,v11
+      comment: Corrected typo in the SeedPriceDatabaseConnection general setting
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: setting
+        - columnExists:
+            tableName: setting
+            columnName: key
+        - columnExists:
+            tableName: setting
+            columnName: value
+      changes:
+        - update:
+            tableName: setting
+            columns:
+              - column:
+                  name: key
+                  value: SeedPriceDatabaseConnection
+              - column:
+                  name: value
+                  value: postgresql://user:password@127.0.0.1:5432/database_name
+            where: key='SeedPriceDatabaseConnection'

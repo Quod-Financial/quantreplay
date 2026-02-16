@@ -27,8 +27,7 @@ auto convert_attribute(market_state::LimitOrder& order_state)
   return attributes;
 }
 
-auto convert_session(market_state::Session&& session)
-    -> protocol::Session {
+auto convert_session(market_state::Session&& session) -> protocol::Session {
   if (session.type == market_state::SessionType::Fix &&
       session.fix_session.has_value()) {
     return protocol::Session{std::move(session.fix_session.value())};

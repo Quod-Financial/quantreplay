@@ -1,13 +1,24 @@
 add_target_tests(
   TARGET ${PROJECT_NAME}
   HEADERS
+    mocks/app_controller.hpp
+    mocks/delete_processor.hpp
+    mocks/generator_admin_receiver.hpp
+    mocks/get_processor.hpp
+    mocks/post_processor.hpp
+    mocks/put_processor.hpp
+    mocks/redirection_processor.hpp
     mocks/redirector.hpp
     mocks/resolver.hpp
     mocks/trading_admin_request_receiver.hpp
+    mocks/trading_controller.hpp
     mocks/venue_accessor.hpp
     test_utils/matchers.hpp
+    test_utils/processors.hpp
     test_utils/test_server.hpp
+    test_utils/utils.hpp
   UNIT_TESTS
+    unit_tests/controllers/app_controller_tests.cpp
     unit_tests/controllers/trading_controller_tests.cpp
     unit_tests/headers/x_api_version_tests.cpp
     unit_tests/marshalling/json/detail/enumeration_resolver_tests.cpp
@@ -20,7 +31,10 @@ add_target_tests(
     unit_tests/marshalling/json/price_seed_marshalling_tests.cpp
     unit_tests/marshalling/json/setting_marshalling_tests.cpp
     unit_tests/marshalling/json/venue_marshalling_tests.cpp
+    unit_tests/processors/get_processor_tests.cpp
+    unit_tests/processors/post_processor_tests.cpp
     unit_tests/redirect/destination_resolver_tests.cpp
     unit_tests/redirect/redirection_processor_tests.cpp
     unit_tests/redirect/request_redirector_tests.cpp
-    unit_tests/redirect/result_tests.cpp)
+    unit_tests/redirect/result_tests.cpp
+    unit_tests/router_tests.cpp)

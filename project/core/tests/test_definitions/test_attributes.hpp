@@ -7,7 +7,7 @@
 #include <string_view>
 
 #include "core/common/attribute.hpp"
-#include "core/common/enum_converter.hpp"
+#include "core/common/json/enum_converter.hpp"
 #include "core/common/name.hpp"
 
 namespace simulator::core::test {
@@ -15,9 +15,9 @@ namespace simulator::core::test {
 enum class AttributeEnumerator : std::uint8_t { Option1, Option2, Option3 };
 
 template <>
-inline simulator::core::EnumConverter<
+inline simulator::core::json::EnumConverter<
     simulator::core::test::AttributeEnumerator>
-    simulator::core::EnumConverter<
+    simulator::core::json::EnumConverter<
         simulator::core::test::AttributeEnumerator>::instance_{{
         {simulator::core::test::AttributeEnumerator::Option1, "Option1"},
         {simulator::core::test::AttributeEnumerator::Option2, "Option2"},
@@ -111,7 +111,8 @@ struct fmt::formatter<simulator::core::test::AttributeEnumerator>
     using base_formatter = formatter<std::string_view>;
     try {
       return base_formatter::format(
-          simulator::core::EnumConverter<formattable>::str(enumerator), ctx);
+          simulator::core::json::EnumConverter<formattable>::str(enumerator),
+          ctx);
     } catch (const std::runtime_error& ex) {
       return base_formatter::format("undefined", ctx);
     }

@@ -80,6 +80,7 @@ class Level::Builder {
 class Record {
  public:
   class Builder;
+  class BuilderImpl;
 
   using LevelStealer = std::function<void(std::uint64_t, Level)>;
   using LevelVisitor = std::function<void(std::uint64_t, const Level&)>;
@@ -88,10 +89,10 @@ class Record {
   auto instrument() const noexcept -> const std::string&;
 
   [[nodiscard]]
-  auto receive_time() const noexcept -> historical::Timepoint;
+  auto received_time() const noexcept -> historical::Timepoint;
 
   [[nodiscard]]
-  auto message_time() const noexcept -> std::optional<historical::Timepoint>;
+  auto message_time() const noexcept -> historical::Timepoint;
 
   [[nodiscard]]
   auto source_connection() const noexcept -> const std::optional<std::string>&;
@@ -118,7 +119,7 @@ class Record {
   std::optional<std::string> source_conn_;
   std::string instrument_;
 
-  std::optional<historical::Timepoint> message_time_;
+  historical::Timepoint message_time_;
   historical::Timepoint received_time_;
 
   std::uint64_t source_row_{0};
@@ -126,30 +127,57 @@ class Record {
 
 class Record::Builder {
  public:
-  Builder() = default;
+  virtual ~Builder() = default;
 
-  explicit Builder(Record base_record) noexcept;
+  virtual auto with_instrument(std::string instrument) noexcept -> Builder& = 0;
 
-  auto with_instrument(std::string instrument) noexcept -> Builder&;
+  virtual auto with_received_time(historical::Timepoint received_time) noexcept
+      -> Builder& = 0;
 
-  auto with_receive_time(historical::Timepoint receive_time) noexcept
-      -> Builder&;
+  virtual auto with_message_time(historical::Timepoint message_time) noexcept
+      -> Builder& = 0;
+
+  virtual auto with_source_name(std::string source_name) noexcept
+      -> Builder& = 0;
+
+  virtual auto with_source_connection(std::string source_conn) noexcept
+      -> Builder& = 0;
+
+  virtual auto with_source_row(std::uint64_t source_row) noexcept
+      -> Builder& = 0;
+
+  virtual auto add_level(std::uint64_t index, Level level) -> Builder& = 0;
+
+  virtual auto construct() -> Record = 0;
+};
+
+class Record::BuilderImpl final : public Record::Builder {
+ public:
+  BuilderImpl() = default;
+
+  explicit BuilderImpl(Record base_record) noexcept;
+
+  auto with_instrument(std::string instrument) noexcept -> Builder& override;
+
+  auto with_received_time(historical::Timepoint received_time) noexcept
+      -> Builder& override;
 
   auto with_message_time(historical::Timepoint message_time) noexcept
-      -> Builder&;
+      -> Builder& override;
 
-  auto with_source_name(std::string source_name) noexcept -> Builder&;
+  auto with_source_name(std::string source_name) noexcept -> Builder& override;
 
-  auto with_source_connection(std::string source_conn) noexcept -> Builder&;
+  auto with_source_connection(std::string source_conn) noexcept
+      -> Builder& override;
 
-  auto with_source_row(std::uint64_t source_row) noexcept -> Builder&;
+  auto with_source_row(std::uint64_t source_row) noexcept -> Builder& override;
 
-  auto add_level(std::uint64_t index, Level level) -> Builder&;
+  auto add_level(std::uint64_t index, Level level) -> Builder& override;
 
-  static auto construct(Builder builder) -> Record;
+  auto construct() -> Record override;
 
  private:
-  static auto validate(const Builder& builder) -> void;
+  auto validate() -> void;
 
   std::optional<std::string> instrument_;
   std::optional<std::string> source_name_;

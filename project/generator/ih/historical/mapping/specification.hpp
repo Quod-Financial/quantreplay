@@ -53,6 +53,9 @@ class Specification {
   auto resolve_by(const data_layer::converter::ColumnFrom& target_column) const
       -> std::optional<SourceColumn>;
 
+  [[nodiscard]]
+  auto max_depth() const -> std::uint32_t;
+
   friend auto operator<<(std::ostream& os, const Specification& spec)
       -> std::ostream&;
 

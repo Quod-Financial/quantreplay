@@ -78,7 +78,7 @@ TEST_F(Instruments, SuccessfullyResolveInstrumentByDescriptor) {
             SecurityType::Option::CommonStock);
 }
 
-TEST_F(Instruments, SuccessfullyResolveInstrumentByInstrument) {
+TEST_F(Instruments, SuccessfullyResolveInstrumentByInstrumentSpecification) {
   fill_cache({[] {
                 Instrument instrument;
                 instrument.symbol = Symbol{"TSLA"};
@@ -92,10 +92,10 @@ TEST_F(Instruments, SuccessfullyResolveInstrumentByInstrument) {
                 return instrument;
               }()});
 
-  Instrument instrument;
-  instrument.symbol = Symbol{"AAPL"};
+  Cache::InstrumentSpecification specification;
+  specification.symbol = Symbol{"AAPL"};
 
-  const auto view = cache.find(instrument);
+  const auto view = cache.find(specification);
 
   ASSERT_TRUE(view.has_value());
   EXPECT_EQ(view->instrument().database_id, DatabaseId{2});
@@ -110,11 +110,12 @@ TEST_F(Instruments, FailToResolveInstrumentFromEmptyCache) {
   EXPECT_EQ(view.error(), instrument::LookupError::InstrumentNotFound);
 }
 
-TEST_F(Instruments, FailToResolveInstrumentByInstrumentFromEmptyCache) {
-  Instrument instrument;
-  instrument.symbol = Symbol{"AAPL"};
+TEST_F(Instruments,
+       FailToResolveInstrumentByInstrumentSpecificationFromEmptyCache) {
+  Cache::InstrumentSpecification specification;
+  specification.symbol = Symbol{"AAPL"};
 
-  const auto view = cache.find(instrument);
+  const auto view = cache.find(specification);
 
   ASSERT_FALSE(view.has_value());
   EXPECT_EQ(view.error(), instrument::LookupError::InstrumentNotFound);
@@ -139,7 +140,7 @@ TEST_F(Instruments, FailToResolveInstrumentByEmptyDescriptor) {
             instrument::LookupError::MalformedInstrumentDescriptor);
 }
 
-TEST_F(Instruments, FailToResolveInstrumentByEmptyInstrument) {
+TEST_F(Instruments, FailToResolveInstrumentByEmptyInstrumentSpecification) {
   fill_cache({[] {
                 Instrument instrument;
                 instrument.symbol = Symbol{"TSLA"};
@@ -151,8 +152,8 @@ TEST_F(Instruments, FailToResolveInstrumentByEmptyInstrument) {
                 return instrument;
               }()});
 
-  const Instrument instrument;
-  const auto view = cache.find(instrument);
+  const Cache::InstrumentSpecification specification;
+  const auto view = cache.find(specification);
 
   ASSERT_FALSE(view.has_value());
   EXPECT_EQ(view.error(), instrument::LookupError::InstrumentNotFound);
@@ -198,10 +199,10 @@ TEST_F(Instruments, FailToResolvesTheFirstInstrument) {
                 return instrument;
               }()});
 
-  Instrument instrument;
-  instrument.symbol = Symbol{"AAPL"};
+  Cache::InstrumentSpecification specification;
+  specification.symbol = Symbol{"AAPL"};
 
-  const auto view = cache.find(instrument);
+  const auto view = cache.find(specification);
 
   ASSERT_TRUE(view.has_value());
   EXPECT_EQ(view->instrument().database_id, DatabaseId{3});
@@ -233,7 +234,8 @@ TEST_F(Instruments, FailToResolveNonexistentInstrument) {
   EXPECT_EQ(view.error(), instrument::LookupError::InstrumentNotFound);
 }
 
-TEST_F(Instruments, FailToResolveNonexistentInstrumentByInstrument) {
+TEST_F(Instruments,
+       FailToResolveNonexistentInstrumentByInstrumentSpecification) {
   fill_cache({[] {
                 Instrument instrument;
                 instrument.symbol = Symbol{"TSLA"};
@@ -245,10 +247,10 @@ TEST_F(Instruments, FailToResolveNonexistentInstrumentByInstrument) {
                 return instrument;
               }()});
 
-  Instrument instrument;
-  instrument.symbol = Symbol{"VOW"};
+  Cache::InstrumentSpecification specification;
+  specification.symbol = Symbol{"VOW"};
 
-  const auto view = cache.find(instrument);
+  const auto view = cache.find(specification);
 
   ASSERT_FALSE(view.has_value());
   EXPECT_EQ(view.error(), instrument::LookupError::InstrumentNotFound);

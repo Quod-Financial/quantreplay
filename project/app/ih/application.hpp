@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include "ih/control_callbacks.hpp"
 #include "ih/platforms/platform.hpp"
 
 namespace simulator {
@@ -17,18 +18,21 @@ class Application {
   auto operator=(const Application&) -> Application& = delete;
   auto operator=(Application&&) noexcept -> Application& = default;
 
-  static auto start() -> Application;
+  static auto start(ControlCallbacks callbacks) -> Application;
+
+  auto reset_state() -> void;
 
  private:
-  Application();
+  explicit Application(ControlCallbacks callbacks);
 
   auto launch() -> void;
 
   auto terminate() noexcept -> void;
 
-  static auto create_venue_simulation_platform() -> std::unique_ptr<Platform>;
+  auto create_venue_simulation_platform() -> std::unique_ptr<Platform>;
 
   std::unique_ptr<Platform> platform_;
+  ControlCallbacks callbacks_;
 };
 
 }  // namespace simulator

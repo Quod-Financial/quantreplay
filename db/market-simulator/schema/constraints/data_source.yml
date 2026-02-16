@@ -110,9 +110,9 @@ databaseChangeLog:
             tableName: data_source
             columnName: venue_id
         - not:
-          - uniqueConstraintExists:
-              tableName: data_source
-              constraintName: data_source_name_venue_id_key
+            - uniqueConstraintExists:
+                tableName: data_source
+                constraintName: data_source_name_venue_id_key
       changes:
         - addUniqueConstraint:
             tableName: data_source
@@ -227,3 +227,108 @@ databaseChangeLog:
             tableName: data_source
             columnName: enabled
             defaultValueBoolean: true
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_constraint_data_source_13
+      labels: schema,v11
+      comment: Add NOT NULL constraint data_source_repeat_not_null on data_source.repeat
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: repeat
+      changes:
+        - addNotNullConstraint:
+            constraintName: data_source_repeat_not_null
+            tableName: data_source
+            columnName: repeat
+            columnDataType: bool
+            defaultNullValue: false
+            validate: true
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_constraint_data_source_14
+      labels: schema,v11
+      comment: Add NOT NULL constraint data_source_text_delimiter_not_null on data_source.text_delimiter
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: text_delimiter
+      changes:
+        - addNotNullConstraint:
+            constraintName: data_source_text_delimiter_not_null
+            tableName: data_source
+            columnName: text_delimiter
+            columnDataType: varchar(1)
+            defaultNullValue: ','
+            validate: true
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_constraint_data_source_15
+      labels: schema,v11
+      comment: Add NOT NULL constraint data_source_text_header_row_not_null on data_source.text_header_row
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: text_header_row
+      changes:
+        - addNotNullConstraint:
+            constraintName: data_source_text_header_row_not_null
+            tableName: data_source
+            columnName: text_header_row
+            columnDataType: int
+            defaultNullValue: 0
+            validate: true
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_constraint_data_source_16
+      labels: schema,v11
+      comment: Add NOT NULL constraint data_source_text_data_row_not_null on data_source.text_data_row
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: text_data_row
+      changes:
+        - addNotNullConstraint:
+            constraintName: data_source_text_data_row_not_null
+            tableName: data_source
+            columnName: text_data_row
+            columnDataType: int
+            defaultNullValue: 1
+            validate: true
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_constraint_data_source_17
+      labels: schema,v11
+      comment: Add NOT NULL constraint data_source_enabled_not_null on data_source.enabled
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: enabled
+      changes:
+        - addNotNullConstraint:
+            constraintName: data_source_enabled_not_null
+            tableName: data_source
+            columnName: enabled
+            columnDataType: bool
+            defaultNullValue: true
+            validate: true

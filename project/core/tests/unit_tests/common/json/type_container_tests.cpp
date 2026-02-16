@@ -44,7 +44,7 @@ TEST(CoreJsonContainerReader,
   } catch (std::runtime_error& e) {
     ASSERT_STREQ(e.what(),
                  "failed to parse JSON array item #1: unexpected data Type "
-                 "`rapidjson::Type::kNumberType`, `double` is expected");
+                 "`rapidjson::Type::kNumberType', `double' is expected");
   }
 }
 

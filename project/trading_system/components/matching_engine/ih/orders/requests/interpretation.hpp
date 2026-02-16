@@ -1,9 +1,9 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_REQUESTS_INTERPRETATION_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_REQUESTS_INTERPRETATION_HPP_
 
-#include <tl/expected.hpp>
 #include <optional>
 #include <string_view>
+#include <tl/expected.hpp>
 #include <variant>
 
 #include "core/domain/attributes.hpp"
@@ -73,8 +73,9 @@ class ModificationInterpreter {
       -> UpdateInterpretation;
 
  private:
-  auto interpret_as_limit_update(const protocol::OrderModificationRequest&
-                                     request) const -> UpdateInterpretation;
+  auto interpret_as_limit_update(
+      const protocol::OrderModificationRequest& request) const
+      -> UpdateInterpretation;
 };
 
 // Converts cancellation request to a cancel interpretation.

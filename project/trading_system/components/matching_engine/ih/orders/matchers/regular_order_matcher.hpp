@@ -42,8 +42,8 @@ class RegularOrderMatcher : public RegularMatcher, private EventReporter {
   auto find_matching_orders(const MarketOrder& taker)
       -> std::vector<LimitOrder*>;
 
-  auto trade_taker(LimitOrder& taker,
-                   const std::vector<LimitOrder*>& makers) -> void;
+  auto trade_taker(LimitOrder& taker, const std::vector<LimitOrder*>& makers)
+      -> void;
 
   auto trade_ioc_taker(LimitOrder& taker,
                        const std::vector<LimitOrder*>& makers) -> void;

@@ -31,14 +31,12 @@ class PostgresConnector : public historical::DataAccessAdapter {
   [[nodiscard]]
   auto has_next_record() const noexcept -> bool override;
 
-  auto parse_next_record(Record::Builder& builder) -> void override;
+  auto parse_next_record(std::unique_ptr<Record::Builder>& builder)
+      -> void override;
 
   auto load_data(pqxx::connection& database_connection) -> void;
 
-  auto make_depth_config(pqxx::connection& database_connection) const
-      -> mapping::DepthConfig;
-
-  auto init_mapping_params(mapping::DepthConfig depth_config) -> void;
+  auto init_mapping_params() -> void;
 
   auto extract_data() -> void;
 

@@ -2,7 +2,7 @@
 #define SIMULATOR_TRADING_SYSTEM_COMPONENTS_COMMON_TRADING_ENGINE_HPP_
 
 #include "common/events.hpp"
-#include "common/market_state/snapshot.hpp"
+#include "common/instrument_state.hpp"
 #include "protocol/app/instrument_state_request.hpp"
 #include "protocol/app/market_data_request.hpp"
 #include "protocol/app/order_cancellation_request.hpp"

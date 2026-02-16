@@ -1,7 +1,7 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_COMMON_ABSTRACTIONS_ORDER_REQUEST_PROCESSOR_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_COMMON_ABSTRACTIONS_ORDER_REQUEST_PROCESSOR_HPP_
 
-#include "common/market_state/snapshot.hpp"
+#include "common/instrument_state.hpp"
 #include "protocol/app/order_cancellation_request.hpp"
 #include "protocol/app/order_modification_request.hpp"
 #include "protocol/app/order_placement_request.hpp"
@@ -32,8 +32,7 @@ class OrderRequestProcessor {
   virtual auto process(const protocol::SecurityStatusRequest& request)
       -> void = 0;
 
-  virtual auto store_state(
-      market_state::OrderBook& state) -> void = 0;
+  virtual auto store_state(market_state::OrderBook& state) -> void = 0;
 
   virtual auto recover_state(market_state::OrderBook state) -> void = 0;
 };

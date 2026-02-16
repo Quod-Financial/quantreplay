@@ -51,16 +51,17 @@ auto make_seed_update_time_patch() -> data_layer::Setting::Patch {
 }  // namespace
 
 PriceSeedController::PriceSeedController(
-    const data_bridge::PriceSeedAccessor& seed_accessor,
-    const data_bridge::SettingAccessor& setting_accessor) noexcept
-    : seed_accessor_(seed_accessor), setting_accessor_(setting_accessor) {}
+    std::unique_ptr<data_bridge::PriceSeedAccessor> seed_accessor,
+    std::shared_ptr<data_bridge::SettingAccessor> setting_accessor) noexcept
+    : seed_accessor_{std::move(seed_accessor)},
+      setting_accessor_{std::move(setting_accessor)} {}
 
 auto PriceSeedController::select_price_seed(std::uint64_t seed_id) const
     -> Result {
   Pistache::Http::Code code{};
   std::string content;
 
-  auto result = seed_accessor_.get().select_single(seed_id);
+  auto result = seed_accessor_->select_single(seed_id);
   if (result) {
     const data_layer::PriceSeed& selected = result.value();
     try {
@@ -91,7 +92,7 @@ auto PriceSeedController::select_all_price_seeds() const -> Result {
   Pistache::Http::Code code{};
   std::string content;
 
-  auto result = seed_accessor_.get().select_all();
+  auto result = seed_accessor_->select_all();
   if (result) {
     try {
       const std::vector<data_layer::PriceSeed>& seeds = result.value();
@@ -122,7 +123,7 @@ auto PriceSeedController::insert_price_seed(const std::string& body) const
     return std::make_pair(code, std::move(content));
   }
 
-  auto result = seed_accessor_.get().add(seed_snapshot);
+  auto result = seed_accessor_->add(seed_snapshot);
   if (result) {
     log::info("successfully added a new price seed");
     code = Pistache::Http::Code::Created;
@@ -155,7 +156,7 @@ auto PriceSeedController::update_price_seed(std::uint64_t seed_id,
     return std::make_pair(code, std::move(content));
   }
 
-  auto result = seed_accessor_.get().update(patch, seed_id);
+  auto result = seed_accessor_->update(patch, seed_id);
   if (result) {
     code = Pistache::Http::Code::Ok;
     content = format_result_response(fmt::format(
@@ -188,7 +189,7 @@ auto PriceSeedController::delete_price_seed(std::uint64_t seed_id) const
   Pistache::Http::Code code{};
   std::string content;
 
-  auto result = seed_accessor_.get().drop_single(seed_id);
+  auto result = seed_accessor_->drop_single(seed_id);
   if (result) {
     code = Pistache::Http::Code::No_Content;
     content.clear();
@@ -212,7 +213,7 @@ auto PriceSeedController::sync_price_seeds() const -> Result {
   Pistache::Http::Code code{};
   std::string content;
 
-  auto setting = setting_accessor_.get().select_single(ConnectionSetting);
+  auto setting = setting_accessor_->select_single(ConnectionSetting);
   if (!setting) {
     code = Pistache::Http::Code::Conflict;
     content =
@@ -229,7 +230,7 @@ auto PriceSeedController::sync_price_seeds() const -> Result {
   }
 
   log::info("synchronizing price seeds from `{}'", *connection);
-  auto result = seed_accessor_.get().sync(*connection);
+  auto result = seed_accessor_->sync(*connection);
   if (!result) {
     code = Pistache::Http::Code::Internal_Server_Error;
     content = format_result_response(
@@ -239,7 +240,7 @@ auto PriceSeedController::sync_price_seeds() const -> Result {
 
   log::info("updating the last price seed sync time general setting");
   const auto patch = make_seed_update_time_patch();
-  auto update_result = setting_accessor_.get().update(patch, SyncTimeSetting);
+  auto update_result = setting_accessor_->update(patch, SyncTimeSetting);
   if (!update_result) {
     log::warn(
         "Failed to update last price seeds sync setting in the general "

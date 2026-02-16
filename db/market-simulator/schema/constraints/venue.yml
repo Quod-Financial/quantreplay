@@ -34,3 +34,45 @@ databaseChangeLog:
             tableName: venue
             columnName: persistence_enabled
             defaultValueBoolean: false
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_constraint_venue_3
+      labels: schema,v11
+      comment: Add NOT NULL constraint venue_order_on_startup_not_null on venue.order_on_startup
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: order_on_startup
+      changes:
+        - addNotNullConstraint:
+            constraintName: venue_order_on_startup_not_null
+            tableName: venue
+            columnName: order_on_startup
+            columnDataType: bool
+            defaultNullValue: true
+            validate: true
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_constraint_venue_4
+      labels: schema,v11
+      comment: Add NOT NULL constraint venue_persistence_enabled_not_null on venue.persistence_enabled
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: persistence_enabled
+      changes:
+        - addNotNullConstraint:
+            constraintName: venue_persistence_enabled_not_null
+            tableName: venue
+            columnName: persistence_enabled
+            columnDataType: bool
+            defaultNullValue: false
+            validate: true

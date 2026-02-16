@@ -5,15 +5,15 @@
 
 #include "ih/market_data/cache/trade_cache.hpp"
 #include "ih/market_data/streaming_settings.hpp"
-#include "mocks/mock_market_entry_id_generator.hpp"
+#include "mocks/market_entry_id_generator_mock.hpp"
 #include "tools/order_book_notification_builder.hpp"
+
+namespace simulator::trading_system::matching_engine::mdata::test {
+namespace {
 
 using namespace ::testing;  // NOLINT
 
 // NOLINTBEGIN(*magic-numbers*,*non-private-member*)
-
-namespace simulator::trading_system::matching_engine::mdata::tests {
-namespace {
 
 struct TradeCache : Test {
   static auto make_test_trade(const Price price, const Quantity quantity)
@@ -29,7 +29,7 @@ struct TradeCache : Test {
         OrderBookNotification{std::forward<decltype(trades)>(trades)}...};
   }
 
-  NiceMock<MockMarketEntryIdGenerator> id_generator;
+  NiceMock<MarketEntryIdGeneratorMock> id_generator;
   StreamingSettings settings;
   std::vector<MarketDataEntry> entries;
   mdata::TradeCache cache{id_generator};
@@ -271,6 +271,6 @@ TEST_F(TradeCache, RecoversTradeFromLastTradeRecoverIfItIsPresent) {
 }
 
 }  // namespace
-}  // namespace simulator::trading_system::matching_engine::mdata::tests
+}  // namespace simulator::trading_system::matching_engine::mdata::test
 
 // NOLINTEND(*magic-numbers*,*non-private-member*)

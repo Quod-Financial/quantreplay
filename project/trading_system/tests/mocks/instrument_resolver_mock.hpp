@@ -21,7 +21,7 @@ struct InstrumentResolverMock : public InstrumentResolver {
               (const, override));
   MOCK_METHOD(ReturnType,
               resolve_instrument,
-              (const Instrument&),
+              (const instrument::Cache::InstrumentSpecification&),
               (const, override));
 };
 

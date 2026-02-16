@@ -42,9 +42,9 @@ auto Cache::find(const InstrumentDescriptor& descriptor) const
   return impl().find_instrument(descriptor);
 }
 
-auto Cache::find(const Instrument& instrument) const
+auto Cache::find(const InstrumentSpecification& specification) const
     -> tl::expected<View, LookupError> {
-  return impl().find_instrument(instrument);
+  return impl().find_instrument(specification);
 }
 
 auto Cache::retrieve_instruments() const -> std::vector<Instrument> {
@@ -96,3 +96,28 @@ auto Cache::impl() const noexcept -> Implementation& {
 }
 
 }  // namespace simulator::trading_system::instrument
+
+auto fmt::formatter<
+    simulator::trading_system::instrument::Cache::InstrumentSpecification>::
+    format(const formattable& spec, format_context& ctx) const
+    -> format_context::iterator {
+  return format_to(
+      ctx.out(),
+      R"({{ "symbol": {}, "price_currency": {}, "base_currency": {}, )"
+      R"("security_exchange": {}, party_id: {}, cusip: {}, sedol: {}, )"
+      R"("isin": {}, "ric": {}, "exchange_id": {}, "bloomberg_id": {}, )"
+      R"("party_role": {}, "security_type": {} }})",
+      spec.symbol,
+      spec.price_currency,
+      spec.base_currency,
+      spec.security_exchange,
+      spec.party_id,
+      spec.cusip,
+      spec.sedol,
+      spec.isin,
+      spec.ric,
+      spec.exchange_id,
+      spec.bloomberg_id,
+      spec.party_role,
+      spec.security_type);
+}

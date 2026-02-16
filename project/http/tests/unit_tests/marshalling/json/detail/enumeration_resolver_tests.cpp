@@ -6,6 +6,7 @@
 #include "data_layer/api/models/market_phase.hpp"
 #include "data_layer/api/models/venue.hpp"
 #include "ih/marshalling/json/detail/enumeration_resolver.hpp"
+#include "tests/test_utils/utils.hpp"
 
 namespace simulator::http::json::test {
 namespace {
@@ -15,7 +16,8 @@ struct HttpJsonEnumerationResolverDatasourceFormat : public ::testing::Test {
 };
 
 TEST_F(HttpJsonEnumerationResolverDatasourceFormat, ResolvesEnumUndefined) {
-  EXPECT_THROW((void)EnumerationResolver::resolve(static_cast<Format>(-1)),
+  EXPECT_THROW((void)EnumerationResolver::resolve(
+                   http::test::util::invalid_enum_value<Format>()),
                std::logic_error);
 }
 
@@ -49,7 +51,8 @@ struct HttpJsonEnumerationResolverDatasourceType : public ::testing::Test {
 };
 
 TEST_F(HttpJsonEnumerationResolverDatasourceType, ResolvesEnumUndefined) {
-  EXPECT_THROW((void)EnumerationResolver::resolve(static_cast<Type>(-1)),
+  EXPECT_THROW((void)EnumerationResolver::resolve(
+                   http::test::util::invalid_enum_value<Type>()),
                std::logic_error);
 }
 
@@ -73,7 +76,8 @@ struct HttpJsonEnumerationResolverMarketPhaseType : public ::testing::Test {
 };
 
 TEST_F(HttpJsonEnumerationResolverMarketPhaseType, ResolvesEnumUndefined) {
-  EXPECT_THROW((void)EnumerationResolver::resolve(static_cast<Phase>(-1)),
+  EXPECT_THROW((void)EnumerationResolver::resolve(
+                   http::test::util::invalid_enum_value<Phase>()),
                std::logic_error);
 }
 
@@ -146,35 +150,36 @@ TEST_F(HttpJsonEnumerationResolverMarketPhaseType, ResolvesStringHalted) {
   EXPECT_EQ(phase, Phase::Halted);
 }
 
-struct HttJsonEnumerationResolverVenueEngineType : public ::testing::Test {
+struct HttpJsonEnumerationResolverVenueEngineType : public ::testing::Test {
   using EngineType = data_layer::Venue::EngineType;
 };
 
-TEST_F(HttJsonEnumerationResolverVenueEngineType, ResolvesEnumUndefined) {
-  EXPECT_THROW((void)EnumerationResolver::resolve(static_cast<EngineType>(-1)),
+TEST_F(HttpJsonEnumerationResolverVenueEngineType, ResolvesEnumUndefined) {
+  EXPECT_THROW((void)EnumerationResolver::resolve(
+                   http::test::util::invalid_enum_value<EngineType>()),
                std::logic_error);
 }
 
-TEST_F(HttJsonEnumerationResolverVenueEngineType, ResolvesEnumMatching) {
+TEST_F(HttpJsonEnumerationResolverVenueEngineType, ResolvesEnumMatching) {
   EXPECT_EQ(EnumerationResolver::resolve(EngineType::Matching), "Matching");
 }
 
-TEST_F(HttJsonEnumerationResolverVenueEngineType, ResolvesEnumQuoting) {
+TEST_F(HttpJsonEnumerationResolverVenueEngineType, ResolvesEnumQuoting) {
   EXPECT_EQ(EnumerationResolver::resolve(EngineType::Quoting), "Quoting");
 }
 
-TEST_F(HttJsonEnumerationResolverVenueEngineType, ResolvesStringUndefined) {
+TEST_F(HttpJsonEnumerationResolverVenueEngineType, ResolvesStringUndefined) {
   EngineType type{};
   EXPECT_THROW(EnumerationResolver::resolve("bad", type), std::runtime_error);
 }
 
-TEST_F(HttJsonEnumerationResolverVenueEngineType, ResolvesStringMatching) {
+TEST_F(HttpJsonEnumerationResolverVenueEngineType, ResolvesStringMatching) {
   EngineType type{};
   ASSERT_NO_THROW(EnumerationResolver::resolve("Matching", type));
   EXPECT_EQ(type, EngineType::Matching);
 }
 
-TEST_F(HttJsonEnumerationResolverVenueEngineType, ResolvesStringQuoting) {
+TEST_F(HttpJsonEnumerationResolverVenueEngineType, ResolvesStringQuoting) {
   EngineType type{};
   ASSERT_NO_THROW(EnumerationResolver::resolve("Quoting", type));
   EXPECT_EQ(type, EngineType::Quoting);

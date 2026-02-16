@@ -5,6 +5,7 @@ add_target_tests(
     common/model.hpp
     test_utils/matchers.hpp
     test_utils/sanitizer_stub.hpp
+    test_utils/utils.hpp
   UNIT_TESTS
     unit_tests/common/command/commands_tests.cpp
     unit_tests/common/database/ping_agent_tests.cpp
@@ -21,6 +22,7 @@ add_target_tests(
     unit_tests/models/datasource_tests.cpp
     unit_tests/models/listing_tests.cpp
     unit_tests/models/market_phase_tests.cpp
+    unit_tests/models/patch_field_tests.cpp
     unit_tests/models/price_seed_tests.cpp
     unit_tests/models/setting_tests.cpp
     unit_tests/models/venue_tests.cpp

@@ -8,7 +8,7 @@
 #include <cmath>
 #include <string>
 
-#include "core/common/enum_converter.hpp"
+#include "core/common/json/enum_converter.hpp"
 #include "core/common/json/type.hpp"
 #include "core/common/meta.hpp"
 #include "core/common/name.hpp"
@@ -289,7 +289,7 @@ struct Literal {
   explicit Literal(value_type value) noexcept : value_(std::move(value)) {}
 
   [[nodiscard]]
-  auto value() const& noexcept -> value_type const& {
+  auto value() const& noexcept -> const value_type& {
     return value_;
   }
 
@@ -299,7 +299,7 @@ struct Literal {
   }
 
   [[nodiscard]]
-  explicit operator value_type const&() const& noexcept {
+  explicit operator const value_type&() const& noexcept {
     return value();
   }
 
@@ -455,7 +455,7 @@ struct Derived<
   explicit Derived(value_type value) noexcept
       : Derived(primary_type{std::move(value)}) {}
 
-  [[nodiscard]] auto value() const& noexcept -> value_type const& {
+  [[nodiscard]] auto value() const& noexcept -> const value_type& {
     return primary_attribute_.value();
   }
 
@@ -722,9 +722,10 @@ struct fmt::formatter<simulator::core::attribute::Derived<Tag>>
   extern template struct ::simulator::core::attribute::TYPE<NS::tag::NAME>; \
   extern template struct ::fmt::formatter<NS::NAME>;
 
-#define SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(NS, NAME) \
-  SIMULATOR_DECLARE_ATTRIBUTE(NS, NAME, Enumerable)      \
-  extern template struct ::simulator::core::EnumConverter<NS::NAME::value_type>;
+#define SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(NS, NAME)         \
+  SIMULATOR_DECLARE_ATTRIBUTE(NS, NAME, Enumerable)              \
+  extern template struct ::simulator::core::json::EnumConverter< \
+      NS::NAME::value_type>;
 
 #define SIMULATOR_DEFINE_ATTRIBUTE(NS, NAME, TYPE)                   \
   template struct ::simulator::core::attribute::TYPE<NS::tag::NAME>; \
@@ -739,7 +740,7 @@ struct fmt::formatter<simulator::core::attribute::Derived<Tag>>
 
 #define SIMULATOR_DEFINE_ENUMERABLE_ATTRIBUTE(NS, NAME) \
   SIMULATOR_DEFINE_ATTRIBUTE(NS, NAME, Enumerable);     \
-  template struct ::simulator::core::EnumConverter<NS::NAME::value_type>;
+  template struct ::simulator::core::json::EnumConverter<NS::NAME::value_type>;
 
 // NOLINTEND
 

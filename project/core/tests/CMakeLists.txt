@@ -3,20 +3,19 @@ add_target_tests(
   HEADERS
     test_definitions/test_attributes.hpp
     test_utils/matchers.hpp
+    test_utils/utils.hpp
     fixtures/given_expected_fixture.hpp
   UNIT_TESTS
     unit_tests/common/json/attribute_tests.cpp
     unit_tests/common/json/attributes_tests.cpp
+    unit_tests/common/json/enum_converter_tests.cpp
     unit_tests/common/json/type_container_tests.cpp
     unit_tests/common/json/type_enum_tests.cpp
     unit_tests/common/json/type_struct_tests.cpp
     unit_tests/common/json/type_tests.cpp
     unit_tests/common/attributes_tests.cpp
-    unit_tests/common/enum_converter_tests.cpp
     unit_tests/common/return_code_tests.cpp
     unit_tests/domain/enumerators_tests.cpp
-    unit_tests/domain/instrument_descriptor_tests.cpp
-    unit_tests/domain/market_phase_tests.cpp
     unit_tests/domain/party_tests.cpp
     unit_tests/tools/numeric_tests.cpp
     unit_tests/tools/string_checkers_tests.cpp

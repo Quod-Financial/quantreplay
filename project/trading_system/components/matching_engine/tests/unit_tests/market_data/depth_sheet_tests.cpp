@@ -2,14 +2,14 @@
 
 #include "ih/market_data/depth/depth_node_comparator.hpp"
 #include "ih/market_data/depth/depth_sheet.hpp"
-#include "mocks/mock_market_entry_id_generator.hpp"
+#include "mocks/market_entry_id_generator_mock.hpp"
 #include "tools/order_book_notification_builder.hpp"
+
+namespace simulator::trading_system::matching_engine::mdata::test {
 
 using namespace testing;  // NOLINT
 
 // NOLINTBEGIN(*magic-number*)
-
-namespace simulator::trading_system::matching_engine::mdata {
 
 struct DepthSheetTest : Test {
   constexpr static std::optional<Price> NoPrice = std::nullopt;
@@ -18,7 +18,7 @@ struct DepthSheetTest : Test {
     return std::vector(range.begin(), range.end());
   }
 
-  NiceMock<MockMarketEntryIdGenerator> idgen;
+  NiceMock<MarketEntryIdGeneratorMock> idgen;
   DepthSheet sheet = DepthSheet::create_bid_sheet(idgen);
   PartyId owner{"owner"};
 
@@ -191,4 +191,4 @@ TEST_F(DepthSheetTest, OfferSheetKeepsLevelsSotedByOfferPriceCriteria) {
 
 // NOLINTEND(*magic-number*)
 
-}  // namespace simulator::trading_system::matching_engine::mdata
+}  // namespace simulator::trading_system::matching_engine::mdata::test

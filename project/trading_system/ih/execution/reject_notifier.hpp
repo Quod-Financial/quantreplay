@@ -4,13 +4,9 @@
 #include <memory>
 #include <string_view>
 
-#include "protocol/app/market_data_reject.hpp"
 #include "protocol/app/market_data_request.hpp"
-#include "protocol/app/order_cancellation_reject.hpp"
 #include "protocol/app/order_cancellation_request.hpp"
-#include "protocol/app/order_modification_reject.hpp"
 #include "protocol/app/order_modification_request.hpp"
-#include "protocol/app/order_placement_reject.hpp"
 #include "protocol/app/order_placement_request.hpp"
 #include "protocol/app/security_status_request.hpp"
 

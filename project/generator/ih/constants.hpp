@@ -24,8 +24,6 @@ constexpr std::uint32_t DefaultListingRandomOrdersRate = 10;
 constexpr double DefaultListingQtyMultiple = 1.;
 constexpr double DefaultListingQtyMinimum = 0.;
 constexpr double DefaultListingQtyMaximum = 0.;
-constexpr bool DefaultListingEnabledFlag = true;
-constexpr bool DefaultListingRandomOrdersEnabled = true;
 constexpr std::uint32_t DefaultListingTickRange = 10;
 constexpr double DefaultListingPriceTickSize = 0.;
 
@@ -52,8 +50,6 @@ constexpr std::string_view Postgres{"PSQL"};
 }  // namespace source
 
 constexpr std::string_view DefaultCounterpartyPattern{"CP{}"};
-
-constexpr std::uint32_t AllDepthLevels{0};
 
 }  // namespace historical
 

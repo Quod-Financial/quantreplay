@@ -9,6 +9,7 @@
 #include "data_layer/api/models/column_mapping.hpp"
 #include "data_layer/api/models/datasource.hpp"
 #include "ih/marshalling/json/datasource.hpp"
+#include "tests/test_utils/matchers.hpp"
 
 namespace simulator::http::json::test {
 namespace {
@@ -294,35 +295,81 @@ struct HttpJsonDatasourceUnmarshaller : public ::testing::Test {
   data_layer::Datasource::Patch patch;
 };
 
-TEST_F(HttpJsonDatasourceUnmarshaller, UnmarhsallsEnabled) {
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsEnabledNull) {
+  constexpr std::string_view json{R"({"enabled":null})"};
+
+  DatasourceUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.enabled_flag(), IsPatchFieldWithValue(std::nullopt));
+}
+
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsEnabled) {
   constexpr std::string_view json{R"({"enabled":false})"};
 
   DatasourceUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.enabled_flag(), Optional(Eq(false)));
+  EXPECT_THAT(patch.enabled_flag(), IsPatchFieldWithValue(Optional(Eq(false))));
 }
 
-TEST_F(HttpJsonDatasourceUnmarshaller, UnmarhsallsName) {
+TEST_F(HttpJsonDatasourceUnmarshaller, ThrowsExceptionOnUnmarshallingNameNull) {
+  constexpr std::string_view json{R"({"name":null})"};
+
+  ASSERT_THAT(
+      [&] { DatasourceUnmarshaller::unmarshall(json, patch); },
+      ThrowsMessage<std::runtime_error>(
+          "unexpected data type received for `name', string is expected"));
+}
+
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsName) {
   constexpr std::string_view json{R"({"name":"MyDataSource"})"};
 
   DatasourceUnmarshaller::unmarshall(json, patch);
   EXPECT_THAT(patch.name(), Optional(Eq("MyDataSource")));
 }
 
-TEST_F(HttpJsonDatasourceUnmarshaller, UnmarhsallsVenueId) {
+TEST_F(HttpJsonDatasourceUnmarshaller,
+       ThrowsExceptionOnUnmarshallingVenueIdNull) {
+  constexpr std::string_view json{R"({"venueId":null})"};
+
+  ASSERT_THAT(
+      [&] { DatasourceUnmarshaller::unmarshall(json, patch); },
+      ThrowsMessage<std::runtime_error>(
+          "unexpected data type received for `venueId', string is expected"));
+}
+
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsVenueId) {
   constexpr std::string_view json{R"({"venueId":"Venue"})"};
 
   DatasourceUnmarshaller::unmarshall(json, patch);
   EXPECT_THAT(patch.venue_id(), Optional(Eq("Venue")));
 }
 
-TEST_F(HttpJsonDatasourceUnmarshaller, UnmarhsallsConnection) {
+TEST_F(HttpJsonDatasourceUnmarshaller,
+       ThrowsExceptionOnUnmarshallingConnectionNull) {
+  constexpr std::string_view json{R"({"connection":null})"};
+
+  ASSERT_THAT(
+      [&] { DatasourceUnmarshaller::unmarshall(json, patch); },
+      ThrowsMessage<std::runtime_error>("unexpected data type received for "
+                                        "`connection', string is expected"));
+}
+
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsConnection) {
   constexpr std::string_view json{R"({"connection":"/file/path.csv"})"};
 
   DatasourceUnmarshaller::unmarshall(json, patch);
   EXPECT_THAT(patch.connection(), Optional(Eq("/file/path.csv")));
 }
 
-TEST_F(HttpJsonDatasourceUnmarshaller, UnmarhsallsFormat) {
+TEST_F(HttpJsonDatasourceUnmarshaller,
+       ThrowsExceptionOnUnmarshallingFormatNull) {
+  constexpr std::string_view json{R"({"format":null})"};
+
+  ASSERT_THAT(
+      [&] { DatasourceUnmarshaller::unmarshall(json, patch); },
+      ThrowsMessage<std::runtime_error>(
+          "unexpected data type received for `format', string is expected"));
+}
+
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsFormat) {
   using Format = data_layer::Datasource::Format;
   constexpr std::string_view json{R"({"format":"PSQL"})"};
 
@@ -330,7 +377,16 @@ TEST_F(HttpJsonDatasourceUnmarshaller, UnmarhsallsFormat) {
   EXPECT_THAT(patch.format(), Optional(Eq(Format::Postgres)));
 }
 
-TEST_F(HttpJsonDatasourceUnmarshaller, UnmarhsallsType) {
+TEST_F(HttpJsonDatasourceUnmarshaller, ThrowsExceptionOnUnmarshallingTypeNull) {
+  constexpr std::string_view json{R"({"type":null})"};
+
+  ASSERT_THAT(
+      [&] { DatasourceUnmarshaller::unmarshall(json, patch); },
+      ThrowsMessage<std::runtime_error>(
+          "unexpected data type received for `type', string is expected"));
+}
+
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsType) {
   using Type = data_layer::Datasource::Type;
   constexpr std::string_view json{R"({"type":"OrderBook"})"};
 
@@ -338,42 +394,78 @@ TEST_F(HttpJsonDatasourceUnmarshaller, UnmarhsallsType) {
   EXPECT_THAT(patch.type(), Optional(Eq(Type::OrderBook)));
 }
 
-TEST_F(HttpJsonDatasourceUnmarshaller, UnmarhsallsRepeat) {
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsRepeatNull) {
+  constexpr std::string_view json{R"({"repeat":null})"};
+
+  DatasourceUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.repeat_flag(), IsPatchFieldWithValue(std::nullopt));
+}
+
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsRepeat) {
   constexpr std::string_view json{R"({"repeat":false})"};
 
   DatasourceUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.repeat_flag(), Optional(Eq(false)));
+  EXPECT_THAT(patch.repeat_flag(), IsPatchFieldWithValue(Optional(Eq(false))));
 }
 
-TEST_F(HttpJsonDatasourceUnmarshaller, UnmarhsallsTextDelimiter) {
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsTextDelimiterNull) {
+  constexpr std::string_view json{R"({"textDelimiter":null})"};
+
+  DatasourceUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.text_delimiter(), IsPatchFieldWithValue(std::nullopt));
+}
+
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsTextDelimiter) {
   constexpr std::string_view json{R"({"textDelimiter":";"})"};
 
   DatasourceUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.text_delimiter(), Optional(Eq(';')));
+  EXPECT_THAT(patch.text_delimiter(), IsPatchFieldWithValue(Optional(Eq(';'))));
 }
 
-TEST_F(HttpJsonDatasourceUnmarshaller, UnmarhsallsTextHeaderRow) {
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsTextHeaderRowNull) {
+  constexpr std::string_view json{R"({"textHeaderRow":null})"};
+
+  DatasourceUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.text_header_row(), IsPatchFieldWithValue(std::nullopt));
+}
+
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsTextHeaderRow) {
   constexpr std::string_view json{R"({"textHeaderRow":42})"};
 
   DatasourceUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.text_header_row(), Optional(Eq(42)));
+  EXPECT_THAT(patch.text_header_row(), IsPatchFieldWithValue(Optional(Eq(42))));
 }
 
-TEST_F(HttpJsonDatasourceUnmarshaller, UnmarhsallsTextDataRow) {
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsTextDataRowNull) {
+  constexpr std::string_view json{R"({"textDataRow":null})"};
+
+  DatasourceUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.text_data_row(), IsPatchFieldWithValue(std::nullopt));
+}
+
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsTextDataRow) {
   constexpr std::string_view json{R"({"textDataRow":42})"};
 
   DatasourceUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.text_data_row(), Optional(Eq(42)));
+  EXPECT_THAT(patch.text_data_row(), IsPatchFieldWithValue(Optional(Eq(42))));
 }
 
-TEST_F(HttpJsonDatasourceUnmarshaller, UnmarhsallsTableName) {
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsTableNameNull) {
+  constexpr std::string_view json{R"({"tableName":null})"};
+
+  DatasourceUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.table_name(), IsPatchFieldWithValue(std::nullopt));
+}
+
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsTableName) {
   constexpr std::string_view json{R"({"tableName":"my_table"})"};
 
   DatasourceUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.table_name(), Optional(Eq("my_table")));
+  EXPECT_THAT(patch.table_name(),
+              IsPatchFieldWithValue(Optional(Eq("my_table"))));
 }
 
-TEST_F(HttpJsonDatasourceUnmarshaller, UnmarhsallsNotExistColumnMappingKey) {
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsNotExistColumnMappingKey) {
   constexpr std::string_view json{R"({})"};
 
   DatasourceUnmarshaller::unmarshall(json, patch);
@@ -383,7 +475,7 @@ TEST_F(HttpJsonDatasourceUnmarshaller, UnmarhsallsNotExistColumnMappingKey) {
 }
 
 TEST_F(HttpJsonDatasourceUnmarshaller,
-       UnmarhsallsNotAnArrayColumnMappingValue) {
+       ThrowsExceptionOnUnmarshallingNotAnArrayColumnMappingValue) {
   constexpr std::string_view json{R"({"columnMapping":{}})"};
 
   EXPECT_THROW(DatasourceUnmarshaller::unmarshall(json, patch),
@@ -391,15 +483,25 @@ TEST_F(HttpJsonDatasourceUnmarshaller,
 }
 
 TEST_F(HttpJsonDatasourceUnmarshaller,
-       UnmarhsallsColumnMappingValueInvalidElemType) {
+       ThrowsExceptionOnUnmarshallingColumnMappingValueInvalidElemType) {
   constexpr std::string_view json{R"({"columnMapping":[5, 1, 2]})"};
 
   EXPECT_THROW(DatasourceUnmarshaller::unmarshall(json, patch),
                std::runtime_error);
 }
 
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsColumnMappingEmptyArray) {
+  constexpr std::string_view json{R"({"columnMapping":[]})"};
+
+  DatasourceUnmarshaller::unmarshall(json, patch);
+
+  const auto& column_mapping = patch.columns_mapping();
+  ASSERT_TRUE(column_mapping.has_value());
+  ASSERT_TRUE(column_mapping->empty());
+}
+
 TEST_F(HttpJsonDatasourceUnmarshaller,
-       UnmarhsallsColumnMappingValueIsValidArray) {
+       UnmarshallsColumnMappingValueIsValidArray) {
   // clang-format off
   constexpr std::string_view json{"{"
     R"("columnMapping":[)"
@@ -420,11 +522,19 @@ TEST_F(HttpJsonDatasourceUnmarshaller,
   EXPECT_EQ(column_mapping->front().column_to(), "ColumnTo");
 }
 
-TEST_F(HttpJsonDatasourceUnmarshaller, UnmarhsallsMaxDepthLevels) {
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsMaxDepthLevelsNull) {
+  constexpr std::string_view json{R"({"maxDepthLevels": null})"};
+
+  DatasourceUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.max_depth_levels(), IsPatchFieldWithValue(std::nullopt));
+}
+
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsMaxDepthLevels) {
   constexpr std::string_view json{R"({"maxDepthLevels": 42})"};
 
   DatasourceUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.max_depth_levels(), Optional(Eq(42)));
+  EXPECT_THAT(patch.max_depth_levels(),
+              IsPatchFieldWithValue(Optional(Eq(42))));
 }
 
 // NOLINTEND(*magic-numbers*)

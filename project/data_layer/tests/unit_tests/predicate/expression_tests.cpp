@@ -79,6 +79,24 @@ class FormatterMock {
       case TestModel::Attribute::CustomField:
         stream_ << "CustomField";
         break;
+      case TestModel::Attribute::OptionalBooleanField:
+        stream_ << "OptionalBooleanField";
+        break;
+      case TestModel::Attribute::OptionalIntegerField:
+        stream_ << "OptionalIntegerField";
+        break;
+      case TestModel::Attribute::OptionalUnsignedIntegerField:
+        stream_ << "OptionalUnsignedIntegerField";
+        break;
+      case TestModel::Attribute::OptionalDecimalField:
+        stream_ << "OptionalDecimalField";
+        break;
+      case TestModel::Attribute::OptionalStringField:
+        stream_ << "OptionalStringField";
+        break;
+      case TestModel::Attribute::OptionalCustomField:
+        stream_ << "OptionalCustomField";
+        break;
     }
   }
 

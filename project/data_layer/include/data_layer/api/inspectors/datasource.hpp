@@ -139,8 +139,10 @@ template <typename Marshaller>
 inline auto DatasourcePatchReader<Marshaller>::read(
     const Datasource::Patch& patch) -> void {
   if (const auto& value = patch.enabled_flag()) {
-    static_assert(can_marshall_v<decltype(*value)>);
-    marshaller_(Attribute::Enabled, *value);
+    static_assert(
+        can_marshall_v<std::remove_cvref_t<decltype(value)>::value_type>);
+    marshaller_(Attribute::Enabled,
+                value.inner_value_or(Datasource::DefaultEnabledFlag));
   }
 
   if (const auto& value = patch.name()) {
@@ -169,23 +171,31 @@ inline auto DatasourcePatchReader<Marshaller>::read(
   }
 
   if (const auto& value = patch.repeat_flag()) {
-    static_assert(can_marshall_v<decltype(*value)>);
-    marshaller_(Attribute::Repeat, *value);
+    static_assert(
+        can_marshall_v<std::remove_cvref_t<decltype(value)>::value_type>);
+    marshaller_(Attribute::Repeat,
+                value.inner_value_or(Datasource::DefaultRepeatFlag));
   }
 
   if (const auto& value = patch.text_delimiter()) {
-    static_assert(can_marshall_v<decltype(*value)>);
-    marshaller_(Attribute::TextDelimiter, *value);
+    static_assert(
+        can_marshall_v<std::remove_cvref_t<decltype(value)>::value_type>);
+    marshaller_(Attribute::TextDelimiter,
+                value.inner_value_or(Datasource::DefaultTextDelimiter));
   }
 
   if (const auto& value = patch.text_header_row()) {
-    static_assert(can_marshall_v<decltype(*value)>);
-    marshaller_(Attribute::TextHeaderRow, *value);
+    static_assert(
+        can_marshall_v<std::remove_cvref_t<decltype(value)>::value_type>);
+    marshaller_(Attribute::TextHeaderRow,
+                value.inner_value_or(Datasource::NoTextHeaderRow));
   }
 
   if (const auto& value = patch.text_data_row()) {
-    static_assert(can_marshall_v<decltype(*value)>);
-    marshaller_(Attribute::TextDataRow, *value);
+    static_assert(
+        can_marshall_v<std::remove_cvref_t<decltype(value)>::value_type>);
+    marshaller_(Attribute::TextDataRow,
+                value.inner_value_or(Datasource::DefaultTextDataRow));
   }
 
   if (const auto& value = patch.table_name()) {
@@ -202,25 +212,25 @@ inline auto DatasourcePatchReader<Marshaller>::read(
 template <typename Unmarshaller>
 inline auto DatasourcePatchWriter<Unmarshaller>::write(
     Datasource::Patch& target_patch) -> void {
-  bool enabled_flag{};
+  std::optional<bool> enabled_flag;
   static_assert(can_unmarshall_v<decltype(enabled_flag)>);
   if (unmarshaller_(Attribute::Enabled, enabled_flag)) {
     target_patch.with_enabled_flag(enabled_flag);
   }
 
-  std::string name{};
+  std::string name;
   static_assert(can_unmarshall_v<decltype(name)>);
   if (unmarshaller_(Attribute::Name, name)) {
     target_patch.with_name(std::move(name));
   }
 
-  std::string venue_id{};
+  std::string venue_id;
   static_assert(can_unmarshall_v<decltype(venue_id)>);
   if (unmarshaller_(Attribute::VenueId, venue_id)) {
     target_patch.with_venue_id(std::move(venue_id));
   }
 
-  std::string connection{};
+  std::string connection;
   static_assert(can_unmarshall_v<decltype(connection)>);
   if (unmarshaller_(Attribute::Connection, connection)) {
     target_patch.with_connection(std::move(connection));
@@ -238,37 +248,37 @@ inline auto DatasourcePatchWriter<Unmarshaller>::write(
     target_patch.with_type(type);
   }
 
-  bool repeat_flag{};
+  std::optional<bool> repeat_flag;
   static_assert(can_unmarshall_v<decltype(repeat_flag)>);
   if (unmarshaller_(Attribute::Repeat, repeat_flag)) {
     target_patch.with_repeat_flag(repeat_flag);
   }
 
-  char text_delimiter{};
+  std::optional<char> text_delimiter;
   static_assert(can_unmarshall_v<decltype(text_delimiter)>);
   if (unmarshaller_(Attribute::TextDelimiter, text_delimiter)) {
     target_patch.with_text_delimiter(text_delimiter);
   }
 
-  std::uint64_t text_header_row{};
+  std::optional<std::uint64_t> text_header_row;
   static_assert(can_unmarshall_v<decltype(text_header_row)>);
   if (unmarshaller_(Attribute::TextHeaderRow, text_header_row)) {
     target_patch.with_text_header_row(text_header_row);
   }
 
-  std::uint64_t text_data_row{};
+  std::optional<std::uint64_t> text_data_row;
   static_assert(can_unmarshall_v<decltype(text_data_row)>);
   if (unmarshaller_(Attribute::TextDataRow, text_data_row)) {
     target_patch.with_text_data_row(text_data_row);
   }
 
-  std::string table_name{};
+  std::optional<std::string> table_name;
   static_assert(can_unmarshall_v<decltype(table_name)>);
   if (unmarshaller_(Attribute::TableName, table_name)) {
     target_patch.with_table_name(std::move(table_name));
   }
 
-  std::uint32_t max_depth_levels;
+  std::optional<std::uint32_t> max_depth_levels;
   static_assert(can_unmarshall_v<decltype(max_depth_levels)>);
   if (unmarshaller_(Attribute::MaxDepthLevels, max_depth_levels)) {
     target_patch.with_max_depth_levels(max_depth_levels);

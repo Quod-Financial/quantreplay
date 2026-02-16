@@ -1,5 +1,5 @@
-#ifndef SIMULATOR_MATCHING_ENGINE_IH_TOOLS_ORDER_RESOLVER_HPP_
-#define SIMULATOR_MATCHING_ENGINE_IH_TOOLS_ORDER_RESOLVER_HPP_
+#ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_TOOLS_ORDER_LOOKUP_HPP_
+#define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_TOOLS_ORDER_LOOKUP_HPP_
 
 #include "ih/orders/book/order_book.hpp"
 #include "ih/orders/book/order_updates.hpp"
@@ -23,4 +23,4 @@ auto find_target_limit_order(OrderPage& page, const OrderCancel& cancel)
 
 }  // namespace simulator::trading_system::matching_engine
 
-#endif  // SIMULATOR_MATCHING_ENGINE_IH_TOOLS_ORDER_RESOLVER_HPP_
+#endif  // SIMULATOR_MATCHING_ENGINE_IH_ORDERS_TOOLS_ORDER_LOOKUP_HPP_

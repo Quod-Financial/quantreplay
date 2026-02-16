@@ -13,7 +13,7 @@ struct SaveMoveConstructibleAction {
   std::unique_ptr<T>& pointer_ref;
 
   template <typename... Args>
-  void operator()(const Args&... args) const {
+  auto operator()(const Args&... args) const -> void {
     pointer_ref = std::make_unique<T>(std::get<k>(std::tie(args...)));
   }
 };
@@ -24,6 +24,6 @@ auto save_copy_constructible(std::unique_ptr<T>& pointer)
   return {pointer};
 }
 
-}
+}  // namespace simulator::trading_system::matching_engine::test
 
 #endif  // SIMULATOR_MATCHING_ENGINE_TESTS_ACTIONS_SAVE_COPY_CONSTRUCTIBLE_HPP_

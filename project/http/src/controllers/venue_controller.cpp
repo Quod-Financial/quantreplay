@@ -36,15 +36,16 @@ auto unmarshall_request_body(std::string_view body,
 
 }  // namespace
 
-VenueController::VenueController(data_bridge::VenueAccessor& bridge) noexcept
-    : data_accessor_(bridge) {}
+VenueController::VenueController(
+    std::shared_ptr<data_bridge::VenueAccessor> bridge) noexcept
+    : data_accessor_{bridge} {}
 
 auto VenueController::select_venue(const std::string& venue_id) const
     -> Result {
   Pistache::Http::Code code{};
   std::string content;
 
-  auto result = data_accessor_.get().select_single(venue_id);
+  auto result = data_accessor_->select_single(venue_id);
   if (result) {
     const data_layer::Venue& selected = result.value();
     try {
@@ -75,7 +76,7 @@ auto VenueController::select_all_venues() const -> Result {
   Pistache::Http::Code code{};
   std::string content;
 
-  auto result = data_accessor_.get().select_all();
+  auto result = data_accessor_->select_all();
   if (result) {
     try {
       const std::vector<data_layer::Venue>& venues = result.value();
@@ -105,7 +106,7 @@ auto VenueController::insert_venue(const std::string& body) const -> Result {
     return std::make_pair(code, std::move(content));
   }
 
-  auto result = data_accessor_.get().add(venue_snapshot);
+  auto result = data_accessor_->add(venue_snapshot);
   if (result) {
     log::info("successfully added a new venue");
     code = Pistache::Http::Code::Created;
@@ -137,7 +138,7 @@ auto VenueController::update_venue(const std::string& venue_id,
     return std::make_pair(code, std::move(content));
   }
 
-  auto result = data_accessor_.get().update(patch, venue_id);
+  auto result = data_accessor_->update(patch, venue_id);
   if (result) {
     code = Pistache::Http::Code::Ok;
     content = format_result_response(

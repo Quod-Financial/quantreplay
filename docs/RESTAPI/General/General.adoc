@@ -90,6 +90,8 @@ Market Simulators use the POST request to add one or more new resources to the s
 |===
 | Status Code | Meaning
 
+| 200 OK | Request was successful, the response body contains the result of the action.
+
 | 201 CREATED | Request was successful, we added the new resource(s) and the response body contains the validated form of the resource(s) or the response to a complex request.
 
 | 400 BAD REQUEST | The request failed validation, see response body for details.
@@ -168,6 +170,20 @@ Market Simulators use the DELETE request to remove one or more existing resource
 [[general-dataformat]]
 === Data Format
 
+The following data types are used in the request and response bodies of the Market Simulator REST API:
+
+* <<general-dataformat-strings>>;
+* <<general-dataformat-numbers>>;
+* <<general-dataformat-datetime>>.
+
+In the case where an indication of "no value" is required, a null property value may be specified.
+
+A null property value is represented in the database as NULL or as a default value.
+There is a different behaviour if the property is omitted:
+
+* In a POST request, the default value for that property is used (if any) or is NULL;
+* In a PUT request, the property is not updated and retains its previous value.
+
 [[general-dataformat-requestheaders]]
 ==== Request Headers
 
@@ -202,7 +218,7 @@ All property names in the response body will be double quoted. See below for fur
 
 [[general-dataformat-strings]]
 ==== Strings
-Any string values sent as part of a JSON request or response must be wrapped in double quotes. In the case where an indication of "no value" is required, a null property value may be specified.
+Any string values sent as part of a JSON request or response must be wrapped in double quotes.
 
 _Example_
 
@@ -217,8 +233,7 @@ _Example_
 [[general-dataformat-numbers]]
 ==== Numbers
 Any numerical fields (Integer or Float) sent as part of a JSON request or response must not be wrapped in double quotes. 
-In the case of Float values, a period ( "." ) must be used as the decimal separator, regardless of a user's regional settings. 
-In the case where an indication of "no value" is required, a null property value may be specified.
+In the case of Float values, a period ( "." ) must be used as the decimal separator, regardless of a user's regional settings.
 
 _Example_
 
@@ -361,8 +376,7 @@ The following diagram represents this distribution:
 image::17pricebook.png[width = 500]
 
 The final price of a new random order is chosen as a number of ticks away from the initial price value, weighted by the frequency distribution as described above. 
-In this way, the final price is a multiple of the configured ticks on the listing (Listings → PriceTickSize), rounded to the configured precision of the 
-listing (Listings → PricePrecision).
+In this way, the final price is a multiple of the configured ticks on the listing (Listings → PriceTickSize).
 
 [[general-randomorder-distrqty]]
 ==== Distribution of Quantity
@@ -437,7 +451,11 @@ In this case, if no column mappings are indicated, the following default order o
 
  ReceivedTimeStamp, MessageTimeStamp, Instrument, BidParty, BidQuantity, BidPrice, AskPrice, AskQuantity, AskParty
 
-Also in this case, if some columns are mapped but not others, any unmapped column is assumed to be at the position as indicated above by the default order of columns.
+If some columns are mapped but not others, any unmapped column is by default mapped to its corresponding position or name as indicated above by the default list of columns.
+
+If at least one of the columns for a depth level is defined (BidParty, BidPrice, BidQuantity, AskParty, AskPrice, AskQuantity), the other columns for price and quantity for that depth level must be also be specified. For instance if BidParty is defined, then BidPrice and BidQuantity must also be defined. If BidPrice is defined, then BidQuantity must also be defined. BidParty and AskParty are optional columns for each depth level.
+
+Specifically, one of ReceivedTimeStamp or MessageTimeStamp must be mapped either explicitly or implicitly. If only one is specified, its value is used for the other.
 
 The following examples show sample generic CSV formats using these data source properties:
 
@@ -485,12 +503,14 @@ If the randomOrdersEnabled property of a listing is true, then both random order
 
 In processing each data source row, the simulator compares the current state of the matching engine for the given listing of each row, and generates a series of order actions 
 (new orders, amends, cancels) to modify the current state of the matching engine to change to a state that matches the values from the current data source row being processed. 
+Multiple orders for the same counter party are supported on either one or both sides of the order book.
+When applying changes from a new order book snapshot, the actions are performed in a specific sequence: first all necessary cancels, then new orders, and finally amends.
+
 The following logic is applied to derive order actions from each row of a data source:
 
 * Any existing orders from counter parties that do not match the party of the data source row being processed are canceled.
 * Any existing orders for the same party as the data source row being processed without a corresponding bid or ask entry in the data source are canceled.
-* Any existing orders for the same party as the data source row being processed with a corresponding bid or ask entry in the data source are amended to the same 
-price and quantity as the corresponding bid or ask entry in the data source.
+* Any existing orders for the same party and side as the data source row, but with a different price or quantity, are amended to the same price and quantity as the corresponding bid or ask entry in the data source.
 * Any bid or ask entries in the data source without a corresponding existing order for the same party results in a new order with the properties of that bid or ask entry 
 in the data source.
 
@@ -523,10 +543,15 @@ ReceivedTimeStamp,MessageTimeStamp,...
 NOTE: Note that the simulator will play back order actions with at least the same delay between values of ReceivedTimeStamp for each row, 
 though the actual delay may be longer if the simulator is unable to play back the order actions for each row for too small of a specified delay.
 
-For database format and CSV file format with a non-zero textHeaderRow value, the column mapping properties of the data source can be used to map columns by name. 
+For database format and CSV file format with a non-zero textHeaderRow value, the column mapping properties of the data source can be used to map columns by name.
 The columnFrom property of the column mapping is used to select the internal simulator field that will be mapped from, and the columnTo property indicates the data
 source column that the simulator field will be mapped to. 
-In this case, any unmapped columns are assumed to use the same values as available for the columnFrom property as the column name in the data source.
+
+If some columns are mapped but not others, any unmapped column is by default mapped to its corresponding name as indicated by the available columnFrom possible values
+
+If at least one of the columns for a depth level is defined (BidParty, BidPrice, BidQuantity, AskParty, AskPrice, AskQuantity), the other columns for price and quantity for that depth level must be also be specified. For instance if BidParty is defined, then BidPrice and BidQuantity must also be defined. If BidPrice is defined, then BidQuantity must also be defined. BidParty and AskParty are optional columns for each depth level.
+
+Specifically, one of ReceivedTimeStamp or MessageTimeStamp must be mapped either explicitly or implicitly. If only one is specified, its value is used for the other.
 
 See the section <<adminsets-data-colmapping,Market Simulator REST API | Column Mapping Sub List>> for descriptions of all possible fields that can be mapped from a data source as configured using the 
 columnFrom property of a data source column mapping. 
@@ -553,14 +578,9 @@ BidPrice, AskPrice, AskQuantity, AskParty.
 For each of these columnFrom values, a 1-based index can be appended to indicate which bid or ask level that value should be applied to, for example BidParty1 
 for the first bid level, BidParty2 for the second bid level, and so on. 
 In this case, the columnTo property still works the same way, indicating either the name or (for a CSV file format when textHeaderRow is 0 or not specified) the index 
-position of the data source column to map to. 
-If no column mapping is indicated for one of the columnFrom values listed above, then either for a database format or CSV file format with a non-zero value for textHeaderRow, 
-it is expected that column names are specified in the data source, and if that unmapped column name (from the list of BidParty, BidQuantity, BidPrice, AskPrice, 
-AskQuantity, AskParty) is not found directly as one of the columns of the data source, then that same column name is expected to be present but with 
-a 1-based index appended to indicate which bid or ask level that column of values should be applied to. 
-For instance, if BidPrice is not specified as a mapped column of the data source, and BidPrice as a column name is not present in the data source, then it is 
-expected that BidPrice1, BidPrice2, etc will be specified as columns in the data source for each level.
+position of the data source column to map to.
 
+If any bid or ask level is missing a price or quantity value, that particular bid or ask entry, along with all subsequent entries on that side, will be considered empty. These entries will be removed from the state of the matching engine.
 If the party value for a bid or ask level is missing for data sources with multiple bid/ask levels, a default value of “CP#” is used, where # is the index for each level 
 (e.g. level 1 would use CP1, etc).
 
@@ -643,217 +663,205 @@ A currently halted phase can also be removed on demand through a resume request 
 
 
 [[general-persiststate]]
-=== Persisted State
+=== Persisted Market State
 The market simulator may store and recover:
 
-* The order book;
-* The last trade;
-* Low and high trade prices.
+* The order book state for actively traded listings
+* Last known L1 market data values (such as last traded price, open / high / low / close prices, etc)
 
-The settings persistenceEnabled and persistenceFilePath are used to configure the feature - if persistenceEnabled is true:
+The settings persistenceEnabled and persistenceFilePath are used to configure this feature. If persistenceEnabled is true:
 
-* The market simulator recovers its state from the file placed at persistenceFilePath on startup or by request <<admincmds-persisstate-recover,Market Simulator REST API | Recover Market State For Single Venue>> ;
-* The market simulator stores its state on clean shutdown or by request <<admincmds-persisstate-store,Market Simulator REST API | Store Market State For Single Venue>>.
-
-If the file's content is correct JSON and the instrument is found, the order book, last trade, and low and high trade prices will be removed during the recovery.
+* The market simulator stores its state to the file specified by the persistenceFilePath setting on clean shutdown of the process or by using the <<admincmds-simstate-storerecover,store>> request.
+* The market simulator recovers its state from the file specified by the persistenceFilePath setting on initial process startup or by using the <<admincmds-simstate-storerecover,recover>> request.
 
 [[general-persiststate-fileformat]]
 ==== File Format
-The data is stored in the JSON file.
+The market simulator state is stored to file in JSON format.
 
-For instance, the venue “LSE” contains two listings “AAPL” and “VOW”:
+For instance, the file content indicated below contains the state of the venue “LSE” with two listings “AAPL” and “VOW”:
 
 * “AAPL” has no orders in the order book, no last trade, and low and high prices.
-* “VOW” has the last trade, low and high prices. 
-Its order book contains one buy order and two sell orders.
+* “VOW” has an order book with one buy order and two sell orders, and the last trade, low and high prices.
 
 [,json]
 ----
 {
-    "venue_id": "LSE",
-    "instruments": [
+    "VenueID": "LSE",
+    "Instruments": [
         {
-            "instrument": {
-                "symbol": "AAPL",
-                "price_currency": "USD",
-                "base_currency": null,
-                "security_exchange": "XLOM",
-                "party_id": null,
-                "cusip": null,
-                "sedol": "B0YQ5W0",
-                "isin": "US0378331005",
-                "ric": null,
-                "exchange_id": null,
-                "bloomberg_id": null,
-                "price_tick": 0.1,
-                "quantity_tick": 1.0,
-                "min_quantity": 1.0,
-                "max_quantity": 10000.0,
-                "party_role": null,
-                "security_type": "CommonStock"
+            "Instrument": {
+                "Symbol": "AAPL",
+                "PriceCurrency": "USD",
+                "BaseCurrency": null,
+                "SecurityExchange": "XLOM",
+                "PartyID": null,
+                "CUSIP": null,
+                "SEDOL": "B0YQ5W0",
+                "ISIN": "US0378331005",
+                "RIC": null,
+                "ExchangeSymbol": null,
+                "BloombergSymbol": null,
+                "PartyRole": null,
+                "SecurityType": "CommonStock"
             },
-            "last_trade": null,
-            "info": null,
-            "order_book": {
-                "buy_orders": [],
-                "sell_orders": []
+            "LastTrade": null,
+            "Info": null,
+            "OrderBook": {
+                "BuyOrders": [],
+                "SellOrders": []
             }
         },
         {
-            "instrument": {
-                "symbol": "VOW",
-                "price_currency": "EUR",
-                "base_currency": null,
-                "security_exchange": "XLOM",
-                "party_id": null,
-                "cusip": null,
-                "sedol": "0308908",
-                "isin": "DE0007664005",
-                "ric": null,
-                "exchange_id": null,
-                "bloomberg_id": null,
-                "price_tick": 0.00001,
-                "quantity_tick": 1.0,
-                "min_quantity": 1.0,
-                "max_quantity": 1000000000.0,
-                "party_role": null,
-                "security_type": "CommonStock"
+            "Instrument": {
+                "Symbol": "VOW",
+                "PriceCurrency": "EUR",
+                "BaseCurrency": null,
+                "SecurityExchange": "XLOM",
+                "PartyID": null,
+                "CUSIP": null,
+                "SEDOL": "0308908",
+                "ISIN": "DE0007664005",
+                "RIC": null,
+                "ExchangeSymbol": null,
+                "BloombergSymbol": null,
+                "PartyRole": null,
+                "SecurityType": "CommonStock"
             },
-            "last_trade": {
-                "buyer": "CP3",
-                "seller": "CP6",
-                "trade_price": 1.18815,
-                "traded_quantity": 290.0,
-                "aggressor_side": "Buy",
-                "trade_time": "2025-05-16 14:42:49.958327",
-                "market_phase": {
-                    "trading_phase": "Open",
-                    "trading_status": "Resume"
+            "LastTrade": {
+                "Buyer": "CP3",
+                "Seller": "CP6",
+                "TradePrice": 1.18815,
+                "TradedQuantity": 290.0,
+                "AggressorSide": "Buy",
+                "TradeTime": "20250929-14:42:49.958327",
+                "MarketPhase": {
+                    "TradingSessionSubID": "Continuous",
+                    "SecurityTradingStatus": "Resume"
                 }
             },
-            "info": {
-                "low_price": 1.18812,
-                "high_price": 1.18818
+            "Info": {
+                "TradingSessionLowPrice": 1.18812,
+                "TradingSessionHighPrice": 1.18818
             },
-            "order_book": {
-                "buy_orders": [
+            "OrderBook": {
+                "BuyOrders": [
                     {
-                        "client_instrument_descriptor": {
-                            "security_id": "DE0007664005",
-                            "symbol": "VOW",
-                            "currency": "EUR",
-                            "security_exchange": "XLOM",
-                            "parties": [],
-                            "requester_instrument_id": 1,
-                            "security_type": "CommonStock",
-                            "security_id_source": "ISIN"
+                        "ClientInstrumentDescriptor": {
+                            "SecurityID": "DE0007664005",
+                            "Symbol": "VOW",
+                            "Currency": "EUR",
+                            "SecurityExchange": "XLOM",
+                            "Parties": [],
+                            "RequesterInstrumentID": 1,
+                            "SecurityType": "CommonStock",
+                            "SecurityIDSource": "ISIN"
                         },
-                        "client_session": {
-                            "type": "Generator",
-                            "fix_session": null
+                        "ClientSession": {
+                            "Type": "Generator",
+                            "FixSession": null
                         },
-                        "client_order_id": "SIM-1747406520164373224",
-                        "order_parties": [
+                        "ClientOrderID": "SIM-1747406520164373224",
+                        "OrderParties": [
                             {
-                                "identifier": {
-                                    "party_id": "CP1",
-                                    "source": "Proprietary"
+                                "Identifier": {
+                                    "PartyID": "CP1",
+                                    "PartyIDSource": "Proprietary"
                                 },
-                                "role": "ExecutingFirm"
+                                "PartyRole": "ExecutingFirm"
                             }
                         ],
-                        "expire_time": null,
-                        "expire_date": null,
-                        "short_sale_exemption_reason": null,
-                        "time_in_force": "Day",
-                        "order_id": 250516144244000013,
-                        "order_time": "2025-05-19 14:42:48.614534",
-                        "side": "Buy",
-                        "order_status": "Modified",
-                        "order_price": 0.38799,
-                        "total_quantity": 3000000.0,
-                        "cum_executed_quantity": 1000535.0
+                        "ExpireTime": null,
+                        "ExpireDate": null,
+                        "ShortSaleExemptionReason": null,
+                        "TimeInForce": "Day",
+                        "OrderID": 250516144244000013,
+                        "OrderTime": "20250929-14:42:48.614534",
+                        "Side": "Buy",
+                        "OrdStatus": "Replaced",
+                        "Price": 0.38799,
+                        "OrderQty": 3000000.0,
+                        "CumQty": 1000535.0
                     }
                 ],
-                "sell_orders": [
+                "SellOrders": [
                     {
-                        "client_instrument_descriptor": {
-                            "security_id": "DE0007664005",
-                            "symbol": "VOW",
-                            "currency": "EUR",
-                            "security_exchange": "XLOM",
-                            "parties": [],
-                            "requester_instrument_id": 1,
-                            "security_type": "CommonStock",
-                            "security_id_source": "ISIN"
+                        "ClientInstrumentDescriptor": {
+                            "SecurityID": "DE0007664005",
+                            "Symbol": "VOW",
+                            "Currency": "EUR",
+                            "SecurityExchange": "XLOM",
+                            "Parties": [],
+                            "RequesterInstrumentID": 1,
+                            "SecurityType": "CommonStock",
+                            "SecurityIDSource": "ISIN"
                         },
-                        "client_session": {
-                            "type": "Fix",
-                            "fix_session": {
-                                "begin_string": "FIXT.1.1",
-                                "sender_comp_id": "SENDER",
-                                "target_comp_id": "TARGET",
-                                "client_sub_id": null
+                        "ClientSession": {
+                            "Type": "Fix",
+                            "FixSession": {
+                                "BeginString": "FIXT.1.1",
+                                "SenderCompID": "SENDER",
+                                "TargetCompID": "TARGET",
+                                "SenderSubID": null
                             }
                         },
-                        "client_order_id": "SIM-1747406520164373237",
-                        "order_parties": [
+                        "ClientOrderID": "SIM-1747406520164373237",
+                        "OrderParties": [
                             {
-                                "identifier": {
-                                    "party_id": "CP5",
-                                    "source": "Proprietary"
+                                "Identifier": {
+                                    "PartyID": "CP5",
+                                    "PartyIDSource": "Proprietary"
                                 },
-                                "role": "ExecutingFirm"
+                                "PartyRole": "ExecutingFirm"
                             }
                         ],
-                        "expire_time": null,
-                        "expire_date": null,
-                        "short_sale_exemption_reason": null,
-                        "time_in_force": "Day",
-                        "order_id": 250516144250000026,
-                        "order_time": "2025-05-16 14:42:51.522018",
-                        "side": "Sell",
-                        "order_status": "Modified",
-                        "order_price": 1.188,
-                        "total_quantity": 408.0,
-                        "cum_executed_quantity": 0.0
+                        "ExpireTime": null,
+                        "ExpireDate": null,
+                        "ShortSaleExemptionReason": null,
+                        "TimeInForce": "Day",
+                        "OrderID": 250516144250000026,
+                        "OrderTime": "20250929-14:42:51.522018",
+                        "Side": "Sell",
+                        "OrdStatus": "Replaced",
+                        "Price": 1.188,
+                        "OrderQty": 408.0,
+                        "CumQty": 0.0
                     },
                     {
-                        "client_instrument_descriptor": {
-                            "security_id": "DE0007664005",
-                            "symbol": "VOW",
-                            "currency": "EUR",
-                            "security_exchange": "XLOM",
-                            "parties": [],
-                            "requester_instrument_id": 1,
-                            "security_type": "CommonStock",
-                            "security_id_source": "ISIN"
+                        "ClientInstrumentDescriptor": {
+                            "SecurityID": "DE0007664005",
+                            "Symbol": "VOW",
+                            "Currency": "EUR",
+                            "SecurityExchange": "XLOM",
+                            "Parties": [],
+                            "RequesterInstrumentID": 1,
+                            "SecurityType": "CommonStock",
+                            "SecurityIDSource": "ISIN"
                         },
-                        "client_session": {
-                            "type": "Generator",
-                            "fix_session": null
+                        "ClientSession": {
+                            "Type": "Generator",
+                            "FixSession": null
                         },
-                        "client_order_id": "SIM-1747406520164373236",
-                        "order_parties": [
+                        "ClientOrderID": "SIM-1747406520164373236",
+                        "OrderParties": [
                             {
-                                "identifier": {
-                                    "party_id": "CP8",
-                                    "source": "Proprietary"
+                                "Identifier": {
+                                    "PartyID": "CP8",
+                                    "PartyIDSource": "Proprietary"
                                 },
-                                "role": "ExecutingFirm"
+                                "PartyRole": "ExecutingFirm"
                             }
                         ],
-                        "expire_time": null,
-                        "expire_date": null,
-                        "short_sale_exemption_reason": null,
-                        "time_in_force": "Day",
-                        "order_id": 250516144250000025,
-                        "order_time": "2025-05-16 14:42:50.627388",
-                        "side": "Sell",
-                        "order_status": "Modified",
-                        "order_price": 1.18812,
-                        "total_quantity": 606.0,
-                        "cum_executed_quantity": 0.0
+                        "ExpireTime": null,
+                        "ExpireDate": null,
+                        "ShortSaleExemptionReason": null,
+                        "TimeInForce": "Day",
+                        "OrderID": 250516144250000025,
+                        "OrderTime": "20250929-14:42:50.627388",
+                        "Side": "Sell",
+                        "OrdStatus": "Replaced",
+                        "Price": 1.18812,
+                        "OrderQty": 606.0,
+                        "CumQty": 0.0
                     }
                 ]
             }
@@ -863,12 +871,12 @@ Its order book contains one buy order and two sell orders.
 ----
 
 [[general-persiststate-dataverification]]
-==== Data verification
-On storing, the market simulator does the following verifications:
+==== File Verification
+On storing the market state of a simulator instance, the following verifications are performed:
 
 [cols="5,45,45"]
 |===
-|  | Verification | Actions if fail
+|  | Verification | Actions On Failure
 
 | 1 | persistenceEnabled is true | Output log info message:
 
@@ -896,11 +904,11 @@ Stop storing.
 
 |===
 
-On recovery, the market simulator does the following verifications:
+On recovery of market state of a simulator instance, the following verifications are performed:
 
 [cols="5,45,45"]
 |===
-|  | Verification | Actions if fail
+|  | Verification | Actions On Failure
 
 | 1 | persistenceEnabled is true | Output log info message:
 

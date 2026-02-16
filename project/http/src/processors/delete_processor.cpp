@@ -8,24 +8,24 @@
 
 namespace simulator::http {
 
-DeleteProcessor::DeleteProcessor(
-    const PriceSeedController& price_seed_controller) noexcept
-    : price_seed_controller_(price_seed_controller) {}
+DeleteProcessorImpl::DeleteProcessorImpl(
+    std::shared_ptr<PriceSeedController> price_seed_controller) noexcept
+    : price_seed_controller_{std::move(price_seed_controller)} {}
 
-auto DeleteProcessor::delete_price_seed(const Pistache::Rest::Request& request,
-                                        Pistache::Http::ResponseWriter response)
-    -> void {
+auto DeleteProcessorImpl::delete_price_seed(
+    const Pistache::Rest::Request& request,
+    Pistache::Http::ResponseWriter response) -> void {
   auto id = request.param(":id").as<std::uint64_t>();
   log::info("requested delete of the price seed - {}", id);
 
-  auto [code, body] = price_seed_controller_.get().delete_price_seed(id);
+  auto [code, body] = price_seed_controller_->delete_price_seed(id);
   respond(request, response, code, body);
 }
 
-auto DeleteProcessor::respond(const Pistache::Rest::Request& request,
-                              Pistache::Http::ResponseWriter& response,
-                              Pistache::Http::Code code,
-                              const std::string& body) -> void {
+auto DeleteProcessorImpl::respond(const Pistache::Rest::Request& request,
+                                  Pistache::Http::ResponseWriter& response,
+                                  Pistache::Http::Code code,
+                                  const std::string& body) -> void {
   log::debug("sending response on {} {} from {}:{} with code: {} ({})",
              Pistache::Http::methodString(request.method()),
              request.resource(),

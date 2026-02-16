@@ -5,6 +5,7 @@
 #include <pqxx/row>
 #include <string>
 
+#include "core/common/meta.hpp"
 #include "ih/pqxx/common/column_resolver.hpp"
 #include "ih/pqxx/common/enumeration_resolver.hpp"
 
@@ -13,7 +14,7 @@ namespace simulator::data_layer::internal_pqxx::detail {
 class BasicRowParser {
   template <typename T>
   constexpr inline static bool is_character_v =
-      std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, char>;
+      std::is_same_v<std::remove_cvref_t<T>, char>;
 
   template <typename T>
   constexpr inline static bool is_enumerable_v = std::is_enum_v<T>;
@@ -34,8 +35,8 @@ class BasicRowParser {
   explicit BasicRowParser(const pqxx::row& db_row) noexcept : row_(db_row) {}
 
   template <typename ColumnType, typename Value>
-  auto operator()(ColumnType column, Value& value)
-      -> std::enable_if_t<is_default_decodable_v<Value>, bool> {
+    requires is_default_decodable_v<Value>
+  auto operator()(ColumnType column, Value& value) -> bool {
     static_assert(
         is_resolvable_column_v<ColumnType>,
         "Given ColumnType can not be resolved by pqxx::ColumnResolver");
@@ -56,8 +57,8 @@ class BasicRowParser {
   }
 
   template <typename ColumnType, typename Value>
-  auto operator()(ColumnType column, Value& value)
-      -> std::enable_if_t<is_character_v<Value>, bool> {
+    requires is_character_v<Value>
+  auto operator()(ColumnType column, Value& value) -> bool {
     static_assert(
         is_resolvable_column_v<ColumnType>,
         "Given ColumnType can not be resolved by pqxx::ColumnResolver");
@@ -78,8 +79,34 @@ class BasicRowParser {
   }
 
   template <typename ColumnType, typename Value>
-  auto operator()(ColumnType column, Value& enum_value)
-      -> std::enable_if_t<is_enumerable_v<Value>, bool> {
+    requires is_character_v<Value>
+  auto operator()(ColumnType column, std::optional<Value>& value) -> bool {
+    static_assert(
+        is_resolvable_column_v<ColumnType>,
+        "Given ColumnType can not be resolved by pqxx::ColumnResolver");
+
+    const auto idx = get_column_idx(column);
+    if (!idx.has_value()) {
+      return false;
+    }
+
+    const pqxx::field& field = row().at(*idx);
+    std::optional<std::string> parsed_value = field.get<std::string>();
+    if (!parsed_value.has_value() || parsed_value->empty()) {
+      value.reset();
+      return true;
+    }
+    if (parsed_value->size() > 1) {
+      return false;
+    }
+
+    value = parsed_value->front();
+    return true;
+  }
+
+  template <typename ColumnType, typename Value>
+    requires is_enumerable_v<Value>
+  auto operator()(ColumnType column, Value& enum_value) -> bool {
     static_assert(
         is_resolvable_column_v<ColumnType>,
         "Given ColumnType can not be resolved by pqxx::ColumnResolver");
@@ -88,9 +115,30 @@ class BasicRowParser {
                   "Given enumerable Value type can not be resolved by "
                   "pqxx::EnumerationResolver");
 
-    std::string encoded_enum{};
+    std::string encoded_enum;
     if ((*this)(column, encoded_enum)) {
       enum_resolver_(encoded_enum, enum_value);
+      return true;
+    }
+    return false;
+  }
+
+  template <typename ColumnType, typename Value>
+    requires is_enumerable_v<Value>
+  auto operator()(ColumnType column, std::optional<Value>& enum_value) -> bool {
+    static_assert(
+        is_resolvable_column_v<ColumnType>,
+        "Given ColumnType can not be resolved by pqxx::ColumnResolver");
+
+    static_assert(is_resolvable_enum_v<Value>,
+                  "Given enumerable Value type can not be resolved by "
+                  "pqxx::EnumerationResolver");
+
+    std::string encoded_enum;
+    if ((*this)(column, encoded_enum)) {
+      Value value{};
+      enum_resolver_(encoded_enum, value);
+      enum_value = value;
       return true;
     }
     return false;

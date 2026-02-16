@@ -25,7 +25,7 @@ TEST(CoreJsonReader, ThrowsMeaningfulExceptionMessageOnReadIntegerAsBool) {
     FAIL() << "std::runtime_error exception must be thrown";
   } catch (std::runtime_error& e) {
     ASSERT_STREQ(e.what(),
-                 "unexpected data Type `rapidjson::Type::kNumberType`, `bool` "
+                 "unexpected data Type `rapidjson::Type::kNumberType', `bool' "
                  "is expected");
   }
 }
@@ -52,8 +52,8 @@ TEST(CoreJsonReader, ThrowsMeaningfulExceptionMessageOnReadBoolAsUnsingedInt) {
     FAIL() << "std::runtime_error exception must be thrown";
   } catch (std::runtime_error& e) {
     ASSERT_STREQ(e.what(),
-                 "unexpected data Type `rapidjson::Type::kTrueType`, `unsigned "
-                 "int` is expected");
+                 "unexpected data Type `rapidjson::Type::kTrueType', `unsigned "
+                 "int' is expected");
   }
 }
 
@@ -79,7 +79,7 @@ TEST(CoreJsonReader, ThrowsMeaningfulExceptionMessageOnReadBoolAsInt) {
   } catch (std::runtime_error& e) {
     ASSERT_STREQ(
         e.what(),
-        "unexpected data Type `rapidjson::Type::kTrueType`, `int` is expected");
+        "unexpected data Type `rapidjson::Type::kTrueType', `int' is expected");
   }
 }
 
@@ -106,7 +106,7 @@ TEST(CoreJsonReader, ThrowsMeaningfulExceptionMessageOnReadBoolAsUInt64) {
     FAIL() << "std::runtime_error exception must be thrown";
   } catch (std::runtime_error& e) {
     ASSERT_STREQ(e.what(),
-                 "unexpected data Type `rapidjson::Type::kTrueType`, `uint64` "
+                 "unexpected data Type `rapidjson::Type::kTrueType', `uint64' "
                  "is expected");
   }
 }
@@ -134,7 +134,7 @@ TEST(CoreJsonReader, ThrowsMeaningfulExceptionMessageOnReadBoolAsInt64) {
     FAIL() << "std::runtime_error exception must be thrown";
   } catch (std::runtime_error& e) {
     ASSERT_STREQ(e.what(),
-                 "unexpected data Type `rapidjson::Type::kTrueType`, `int64` "
+                 "unexpected data Type `rapidjson::Type::kTrueType', `int64' "
                  "is expected");
   }
 }
@@ -160,7 +160,7 @@ TEST(CoreJsonReader, ThrowsMeaningfulExceptionMessageOnReadBoolAsDouble) {
     FAIL() << "std::runtime_error exception must be thrown";
   } catch (std::runtime_error& e) {
     ASSERT_STREQ(e.what(),
-                 "unexpected data Type `rapidjson::Type::kTrueType`, `double` "
+                 "unexpected data Type `rapidjson::Type::kTrueType', `double' "
                  "is expected");
   }
 }
@@ -187,7 +187,7 @@ TEST(CoreJsonReader, ThrowsMeaningfulExceptionMessageOnReadBoolAsString) {
     FAIL() << "std::runtime_error exception must be thrown";
   } catch (std::runtime_error& e) {
     ASSERT_STREQ(e.what(),
-                 "unexpected data Type `rapidjson::Type::kTrueType`, `string` "
+                 "unexpected data Type `rapidjson::Type::kTrueType', `string' "
                  "is expected");
   }
 }
@@ -214,8 +214,8 @@ TEST(CoreJsonReader, ThrowsMeaningfulExceptionMessageOnReadBoolAsStringView) {
     FAIL() << "std::runtime_error exception must be thrown";
   } catch (std::runtime_error& e) {
     ASSERT_STREQ(e.what(),
-                 "unexpected data Type `rapidjson::Type::kTrueType`, "
-                 "`string_view` is expected");
+                 "unexpected data Type `rapidjson::Type::kTrueType', "
+                 "`string_view' is expected");
   }
 }
 
@@ -241,8 +241,8 @@ TEST(CoreJsonReader, ThrowsMeaningfulExceptionMessageOnReadBoolAsSysUs) {
     FAIL() << "std::runtime_error exception must be thrown";
   } catch (std::runtime_error& e) {
     ASSERT_STREQ(e.what(),
-                 "unexpected data Type `rapidjson::Type::kTrueType`, "
-                 "`string_view` is expected");
+                 "unexpected data Type `rapidjson::Type::kTrueType', "
+                 "`string_view' is expected");
   }
 }
 
@@ -291,8 +291,8 @@ TEST(CoreJsonReader, ThrowsMeaningfulExceptionMessageOnReadBoolAsLocalDays) {
     FAIL() << "std::runtime_error exception must be thrown";
   } catch (std::runtime_error& e) {
     ASSERT_STREQ(e.what(),
-                 "unexpected data Type `rapidjson::Type::kTrueType`, "
-                 "`string_view` is expected");
+                 "unexpected data Type `rapidjson::Type::kTrueType', "
+                 "`string_view' is expected");
   }
 }
 
@@ -311,7 +311,7 @@ TEST(CoreJsonReader, ThrowsMeaningfulExceptionMessageOnReadInvalidLocalDays) {
         Type<core::local_days>::read_json_value(value);
     FAIL() << "std::runtime_error exception must be thrown";
   } catch (std::runtime_error& e) {
-    ASSERT_STREQ(e.what(), "failed to parse sys_days: 21-Apr-2025");
+    ASSERT_STREQ(e.what(), "failed to parse local_days: 21-Apr-2025");
   }
 }
 
@@ -342,7 +342,7 @@ TEST(CoreJsonReader, ThrowsMeaningfulExceptionMessageOnReadFromNotFoundKey) {
         json::read_json_value<double>(value, "invalid_key");
     FAIL() << "std::runtime_error exception must be thrown";
   } catch (std::runtime_error& e) {
-    ASSERT_STREQ(e.what(), "missing field `invalid_key` in JSON object");
+    ASSERT_STREQ(e.what(), "missing field `invalid_key' in JSON object");
   }
 }
 
@@ -366,9 +366,9 @@ TEST(CoreJsonReader, ThrowsMeaningfulExceptionMessageOnReadBoolAsIntByKey) {
     FAIL() << "std::runtime_error exception must be thrown";
   } catch (std::runtime_error& e) {
     ASSERT_STREQ(e.what(),
-                 "failed to parse field `key`: unexpected data Type "
-                 "`rapidjson::Type::kTrueType`, "
-                 "`int` is expected");
+                 "failed to parse field `key': unexpected data Type "
+                 "`rapidjson::Type::kTrueType', "
+                 "`int' is expected");
   }
 }
 
@@ -403,8 +403,8 @@ TEST(CoreJsonReader,
     FAIL() << "std::runtime_error exception must be thrown";
   } catch (std::runtime_error& e) {
     ASSERT_STREQ(e.what(),
-                 "failed to parse field `key`: unexpected data Type "
-                 "`rapidjson::Type::kTrueType`, `int` is expected");
+                 "failed to parse field `key': unexpected data Type "
+                 "`rapidjson::Type::kTrueType', `int' is expected");
   }
 }
 

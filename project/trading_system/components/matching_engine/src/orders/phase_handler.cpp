@@ -92,7 +92,8 @@ PhaseHandler::PhaseHandler(EventListener& event_listener)
 PhaseHandler::~PhaseHandler() = default;
 
 auto PhaseHandler::handle(event::PhaseTransition transition) -> void {
-  const MarketPhase market_phase{transition.phase.phase(), transition.phase.status()};
+  const MarketPhase market_phase{transition.phase.phase(),
+                                 transition.phase.status()};
   if (current_state_ != market_phase) {
     current_state_ = market_phase;
     subscriptions_->for_each(

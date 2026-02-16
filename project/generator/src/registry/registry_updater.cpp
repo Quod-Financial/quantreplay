@@ -125,6 +125,7 @@ auto OrderRegistryUpdater::handle_modification(const GeneratedMessage& message)
 
   const auto& owner_id = message.party->party_id().value();
   const auto& order_id = *message.client_order_id;
+  const auto& orig_order_id = message.orig_client_order_id;
 
   GeneratedOrderData::Patch update;
   update.set_updated_id(order_id);
@@ -135,14 +136,19 @@ auto OrderRegistryUpdater::handle_modification(const GeneratedMessage& message)
     update.set_updated_quantity(*qty);
   }
 
-  const bool updated = registry().update_by_owner(owner_id, std::move(update));
+  // Use identifier-based update to support multiple orders per counterparty
+  const auto& lookup_id =
+      orig_order_id.has_value() ? orig_order_id->value() : order_id.value();
+  const bool updated =
+      registry().update_by_identifier(lookup_id, std::move(update));
   if (!updated) {
     log::warn(
         "generated orders registry updater failed to update an order "
         "with new ID `{0}' for `{1}' counterparty as no active order "
-        "was found for that counterparty",
+        "was found with identifier `{2}'",
         order_id,
-        owner_id);
+        owner_id,
+        lookup_id);
   }
 }
 
@@ -157,13 +163,28 @@ auto OrderRegistryUpdater::handle_cancellation(const GeneratedMessage& message)
   validate_cancellation(message);
 
   const auto& owner_id = message.party->party_id().value();
-  const bool removed = registry().remove_by_owner(owner_id);
+  const auto& orig_order_id = message.orig_client_order_id;
+
+  // Order ID is required to identify which specific order to cancel
+  // (multiple orders per counterparty are supported)
+  if (!orig_order_id.has_value() || orig_order_id->value().empty()) {
+    log::warn(
+        "generated orders registry updater cannot remove an order "
+        "for `{0}' counterparty: no order identifier provided. "
+        "Order ID is required when multiple orders per counterparty are "
+        "allowed",
+        owner_id);
+    return;
+  }
+
+  const bool removed = registry().remove_by_identifier(orig_order_id->value());
   if (!removed) {
     log::warn(
         "generated orders registry updater failed to remove an order "
         "for `{0}' counterparty as no active order was found "
-        "for that counterparty",
-        owner_id);
+        "with identifier `{1}'",
+        owner_id,
+        orig_order_id->value());
   }
 }
 

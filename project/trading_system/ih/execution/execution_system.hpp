@@ -1,12 +1,12 @@
 #ifndef SIMULATOR_TRADING_SYSTEM_IH_EXECUTION_EXECUTION_SYSTEM_HPP_
 #define SIMULATOR_TRADING_SYSTEM_IH_EXECUTION_EXECUTION_SYSTEM_HPP_
 
-#include <functional>
+#include <utility>
 
-#include "common/market_state/snapshot.hpp"
 #include "common/trading_engine.hpp"
 #include "ih/execution/reject_notifier.hpp"
 #include "ih/repository/repository_accessor.hpp"
+#include "ih/state_persistence/snapshot.hpp"
 #include "ih/tools/instrument_resolver.hpp"
 #include "protocol/app/market_data_request.hpp"
 #include "protocol/app/order_cancellation_request.hpp"
@@ -39,11 +39,12 @@ struct Executor {
       -> void = 0;
 
   virtual auto store_state_request(
-      std::vector<market_state::InstrumentState>& instruments) const
-      -> void = 0;
+      const std::vector<
+          std::pair<InstrumentId, market_state::InstrumentState&>>& instruments)
+      const -> void = 0;
 
   virtual auto recover_state_request(
-      std::vector<market_state::InstrumentState> instruments) const -> void = 0;
+      std::vector<market_state::InstrumentData> instruments) const -> void = 0;
 
   virtual auto handle(const protocol::SessionTerminatedEvent& event) const
       -> void = 0;
@@ -78,11 +79,12 @@ class ExecutionSystem : public Executor {
                        protocol::InstrumentState& reply) const -> void override;
 
   auto store_state_request(
-      std::vector<market_state::InstrumentState>& instruments) const
-      -> void override;
+      const std::vector<
+          std::pair<InstrumentId, market_state::InstrumentState&>>& instruments)
+      const -> void override;
 
   auto recover_state_request(
-      std::vector<market_state::InstrumentState> instruments) const
+      std::vector<market_state::InstrumentData> instruments) const
       -> void override;
 
   auto handle(const protocol::SessionTerminatedEvent& event) const

@@ -39,8 +39,8 @@ auto unmarshall_request_body(std::string_view body,
 }  // namespace
 
 ListingController::ListingController(
-    data_bridge::ListingAccessor& data_accessor) noexcept
-    : data_accessor_(data_accessor) {}
+    std::unique_ptr<data_bridge::ListingAccessor> data_accessor) noexcept
+    : data_accessor_{std::move(data_accessor)} {}
 
 auto ListingController::select_listing(const std::string& key) const -> Result {
   Pistache::Http::Code code{};
@@ -49,9 +49,9 @@ auto ListingController::select_listing(const std::string& key) const -> Result {
   auto result = [&] {
     if (core::is_number(key)) {
       const std::uint64_t listing_id = std::stoull(key);
-      return data_accessor_.get().select_single(listing_id);
+      return data_accessor_->select_single(listing_id);
     }
-    return data_accessor_.get().select_single(key);
+    return data_accessor_->select_single(key);
   }();
 
   if (result) {
@@ -84,7 +84,7 @@ auto ListingController::select_all_listings() const -> Result {
   Pistache::Http::Code code{};
   std::string content{};
 
-  auto result = data_accessor_.get().select_all();
+  auto result = data_accessor_->select_all();
   if (result) {
     try {
       const std::vector<data_layer::Listing>& selected = result.value();
@@ -115,7 +115,7 @@ auto ListingController::insert_listing(const std::string& body) const
     return std::make_pair(code, std::move(content));
   }
 
-  auto result = data_accessor_.get().add(listing_snapshot);
+  auto result = data_accessor_->add(listing_snapshot);
   if (result) {
     log::info("successfully added a new listing");
     code = Pistache::Http::Code::Created;
@@ -151,9 +151,9 @@ auto ListingController::update_listing(const std::string& key,
   auto result = [&] {
     if (core::is_number(key)) {
       const std::uint64_t listing_id = std::stoull(key);
-      return data_accessor_.get().update(std::move(patch), listing_id);
+      return data_accessor_->update(std::move(patch), listing_id);
     }
-    return data_accessor_.get().update(std::move(patch), key);
+    return data_accessor_->update(std::move(patch), key);
   }();
 
   if (result) {

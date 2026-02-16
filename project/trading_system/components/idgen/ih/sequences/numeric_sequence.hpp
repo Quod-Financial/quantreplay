@@ -63,11 +63,11 @@ template <typename Seq>
 // Increment a numeric sequence by 1
 template <typename Seq>
   requires NumericSequence<Seq>
-[[nodiscard]] auto increment(Seq const& sequence) noexcept
+[[nodiscard]] auto increment(const Seq& sequence) noexcept
     -> tl::expected<Seq, numeric::SequenceError> {
   using counter_type = typename Seq::counter_type;
 
-  counter_type const current = sequence.current();
+  const counter_type current = sequence.current();
   if (current < Seq::last()) {
     return Seq{static_cast<counter_type>(current + 1)};
   }

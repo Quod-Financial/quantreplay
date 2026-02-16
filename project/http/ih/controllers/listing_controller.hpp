@@ -3,8 +3,6 @@
 
 #include <pistache/http_defs.h>
 
-#include <cstdint>
-#include <functional>
 #include <string>
 #include <utility>
 
@@ -17,7 +15,7 @@ class ListingController {
   using Result = std::pair<Pistache::Http::Code, std::string>;
 
   explicit ListingController(
-      data_bridge::ListingAccessor& data_accessor) noexcept;
+      std::unique_ptr<data_bridge::ListingAccessor> data_accessor) noexcept;
 
   [[nodiscard]]
   auto select_listing(const std::string& key) const -> Result;
@@ -33,9 +31,10 @@ class ListingController {
       -> Result;
 
  private:
-  static auto format_error_response(data_bridge::Failure failure) -> std::string;
+  static auto format_error_response(data_bridge::Failure failure)
+      -> std::string;
 
-  std::reference_wrapper<const data_bridge::ListingAccessor> data_accessor_;
+  std::unique_ptr<data_bridge::ListingAccessor> data_accessor_;
 };
 
 }  // namespace simulator::http

@@ -19,6 +19,11 @@ class GeneratedOrdersRegistry : public generator::GeneratedOrdersRegistry {
               (std::string_view),
               (const, override));
 
+  MOCK_METHOD(std::vector<GeneratedOrderData>,
+              find_all_by_owner,
+              (std::string_view),
+              (const, override));
+
   MOCK_METHOD(std::optional<GeneratedOrderData>,
               find_by_identifier,
               (std::string_view),
@@ -27,16 +32,9 @@ class GeneratedOrdersRegistry : public generator::GeneratedOrdersRegistry {
   MOCK_METHOD(bool, add, (OrderData&&), (override));
 
   MOCK_METHOD(bool,
-              update_by_owner,
-              (std::string_view, OrderData::Patch&&),
-              (override));
-
-  MOCK_METHOD(bool,
               update_by_identifier,
               (std::string_view, OrderData::Patch&&),
               (override));
-
-  MOCK_METHOD(bool, remove_by_owner, (std::string_view), (override));
 
   MOCK_METHOD(bool, remove_by_identifier, (std::string_view), (override));
 

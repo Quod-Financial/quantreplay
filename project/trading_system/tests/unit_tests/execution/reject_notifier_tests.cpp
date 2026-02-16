@@ -40,7 +40,7 @@ struct TradingSystemRejectNotifier : public Test {
 };
 
 TEST_F(TradingSystemRejectNotifier, RejectsOrderPlacementRequest) {
-  auto const request = make_request<protocol::OrderPlacementRequest>();
+  const auto request = make_request<protocol::OrderPlacementRequest>();
   auto reject = make_request<protocol::OrderPlacementReject>();
 
   EXPECT_CALL(middleware_receiver, process(A<protocol::OrderPlacementReject>()))
@@ -53,7 +53,7 @@ TEST_F(TradingSystemRejectNotifier, RejectsOrderPlacementRequest) {
 }
 
 TEST_F(TradingSystemRejectNotifier, RejectsOrderModificationRequest) {
-  auto const request = make_request<protocol::OrderModificationRequest>();
+  const auto request = make_request<protocol::OrderModificationRequest>();
   auto reject = make_request<protocol::OrderModificationReject>();
 
   EXPECT_CALL(middleware_receiver,
@@ -66,7 +66,7 @@ TEST_F(TradingSystemRejectNotifier, RejectsOrderModificationRequest) {
 }
 
 TEST_F(TradingSystemRejectNotifier, RejectsOrderCancellationRequest) {
-  auto const request = make_request<protocol::OrderCancellationRequest>();
+  const auto request = make_request<protocol::OrderCancellationRequest>();
   auto reject = make_request<protocol::OrderCancellationReject>();
 
   EXPECT_CALL(middleware_receiver,
@@ -79,7 +79,7 @@ TEST_F(TradingSystemRejectNotifier, RejectsOrderCancellationRequest) {
 }
 
 TEST_F(TradingSystemRejectNotifier, RejectsMarketDataRequest) {
-  auto const request = make_request<protocol::MarketDataRequest>();
+  const auto request = make_request<protocol::MarketDataRequest>();
   auto reject = make_request<protocol::MarketDataReject>();
 
   EXPECT_CALL(middleware_receiver, process(A<protocol::MarketDataReject>()))
@@ -93,7 +93,7 @@ TEST_F(TradingSystemRejectNotifier, RejectsMarketDataRequest) {
 
 TEST_F(TradingSystemRejectNotifier,
        NotifiesNoInstrumentsSetInMarketDataRequest) {
-  auto const request = make_request<protocol::MarketDataRequest>();
+  const auto request = make_request<protocol::MarketDataRequest>();
   auto reject = make_request<protocol::MarketDataReject>();
 
   EXPECT_CALL(middleware_receiver, process(A<protocol::MarketDataReject>()))
@@ -108,7 +108,7 @@ TEST_F(TradingSystemRejectNotifier,
 
 TEST_F(TradingSystemRejectNotifier,
        NotifiesMultipleInstrumentsSetInMarketDataRequest) {
-  auto const request = make_request<protocol::MarketDataRequest>();
+  const auto request = make_request<protocol::MarketDataRequest>();
   auto reject = make_request<protocol::MarketDataReject>();
 
   EXPECT_CALL(middleware_receiver, process(A<protocol::MarketDataReject>()))

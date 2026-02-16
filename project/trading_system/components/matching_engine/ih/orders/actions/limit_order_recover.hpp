@@ -1,7 +1,7 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_LIMIT_ORDER_RECOVER_HPP
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_LIMIT_ORDER_RECOVER_HPP
 
-#include "common/market_state/snapshot.hpp"
+#include "common/instrument_state.hpp"
 #include "ih/common/abstractions/event_listener.hpp"
 #include "ih/common/events/event_reporter.hpp"
 #include "ih/orders/book/order_book.hpp"

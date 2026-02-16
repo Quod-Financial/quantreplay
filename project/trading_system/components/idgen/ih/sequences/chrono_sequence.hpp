@@ -1,11 +1,10 @@
 #ifndef SIMULATOR_IDGEN_IH_SEQUENCES_CHRONO_SEQUENCE_HPP_
 #define SIMULATOR_IDGEN_IH_SEQUENCES_CHRONO_SEQUENCE_HPP_
 
-#include <tl/expected.hpp>
-
 #include <cassert>
 #include <chrono>
 #include <cstdint>
+#include <tl/expected.hpp>
 
 #include "core/common/meta.hpp"
 #include "ih/sequences/common.hpp"
@@ -213,7 +212,7 @@ template <typename Seq>
 // when current tick value is negative and is greater than a cached tick value
 template <typename Seq, typename Tick>
   requires ChronoSequence<Seq> && core::ChronoDuration<Tick>
-[[nodiscard]] auto increment(Seq const& sequence, Tick current_tick) noexcept
+[[nodiscard]] auto increment(const Seq& sequence, Tick current_tick) noexcept
     -> tl::expected<Seq, chrono::SequenceError> {
   if (sequence.tick() < current_tick) {
     return make_sequence<Seq>(current_tick);
@@ -226,7 +225,7 @@ template <typename Seq, typename Tick>
 // when current tick value is negative and is greater than a cached tick value
 template <typename Seq>
   requires ChronoSequence<Seq>
-[[nodiscard]] auto increment(Seq const& sequence) noexcept
+[[nodiscard]] auto increment(const Seq& sequence) noexcept
     -> tl::expected<Seq, chrono::SequenceError> {
   return increment(sequence, detail::current_tick<typename Seq::tick_type>());
 }

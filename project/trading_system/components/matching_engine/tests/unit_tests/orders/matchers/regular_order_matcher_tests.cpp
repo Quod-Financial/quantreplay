@@ -1,10 +1,9 @@
 #include <gmock/gmock.h>
 
-#include "ih/common/events/client_notification.hpp"
 #include "ih/orders/book/order_book.hpp"
 #include "ih/orders/matchers/regular_order_matcher.hpp"
-#include "mocks/mock_execution_reports_listener.hpp"
-#include "tools/order_test_tools.hpp"
+#include "mocks/execution_reports_listener_mock.hpp"
+#include "tools/order_builder.hpp"
 
 namespace simulator::trading_system::matching_engine::test {
 namespace {
@@ -13,12 +12,9 @@ using namespace ::testing;  // NOLINT
 
 // NOLINTBEGIN(*magic-numbers*,*non-private-member*)
 
-// region BuyLimitOrderMatching
-
 struct BuyLimitOrderMatching : public Test {
-  auto make_aggressor(OrderId ord_id,
-                      Price price,
-                      Quantity quantity) -> LimitOrder {
+  auto make_aggressor(OrderId ord_id, Price price, Quantity quantity)
+      -> LimitOrder {
     return order_builder_.with_order_id(ord_id)
         .with_order_price(static_cast<OrderPrice>(price))
         .with_order_quantity(static_cast<OrderQuantity>(quantity))
@@ -27,9 +23,8 @@ struct BuyLimitOrderMatching : public Test {
         .build_limit_order();
   }
 
-  auto make_ioc_aggressor(OrderId order_id,
-                          Price price,
-                          Quantity quantity) -> LimitOrder {
+  auto make_ioc_aggressor(OrderId order_id, Price price, Quantity quantity)
+      -> LimitOrder {
     return order_builder_.with_order_id(order_id)
         .with_order_price(static_cast<OrderPrice>(price))
         .with_order_quantity(static_cast<OrderQuantity>(quantity))
@@ -38,9 +33,8 @@ struct BuyLimitOrderMatching : public Test {
         .build_limit_order();
   }
 
-  auto add_resting_order(OrderId ord_id,
-                         Price price,
-                         Quantity quantity) -> void {
+  auto add_resting_order(OrderId ord_id, Price price, Quantity quantity)
+      -> void {
     resting_orders().emplace(
         order_builder_.with_order_id(ord_id)
             .with_order_price(static_cast<OrderPrice>(price))
@@ -58,7 +52,7 @@ struct BuyLimitOrderMatching : public Test {
   OrderBuilder order_builder_;
 
  public:
-  MockExecutionReportsListener listener;
+  ExecutionReportsListenerMock listener;
   RegularOrderMatcher matcher{listener, book_};
 };
 
@@ -252,14 +246,9 @@ TEST_F(BuyLimitOrderMatching, ThrowsExceptionWhenIocOrderHasNoFacingOrders) {
   ASSERT_THROW(matcher.match(order), std::logic_error);
 }
 
-// endregion BuyLimitOrderMatching
-
-// region SellLimitOrderMatching
-
 struct SellLimitOrderMatching : public Test {
-  auto make_aggressor(OrderId ord_id,
-                      Price price,
-                      Quantity quantity) -> LimitOrder {
+  auto make_aggressor(OrderId ord_id, Price price, Quantity quantity)
+      -> LimitOrder {
     return order_builder_.with_order_id(ord_id)
         .with_order_price(static_cast<OrderPrice>(price))
         .with_order_quantity(static_cast<OrderQuantity>(quantity))
@@ -267,9 +256,8 @@ struct SellLimitOrderMatching : public Test {
         .build_limit_order();
   }
 
-  auto make_ioc_aggressor(OrderId order_id,
-                          Price price,
-                          Quantity quantity) -> LimitOrder {
+  auto make_ioc_aggressor(OrderId order_id, Price price, Quantity quantity)
+      -> LimitOrder {
     return order_builder_.with_order_id(order_id)
         .with_order_price(static_cast<OrderPrice>(price))
         .with_order_quantity(static_cast<OrderQuantity>(quantity))
@@ -278,9 +266,8 @@ struct SellLimitOrderMatching : public Test {
         .build_limit_order();
   }
 
-  auto add_resting_order(OrderId ord_id,
-                         Price price,
-                         Quantity quantity) -> void {
+  auto add_resting_order(OrderId ord_id, Price price, Quantity quantity)
+      -> void {
     resting_orders().emplace(
         order_builder_.with_order_id(ord_id)
             .with_order_price(static_cast<OrderPrice>(price))
@@ -298,7 +285,7 @@ struct SellLimitOrderMatching : public Test {
   OrderBuilder order_builder_;
 
  public:
-  MockExecutionReportsListener listener;
+  ExecutionReportsListenerMock listener;
   RegularOrderMatcher matcher{listener, book_};
 };
 
@@ -491,10 +478,6 @@ TEST_F(SellLimitOrderMatching, ThrowsExceptionWhenIocOrderHasNoFacingOrders) {
   ASSERT_THROW(matcher.match(order), std::logic_error);
 }
 
-// endregion SellLimitOrderMatching
-
-// region BuyMarketOrderMatching
-
 struct BuyMarketOrderMatching : public Test {
   auto make_aggressor(OrderId ord_id, Quantity quantity) -> MarketOrder {
     return order_builder_.with_order_id(ord_id)
@@ -503,9 +486,8 @@ struct BuyMarketOrderMatching : public Test {
         .build_market_order();
   }
 
-  auto add_resting_order(OrderId ord_id,
-                         Price price,
-                         Quantity quantity) -> void {
+  auto add_resting_order(OrderId ord_id, Price price, Quantity quantity)
+      -> void {
     resting_orders().emplace(
         order_builder_.with_order_id(ord_id)
             .with_order_price(static_cast<OrderPrice>(price))
@@ -523,7 +505,7 @@ struct BuyMarketOrderMatching : public Test {
   OrderBuilder order_builder_;
 
  public:
-  MockExecutionReportsListener listener;
+  ExecutionReportsListenerMock listener;
   RegularOrderMatcher matcher{listener, book_};
 };
 
@@ -599,10 +581,6 @@ TEST_F(BuyMarketOrderMatching, MatchesWithSeveralFacingOrders) {
               Optional(Eq(OrderStatus::Option::Filled)));
 }
 
-// endregion BuyMarketOrderMatching
-
-// region SellMarketOrderMatching
-
 struct SellMarketOrderMatching : public Test {
   auto make_aggressor(OrderId ord_id, Quantity quantity) -> MarketOrder {
     return order_builder_.with_order_id(ord_id)
@@ -611,9 +589,8 @@ struct SellMarketOrderMatching : public Test {
         .build_market_order();
   }
 
-  auto add_resting_order(OrderId ord_id,
-                         Price price,
-                         Quantity quantity) -> void {
+  auto add_resting_order(OrderId ord_id, Price price, Quantity quantity)
+      -> void {
     resting_orders().emplace(
         order_builder_.with_order_id(ord_id)
             .with_order_price(static_cast<OrderPrice>(price))
@@ -631,7 +608,7 @@ struct SellMarketOrderMatching : public Test {
   OrderBuilder order_builder_;
 
  public:
-  MockExecutionReportsListener listener;
+  ExecutionReportsListenerMock listener;
   RegularOrderMatcher matcher{listener, book_};
 };
 
@@ -706,8 +683,6 @@ TEST_F(SellMarketOrderMatching, MatchesWithSeveralFacingOrders) {
   EXPECT_THAT(listener.reports[2].order_status,
               Optional(Eq(OrderStatus::Option::Filled)));
 }
-
-// endregion SellMarketOrderMatching
 
 // NOLINTEND(*magic-numbers*,*non-private-member*)
 

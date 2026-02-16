@@ -4,9 +4,7 @@
 #include <gmock/gmock.h>
 
 #include "common/events.hpp"
-#include "common/instrument.hpp"
 #include "common/trading_engine.hpp"
-#include "core/domain/attributes.hpp"
 
 namespace simulator::trading_system::test {
 

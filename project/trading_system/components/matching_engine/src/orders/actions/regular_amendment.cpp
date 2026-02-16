@@ -9,9 +9,9 @@
 
 namespace simulator::trading_system::matching_engine {
 
-RegularAmendment::RegularAmendment(EventListener &event_listener,
-                                   OrderBook &order_book,
-                                   RegularMatcher &matcher)
+RegularAmendment::RegularAmendment(EventListener& event_listener,
+                                   OrderBook& order_book,
+                                   RegularMatcher& matcher)
     : EventReporter(event_listener),
       order_book_(order_book),
       matcher_(matcher) {}
@@ -23,7 +23,7 @@ auto RegularAmendment::operator()(LimitUpdate update) -> void {
   amend_order(std::move(update), order_book_.take_page(side));
 }
 
-auto RegularAmendment::amend_order(LimitUpdate update, OrderPage &page)
+auto RegularAmendment::amend_order(LimitUpdate update, OrderPage& page)
     -> void {
   const auto order_it = find_target_limit_order(page, update);
   if (order_it == limit_orders_end(page)) {

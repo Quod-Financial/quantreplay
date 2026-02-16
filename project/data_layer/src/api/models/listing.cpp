@@ -236,321 +236,333 @@ auto Listing::Patch::with_venue_id(std::string id) noexcept -> Patch& {
 }
 
 auto Listing::Patch::security_type() const noexcept
-    -> const std::optional<std::string>& {
+    -> const PatchField<std::string>& {
   return security_type_;
 }
 
-auto Listing::Patch::with_security_type(std::string type) noexcept -> Patch& {
+auto Listing::Patch::with_security_type(
+    std::optional<std::string> type) noexcept -> Patch& {
   security_type_ = std::move(type);
   return *this;
 }
 
 auto Listing::Patch::price_currency() const noexcept
-    -> const std::optional<std::string>& {
+    -> const PatchField<std::string>& {
   return price_currency_;
 }
 
-auto Listing::Patch::with_price_currency(std::string currency) noexcept
-    -> Patch& {
+auto Listing::Patch::with_price_currency(
+    std::optional<std::string> currency) noexcept -> Patch& {
   price_currency_ = std::move(currency);
   return *this;
 }
 
 auto Listing::Patch::fx_base_currency() const noexcept
-    -> const std::optional<std::string>& {
+    -> const PatchField<std::string>& {
   return fx_base_currency_;
 }
 
-auto Listing::Patch::with_fx_base_currency(std::string currency) noexcept
-    -> Patch& {
+auto Listing::Patch::with_fx_base_currency(
+    std::optional<std::string> currency) noexcept -> Patch& {
   fx_base_currency_ = std::move(currency);
   return *this;
 }
 
 auto Listing::Patch::instr_symbol() const noexcept
-    -> const std::optional<std::string>& {
+    -> const PatchField<std::string>& {
   return instr_symbol_;
 }
 
-auto Listing::Patch::with_instr_symbol(std::string symbol) noexcept -> Patch& {
+auto Listing::Patch::with_instr_symbol(
+    std::optional<std::string> symbol) noexcept -> Patch& {
   instr_symbol_ = std::move(symbol);
   return *this;
 }
 
-auto Listing::Patch::qty_minimum() const noexcept -> std::optional<double> {
+auto Listing::Patch::qty_minimum() const noexcept -> PatchField<double> {
   return qty_minimum_;
 }
 
-auto Listing::Patch::with_qty_minimum(double qty) noexcept -> Patch& {
-  qty_minimum_ = qty;
+auto Listing::Patch::with_qty_minimum(std::optional<double> qty) noexcept
+    -> Patch& {
+  qty_minimum_ = std::move(qty);
   return *this;
 }
 
-auto Listing::Patch::qty_maximum() const noexcept -> std::optional<double> {
+auto Listing::Patch::qty_maximum() const noexcept -> PatchField<double> {
   return qty_maximum_;
 }
 
-auto Listing::Patch::with_qty_maximum(double qty) noexcept -> Patch& {
-  qty_maximum_ = qty;
+auto Listing::Patch::with_qty_maximum(std::optional<double> qty) noexcept
+    -> Patch& {
+  qty_maximum_ = std::move(qty);
   return *this;
 }
 
-auto Listing::Patch::qty_multiple() const noexcept -> std::optional<double> {
+auto Listing::Patch::qty_multiple() const noexcept -> PatchField<double> {
   return qty_multiple_;
 }
 
-auto Listing::Patch::with_qty_multiple(double multiple) noexcept -> Patch& {
-  qty_multiple_ = multiple;
+auto Listing::Patch::with_qty_multiple(std::optional<double> multiple) noexcept
+    -> Patch& {
+  qty_multiple_ = std::move(multiple);
   return *this;
 }
 
-auto Listing::Patch::price_tick_size() const noexcept -> std::optional<double> {
+auto Listing::Patch::price_tick_size() const noexcept -> PatchField<double> {
   return price_tick_size_;
 }
 
-auto Listing::Patch::with_price_tick_size(double size) noexcept -> Patch& {
-  price_tick_size_ = size;
+auto Listing::Patch::with_price_tick_size(std::optional<double> size) noexcept
+    -> Patch& {
+  price_tick_size_ = std::move(size);
   return *this;
 }
 
-auto Listing::Patch::enabled_flag() const noexcept -> std::optional<bool> {
+auto Listing::Patch::enabled_flag() const noexcept -> PatchField<bool> {
   return enabled_flag_;
 }
 
-auto Listing::Patch::with_enabled_flag(bool flag) noexcept -> Patch& {
-  enabled_flag_ = flag;
+auto Listing::Patch::with_enabled_flag(std::optional<bool> flag) noexcept
+    -> Patch& {
+  enabled_flag_ = std::move(flag);
   return *this;
 }
 
-auto Listing::Patch::random_qty_maximum() const noexcept
-    -> std::optional<double> {
+auto Listing::Patch::random_qty_maximum() const noexcept -> PatchField<double> {
   return random_qty_maximum_;
 }
 
-auto Listing::Patch::with_random_qty_maximum(double qty) noexcept -> Patch& {
-  random_qty_maximum_ = qty;
+auto Listing::Patch::with_random_qty_maximum(std::optional<double> qty) noexcept
+    -> Patch& {
+  random_qty_maximum_ = std::move(qty);
   return *this;
 }
 
 auto Listing::Patch::random_depth_levels() const noexcept
-    -> std::optional<std::uint32_t> {
+    -> PatchField<std::uint32_t> {
   return random_depth_levels_;
 }
 
-auto Listing::Patch::with_random_depth_levels(std::uint32_t num_levels) noexcept
-    -> Patch& {
-  random_depth_levels_ = num_levels;
+auto Listing::Patch::with_random_depth_levels(
+    std::optional<uint32_t> num_levels) noexcept -> Patch& {
+  random_depth_levels_ = std::move(num_levels);
   return *this;
 }
 
 auto Listing::Patch::random_orders_spread() const noexcept
-    -> std::optional<double> {
+    -> PatchField<double> {
   return random_orders_spread_;
 }
 
-auto Listing::Patch::with_random_orders_spread(double spread) noexcept
-    -> Patch& {
-  random_orders_spread_ = spread;
+auto Listing::Patch::with_random_orders_spread(
+    std::optional<double> spread) noexcept -> Patch& {
+  random_orders_spread_ = std::move(spread);
   return *this;
 }
 
 auto Listing::Patch::random_orders_rate() const noexcept
-    -> std::optional<std::uint32_t> {
+    -> PatchField<std::uint32_t> {
   return random_orders_rate_;
 }
 
-auto Listing::Patch::with_random_orders_rate(std::uint32_t rate) noexcept
-    -> Patch& {
-  random_orders_rate_ = rate;
+auto Listing::Patch::with_random_orders_rate(
+    std::optional<uint32_t> rate) noexcept -> Patch& {
+  random_orders_rate_ = std::move(rate);
   return *this;
 }
 
 auto Listing::Patch::random_tick_range() const noexcept
-    -> std::optional<std::uint32_t> {
+    -> PatchField<std::uint32_t> {
   return random_tick_range_;
 }
 
-auto Listing::Patch::with_random_tick_range(std::uint32_t range) noexcept
-    -> Patch& {
-  random_tick_range_ = range;
+auto Listing::Patch::with_random_tick_range(
+    std::optional<uint32_t> range) noexcept -> Patch& {
+  random_tick_range_ = std::move(range);
   return *this;
 }
 
 auto Listing::Patch::security_exchange() const noexcept
-    -> const std::optional<std::string>& {
+    -> const PatchField<std::string>& {
   return security_exchange_;
 }
 
-auto Listing::Patch::with_security_exchange(std::string exchange) noexcept
-    -> Patch& {
+auto Listing::Patch::with_security_exchange(
+    std::optional<std::string> exchange) noexcept -> Patch& {
   security_exchange_ = std::move(exchange);
   return *this;
 }
 
 auto Listing::Patch::party_id() const noexcept
-    -> const std::optional<std::string>& {
+    -> const PatchField<std::string>& {
   return party_id_;
 }
 
-auto Listing::Patch::with_party_id(std::string id) noexcept -> Patch& {
+auto Listing::Patch::with_party_id(std::optional<std::string> id) noexcept
+    -> Patch& {
   party_id_ = std::move(id);
   return *this;
 }
 
 auto Listing::Patch::party_role() const noexcept
-    -> const std::optional<std::string>& {
+    -> const PatchField<std::string>& {
   return party_role_;
 }
 
-auto Listing::Patch::with_party_role(std::string role) noexcept -> Patch& {
+auto Listing::Patch::with_party_role(std::optional<std::string> role) noexcept
+    -> Patch& {
   party_role_ = std::move(role);
   return *this;
 }
 
 auto Listing::Patch::cusip_id() const noexcept
-    -> const std::optional<std::string>& {
+    -> const PatchField<std::string>& {
   return cusip_id_;
 }
 
-auto Listing::Patch::with_cusip_id(std::string id) noexcept -> Patch& {
+auto Listing::Patch::with_cusip_id(std::optional<std::string> id) noexcept
+    -> Patch& {
   cusip_id_ = std::move(id);
   return *this;
 }
 
 auto Listing::Patch::sedol_id() const noexcept
-    -> const std::optional<std::string>& {
+    -> const PatchField<std::string>& {
   return sedol_id_;
 }
 
-auto Listing::Patch::with_sedol_id(std::string id) noexcept -> Patch& {
+auto Listing::Patch::with_sedol_id(std::optional<std::string> id) noexcept
+    -> Patch& {
   sedol_id_ = std::move(id);
   return *this;
 }
 
 auto Listing::Patch::isin_id() const noexcept
-    -> const std::optional<std::string>& {
+    -> const PatchField<std::string>& {
   return isin_id_;
 }
 
-auto Listing::Patch::with_isin_id(std::string id) noexcept -> Patch& {
+auto Listing::Patch::with_isin_id(std::optional<std::string> id) noexcept
+    -> Patch& {
   isin_id_ = std::move(id);
   return *this;
 }
 
-auto Listing::Patch::ric_id() const noexcept
-    -> const std::optional<std::string>& {
+auto Listing::Patch::ric_id() const noexcept -> const PatchField<std::string>& {
   return ric_id_;
 }
 
-auto Listing::Patch::with_ric_id(std::string id) noexcept -> Patch& {
+auto Listing::Patch::with_ric_id(std::optional<std::string> id) noexcept
+    -> Patch& {
   ric_id_ = std::move(id);
   return *this;
 }
 
 auto Listing::Patch::exchange_symbol_id() const noexcept
-    -> const std::optional<std::string>& {
+    -> const PatchField<std::string>& {
   return exchange_symbol_id_;
 }
 
-auto Listing::Patch::with_exchange_symbol_id(std::string id) noexcept
-    -> Patch& {
+auto Listing::Patch::with_exchange_symbol_id(
+    std::optional<std::string> id) noexcept -> Patch& {
   exchange_symbol_id_ = std::move(id);
   return *this;
 }
 
 auto Listing::Patch::bloomberg_symbol_id() const noexcept
-    -> const std::optional<std::string>& {
+    -> const PatchField<std::string>& {
   return bloomberg_symbol_id_;
 }
 
-auto Listing::Patch::with_bloomberg_symbol_id(std::string id) noexcept
-    -> Patch& {
+auto Listing::Patch::with_bloomberg_symbol_id(
+    std::optional<std::string> id) noexcept -> Patch& {
   bloomberg_symbol_id_ = std::move(id);
   return *this;
 }
 
-auto Listing::Patch::random_qty_minimum() const noexcept
-    -> std::optional<double> {
+auto Listing::Patch::random_qty_minimum() const noexcept -> PatchField<double> {
   return random_qty_minimum_;
 }
 
-auto Listing::Patch::with_random_qty_minimum(double qty) noexcept -> Patch& {
-  random_qty_minimum_ = qty;
+auto Listing::Patch::with_random_qty_minimum(std::optional<double> qty) noexcept
+    -> Patch& {
+  random_qty_minimum_ = std::move(qty);
   return *this;
 }
 
-auto Listing::Patch::random_amt_minimum() const noexcept
-    -> std::optional<double> {
+auto Listing::Patch::random_amt_minimum() const noexcept -> PatchField<double> {
   return random_amt_minimum_;
 }
 
-auto Listing::Patch::with_random_amt_minimum(double amount) noexcept -> Patch& {
-  random_amt_minimum_ = amount;
+auto Listing::Patch::with_random_amt_minimum(
+    std::optional<double> amount) noexcept -> Patch& {
+  random_amt_minimum_ = std::move(amount);
   return *this;
 }
 
-auto Listing::Patch::random_amt_maximum() const noexcept
-    -> std::optional<double> {
+auto Listing::Patch::random_amt_maximum() const noexcept -> PatchField<double> {
   return random_amt_maximum_;
 }
 
-auto Listing::Patch::with_random_amt_maximum(double amount) noexcept -> Patch& {
-  random_amt_maximum_ = amount;
+auto Listing::Patch::with_random_amt_maximum(
+    std::optional<double> amount) noexcept -> Patch& {
+  random_amt_maximum_ = std::move(amount);
   return *this;
 }
 
 auto Listing::Patch::random_orders_enabled_flag() const noexcept
-    -> std::optional<bool> {
+    -> PatchField<bool> {
   return random_orders_enabled_flag_;
 }
 
-auto Listing::Patch::with_random_orders_enabled_flag(bool flag) noexcept
-    -> Patch& {
-  random_orders_enabled_flag_ = flag;
+auto Listing::Patch::with_random_orders_enabled_flag(
+    std::optional<bool> flag) noexcept -> Patch& {
+  random_orders_enabled_flag_ = std::move(flag);
   return *this;
 }
 
 auto Listing::Patch::random_aggressive_qty_minimum() const noexcept
-    -> std::optional<double> {
+    -> PatchField<double> {
   return random_aggressive_qty_minimum_;
 }
 
-auto Listing::Patch::with_random_aggressive_qty_minimum(double qty) noexcept
-    -> Patch& {
-  random_aggressive_qty_minimum_ = qty;
+auto Listing::Patch::with_random_aggressive_qty_minimum(
+    std::optional<double> qty) noexcept -> Patch& {
+  random_aggressive_qty_minimum_ = std::move(qty);
   return *this;
 }
 
 auto Listing::Patch::random_aggressive_qty_maximum() const noexcept
-    -> std::optional<double> {
+    -> PatchField<double> {
   return random_aggressive_qty_maximum_;
 }
 
-auto Listing::Patch::with_random_aggressive_qty_maximum(double qty) noexcept
-    -> Patch& {
-  random_aggressive_qty_maximum_ = qty;
+auto Listing::Patch::with_random_aggressive_qty_maximum(
+    std::optional<double> qty) noexcept -> Patch& {
+  random_aggressive_qty_maximum_ = std::move(qty);
   return *this;
 }
 
 auto Listing::Patch::random_aggressive_amt_minimum() const noexcept
-    -> std::optional<double> {
+    -> PatchField<double> {
   return random_aggressive_amt_minimum_;
 }
 
-auto Listing::Patch::with_random_aggressive_amt_minimum(double amount) noexcept
-    -> Patch& {
-  random_aggressive_amt_minimum_ = amount;
+auto Listing::Patch::with_random_aggressive_amt_minimum(
+    std::optional<double> amount) noexcept -> Patch& {
+  random_aggressive_amt_minimum_ = std::move(amount);
   return *this;
 }
 
 auto Listing::Patch::random_aggressive_amt_maximum() const noexcept
-    -> std::optional<double> {
+    -> PatchField<double> {
   return random_aggressive_amt_maximum_;
 }
 
-auto Listing::Patch::with_random_aggressive_amt_maximum(double amount) noexcept
-    -> Patch& {
-  random_aggressive_amt_maximum_ = amount;
+auto Listing::Patch::with_random_aggressive_amt_maximum(
+    std::optional<double> amount) noexcept -> Patch& {
+  random_aggressive_amt_maximum_ = std::move(amount);
   return *this;
 }
 

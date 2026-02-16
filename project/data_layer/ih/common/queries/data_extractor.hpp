@@ -5,6 +5,7 @@
 
 #include <functional>
 #include <map>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -89,6 +90,17 @@ class DataExtractor {
 
     const std::string resolved_value = enum_resolver_(value);
     (*this)(column, resolved_value);
+  }
+
+  template <typename Column, typename T>
+  auto operator()(Column column, const std::optional<T>& value) -> void {
+    if (value.has_value()) {
+      (*this)(column, *value);
+    } else {
+      std::string column_name = column_resolver_(column);
+      extracted_data_.emplace_back(
+          std::make_pair(std::move(column_name), "NULL"));
+    }
   }
 
  private:

@@ -5,10 +5,10 @@
 #include "core/domain/attributes.hpp"
 #include "ih/market_data/streaming_settings.hpp"
 
-using namespace testing;  // NOLINT
-
 namespace simulator::trading_system::matching_engine::mdata::test {
 namespace {
+
+using namespace testing;  // NOLINT
 
 struct StreamingSettings : Test {
   mdata::StreamingSettings settings;

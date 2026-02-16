@@ -65,7 +65,7 @@ auto FiniteProvider::initialize_time_offset() noexcept -> void {
   }
 
   assert(!records_.empty());
-  const auto& next_rec_time = records_.front().receive_time();
+  const auto& next_rec_time = records_.front().received_time();
   const auto time_offset = historical::time::make_offset(next_rec_time);
   DataProvider::set_time_offset(time_offset);
 }
@@ -83,7 +83,7 @@ auto FiniteProvider::pull_into(
   const auto time_offset = get_time_offset();
   std::optional<historical::Timepoint> prev_rec_time{};
   while (!records_.empty()) {
-    const auto next_rec_time = records_.front().receive_time();
+    const auto next_rec_time = records_.front().received_time();
     if (prev_rec_time.value_or(next_rec_time) != next_rec_time) {
       break;
     }
@@ -111,7 +111,7 @@ auto RepeatingProvider::initialize_time_offset() noexcept -> void {
   }
 
   assert(!records_.empty());
-  const auto& next_rec_time = records_.front().receive_time();
+  const auto& next_rec_time = records_.front().received_time();
   const auto time_offset = historical::time::make_offset(next_rec_time);
   DataProvider::set_time_offset(time_offset);
 }
@@ -137,7 +137,7 @@ auto RepeatingProvider::pull_into(
   const auto time_offset = get_time_offset();
   std::optional<historical::Timepoint> prev_rec_time{};
   while (!records_.empty()) {
-    const auto next_rec_time = records_.front().receive_time();
+    const auto next_rec_time = records_.front().received_time();
     if (prev_rec_time.value_or(next_rec_time) != next_rec_time) {
       break;
     }

@@ -13,8 +13,8 @@ class TradingEngineRepositoryAccessor : public RepositoryAccessor {
       : repository_(repository) {}
 
  private:
-  auto unicast_impl(InstrumentId instrument_id,
-                    Action action) const -> void override {
+  auto unicast_impl(InstrumentId instrument_id, Action action) const
+      -> void override {
     action(repository_.find_instrument_engine(instrument_id));
   }
 

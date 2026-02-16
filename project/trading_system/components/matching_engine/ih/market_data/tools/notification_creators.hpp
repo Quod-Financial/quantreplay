@@ -27,8 +27,8 @@ constexpr auto describe(MdRejectReason reason) -> std::string_view {
 
 [[nodiscard]]
 inline auto make_request_rejected_notification(
-    const protocol::MarketDataRequest& request,
-    std::string_view reason) -> ClientNotification {
+    const protocol::MarketDataRequest& request, std::string_view reason)
+    -> ClientNotification {
   protocol::MarketDataReject reject{request.session};
   reject.request_id = request.request_id;
   reject.reject_text = RejectText{std::string(reason)};
@@ -37,8 +37,8 @@ inline auto make_request_rejected_notification(
 
 [[nodiscard]]
 inline auto make_request_rejected_notification(
-    const protocol::MarketDataRequest& request,
-    MdRejectReason reason) -> ClientNotification {
+    const protocol::MarketDataRequest& request, MdRejectReason reason)
+    -> ClientNotification {
   protocol::MarketDataReject reject{request.session};
   reject.request_id = request.request_id;
   reject.reject_reason = reason;

@@ -15,79 +15,117 @@ namespace {
 
 using namespace ::testing;
 
-struct GeneratorHistoricalRecordBuilder : public testing::Test {
+struct GeneratorHistoricalRecordBuilderImpl : public testing::Test {
   static inline const std::string Instrument{"AAPL"};
   // 2023-06-13 13:10:52 GMT
-  static constexpr historical::Timepoint ReceiveTime{
+  static constexpr historical::Timepoint ReceivedTime{
       make_time(1686661852000000000)};
+  // 2023-06-13 13:10:53 GMT
+  static constexpr historical::Timepoint MessageTime{
+      make_time(1686661853000000000)};
   static constexpr std::uint64_t SourceRow{10};
 
   static auto set_mandatory_attributes(Record::Builder& builder) -> void {
-    builder.with_receive_time(ReceiveTime)
+    builder.with_received_time(ReceivedTime)
         .with_instrument(Instrument)
         .with_source_row(SourceRow);
   }
 
-  historical::Record::Builder record_builder;
+  historical::Record::BuilderImpl record_builder;
 };
 
-TEST_F(GeneratorHistoricalRecordBuilder,
-       ThrowsExceptionOnConstructIfReceiveTimeIsNotSet) {
+TEST_F(GeneratorHistoricalRecordBuilderImpl,
+       ThrowsExceptionOnConstructIfReceivedTimeAndMessageTimeAreNotSet) {
   record_builder.with_instrument(Instrument).with_source_row(SourceRow);
 
-  EXPECT_THROW(
-      historical::Record::Builder::construct(std::move(record_builder)),
-      std::invalid_argument);
+  EXPECT_THROW(record_builder.construct(), std::invalid_argument);
 }
 
-TEST_F(GeneratorHistoricalRecordBuilder,
+TEST_F(GeneratorHistoricalRecordBuilderImpl,
        ThrowsExceptionOnConstructIfInstrumentIsNotSet) {
-  record_builder.with_receive_time(ReceiveTime).with_source_row(SourceRow);
+  record_builder.with_received_time(ReceivedTime).with_source_row(SourceRow);
 
-  EXPECT_THROW(
-      historical::Record::Builder::construct(std::move(record_builder)),
-      std::invalid_argument);
+  EXPECT_THROW(record_builder.construct(), std::invalid_argument);
 }
 
-TEST_F(GeneratorHistoricalRecordBuilder,
+TEST_F(GeneratorHistoricalRecordBuilderImpl,
        ThrowsExceptionOnConstructIfSourceRowIsNotSet) {
-  record_builder.with_receive_time(ReceiveTime).with_instrument(Instrument);
+  record_builder.with_received_time(ReceivedTime).with_instrument(Instrument);
 
-  EXPECT_THROW(
-      historical::Record::Builder::construct(std::move(record_builder)),
-      std::invalid_argument);
+  EXPECT_THROW(record_builder.construct(), std::invalid_argument);
 }
 
-TEST_F(GeneratorHistoricalRecordBuilder, ConstructsWithMandatoryAttributes) {
-  record_builder.with_receive_time(ReceiveTime)
+TEST_F(GeneratorHistoricalRecordBuilderImpl,
+       ConstructsWithMandatoryAttributesAndReceivedTime) {
+  record_builder.with_received_time(ReceivedTime)
       .with_instrument(Instrument)
       .with_source_row(SourceRow);
 
-  const auto record = Record::Builder::construct(std::move(record_builder));
-  EXPECT_EQ(record.receive_time(), ReceiveTime);
+  const auto record = record_builder.construct();
+  EXPECT_EQ(record.received_time(), ReceivedTime);
   EXPECT_EQ(record.instrument(), Instrument);
   EXPECT_EQ(record.source_row(), SourceRow);
 }
 
-TEST_F(GeneratorHistoricalRecordBuilder, ConstructsWithOptionalAttributes) {
-  // 2023-06-13 13:10:53 GMT
-  constexpr historical::Timepoint message_time = make_time(1686661853000000000);
+TEST_F(GeneratorHistoricalRecordBuilderImpl,
+       ConstructsWithMandatoryAttributesAndMessageTime) {
+  record_builder.with_message_time(MessageTime)
+      .with_instrument(Instrument)
+      .with_source_row(SourceRow);
+
+  const auto record = record_builder.construct();
+  EXPECT_EQ(record.message_time(), MessageTime);
+  EXPECT_EQ(record.instrument(), Instrument);
+  EXPECT_EQ(record.source_row(), SourceRow);
+}
+
+TEST_F(GeneratorHistoricalRecordBuilderImpl,
+       SetsReceivedAndMessageTimeIfBothSet) {
+  record_builder.with_received_time(ReceivedTime)
+      .with_message_time(MessageTime)
+      .with_instrument(Instrument)
+      .with_source_row(SourceRow);
+
+  const auto record = record_builder.construct();
+  ASSERT_EQ(record.received_time(), ReceivedTime);
+  ASSERT_EQ(record.message_time(), MessageTime);
+}
+
+TEST_F(GeneratorHistoricalRecordBuilderImpl,
+       SetsReceivedTimeFromMessageTimeIfNotSet) {
+  record_builder.with_message_time(MessageTime)
+      .with_instrument(Instrument)
+      .with_source_row(SourceRow);
+
+  const auto record = record_builder.construct();
+  ASSERT_EQ(record.received_time(), MessageTime);
+}
+
+TEST_F(GeneratorHistoricalRecordBuilderImpl,
+       SetsMessageTimeFromReceivedTimeIfNotSet) {
+  record_builder.with_received_time(ReceivedTime)
+      .with_instrument(Instrument)
+      .with_source_row(SourceRow);
+
+  const auto record = record_builder.construct();
+  ASSERT_EQ(record.message_time(), ReceivedTime);
+}
+
+TEST_F(GeneratorHistoricalRecordBuilderImpl, ConstructsWithOptionalAttributes) {
   const std::string source_name{"source-name"};
   const std::string source_connection{"/path/to/file.csv"};
 
   set_mandatory_attributes(record_builder);
   record_builder.with_source_name(source_name)
-      .with_source_connection(source_connection)
-      .with_message_time(message_time);
+      .with_source_connection(source_connection);
 
-  const auto record = Record::Builder::construct(std::move(record_builder));
+  const auto record = record_builder.construct();
 
-  EXPECT_THAT(record.message_time(), Optional(Eq(message_time)));
   EXPECT_THAT(record.source_name(), Optional(Eq(source_name)));
   EXPECT_THAT(record.source_connection(), Optional(Eq(source_connection)));
 }
 
-TEST_F(GeneratorHistoricalRecordBuilder, ConstructsWithLevel) {
+TEST_F(GeneratorHistoricalRecordBuilderImpl, ConstructsWithLevel) {
   constexpr std::uint64_t level_idx = 0;
   constexpr double bid_px = 100.1;
   constexpr double offer_px = 100.2;
@@ -100,10 +138,9 @@ TEST_F(GeneratorHistoricalRecordBuilder, ConstructsWithLevel) {
       make_level(bid_px, bid_qty, bid_cp, offer_px, offer_qty, offer_cp);
 
   set_mandatory_attributes(record_builder);
-  record_builder.with_message_time(ReceiveTime);
   record_builder.add_level(level_idx, std::move(level));
 
-  const auto record = Record::Builder::construct(std::move(record_builder));
+  const auto record = record_builder.construct();
 
   EXPECT_TRUE(record.has_levels());
   auto checker = [&](std::uint64_t index, const Level& level_arg) {
@@ -119,9 +156,7 @@ TEST_F(GeneratorHistoricalRecordBuilder, ConstructsWithLevel) {
   record.visit_levels(checker);
 }
 
-TEST_F(GeneratorHistoricalRecordBuilder, ConstructsFromAnotherRecord) {
-  // 2023-06-13 13:10:53 GMT
-  constexpr historical::Timepoint message_time = make_time(1686661853000000000);
+TEST_F(GeneratorHistoricalRecordBuilderImpl, ConstructsFromAnotherRecord) {
   const std::string source_name{"source-name"};
   const std::string source_connection{"/path/to/file.csv"};
 
@@ -130,24 +165,25 @@ TEST_F(GeneratorHistoricalRecordBuilder, ConstructsFromAnotherRecord) {
   set_mandatory_attributes(record_builder);
   record_builder.with_source_name(source_name)
       .with_source_connection(source_connection)
-      .with_message_time(message_time);
+      .with_message_time(MessageTime);
   record_builder.add_level(0, level);
 
-  Record initial_record = Record::Builder::construct(std::move(record_builder));
+  Record initial_record = record_builder.construct();
 
-  historical::Record::Builder copy_builder{std::move(initial_record)};
-  const auto copy_record = Record::Builder::construct(std::move(copy_builder));
+  historical::Record::BuilderImpl copy_builder{std::move(initial_record)};
+  const auto copy_record = copy_builder.construct();
 
-  EXPECT_EQ(copy_record.receive_time(), ReceiveTime);
+  EXPECT_EQ(copy_record.received_time(), ReceivedTime);
   EXPECT_EQ(copy_record.instrument(), Instrument);
   EXPECT_EQ(copy_record.source_row(), SourceRow);
-  EXPECT_THAT(copy_record.message_time(), Optional(Eq(message_time)));
+  EXPECT_THAT(copy_record.message_time(), MessageTime);
   EXPECT_THAT(copy_record.source_name(), Optional(Eq(source_name)));
   EXPECT_THAT(copy_record.source_connection(), Optional(Eq(source_connection)));
   EXPECT_TRUE(copy_record.has_levels());
 }
 
-struct GeneratorHistoricalRecord : public GeneratorHistoricalRecordBuilder {};
+struct GeneratorHistoricalRecord : public GeneratorHistoricalRecordBuilderImpl {
+};
 
 TEST_F(GeneratorHistoricalRecord, GivesAwayLevelsOnStealing) {
   constexpr std::uint64_t level_idx = 0;
@@ -158,7 +194,7 @@ TEST_F(GeneratorHistoricalRecord, GivesAwayLevelsOnStealing) {
   record_builder.with_source_row(1);
   record_builder.add_level(level_idx, level);
 
-  Record record = Record::Builder::construct(std::move(record_builder));
+  Record record = record_builder.construct();
   ASSERT_TRUE(record.has_levels());
 
   const auto stealer = []([[maybe_unused]] std::uint64_t index,
@@ -175,16 +211,16 @@ TEST_F(GeneratorHistoricalRecord, FormatsToString) {
 
   set_mandatory_attributes(record_builder);
   record_builder.with_source_row(1)
-      .with_message_time(ReceiveTime + std::chrono::nanoseconds(123456789))
+      .with_message_time(MessageTime)
       .add_level(level_idx, level)
       .with_source_name("source_name")
       .with_source_connection("source_connection");
 
-  Record record = Record::Builder::construct(std::move(record_builder));
+  Record record = record_builder.construct();
   ASSERT_EQ(fmt::to_string(record),
             "Record={ Instrument=AAPL "
-            "ReceiveTime=2023-06-13 13:10:52.000000000 "
-            "MessageTime=2023-06-13 13:10:52.123456789 "
+            "ReceivedTime=2023-06-13 13:10:52.000000000 "
+            "MessageTime=2023-06-13 13:10:53.000000000 "
             "RowNumber=1 "
             "SourceName=source_name "
             "SourceConnection=source_connection "

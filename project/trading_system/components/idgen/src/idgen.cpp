@@ -32,7 +32,7 @@ auto make_instrument_id_generation_ctx() -> InstrumentIdContext {
   auto implementation = [&]() -> std::unique_ptr<implementation_type> {
     try {
       return std::make_unique<implementation_type>(sequence);
-    } catch (std::bad_alloc const&) {
+    } catch (const std::bad_alloc&) {
       log::warn(
           "failed to allocate memory for a listing id generation context... "
           "this may indicate a problem with memory consumption or "
@@ -73,7 +73,7 @@ auto make_market_entry_id_generation_ctx() -> MarketEntryIdContext {
     try {
       return std::make_unique<implementation_type>(
           implementation_type::generate_seed(), sequence);
-    } catch (std::bad_alloc const&) {
+    } catch (const std::bad_alloc&) {
       log::warn(
           "failed to allocate memory for a market entry id generation "
           "context... this may indicate a problem with memory consumption or "

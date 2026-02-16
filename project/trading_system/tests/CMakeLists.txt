@@ -8,12 +8,28 @@ add_target_tests(
     mocks/serializer_mock.hpp
     mocks/trading_engine_mock.hpp
     mocks/trading_reply_receiver_mock.hpp
+    test_utils/matchers.hpp
+    test_utils/utils.hpp
   UNIT_TESTS
     unit_tests/config/phase_entry_reader_tests.cpp
     unit_tests/config/venue_entry_reader_tests.cpp
     unit_tests/execution/execution_system_tests.cpp
     unit_tests/execution/reject_notifier_tests.cpp
     unit_tests/repository/trading_engines_repository_tests.cpp
+    unit_tests/state_persistence/json/detail/enumerators_tests.cpp
+    unit_tests/state_persistence/json/detail/instrument_data_tests.cpp
+    unit_tests/state_persistence/json/detail/instrument_descriptor_tests.cpp
+    unit_tests/state_persistence/json/detail/instrument_info_tests.cpp
+    unit_tests/state_persistence/json/detail/instrument_specification_tests.cpp
+    unit_tests/state_persistence/json/detail/limit_order_tests.cpp
+    unit_tests/state_persistence/json/detail/market_phase_tests.cpp
+    unit_tests/state_persistence/json/detail/order_book_tests.cpp
+    unit_tests/state_persistence/json/detail/party_tests.cpp
+    unit_tests/state_persistence/json/detail/reader_tests.cpp
+    unit_tests/state_persistence/json/detail/session_tests.cpp
+    unit_tests/state_persistence/json/detail/trade_tests.cpp
+    unit_tests/state_persistence/json/detail/writer_tests.cpp
+    unit_tests/state_persistence/json/snapshot_tests.cpp
     unit_tests/state_persistence/market_state_persistence_controller_tests.cpp
     unit_tests/state_persistence/serializer_tests.cpp
     unit_tests/tools/instrument_resolver_tests.cpp

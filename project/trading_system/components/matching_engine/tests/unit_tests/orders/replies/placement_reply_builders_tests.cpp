@@ -5,7 +5,7 @@
 #include "ih/orders/replies/placement_reply_builders.hpp"
 #include "protocol/app/order_placement_confirmation.hpp"
 #include "protocol/app/order_placement_request.hpp"
-#include "tools/order_test_tools.hpp"
+#include "tools/order_builder.hpp"
 
 namespace simulator::trading_system::matching_engine::test {
 namespace {
@@ -14,8 +14,6 @@ using namespace std::chrono_literals;
 using namespace ::testing;  // NOLINT
 
 // NOLINTBEGIN(*magic-numbers*)
-
-// region PlacementConfirmationBuilder
 
 class PlacementConfirmationBuilder : public ::testing::Test {
  public:
@@ -278,10 +276,6 @@ TEST_F(PlacementConfirmationBuilder, SetsMarketOrderShortSellExemptionReason) {
   ASSERT_THAT(confirmation.short_sale_exempt_reason,
               Optional(Eq(ShortSaleExemptionReason(0))));
 }
-
-// endregion PlacementConfirmationBuilder
-
-// region PlacementRejectBuilder
 
 struct PlacementRejectBuilder : public ::testing::Test {
   protocol::Session test_session{protocol::generator::Session{}};
@@ -629,8 +623,6 @@ TEST_F(PlacementRejectBuilder, SetsExecutionId) {
 
   ASSERT_THAT(reject.execution_id, Optional(Eq(ExecutionId{"4221-1"})));
 }
-
-// endregion PlacementRejectBuilder
 
 // NOLINTEND(*magic-numbers*)
 

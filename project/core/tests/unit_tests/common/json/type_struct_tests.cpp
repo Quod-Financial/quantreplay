@@ -73,9 +73,9 @@ TEST_F(
     FAIL() << "std::runtime_error exception must be thrown";
   } catch (const std::runtime_error& e) {
     ASSERT_STREQ(e.what(),
-                 "failed to parse field `inner_struct_field`: failed to parse "
-                 "field `double_field`: unexpected data Type "
-                 "`rapidjson::Type::kStringType`, `double` is expected");
+                 "failed to parse field `inner_struct_field': failed to parse "
+                 "field `double_field': unexpected data Type "
+                 "`rapidjson::Type::kStringType', `double' is expected");
   }
 }
 
@@ -132,8 +132,8 @@ TEST_F(CoreJsonStructReader,
     FAIL() << "std::runtime_error exception must be thrown";
   } catch (const std::runtime_error& e) {
     ASSERT_STREQ(e.what(),
-                 "failed to parse field `optional_int_field`: unexpected data "
-                 "Type `rapidjson::Type::kTrueType`, `int` is expected");
+                 "failed to parse field `optional_int_field': unexpected data "
+                 "Type `rapidjson::Type::kTrueType', `int' is expected");
   }
 }
 

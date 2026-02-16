@@ -36,14 +36,14 @@ auto unmarshall_request_body(std::string_view body,
 }  // namespace
 
 SettingController::SettingController(
-    data_bridge::SettingAccessor& data_accessor) noexcept
-    : settings_accessor_(data_accessor) {}
+    std::shared_ptr<data_bridge::SettingAccessor> data_accessor) noexcept
+    : settings_accessor_{std::move(data_accessor)} {}
 
 auto SettingController::select_all_settings() const -> Result {
   Pistache::Http::Code code{};
   std::string content;
 
-  auto result = setting_accessor().select_all();
+  auto result = settings_accessor_->select_all();
   if (result) {
     try {
       const std::vector<data_layer::Setting>& settings = result.value();
@@ -91,7 +91,7 @@ auto SettingController::update_settings(const std::string& body) const
       break;
     }
 
-    const auto result = setting_accessor().update(setting, *key);
+    const auto result = settings_accessor_->update(setting, *key);
     if (!result) {
       code = Pistache::Http::Code::Internal_Server_Error;
       content = format_error_response(result.error());
@@ -100,11 +100,6 @@ auto SettingController::update_settings(const std::string& body) const
   }
 
   return std::make_pair(code, std::move(content));
-}
-
-auto SettingController::setting_accessor() const noexcept
-    -> const data_bridge::SettingAccessor& {
-  return settings_accessor_.get();
 }
 
 auto SettingController::format_error_response(data_bridge::Failure failure)

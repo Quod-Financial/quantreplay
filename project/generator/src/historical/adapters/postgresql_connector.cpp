@@ -25,10 +25,9 @@ PostgresConnector::PostgresConnector(historical::DatabaseParsingParams params,
       parsing_params_{std::move(params)} {
   load_data(connection);
 
-  auto depth_config = make_depth_config(connection);
-  depth_ = depth_config.datasource_depth;
+  init_mapping_params();
+  depth_ = mapping_params_.max_depth();
 
-  init_mapping_params(std::move(depth_config));
   extract_data();
 }
 
@@ -44,12 +43,13 @@ auto PostgresConnector::has_next_record() const noexcept -> bool {
   return next_row_index_ < extracted_rows_.size();
 }
 
-auto PostgresConnector::parse_next_record(Record::Builder& builder) -> void {
+auto PostgresConnector::parse_next_record(
+    std::unique_ptr<Record::Builder>& builder) -> void {
   assert(has_next_record());
 
   auto& [row_number, pq_row] = extracted_rows_[next_row_index_++];
 
-  builder.with_source_row(row_number)
+  builder->with_source_row(row_number)
       .with_source_name(parsing_params_.datasource_name())
       .with_source_connection(parsing_params_.datasource_connection());
 
@@ -64,17 +64,7 @@ auto PostgresConnector::load_data(pqxx::connection& database_connection)
       fmt::format("SELECT * FROM {};", parsing_params_.table_name()));
 }
 
-auto PostgresConnector::make_depth_config(
-    pqxx::connection& database_connection) const -> mapping::DepthConfig {
-  const auto data_depth =
-      mapping::depth_from_columns_number(columns_number(database_connection));
-  const auto depth_to_parse = mapping::depth_to_parse(
-      data_depth, parsing_params_.datasource_max_depth_levels());
-  return {.datasource_depth = data_depth, .depth_to_parse = depth_to_parse};
-}
-
-auto PostgresConnector::init_mapping_params(mapping::DepthConfig depth_config)
-    -> void {
+auto PostgresConnector::init_mapping_params() -> void {
   const std::int32_t columns_count = data_.columns();
 
   std::vector<std::string> column_names{};
@@ -85,7 +75,8 @@ auto PostgresConnector::init_mapping_params(mapping::DepthConfig depth_config)
     column_names.emplace_back(column_name);
   }
 
-  mapping_params_.initialize(std::move(column_names), std::move(depth_config));
+  mapping_params_.initialize(std::move(column_names),
+                             parsing_params_.datasource_max_depth_levels());
 }
 
 auto PostgresConnector::extract_data() -> void {

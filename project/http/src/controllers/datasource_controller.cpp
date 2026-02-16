@@ -37,15 +37,15 @@ auto unmarshall_request_body(std::string_view body,
 }  // namespace
 
 DatasourceController::DatasourceController(
-    data_bridge::DatasourceAccessor& data_accessor) noexcept
-    : data_accessor_(data_accessor) {}
+    std::unique_ptr<data_bridge::DatasourceAccessor> data_accessor) noexcept
+    : data_accessor_{std::move(data_accessor)} {}
 
 auto DatasourceController::select_datasource(std::uint64_t datasource_id) const
     -> Result {
   Pistache::Http::Code code{};
   std::string content;
 
-  auto result = data_accessor_.get().select_single(datasource_id);
+  auto result = data_accessor_->select_single(datasource_id);
   if (result) {
     const data_layer::Datasource& selected = result.value();
     try {
@@ -76,7 +76,7 @@ auto DatasourceController::select_all_datasources() const -> Result {
   Pistache::Http::Code code{};
   std::string content;
 
-  auto result = data_accessor_.get().select_all();
+  auto result = data_accessor_->select_all();
   if (!result) {
     content = format_error_response(result.error());
     code = Pistache::Http::Code::Internal_Server_Error;
@@ -107,7 +107,7 @@ auto DatasourceController::insert_datasource(const std::string& body) const
     return std::make_pair(code, std::move(content));
   }
 
-  auto result = data_accessor_.get().add(datasource);
+  auto result = data_accessor_->add(datasource);
   if (result) {
     log::info("successfully added a new venue");
     code = Pistache::Http::Code::Created;
@@ -140,7 +140,7 @@ auto DatasourceController::update_datasource(std::uint64_t datasource_id,
     return std::make_pair(code, std::move(content));
   }
 
-  auto result = data_accessor_.get().update(patch, datasource_id);
+  auto result = data_accessor_->update(patch, datasource_id);
   if (result) {
     code = Pistache::Http::Code::Ok;
     content = format_result_response(

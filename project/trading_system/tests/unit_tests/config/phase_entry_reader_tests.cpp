@@ -4,6 +4,7 @@
 #include "data_layer/api/models/market_phase.hpp"
 #include "ies/phase_record.hpp"
 #include "ih/config/phase_entry_reader.hpp"
+#include "test_utils/utils.hpp"
 
 namespace simulator::trading_system::test {
 namespace {
@@ -14,7 +15,7 @@ using namespace std::chrono_literals;
 struct TradingSystemPhaseEntryReader : public Test {
   using MarketPhase = data_layer::MarketPhase;
 
-  static auto create_phase(MarketPhase::Patch patch) {
+  static auto create_phase(MarketPhase::Patch patch) -> MarketPhase {
     return MarketPhase::create(std::move(patch), "venue_id");
   }
 
@@ -42,7 +43,7 @@ TEST_F(TradingSystemPhaseEntryReader,
 
 TEST_F(TradingSystemPhaseEntryReader, DoesNotAddMarketPhaseIfPhaseIsMalformed) {
   patch.with_start_time("11:00").with_end_time("12:00").with_phase(
-      static_cast<MarketPhase::Phase>(-1));
+      invalid_enum_value<MarketPhase::Phase>());
   reader(create_phase(patch));
   ASSERT_TRUE(config.trading_phases_schedule().phase_records().empty());
 }

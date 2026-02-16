@@ -33,13 +33,10 @@ class CsvReader final : public DataAccessAdapter {
   [[nodiscard]]
   auto has_next_record() const noexcept -> bool override;
 
-  auto parse_next_record(historical::Record::Builder& builder) -> void override;
+  auto parse_next_record(std::unique_ptr<Record::Builder>& builder)
+      -> void override;
 
-  auto make_depth_config(const csv::CSVReader& reader) const
-      -> mapping::DepthConfig;
-
-  auto init_mapping_params(const csv::CSVReader& reader,
-                           mapping::DepthConfig depth_config) -> void;
+  auto init_mapping_params(const csv::CSVReader& reader) -> void;
 
   auto load_csv_data(csv::CSVReader& reader) -> void;
 

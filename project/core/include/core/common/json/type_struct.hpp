@@ -34,7 +34,7 @@ struct Type<T> {
                     iter->value);
           } catch (const std::runtime_error& e) {
             throw std::runtime_error{fmt::format(
-                "failed to parse field `{}`: {}", field.name, e.what())};
+                "failed to parse field `{}': {}", field.name, e.what())};
           }
         }
       } else {
@@ -44,11 +44,11 @@ struct Type<T> {
                 Type<field_type>::read_json_value(iter->value);
           } catch (const std::runtime_error& e) {
             throw std::runtime_error{fmt::format(
-                "failed to parse field `{}`: {}", field.name, e.what())};
+                "failed to parse field `{}': {}", field.name, e.what())};
           }
         } else {
           throw std::runtime_error{
-              fmt::format("missing field `{}` in JSON object", field.name)};
+              fmt::format("missing field `{}' in JSON object", field.name)};
         }
       }
     });

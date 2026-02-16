@@ -389,7 +389,7 @@ Content-Length: XXX
     "id" : "NewExchange",
     "name" : "NewExchange Description",
     "engineType" : "Matching",
-    "supportTimeInSales" : false,
+    "timeAndSalesEnabled" : false,
     "supportTifIoc" : false,
     "supportTifFok" : false,
     "supportTifDay" : false,
@@ -404,12 +404,12 @@ _Example_: Positive reply
 
 [,http]
 ----
-HTTP/1.1 200 OK
+HTTP/1.1 201 Created
 Connection: Keep-Alive
 Content-Length: XXX
 
 {
-    "result" : "Requested insert of the venue - NewExchange"
+    "result":"Successfully inserted a new Venue"
 }
 ----
 
@@ -422,7 +422,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "There is already such venue"
+    "result":"Requested operation violates data integrity constraints"
 }
 ----
 
@@ -656,7 +656,7 @@ Request all market simulator listings entities.
 _Resource URI_
 
 ----
-GET /api/listings/
+GET /api/listings
 ----
 
 _Example_: Request multiple listings
@@ -757,7 +757,7 @@ Add a new market simulator listing entity.
 _Resource URI_
 
 ----
-POST /api/listings/
+POST /api/listings
 ----
 
 _Example_: Request to add a new listing
@@ -794,7 +794,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "Requested insert of the listing - AAPL"
+    "result":"Successfully inserted a new Listing"
 }
 ----
 
@@ -807,7 +807,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "There is already such listing"
+    "result":"Requested operation violates data integrity constraints"
 }
 ----
 
@@ -1175,7 +1175,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "Requested insert of the data source - XETRA-NEW"
+    "result":"Successfully inserted a new datasource"
 }
 ----
 
@@ -1188,7 +1188,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "There is already such data source"
+    "result":"Requested operation violates data integrity constraints"
 }
 ----
 
@@ -1279,7 +1279,15 @@ _Resource Properties_
 
 | priceCurrency	| Text	| Currency of price (for FX, second currency in the pair), using ISO-4217 3-char currency codes
 | securityId	| Text	| Security ID for this listing
-| securityIdSource	| Text	| Type of security ID entered, can be null (i.e. for FX where we don't require a security ID)
+| securityIdSource	| Text	a| Type of security ID entered, can be null (i.e. for FX where we don't require a security ID):
+
+*	CUSIP - US/Canada security identifier
+*	SEDOL - UK/Irish security identifier
+*	ISINNumber - International Securities Identification Number
+*	RICCode - Reuters Instrument Code
+*	ExchangeSymbol - Exchange-specific ticker symbol
+*	BloombergSymbol - Bloomberg’s security identifier
+
 | instrumentSymbol	| Text	| Common symbol used for this listing across different venues
 | midPrice	| Decimal	| Last known mid price
 | bidPrice	| Decimal	| Last known bid price
@@ -1437,7 +1445,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "Successfully added a new price seed"
+    "result":"Successfully inserted new price seed"
 }
 ----
 
@@ -1549,14 +1557,14 @@ Retrieve and update price seeds from an external database
 
 _Resource URI_
 ----
-PUT /api/syncpriceseeds
+POST /api/syncpriceseeds
 ----
 
 _Example_: Sync price seeds
 
 [,http]
 ----
-PUT /api/syncpriceseeds HTTP/1.1
+POST /api/syncpriceseeds HTTP/1.1
 Accept: application/json;charset=UTF-8
 Host: localhost
 ----

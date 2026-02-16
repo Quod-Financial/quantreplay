@@ -40,4 +40,4 @@ class DepthNode {
 
 }  // namespace simulator::trading_system::matching_engine::mdata
 
-#endif  // DEPTH_NODE_HPP
+#endif  // SIMULATOR_MATCHING_ENGINE_IH_MARKET_DATA_DEPTH_DEPTH_NODE_HPP_

@@ -4,12 +4,12 @@
 #include "ih/market_data/depth/depth_node.hpp"
 #include "tools/order_book_notification_builder.hpp"
 
+namespace simulator::trading_system::matching_engine::mdata::test {
+namespace {
+
 using namespace testing;  // NOLINT
 
 // NOLINTBEGIN(*magic-number*)
-
-namespace simulator::trading_system::matching_engine::mdata {
-namespace {
 
 struct DepthNodeFixture : Test {
   MarketEntryId identifier{"node-id"};
@@ -18,8 +18,6 @@ struct DepthNodeFixture : Test {
     return DepthNode(identifier, builder.create());
   }
 };
-
-/*----------------------------------------------------------------------------*/
 
 struct DepthNodeTest : DepthNodeFixture {};
 
@@ -49,8 +47,6 @@ TEST_F(DepthNodeTest, IsNotEmptyWhenCurrentQuantitiyIsNonZero) {
 
   ASSERT_FALSE(node.empty());
 }
-
-/*----------------------------------------------------------------------------*/
 
 struct FullDepthNodeLevelTest : DepthNodeFixture {};
 
@@ -124,8 +120,6 @@ TEST_F(FullDepthNodeLevelTest, ReturnsRemovedLevelWhenLastOrderIsRemoved) {
   const auto level = node.full_level();
   ASSERT_TRUE(level.is_removed());
 }
-
-/*----------------------------------------------------------------------------*/
 
 struct PartialDepthNodeLevelTest : DepthNodeFixture {
   PartyId owner{"owner-id"};
@@ -234,9 +228,7 @@ TEST_F(PartialDepthNodeLevelTest,
   ASSERT_TRUE(level.is_invisible());
 }
 
-/*----------------------------------------------------------------------------*/
-
 }  // namespace
-}  // namespace simulator::trading_system::matching_engine::mdata
+}  // namespace simulator::trading_system::matching_engine::mdata::test
 
 // NOLINTEND(*magic-number*)

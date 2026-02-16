@@ -97,7 +97,7 @@ auto MatchingEngine::store_state(market_state::InstrumentState& state) -> void {
 
   state_stored.wait();
 
-  log::debug("instrument {} state stored", state.instrument.identifier);
+  log::debug("instrument state stored");
 }
 
 auto MatchingEngine::recover_state(market_state::InstrumentState state)

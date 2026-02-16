@@ -9,7 +9,7 @@ namespace simulator::trading_system::test {
 
 struct SerializerMock : public simulator::trading_system::Serializer {
   MOCK_METHOD(
-      bool,
+      (tl::expected<void, std::string>),
       serialize,
       (const simulator::trading_system::market_state::Snapshot& snapshot,
        std::ostream& os),

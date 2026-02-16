@@ -5,11 +5,11 @@ endif::[]
 [[admincmds]]
 == Administrative Commands
 
-[[admincmds-systs]]
-=== System Status
-Query current live status of system.
+[[admincmds-vensts]]
+=== Venue Status
+Manage current live status of each market simulator venue instance.
 
-_Resource Properties_
+_Response Properties_
 
 [1,1,1]
 |===
@@ -19,23 +19,32 @@ _Resource Properties_
 | name	| Text	| Venue full name
 | startTime	| Text	| Time when the instance started
 | version	| Text	| Version of MktSimulator
+| responseCode	| Integer	| HTTP code received in response to venue status request
+|===
 
-|=== 
-
-[[admincmds-systs-get]]
-==== Get System Status
-Request system status.
+[[admincmds-vensts-getsgl]]
+==== Get Single Venue Status
+Request the status of the current market simulator venue instance.
 
 _Resource URI_
+
 ----
-GET /api/status
+GET /api/venuestatus
 ----
 
-_Example_: Request system status
+Request the status of a specific market simulator venue instance.
+
+_Resource URI_
+
+----
+GET /api/venuestatus/{venueId}
+----
+
+_Example_: Request current venue status
 
 [,http]
 ----
-GET /api/status HTTP/1.1
+GET /api/venuestatus HTTP/1.1
 Accept: application/json;charset=UTF-8
 Host: localhost
 ----
@@ -53,37 +62,11 @@ Content-Length: XXX
     "name": "London Stock Exchange",
     "startTime":"2022-Feb-03 12:16:50"
     "version" : "99.116.15829062-734713bc (28/02/2020 17:40:18)"
+    "statusCode" : 200
 }
 ----
 
-[[admincmds-vensts]]
-=== Venue Status
-Manage current live status of each market simulator venue instance.
-
-_Resource Properties_
-
-[1,1,1]
-|===
-| Path | Type |Description
-
-| id	| Text	| Venue short name
-| name	| Text	| Venue full name
-| startTime	| Text	| Time when the instance started
-| version	| Text	| Version of MktSimulator
-| responseCode	| Integer	| HTTP code received in response to venue status request
-|===
-
-[[admincmds-vensts-getsgl]]
-==== Get Single Venue Status
-Request a single market simulator venue entity status.
-
-_Resource URI_
-
-----
-GET /api/venuestatus/{venueId}
-----
-
-_Example_: Request single venue status
+_Example_: Request specific venue status
 
 [,http]
 ----
@@ -109,22 +92,21 @@ Content-Length: XXX
 }
 ----
 
-
 [[admincmds-vensts-getmultil]]
 ==== Get Multiple Venue Status
-Request all market simulator venue entity status.
+Request the status of all market simulator venue instances.
 
 _Resource URI_
 
 ----
-GET /api/venuestatus
+GET /api/allvenuestatus
 ----
 
-_Example_: Request single venue status
+_Example_: Request all venues' status
 
 [,http]
 ----
-GET /api/venuestatus HTTP/1.1
+GET /api/allvenuestatus HTTP/1.1
 Accept: application/json;charset=UTF-8
 Host: localhost
 ----
@@ -166,66 +148,28 @@ Content-Length: XXX
 
 [[admincmds-ordergen]]
 === Order Generation
+Manage current status of random order generation and historical data playback of each market simulator venue instance.
 
+_Response Properties_
 
-[[admincmds-ordergen-startstop]]
-==== Start/Stop Order Generation
-Start or stop generation of random orders and historical data for instance indicated by VenueID
+[1,1,1]
+|===
+| Path | Type |Description
+
+| result | Text | Explanation of HTTP code received in response to request
+|===
+
+[[admincmds-ordergen-sts]]
+==== Status of Order Generation
+Request the status of random order generation and historical data playback for the current market simulator venue instance.
 
 _Resource URI_
 
 ----
-PUT /api/[genstart|genstop]/{venueId}
+GET /api/genstatus
 ----
 
-_Example_: Request to start generation for XETRA instance
-
-[,http]
-----
-PUT /api/genstart/XETRA HTTP/1.1
-Accept: application/json;charset=UTF-8
-Host: localhost
-----
-
-_Example_: Possible reply
-
-[,http]
-----
-HTTP/1.1 200 OK
-Content-Type: application/json;charset=UTF-8
-Content-Length: XXX
-
-{
-    "result" : "Random orders generator started successfully"
-}
-----
-
-_Example_: Request to stop generation for XETRA instance
-
-[,http]
-----
-PUT /api/genstop/XETRA HTTP/1.1
-Accept: application/json;charset=UTF-8
-Host: localhost
-----
-
-_Example_: Possible reply
-
-[,http]
-----
-HTTP/1.1 200 OK
-Content-Type: application/json;charset=UTF-8
-Content-Length: XXX
-
-{
-    "result" : "Random orders generator stopped successfully"
-}
-----
-
-
-[[admincmds-ordergen-sts]]
-==== Status of Order Generation
-Get whether generation of random orders and historical data for instance indicated by VenueID is enabled
+Request the status of random order generation and historical data playback for a specific market simulator venue instance.
 
 _Resource URI_
 
@@ -233,7 +177,42 @@ _Resource URI_
 GET /api/genstatus/{venueId}
 ----
 
-_Example_: Request for status of generation for LSE instance
+_Example_: Request for status of generation for the current instance
+
+[,http]
+----
+GET /api/genstatus HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+----
+
+_Example_: Reply in case the generation is running
+
+[,http]
+----
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "result" : "Running"
+}
+----
+
+_Example_: Reply in case the generation is not running
+
+[,http]
+----
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "result" : "NotRunning"
+}
+----
+
+_Example_: Request for status of generation for a specific instance
 
 [,http]
 ----
@@ -255,7 +234,7 @@ Content-Length: XXX
 }
 ----
 
-_Example_: Reply in case the generation is NOT running
+_Example_: Reply in case the generation is not running
 
 [,http]
 ----
@@ -281,21 +260,136 @@ Content-Length: XXX
 }
 ----
 
+[[admincmds-ordergen-startstop]]
+==== Start/Stop Order Generation
+Start or stop random order generation and historical data playback for the current market simulator venue instance.
+
+_Resource URI_
+
+----
+PUT /api/[genstart|genstop]
+----
+
+Start or stop random order generation and historical data playback for a specific market simulator venue instance.
+
+_Resource URI_
+
+----
+POST /api/[genstart|genstop]/{venueId}
+----
+
+_Example_: Request to start generation for the current venue
+
+[,http]
+----
+PUT /api/genstart HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+----
+
+_Example_: Possible reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "result" : "Random orders generator started successfully"
+}
+----
+
+_Example_: Request to start generation for a specific venue
+
+[,http]
+----
+POST /api/genstart/XETRA HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+----
+
+_Example_: Possible reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "result" : "Random orders generator started successfully"
+}
+----
+
+_Example_: Request to stop generation for the current venue
+
+[,http]
+----
+PUT /api/genstop HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+----
+
+_Example_: Possible reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "result" : "Random orders generator stopped successfully"
+}
+----
+
+_Example_: Request to stop generation for a specific venue
+
+[,http]
+----
+POST /api/genstop/XETRA HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+----
+
+_Example_: Possible reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "result" : "Random orders generator stopped successfully"
+}
+----
+
 [[admincmds-mktphshalt]]
 === Market Phase Halt
-See <<general-mktphs,this section>> for more information about market phases.
+Manage halted status of current market phase of each market simulator venue instance. See <<general-mktphs,this section>> for more information about market phases.
 
-[[admincmds-mktphshalt-hlt]]
-==== Halt Market Phase
-Halt current market phase.
+_Response Properties_
 
-_Resource Properties_
+[1,1,1]
+|===
+| Path | Type |Description
+
+| result | Text | Explanation of HTTP code received in response to request
+|===
+
+[[admincmds-mktphshalt-haltresume]]
+==== Halt/Resume Market Phase
+Halt or resume current market phase for a single market simulator venue instance.
+
+_Request Properties_
 
 [cols="25,15,60"]
 |===
 | Path | Type |Description
 
-| allowCancels	| Boolean	a| Defines whether order cancellation by OrderCancelRequest (35=F) is allowed during the Open Halted phase.
+| allowCancels | Boolean a| Defines whether order cancellation by OrderCancelRequest (35=F) is allowed during the Open Halted phase. Used only when halting current market phase.
 
 *	`true` - OrderCancelRequest (35=F) can be processed. 
 If the order is cancelled, the market simulator's response is ExecutionReport (35=8), in which OrdStatus is Canceled (39=4).
@@ -303,17 +397,27 @@ If the order is cancelled, the market simulator's response is ExecutionReport (3
 The market simulator's response is OrderCancelReject (35=9), in which OrdStatus is Rejected (39=8).
 |===
 
+Halt or resume the current market phase for the current market simulator venue instance.
+
 _Resource URI_
 
 ----
-PUT /api/halt/{venueId}
+PUT /api/[halt|resume]
 ----
 
-_Example_: Halt market for LSE instance
+Halt or resume current market phase for a specific market simulator venue instance.
+
+_Resource URI_
+
+----
+POST /api/[halt|resume]/{venueId}
+----
+
+_Example_: Halt market for the current venue
 
 [,http]
 ----
-PUT /api/halt/LSE HTTP/1.1
+PUT /api/halt HTTP/1.1
 Accept: application/json;charset=UTF-8
 Host: localhost
 
@@ -374,21 +478,76 @@ Content-Length: XXX
 }
 ----
 
-[[admincmds-mktphshalt-res]]
-==== Resume Market Phase
-Resume the phase that was halted by a halt request.
-
-_Resource URI_
-
-----
-PUT /api/resume/{venueId}
-----
-
-_Example_: Resume market for LSE instance
+_Example_: Halt market for a specific venue
 
 [,http]
 ----
-PUT /api/resume/LSE HTTP/1.1
+POST /api/halt/LSE HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+
+{
+    "allowCancels": false
+}
+----
+
+_Example_: Positive reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "result" : "Market successfully halted"
+}
+----
+
+_Example_: Reply if the phase is already halted
+
+[,http]
+----
+HTTP/1.1 409 Conflict
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "The market is already halted."
+}
+----
+
+_Example_: Reply if there is no active phase
+
+[,http]
+----
+HTTP/1.1 404 Not Found
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "There is no phase to halt."
+}
+----
+
+_Example_: If the current phase cannot be halted
+
+[,http]
+----
+HTTP/1.1 409 Conflict
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "Unable to halt the phase."
+}
+----
+
+_Example_: Resume market for the current venue
+
+[,http]
+----
+PUT /api/resume HTTP/1.1
 Accept: application/json;charset=UTF-8
 Host: localhost
 ----
@@ -411,7 +570,7 @@ _Example_: Reply if the phase is not currently halted
 [,http]
 ----
 HTTP/1.1 409 Conflict
-Content-Type: application/json;charset=UTF-8
+Connection: Close
 Content-Length: XXX
 
 {
@@ -419,118 +578,75 @@ Content-Length: XXX
 }
 ----
 
-[[admincmds-persisstate]]
-=== Persisted State
+_Example_: Resume market for a specific venue
 
+[,http]
+----
+POST /api/resume/LSE HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+----
 
-[[admincmds-persisstate-store]]
-==== Store Market State for Single Venue
-Store current state of active traded listings for current venue to a persisted state file path configured for the venue.
+_Example_: Positive reply
 
-[cols="25,75"]
+[,http]
+----
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "result" : "The market was successfully resumed."
+}
+----
+
+_Example_: Reply if the phase is not currently halted
+
+[,http]
+----
+HTTP/1.1 409 Conflict
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "There is no halt request to terminate."
+}
+----
+
+[[admincmds-simstate]]
+=== Market Simulator State
+Manage the current state of traded market listings and settings for each market simulator venue instance.
+
+_Response Properties_
+
+[1,1,1]
 |===
-| Status Code | Response 
+| Path | Type |Description
 
-| 201 CREATED	a| 
-
-[cols="1"]
-
-!===
-1+! 
-
-a!
-[,json]
-----
-{
-    "result": "Matching engine state has been successfully persisted." 
-}
-----
-!===
-
-| 403 FORBIDDEN a| 
-[cols="1"]
-
-!===
-1+! 
-
-a!
-[,json]
-----
-{
-    "result": "Persistence is disabled."
-}
-----
-!===
-
-| 409 CONFLICT	a| 
-[cols="1"]
-
-!===
-1+! 
-
-a!
-[,json]
-----
-{
-    "result": "The persistence file path is empty."
-}
-----
-!===
-
-| 409 CONFLICT	a| 
-[cols="1"]
-
-!===
-1+! 
-
-a!
-[,json]
-----
-{
-    "result": "The persistence file path is unreachable."
-}
-----
-!===
-
-| 409 CONFLICT	a| 
-[cols="1"]
-
-!===
-1+! 
-
-a!
-[,json]
-----
-{
-    "result": "An error occurs when opening the persistence file."
-}
-----
-!===
-
-| 409 CONFLICT	a| 
-[cols="1"]
-
-!===
-1+! 
-
-a!
-[,json]
-----
-{
-    "result": "An error occurs when writing to the persistence file."
-}
-----
-!===
-
+| result | Text | Explanation of HTTP code received in response to request
 |===
+
+[[admincmds-simstate-storerecover]]
+==== Store/Recover Market State For Single Venue
+Store or recover current market state of traded listings for a single market simulator venue instance with a persisted state file. This includes only the live market state of each traded listing, not the configured settings from the database. See <<general-persiststate,this section>> for more information about persisted market state.
+
+Store or recover market state for current market simulator venue with configured persisted state file.
 
 _Resource URI_
 
 ----
-POST /api/store
+POST /api/[store|recover]
 ----
 
-_Example_: Store state for current venue
+Store or recover market state for specific market simulator venue with configured persisted state file.
+
+_Resource URI_
+
+----
+POST /api/[store|recover]/{venueId}
+----
+
+_Example_: Store market state for current venue
 
 [,http]
 ----
@@ -552,15 +668,7 @@ Content-Length: XXX
 }
 ----
 
-Store current state of active traded listings for a specific venue to a persisted state file path configured for the venue.
-
-_Resource URI_
-
-----
-POST /api/store/{venueId}
-----
-
-_Example_: Store state for venue LSE
+_Example_: Store market state for a specific venue
 
 [,http]
 ----
@@ -582,121 +690,7 @@ Content-Length: XXX
 }
 ----
 
-[[admincmds-persisstate-recover]]
-==== Recover Market State for Single Venue
-Recover state of active traded listings for current venue from a persisted state file configured for the venue.
-
-[cols="25,75"]
-|===
-| Status Code | Response 
-
-| 201 CREATED	a| 
-
-[cols="1"]
-
-!===
-1+! 
-
-a!
-[,json]
-----
-{
-    "result": "Matching engine state has been successfully recovered." 
-}
-----
-!===
-
-| 403 FORBIDDEN a| 
-[cols="1"]
-
-!===
-1+! 
-
-a!
-[,json]
-----
-{
-    "result": "Persistence is disabled."
-}
-----
-!===
-
-| 409 CONFLICT	a| 
-[cols="1"]
-
-!===
-1+! 
-
-a!
-[,json]
-----
-{
-    "result": "The persistence file path is empty."
-}
-----
-!===
-
-| 409 CONFLICT	a| 
-[cols="1"]
-
-!===
-1+! 
-
-a!
-[,json]
-----
-{
-    "result": "The persistence file path is unreachable."
-}
-----
-!===
-
-| 409 CONFLICT	a| 
-[cols="1"]
-
-!===
-1+! 
-
-a!
-[,json]
-----
-{
-    "result": "An error occurs when opening the persistence file."
-}
-----
-!===
-
-| 409 CONFLICT	a| 
-[cols="1"]
-
-!===
-1+! 
-
-a!
-[,json]
-----
-{
-    "result": "The persistence file is malformed."
-}
-----
-or
-[,json]
-----
-{
-    "result": "The persistence file is malformed: {}"
-}
-----
-where “{}” is a placeholder for the details of the error.
-!===
-|===
-
-_Resource URI_
-
-----
-POST /api/recover
-----
-
-_Example_: Recover state for current venue
+_Example_: Recover market state for current venue
 
 [,http]
 ----
@@ -718,15 +712,7 @@ Content-Length: XXX
 }
 ----
 
-Recover state of active traded listings for a specific venue from a persisted state file configured for the venue.
-
-_Resource URI_
-
-----
-POST /api/recover/{venueId}
-----
-
-_Example_: Recover state for venue LSE
+_Example_: Recover market state for a specific venue
 
 [,http]
 ----
@@ -745,5 +731,74 @@ Content-Length: XXX
 
 {
     "result" : "Matching engine state has been successfully recovered"
+}
+----
+
+[[admincmds-simstate-reset]]
+==== Reset Configured State For Single Venue
+
+Reset configured initial state for a single market simulator venue instance from database settings. All simulator settings will be refreshed from the database. If the venue is configured with persistenceEnabled = true, like a normal simulator startup sequence, the listings specified in the configured persistence file path for that venue will have their market state restored, and any other active traded listings will have their market states cleared. Random order generation and historical data playback will also be stopped, and only restarted if the venue is configured with orderOnStartup = true. The REST and FIX engines will also be reset during this time, causing active connections to be disrupted.
+
+The simulator XML file configuration and FIX file configuration will not be reloaded during a reset. A physical restart of the market simulator process is required to reload these settings.
+
+WARNING: Changing the venueId of the venue associated with the simulator instance or the configured restPort for a live running market simulator instance before resetting the configured state is not supported and will likely have unstable results.
+
+Reset configured state for current market simulator venue.
+
+_Resource URI_
+
+----
+POST /api/reset
+----
+
+Reset configured state for a specific market simulator venue.
+
+_Resource URI_
+
+----
+POST /api/reset/{venueId}
+----
+
+_Example_: Reset configured state for current venue
+
+[,http]
+----
+POST /api/reset HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+----
+
+_Example_: Positive reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "result" : "Resetting the venue state starts."
+}
+----
+
+_Example_: Reset configured state for a specific venue
+
+[,http]
+----
+POST /api/reset/LSE HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+----
+
+_Example_: Positive reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "result" : "Resetting the venue state starts."
 }
 ----

@@ -8,8 +8,10 @@ namespace simulator {
 
 class HttpServer {
  public:
-  explicit HttpServer(data_layer::database::Context database)
-      : http_server_(http::create_http_server(std::move(database))) {}
+  explicit HttpServer(data_layer::database::Context database,
+                      http::ControlCallbacks callbacks)
+      : http_server_(http::create_http_server(std::move(database),
+                                              std::move(callbacks))) {}
 
   auto launch() -> void { http::launch_http_server(http_server_); }
 

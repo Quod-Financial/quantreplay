@@ -20,10 +20,8 @@ CsvReader::CsvReader(historical::CsvParsingParams params,
     : parsing_params_(std::move(params)),
       mapping_params_{std::move(mapping_params)} {
   load_csv_data(reader);
-
-  auto depth_config = make_depth_config(reader);
-  depth_ = depth_config.depth_to_parse;
-  init_mapping_params(reader, std::move(depth_config));
+  init_mapping_params(reader);
+  depth_ = mapping_params_.max_depth();
 }
 
 auto CsvReader::create(historical::CsvParsingParams parsing_params,
@@ -58,13 +56,13 @@ auto CsvReader::has_next_record() const noexcept -> bool {
   return next_row_index_ < extracted_rows_.size();
 }
 
-auto CsvReader::parse_next_record(historical::Record::Builder& builder)
+auto CsvReader::parse_next_record(std::unique_ptr<Record::Builder>& builder)
     -> void {
   assert(has_next_record());
 
   auto [row_number, csv_row] = extracted_rows_[next_row_index_++];
 
-  builder.with_source_row(row_number)
+  builder->with_source_row(row_number)
       .with_source_name(parsing_params_.datasource_name())
       .with_source_connection(parsing_params_.datasource_connection());
 
@@ -72,23 +70,14 @@ auto CsvReader::parse_next_record(historical::Record::Builder& builder)
   historical::parse(row, builder, mapping_params_, depth_);
 }
 
-auto CsvReader::make_depth_config(const csv::CSVReader& reader) const
-    -> mapping::DepthConfig {
-  const auto data_depth =
-      mapping::depth_from_columns_number(columns_number(reader));
-  const auto depth_to_parse = mapping::depth_to_parse(
-      data_depth, parsing_params_.datasource_max_depth_levels());
-  return {.datasource_depth = data_depth, .depth_to_parse = depth_to_parse};
-}
-
-auto CsvReader::init_mapping_params(const csv::CSVReader& reader,
-                                    mapping::DepthConfig depth_config) -> void {
+auto CsvReader::init_mapping_params(const csv::CSVReader& reader) -> void {
   if (parsing_params_.has_header_row()) {
     std::vector<std::string> columns_names = reader.get_col_names();
     mapping_params_.initialize(std::move(columns_names),
-                               std::move(depth_config));
+                               parsing_params_.datasource_max_depth_levels());
   } else {
-    mapping_params_.initialize(std::move(depth_config));
+    mapping_params_.initialize(columns_number(reader),
+                               parsing_params_.datasource_max_depth_levels());
   }
 }
 

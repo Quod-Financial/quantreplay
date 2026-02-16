@@ -1,7 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "core/common/enum_converter.hpp"
+#include "core/common/json/enum_converter.hpp"
 #include "core/common/json/type_enum.hpp"
+#include "test_utils/utils.hpp"
 
 namespace simulator::core::json::test {
 namespace {
@@ -9,8 +10,9 @@ namespace {
 enum class JsonTestEnum : std::uint8_t { Option1, Option2 };
 
 template <>
-inline simulator::core::EnumConverter<simulator::core::json::test::JsonTestEnum>
-    simulator::core::EnumConverter<
+inline simulator::core::json::EnumConverter<
+    simulator::core::json::test::JsonTestEnum>
+    simulator::core::json::EnumConverter<
         simulator::core::json::test::JsonTestEnum>::instance_{{
         {simulator::core::json::test::JsonTestEnum::Option1, "Option1"},
         {simulator::core::json::test::JsonTestEnum::Option2, "Option2"},
@@ -43,7 +45,9 @@ struct CoreJsonEnumWriter : public ::testing::Test {
 
 TEST_F(CoreJsonEnumWriter, ThrowsExceptionOnWritingInvalidEnum) {
   ASSERT_THROW(Type<JsonTestEnum>::write_json_value(
-                   value, doc.GetAllocator(), static_cast<JsonTestEnum>(-1)),
+                   value,
+                   doc.GetAllocator(),
+                   core::test::invalid_enum_value<JsonTestEnum>()),
                std::runtime_error);
 }
 

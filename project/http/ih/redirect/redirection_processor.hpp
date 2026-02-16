@@ -15,19 +15,28 @@ namespace simulator::http::redirect {
 
 class RedirectionProcessor {
  public:
-  RedirectionProcessor() = delete;
+  virtual ~RedirectionProcessor() = default;
 
-  explicit RedirectionProcessor(
-      const data_bridge::VenueAccessor& venue_accessor);
+  virtual auto redirect_to_venue(const std::string& venue_id,
+                                 Pistache::Http::Method method,
+                                 const std::string& url) const -> Result = 0;
+};
 
-  RedirectionProcessor(std::shared_ptr<Resolver> resolver,
-                       std::shared_ptr<Redirector> redirector) noexcept;
+class RedirectionProcessorImpl : public RedirectionProcessor {
+ public:
+  RedirectionProcessorImpl() = delete;
+
+  explicit RedirectionProcessorImpl(
+      std::shared_ptr<data_bridge::VenueAccessor> venue_accessor);
+
+  RedirectionProcessorImpl(std::shared_ptr<Resolver> resolver,
+                           std::shared_ptr<Redirector> redirector) noexcept;
 
   auto redirect_to_venue(const std::string& venue_id,
                          Pistache::Http::Method method,
-                         const std::string& url) const -> Result;
+                         const std::string& url) const -> Result override;
 
-  static auto create(const data_bridge::VenueAccessor& venue_accessor)
+  static auto create(std::shared_ptr<data_bridge::VenueAccessor> venue_accessor)
       -> std::shared_ptr<RedirectionProcessor>;
 
  private:

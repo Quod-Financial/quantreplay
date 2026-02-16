@@ -6,7 +6,7 @@
 #include "core/domain/instrument_descriptor.hpp"
 #include "ih/lookup/currency_category.hpp"
 
-namespace simulator::trading_system::instrument::tests {
+namespace simulator::trading_system::instrument::test {
 namespace {
 
 using namespace testing;  // NOLINT
@@ -15,7 +15,8 @@ struct InstrumentsCurrencyCategory
     : public TestWithParam<
           std::pair<std::optional<SecurityType>,
                     std::optional<instrument::CurrencyCategory>>> {
-  static auto make_instrument(std::optional<SecurityType> security_type) {
+  static auto make_instrument(std::optional<SecurityType> security_type)
+      -> Instrument {
     Instrument instrument;
     instrument.security_type = security_type;
     return instrument;
@@ -68,4 +69,4 @@ INSTANTIATE_TEST_SUITE_P(CurrencyCategory, InstrumentsCurrencyCategory,
 // clang-format on
 
 }  // namespace
-}  // namespace simulator::trading_system::instrument::tests
+}  // namespace simulator::trading_system::instrument::test

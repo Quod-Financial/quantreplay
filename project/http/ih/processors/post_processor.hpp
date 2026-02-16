@@ -7,6 +7,8 @@
 #include <memory>
 #include <string>
 
+#include "http/http.hpp"
+#include "ih/controllers/app_controller.hpp"
 #include "ih/controllers/datasource_controller.hpp"
 #include "ih/controllers/listing_controller.hpp"
 #include "ih/controllers/price_seed_controller.hpp"
@@ -21,31 +23,105 @@ namespace simulator::http {
 
 class PostProcessor {
  public:
-  PostProcessor(const data_bridge::VenueAccessor& venue_accessor,
-                const DatasourceController& datasource_controller,
-                const ListingController& listing_controller,
-                const PriceSeedController& price_seed_controller,
-                const SettingController& setting_controller,
-                const TradingController& trading_controller,
-                const VenueController& venue_controller);
+  virtual ~PostProcessor() = default;
+
+  virtual auto add_venue(const Pistache::Rest::Request& request,
+                         Pistache::Http::ResponseWriter response) -> void = 0;
+
+  virtual auto add_listing(const Pistache::Rest::Request& request,
+                           Pistache::Http::ResponseWriter response) -> void = 0;
+
+  virtual auto add_data_source(const Pistache::Rest::Request& request,
+                               Pistache::Http::ResponseWriter response)
+      -> void = 0;
+
+  virtual auto add_price_seed(const Pistache::Rest::Request& request,
+                              Pistache::Http::ResponseWriter response)
+      -> void = 0;
+
+  virtual auto sync_price_seeds(const Pistache::Rest::Request& request,
+                                Pistache::Http::ResponseWriter response)
+      -> void = 0;
+
+  virtual auto stop_order_gen(const Pistache::Rest::Request& request,
+                              Pistache::Http::ResponseWriter response)
+      -> void = 0;
+
+  virtual auto start_order_gen(const Pistache::Rest::Request& request,
+                               Pistache::Http::ResponseWriter response)
+      -> void = 0;
+
+  virtual auto halt_phase(const Pistache::Rest::Request& request,
+                          Pistache::Http::ResponseWriter response) -> void = 0;
+
+  virtual auto resume_phase(const Pistache::Rest::Request& request,
+                            Pistache::Http::ResponseWriter response)
+      -> void = 0;
+
+  virtual auto handle_store_request(const Pistache::Rest::Request& request,
+                                    Pistache::Http::ResponseWriter response)
+      -> void = 0;
+
+  virtual auto handle_recover_request(const Pistache::Rest::Request& request,
+                                      Pistache::Http::ResponseWriter response)
+      -> void = 0;
+
+  virtual auto reset_app(const Pistache::Rest::Request& request,
+                         Pistache::Http::ResponseWriter response) -> void = 0;
+};
+
+class PostProcessorImpl : public PostProcessor {
+ public:
+  PostProcessorImpl(std::shared_ptr<redirect::RedirectionProcessor> redirector,
+                    std::shared_ptr<DatasourceController> datasource_controller,
+                    std::shared_ptr<ListingController> listing_controller,
+                    std::shared_ptr<PriceSeedController> price_seed_controller,
+                    std::shared_ptr<SettingController> setting_controller,
+                    std::shared_ptr<TradingController> trading_controller,
+                    std::shared_ptr<VenueController> venue_controller,
+                    std::unique_ptr<AppController> app_controller,
+                    std::string venue_name);
 
   auto add_venue(const Pistache::Rest::Request& request,
-                 Pistache::Http::ResponseWriter response) -> void;
+                 Pistache::Http::ResponseWriter response) -> void override;
 
   auto add_listing(const Pistache::Rest::Request& request,
-                   Pistache::Http::ResponseWriter response) -> void;
+                   Pistache::Http::ResponseWriter response) -> void override;
 
   auto add_data_source(const Pistache::Rest::Request& request,
-                       Pistache::Http::ResponseWriter response) -> void;
+                       Pistache::Http::ResponseWriter response)
+      -> void override;
 
   auto add_price_seed(const Pistache::Rest::Request& request,
-                      Pistache::Http::ResponseWriter response) -> void;
+                      Pistache::Http::ResponseWriter response) -> void override;
+
+  auto sync_price_seeds(const Pistache::Rest::Request& request,
+                        Pistache::Http::ResponseWriter response)
+      -> void override;
+
+  auto stop_order_gen(const Pistache::Rest::Request& request,
+                      Pistache::Http::ResponseWriter response) -> void override;
+
+  auto start_order_gen(const Pistache::Rest::Request& request,
+                       Pistache::Http::ResponseWriter response)
+      -> void override;
+
+  auto halt_phase(const Pistache::Rest::Request& request,
+                  Pistache::Http::ResponseWriter response) -> void override;
+
+  auto resume_phase(const Pistache::Rest::Request& request,
+                    Pistache::Http::ResponseWriter response) -> void override;
 
   auto handle_store_request(const Pistache::Rest::Request& request,
-                            Pistache::Http::ResponseWriter response) -> void;
+                            Pistache::Http::ResponseWriter response)
+      -> void override;
 
   auto handle_recover_request(const Pistache::Rest::Request& request,
-                              Pistache::Http::ResponseWriter response) -> void;
+                              Pistache::Http::ResponseWriter response)
+      -> void override;
+
+  auto reset_app(const Pistache::Rest::Request& request,
+                 Pistache::Http::ResponseWriter response) -> void override;
 
  private:
   static auto respond(const Pistache::Rest::Request& request,
@@ -56,14 +132,24 @@ class PostProcessor {
   auto redirect(const Pistache::Rest::Request& request,
                 const std::string& instance_id) const -> redirect::Result;
 
+  auto handle_generation_stop_request(const Pistache::Rest::Request& request,
+                                      Pistache::Http::ResponseWriter response)
+      -> void;
+
+  auto handle_generation_start_request(const Pistache::Rest::Request& request,
+                                       Pistache::Http::ResponseWriter response)
+      -> void;
+
   std::shared_ptr<redirect::RedirectionProcessor> redirector_;
 
-  std::reference_wrapper<const DatasourceController> datasource_controller_;
-  std::reference_wrapper<const ListingController> listing_controller_;
-  std::reference_wrapper<const PriceSeedController> price_seed_controller_;
-  std::reference_wrapper<const SettingController> setting_controller_;
-  std::reference_wrapper<const TradingController> trading_controller_;
-  std::reference_wrapper<const VenueController> venue_controller_;
+  std::shared_ptr<DatasourceController> datasource_controller_;
+  std::shared_ptr<ListingController> listing_controller_;
+  std::shared_ptr<PriceSeedController> price_seed_controller_;
+  std::shared_ptr<SettingController> setting_controller_;
+  std::shared_ptr<TradingController> trading_controller_;
+  std::shared_ptr<VenueController> venue_controller_;
+  std::unique_ptr<AppController> app_controller_;
+  std::string venue_id_;
 };
 
 }  // namespace simulator::http

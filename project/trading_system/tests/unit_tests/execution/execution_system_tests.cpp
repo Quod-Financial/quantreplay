@@ -2,7 +2,7 @@
 
 #include <tl/expected.hpp>
 
-#include "common/market_state/snapshot.hpp"
+#include "common/instrument_state.hpp"
 #include "ih/execution/execution_system.hpp"
 #include "instruments/lookup_error.hpp"
 #include "instruments/view.hpp"
@@ -36,6 +36,19 @@ struct TradingSystemExecutionSystem : public Test {
   template <typename RequestType>
   static auto make_external_request() -> RequestType {
     return RequestType{make_session()};
+  }
+
+  static auto make_store_vector(
+      const std::vector<Instrument>& instruments,
+      std::vector<market_state::InstrumentState>& state)
+      -> std::vector<std::pair<InstrumentId, market_state::InstrumentState&>> {
+    std::vector<std::pair<InstrumentId, market_state::InstrumentState&>>
+        store_vector;
+    store_vector.reserve(instruments.size());
+    for (std::size_t i = 0; i < instruments.size(); ++i) {
+      store_vector.emplace_back(instruments[i].identifier, state[i]);
+    }
+    return store_vector;
   }
 
  private:
@@ -159,42 +172,47 @@ TEST_F(TradingSystemExecutionSystem,
 }
 
 TEST_F(TradingSystemExecutionSystem, StoresStateForTwoInstruments) {
-  std::vector<market_state::InstrumentState> instruments(
+  std::vector<market_state::InstrumentState> states(
       2, market_state::InstrumentState{});
+  std::vector<Instrument> instruments;
+  instrument.identifier = InstrumentId{1};
+  instruments.push_back(instrument);
+  instrument.identifier = InstrumentId{2};
+  instruments.push_back(instrument);
 
   EXPECT_CALL(repository_accessor, unicast_impl(_, _)).Times(2);
 
-  execution_system.store_state_request(instruments);
+  execution_system.store_state_request(make_store_vector(instruments, states));
 }
 
 TEST_F(TradingSystemExecutionSystem, RecoverStateResolvesEachInstrument) {
-  market_state::InstrumentState state1;
-  state1.instrument.symbol = Symbol{"AAPL"};
-  market_state::InstrumentState state2;
-  state2.instrument.symbol = Symbol{"TSLA"};
+  market_state::InstrumentData data1;
+  data1.specification.symbol = Symbol{"AAPL"};
+  market_state::InstrumentData data2;
+  data2.specification.symbol = Symbol{"TSLA"};
 
-  const std::vector<market_state::InstrumentState> instruments_state{state1,
-                                                                     state2};
+  const std::vector<market_state::InstrumentData> data{data1, data2};
 
-  ON_CALL(instrument_resolver, resolve_instrument(A<const Instrument&>()))
+  ON_CALL(instrument_resolver,
+          resolve_instrument(
+              A<const instrument::Cache::InstrumentSpecification&>()))
       .WillByDefault(Return(
           tl::make_unexpected(instrument::LookupError::InstrumentNotFound)));
 
-  EXPECT_CALL(instrument_resolver, resolve_instrument(state1.instrument));
-  EXPECT_CALL(instrument_resolver, resolve_instrument(state2.instrument));
+  EXPECT_CALL(instrument_resolver, resolve_instrument(data1.specification));
+  EXPECT_CALL(instrument_resolver, resolve_instrument(data2.specification));
 
-  execution_system.recover_state_request(instruments_state);
+  execution_system.recover_state_request(data);
 }
 
 TEST_F(TradingSystemExecutionSystem,
        RecoverStatePassesLambdaToCorrespondingEngine) {
-  market_state::InstrumentState state1;
-  state1.instrument.symbol = Symbol{"AAPL"};
-  market_state::InstrumentState state2;
-  state2.instrument.symbol = Symbol{"TSLA"};
+  market_state::InstrumentData data1;
+  data1.specification.symbol = Symbol{"AAPL"};
+  market_state::InstrumentData data2;
+  data2.specification.symbol = Symbol{"TSLA"};
 
-  const std::vector<market_state::InstrumentState> instruments_state{state1,
-                                                                     state2};
+  const std::vector<market_state::InstrumentData> data{data1, data2};
 
   Instrument instrument1;
   instrument1.symbol = Symbol{"AAPL"};
@@ -203,15 +221,15 @@ TEST_F(TradingSystemExecutionSystem,
   instrument2.symbol = Symbol{"TSLA"};
   instrument2.identifier = InstrumentId{4};
 
-  ON_CALL(instrument_resolver, resolve_instrument(state1.instrument))
+  ON_CALL(instrument_resolver, resolve_instrument(data1.specification))
       .WillByDefault(Return(instrument::View{instrument1}));
-  ON_CALL(instrument_resolver, resolve_instrument(state2.instrument))
+  ON_CALL(instrument_resolver, resolve_instrument(data2.specification))
       .WillByDefault(Return(instrument::View{instrument2}));
 
   EXPECT_CALL(repository_accessor, unicast_impl(instrument1.identifier, _));
   EXPECT_CALL(repository_accessor, unicast_impl(instrument2.identifier, _));
 
-  execution_system.recover_state_request(instruments_state);
+  execution_system.recover_state_request(data);
 }
 
 TEST_F(TradingSystemExecutionSystem, BroadcastSessionTerminatedEvent) {

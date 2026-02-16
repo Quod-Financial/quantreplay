@@ -1,7 +1,7 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_MARKET_DATA_VALIDATION_VALIDATOR_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_MARKET_DATA_VALIDATION_VALIDATOR_HPP_
 
-#include "common/market_state/snapshot.hpp"
+#include "common/instrument_state.hpp"
 #include "ih/common/validation/conclusion.hpp"
 
 namespace simulator::trading_system::matching_engine::mdata {

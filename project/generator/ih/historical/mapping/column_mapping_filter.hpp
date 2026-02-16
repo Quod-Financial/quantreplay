@@ -2,6 +2,8 @@
 #define SIMULATOR_GENERATOR_IH_HISTORICAL_MAPPING_COLUMN_MAPPING_FILTER_HPP_
 
 #include <cstdint>
+#include <map>
+#include <string>
 #include <vector>
 
 #include "data_layer/api/converters/column_mapping.hpp"
@@ -9,9 +11,8 @@
 
 namespace simulator::generator::historical::mapping {
 
-auto filter(const std::vector<data_layer::ColumnMapping>& mapping_configs,
-            std::uint32_t depth_to_parse)
-    -> std::vector<data_layer::converter::ColumnConfig>;
+auto filter(const std::vector<data_layer::ColumnMapping>& mapping_configs)
+    -> std::map<data_layer::converter::ColumnFrom, std::string>;
 
 }  // namespace simulator::generator::historical::mapping
 

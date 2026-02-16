@@ -25,8 +25,13 @@ add_static_library(
     ih/execution/reject_notifier.hpp
     ih/repository/repository_accessor.hpp
     ih/repository/trading_engines_repository.hpp
+    ih/state_persistence/json/detail/models.hpp
+    ih/state_persistence/json/detail/reader.hpp
+    ih/state_persistence/json/detail/writer.hpp
+    ih/state_persistence/json/snapshot.hpp
     ih/state_persistence/market_state_persistence_controller.hpp
     ih/state_persistence/serializer.hpp
+    ih/state_persistence/snapshot.hpp
     ih/tools/instrument_resolver.hpp
     ih/tools/loaders.hpp
     ih/tools/trading_engine_factory.hpp
@@ -39,6 +44,10 @@ add_static_library(
     src/execution/reject_notifier.cpp
     src/repository/repository_accessor.cpp
     src/repository/trading_engines_repository.cpp
+    src/state_persistence/json/detail/enumerators.cpp
+    src/state_persistence/json/detail/reader.cpp
+    src/state_persistence/json/detail/writer.cpp
+    src/state_persistence/json/snapshot.cpp
     src/state_persistence/market_state_persistence_controller.cpp
     src/state_persistence/serializer.cpp
     src/tools/instrument_resolver.cpp
@@ -63,6 +72,7 @@ add_static_library(
     simulator::data_layer
     date::date
     fmt::fmt
+    tl::expected
     tl::function-ref
     Microsoft.GSL::GSL)
 

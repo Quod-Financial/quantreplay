@@ -44,6 +44,7 @@ add_static_library(
     ih/pqxx/queries/datasource_queries.hpp
     ih/pqxx/queries/listing_queries.hpp
     ih/pqxx/queries/price_seed_queries.hpp
+    ih/pqxx/queries/setting_queries.hpp
     ih/pqxx/queries/venue_queries.hpp
     ih/pqxx/result/detail/basic_row_parser.hpp
     ih/pqxx/result/datasource_parser.hpp
@@ -66,6 +67,7 @@ add_static_library(
     include/data_layer/api/models/datasource.hpp
     include/data_layer/api/models/listing.hpp
     include/data_layer/api/models/market_phase.hpp
+    include/data_layer/api/models/patch_field.hpp
     include/data_layer/api/models/price_seed.hpp
     include/data_layer/api/models/setting.hpp
     include/data_layer/api/models/venue.hpp

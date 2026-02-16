@@ -20,7 +20,6 @@ class VenueEntryReader {
   auto operator()(const data_layer::Venue& record) const -> void;
 
  private:
-
   gsl::not_null<Config*> destination_;
 };
 

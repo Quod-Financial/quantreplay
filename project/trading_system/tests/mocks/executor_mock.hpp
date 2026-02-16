@@ -35,11 +35,12 @@ struct ExecutorMock : public Executor {
               (const, override));
   MOCK_METHOD(void,
               store_state_request,
-              (std::vector<market_state::InstrumentState>&),
+              ((const std::vector<
+                  std::pair<InstrumentId, market_state::InstrumentState&>>&)),
               (const, override));
   MOCK_METHOD(void,
               recover_state_request,
-              (std::vector<market_state::InstrumentState>),
+              (std::vector<market_state::InstrumentData>),
               (const, override));
   MOCK_METHOD(void,
               handle,

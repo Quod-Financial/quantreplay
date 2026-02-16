@@ -11,7 +11,8 @@ namespace simulator::http {
 struct Server::Implementation {
  public:
   Implementation(std::uint16_t accept_port,
-                 data_layer::database::Context database);
+                 data_layer::database::Context database,
+                 ControlCallbacks callbacks);
 
   auto launch() -> void;
 
@@ -21,7 +22,8 @@ struct Server::Implementation {
   static auto create_endpoint(std::uint16_t accept_port)
       -> std::unique_ptr<Pistache::Http::Endpoint>;
 
-  auto setup_handler(data_layer::database::Context database) -> void;
+  auto setup_handler(data_layer::database::Context database,
+                     ControlCallbacks callbacks) -> void;
 
   std::unique_ptr<Pistache::Http::Endpoint> endpoint_;
 };

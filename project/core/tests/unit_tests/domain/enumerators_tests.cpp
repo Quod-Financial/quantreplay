@@ -68,7 +68,6 @@ INSTANTIATE_TEST_SUITE_P(
            std::make_pair("BrokerOfCredit", PartyRole::Option::BrokerOfCredit),
            std::make_pair("ClientID", PartyRole::Option::ClientID),
            std::make_pair("ClearingFirm", PartyRole::Option::ClearingFirm),
-           std::make_pair("ClearingFirm", PartyRole::Option::ClearingFirm),
            std::make_pair("InvestorID", PartyRole::Option::InvestorID),
            std::make_pair("IntroducingFirm", PartyRole::Option::IntroducingFirm),
            std::make_pair("EnteringFirm", PartyRole::Option::EnteringFirm),
@@ -78,6 +77,7 @@ INSTANTIATE_TEST_SUITE_P(
            std::make_pair("OrderOriginationTrader", PartyRole::Option::OrderOriginationTrader),
            std::make_pair("ExecutingTrader", PartyRole::Option::ExecutingTrader),
            std::make_pair("OrderOriginationFirm", PartyRole::Option::OrderOriginationFirm),
+           std::make_pair("GiveupClearingFirmDepr", PartyRole::Option::GiveupClearingFirmDepr),
            std::make_pair("CorrespondantClearingFirm", PartyRole::Option::CorrespondantClearingFirm),
            std::make_pair("ExecutingSystem", PartyRole::Option::ExecutingSystem),
            std::make_pair("ContraFirm", PartyRole::Option::ContraFirm),
@@ -170,6 +170,7 @@ INSTANTIATE_TEST_SUITE_P(
            std::make_pair("ExerciseNoticeReceiver", PartyRole::Option::ExerciseNoticeReceiver),
            std::make_pair("RateReferenceBank", PartyRole::Option::RateReferenceBank),
            std::make_pair("Correspondent", PartyRole::Option::Correspondent),
+           std::make_pair("BeneficiaryBank", PartyRole::Option::BeneficiaryBank),
            std::make_pair("Borrower", PartyRole::Option::Borrower),
            std::make_pair("PrimaryObligator", PartyRole::Option::PrimaryObligator),
            std::make_pair("Guarantor", PartyRole::Option::Guarantor),
@@ -187,7 +188,10 @@ INSTANTIATE_TEST_SUITE_P(
            std::make_pair("CSDParticipant", PartyRole::Option::CSDParticipant),
            std::make_pair("Issuer", PartyRole::Option::Issuer),
            std::make_pair("ContraCustomerAccount", PartyRole::Option::ContraCustomerAccount),
-           std::make_pair("ContraInvestmentDecisionMaker", PartyRole::Option::ContraInvestmentDecisionMaker)));
+           std::make_pair("ContraInvestmentDecisionMaker", PartyRole::Option::ContraInvestmentDecisionMaker),
+           std::make_pair("AuthorizingPerson", PartyRole::Option::AuthorizingPerson),
+           std::make_pair("PrimaryPlaceOfListing", PartyRole::Option::PrimaryPlaceOfListing),
+           std::make_pair("SecondaryPlaceOfListing", PartyRole::Option::SecondaryPlaceOfListing)));
 // clang-format on
 
 struct CoreExecutionTypeFormatting
@@ -318,7 +322,8 @@ INSTANTIATE_TEST_SUITE_P(
            std::make_pair(PartyIdSource::Option::IndiaPermanentAccountNumber, "IndiaPermanentAccountNumber"),
            std::make_pair(PartyIdSource::Option::FDID, "FDID"),
            std::make_pair(PartyIdSource::Option::SPSAID, "SPSAID"),
-           std::make_pair(PartyIdSource::Option::MasterSPSAID, "MasterSPSAID")));
+           std::make_pair(PartyIdSource::Option::MasterSPSAID, "MasterSPSAID"),
+           std::make_pair(PartyIdSource::Option::KoreaShortSellingRegistrationNumber, "KoreaShortSellingRegistrationNumber")));
 // clang-format on
 
 struct CorePartyRoleFormatting
@@ -345,7 +350,6 @@ INSTANTIATE_TEST_SUITE_P(
            std::make_pair(PartyRole::Option::BrokerOfCredit, "BrokerOfCredit"),
            std::make_pair(PartyRole::Option::ClientID, "ClientID"),
            std::make_pair(PartyRole::Option::ClearingFirm, "ClearingFirm"),
-           std::make_pair(PartyRole::Option::ClearingFirm, "ClearingFirm"),
            std::make_pair(PartyRole::Option::InvestorID, "InvestorID"),
            std::make_pair(PartyRole::Option::IntroducingFirm, "IntroducingFirm"),
            std::make_pair(PartyRole::Option::EnteringFirm, "EnteringFirm"),
@@ -355,6 +359,7 @@ INSTANTIATE_TEST_SUITE_P(
            std::make_pair(PartyRole::Option::OrderOriginationTrader, "OrderOriginationTrader"),
            std::make_pair(PartyRole::Option::ExecutingTrader, "ExecutingTrader"),
            std::make_pair(PartyRole::Option::OrderOriginationFirm, "OrderOriginationFirm"),
+           std::make_pair(PartyRole::Option::GiveupClearingFirmDepr, "GiveupClearingFirmDepr"),
            std::make_pair(PartyRole::Option::CorrespondantClearingFirm, "CorrespondantClearingFirm"),
            std::make_pair(PartyRole::Option::ExecutingSystem, "ExecutingSystem"),
            std::make_pair(PartyRole::Option::ContraFirm, "ContraFirm"),
@@ -447,6 +452,7 @@ INSTANTIATE_TEST_SUITE_P(
            std::make_pair(PartyRole::Option::ExerciseNoticeReceiver, "ExerciseNoticeReceiver"),
            std::make_pair(PartyRole::Option::RateReferenceBank, "RateReferenceBank"),
            std::make_pair(PartyRole::Option::Correspondent, "Correspondent"),
+           std::make_pair(PartyRole::Option::BeneficiaryBank, "BeneficiaryBank"),
            std::make_pair(PartyRole::Option::Borrower, "Borrower"),
            std::make_pair(PartyRole::Option::PrimaryObligator, "PrimaryObligator"),
            std::make_pair(PartyRole::Option::Guarantor, "Guarantor"),
@@ -464,7 +470,10 @@ INSTANTIATE_TEST_SUITE_P(
            std::make_pair(PartyRole::Option::CSDParticipant, "CSDParticipant"),
            std::make_pair(PartyRole::Option::Issuer, "Issuer"),
            std::make_pair(PartyRole::Option::ContraCustomerAccount, "ContraCustomerAccount"),
-           std::make_pair(PartyRole::Option::ContraInvestmentDecisionMaker, "ContraInvestmentDecisionMaker")));
+           std::make_pair(PartyRole::Option::ContraInvestmentDecisionMaker, "ContraInvestmentDecisionMaker"),
+           std::make_pair(PartyRole::Option::AuthorizingPerson, "AuthorizingPerson"),
+           std::make_pair(PartyRole::Option::PrimaryPlaceOfListing, "PrimaryPlaceOfListing"),
+           std::make_pair(PartyRole::Option::SecondaryPlaceOfListing, "SecondaryPlaceOfListing")));
 // clang-format on
 
 struct CoreSecurityIdSourceFormatting

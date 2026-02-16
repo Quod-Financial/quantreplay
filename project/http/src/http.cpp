@@ -43,12 +43,14 @@ namespace {
       "database record");
 }
 
-[[nodiscard]] auto create_server_implementation(database::Context db)
+[[nodiscard]] auto create_server_implementation(database::Context db,
+                                                ControlCallbacks callbacks)
     -> std::unique_ptr<Server::Implementation> {
   try {
     const std::uint16_t server_port =
         retrieve_configured_http_port(data_layer::select_simulated_venue(db));
-    return std::make_unique<Server::Implementation>(server_port, std::move(db));
+    return std::make_unique<Server::Implementation>(
+        server_port, std::move(db), std::move(callbacks));
   } catch (const std::exception& exception) {
     log::err("failed to create http server, an error occurred: {}",
              exception.what());
@@ -107,9 +109,10 @@ auto Server::implementation() noexcept -> Implementation& {
 }
 
 Server::Implementation::Implementation(std::uint16_t accept_port,
-                                       database::Context database)
+                                       database::Context database,
+                                       ControlCallbacks callbacks)
     : endpoint_(create_endpoint(accept_port)) {
-  setup_handler(std::move(database));
+  setup_handler(std::move(database), std::move(callbacks));
 }
 
 auto Server::Implementation::launch() -> void { endpoint_->serveThreaded(); }
@@ -121,22 +124,89 @@ auto Server::Implementation::create_endpoint(std::uint16_t accept_port)
   log::debug("creating http server endpoint");
 
   const Pistache::Address address{Pistache::Ipv4::any(), accept_port};
-  const auto options = Pistache::Http::Endpoint::options().threads(1);
+  const auto options = Pistache::Http::Endpoint::options().threads(1).flags(
+      Pistache::Tcp::Options::ReuseAddr);
 
   auto endpoint = std::make_unique<Pistache::Http::Endpoint>(address);
+  endpoint->init(options);
   log::info("created http endpoint configured to listen on port {}",
             accept_port);
 
   return endpoint;
 }
 
-auto Server::Implementation::setup_handler(database::Context database) -> void {
-  endpoint_->setHandler(std::make_shared<Router>(std::move(database)));
+auto Server::Implementation::setup_handler(database::Context database,
+                                           ControlCallbacks callbacks) -> void {
+  auto listing_accessor =
+      std::make_unique<data_bridge::DataLayerListingAccessor>(database);
+  auto setting_accessor =
+      std::make_shared<data_bridge::DataLayerSettingAccessor>(database);
+
+  auto datasource_controller = std::make_shared<DatasourceController>(
+      std::make_unique<data_bridge::DataLayerDatasourceAccessor>(database));
+
+  auto listing_controller =
+      std::make_shared<ListingController>(std::move(listing_accessor));
+
+  auto price_seed_controller = std::make_shared<PriceSeedController>(
+      std::make_unique<data_bridge::DataLayerPriceSeedAccessor>(database),
+      setting_accessor);
+  auto setting_controller =
+      std::make_shared<SettingController>(setting_accessor);
+
+  auto trading_controller = std::make_shared<TradingControllerImpl>();
+
+  auto venue_accessor =
+      std::make_shared<data_bridge::DataLayerVenueAccessor>(database);
+  auto venue_controller = std::make_shared<VenueController>(venue_accessor);
+
+  auto redirector =
+      std::make_shared<redirect::RedirectionProcessorImpl>(venue_accessor);
+
+  const auto venue_name = cfg::venue().name;
+
+  auto app_controller = std::make_unique<AppControllerImpl>(
+      venue_accessor, venue_name, std::move(callbacks));
+
+  auto get_processor = std::make_shared<GetProcessorImpl>(venue_accessor,
+                                                          redirector,
+                                                          datasource_controller,
+                                                          listing_controller,
+                                                          price_seed_controller,
+                                                          setting_controller,
+                                                          venue_controller,
+                                                          venue_name);
+  auto post_processor =
+      std::make_shared<PostProcessorImpl>(redirector,
+                                          datasource_controller,
+                                          listing_controller,
+                                          price_seed_controller,
+                                          setting_controller,
+                                          trading_controller,
+                                          venue_controller,
+                                          std::move(app_controller),
+                                          venue_name);
+  auto put_processor = std::make_shared<PutProcessorImpl>(datasource_controller,
+                                                          listing_controller,
+                                                          price_seed_controller,
+                                                          setting_controller,
+                                                          trading_controller,
+                                                          venue_controller);
+
+  auto delete_processor =
+      std::make_shared<DeleteProcessorImpl>(price_seed_controller);
+
+  endpoint_->setHandler(std::make_shared<Router>(std::move(get_processor),
+                                                 std::move(post_processor),
+                                                 std::move(put_processor),
+                                                 std::move(delete_processor)));
 }
 
-auto create_http_server(database::Context database) -> Server {
+auto create_http_server(database::Context database, ControlCallbacks callbacks)
+    -> Server {
   log::debug("creating http server");
-  Server server{create_server_implementation(std::move(database))};
+  Server server{
+      create_server_implementation(std::move(database), std::move(callbacks))};
   log::info("http server has been created");
   return server;
 }

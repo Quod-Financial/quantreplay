@@ -1,13 +1,13 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "common/market_state/snapshot.hpp"
+#include "common/instrument_state.hpp"
 #include "ih/orders/actions/limit_order_recover.hpp"
 #include "ih/orders/book/order_book.hpp"
 #include "tests/mocks/event_listener_mock.hpp"
 #include "tests/tools/matchers.hpp"
 
-namespace simulator::trading_system::matching_engine {
+namespace simulator::trading_system::matching_engine::test {
 namespace {
 
 using namespace testing;  // NOLINT
@@ -153,7 +153,7 @@ TEST_F(MatchingEngineLimitOrderRecover, RecoversGeneratorSession) {
 TEST_F(MatchingEngineLimitOrderRecover, RecoversInstrumentDescriptor) {
   InstrumentDescriptor descriptor;
   descriptor.currency = std::make_optional(Currency{"USD"});
-  market_state_order.client_instrument_descriptor = descriptor;
+  market_state_order.client_instrument_descriptor = {descriptor};
 
   recover(std::move(market_state_order));
   ASSERT_THAT(order_book.buy_page().limit_orders(),
@@ -228,4 +228,4 @@ TEST_F(MatchingEngineLimitOrderRecover, EmitsOrderAddedOnRecover) {
 }
 
 }  // namespace
-}  // namespace simulator::trading_system::matching_engine
+}  // namespace simulator::trading_system::matching_engine::test

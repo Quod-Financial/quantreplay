@@ -58,7 +58,8 @@ enum class PartyIdentifierSource : std::uint8_t {
   IndiaPermanentAccountNumber,
   FDID,
   SPSAID,
-  MasterSPSAID
+  MasterSPSAID,
+  KoreaShortSellingRegistrationNumber
 };
 
 enum class PartyRole : std::uint8_t {
@@ -75,6 +76,7 @@ enum class PartyRole : std::uint8_t {
   OrderOriginationTrader,
   ExecutingTrader,
   OrderOriginationFirm,
+  GiveupClearingFirmDepr,
   CorrespondantClearingFirm,
   ExecutingSystem,
   ContraFirm,
@@ -185,7 +187,10 @@ enum class PartyRole : std::uint8_t {
   CSDParticipant,
   Issuer,
   ContraCustomerAccount,
-  ContraInvestmentDecisionMaker
+  ContraInvestmentDecisionMaker,
+  AuthorizingPerson,
+  PrimaryPlaceOfListing,
+  SecondaryPlaceOfListing
 };
 
 enum class SecurityIdSource : std::uint8_t {

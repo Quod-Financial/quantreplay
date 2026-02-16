@@ -2,7 +2,6 @@
 #define SIMULATOR_MATCHING_ENGINE_IH_DISPATCHING_EVENT_DISPATCHER_HPP_
 
 #include <functional>
-#include <vector>
 
 #include "ih/common/abstractions/event_listener.hpp"
 
@@ -21,8 +20,7 @@ class EventDispatcher : public EventListener {
   auto operator=(const EventDispatcher&) -> EventDispatcher& = delete;
   auto operator=(EventDispatcher&&) -> EventDispatcher& = delete;
 
-  using ClientNotificationHandler =
-      std::function<void(ClientNotification)>;
+  using ClientNotificationHandler = std::function<void(ClientNotification)>;
 
   using OrderBookNotificationHandler =
       std::function<void(OrderBookNotification)>;

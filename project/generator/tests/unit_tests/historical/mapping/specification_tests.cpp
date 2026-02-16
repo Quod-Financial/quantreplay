@@ -67,5 +67,21 @@ TEST_F(GeneratorHistoricalMappingSpecification, StoresTwoAssociations) {
   ASSERT_THAT(resolved_source2, HasIndex(source2.index()));
 }
 
+TEST_F(GeneratorHistoricalMappingSpecification, ReturnsMaxStoredDepth) {
+  using ColumnFrom = data_layer::converter::ColumnFrom;
+
+  constexpr SourceColumn source1{1};
+  constexpr SourceColumn source2{2};
+  const auto column_from1 =
+      ColumnFrom::create(ColumnFrom::Column::OfferQuantity, 1u).value();
+  const auto column_from2 =
+      ColumnFrom::create(ColumnFrom::Column::BidPrice, 5u).value();
+
+  specification.associate(column_from1, source1);
+  specification.associate(column_from2, source2);
+
+  ASSERT_EQ(specification.max_depth(), 5u);
+}
+
 }  // namespace
 }  // namespace simulator::generator::historical::mapping::test

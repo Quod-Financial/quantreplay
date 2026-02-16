@@ -112,8 +112,9 @@ auto CancellationRejectBuilder::with_orig_client_order_id(
   return *this;
 }
 
-auto prepare_cancellation_reject(const protocol::OrderCancellationRequest&
-                                     request) -> CancellationRejectBuilder {
+auto prepare_cancellation_reject(
+    const protocol::OrderCancellationRequest& request)
+    -> CancellationRejectBuilder {
   CancellationRejectBuilder builder{request.session};
   builder.for_request(request);
   return builder;
@@ -313,8 +314,9 @@ auto ModificationRejectBuilder::with_orig_client_order_id(
   return *this;
 }
 
-auto prepare_modification_reject(const protocol::OrderModificationRequest&
-                                     request) -> ModificationRejectBuilder {
+auto prepare_modification_reject(
+    const protocol::OrderModificationRequest& request)
+    -> ModificationRejectBuilder {
   ModificationRejectBuilder builder{request.session};
   builder.for_request(request);
   return builder;

@@ -1,7 +1,7 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_COMMON_ABSTRACTIONS_MARKET_DATA_REQUEST_PROCESSOR_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_COMMON_ABSTRACTIONS_MARKET_DATA_REQUEST_PROCESSOR_HPP_
 
-#include "common/market_state/snapshot.hpp"
+#include "common/instrument_state.hpp"
 #include "common/trade.hpp"
 #include "protocol/app/instrument_state_request.hpp"
 #include "protocol/app/market_data_request.hpp"
@@ -32,7 +32,8 @@ class MarketDataRequestProcessor {
       -> void = 0;
 
   virtual auto recover_state(std::optional<Trade> last_trade,
-                             std::optional<market_state::InstrumentInfo> info) -> void = 0;
+                             std::optional<market_state::InstrumentInfo> info)
+      -> void = 0;
 
   virtual auto stop_streaming(const protocol::Session& client_session)
       -> void = 0;

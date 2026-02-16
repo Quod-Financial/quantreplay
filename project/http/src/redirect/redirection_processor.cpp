@@ -12,19 +12,19 @@
 
 namespace simulator::http::redirect {
 
-RedirectionProcessor::RedirectionProcessor(
-    const data_bridge::VenueAccessor& venue_accessor)
-    : RedirectionProcessor(DestinationResolver::create(venue_accessor),
-                           RequestRedirector::create()) {}
+RedirectionProcessorImpl::RedirectionProcessorImpl(
+    std::shared_ptr<data_bridge::VenueAccessor> venue_accessor)
+    : RedirectionProcessorImpl(DestinationResolver::create(venue_accessor),
+                               RequestRedirector::create()) {}
 
-RedirectionProcessor::RedirectionProcessor(
+RedirectionProcessorImpl::RedirectionProcessorImpl(
     std::shared_ptr<Resolver> resolver,
     std::shared_ptr<Redirector> redirector) noexcept
     : resolver_{std::move(resolver)}, redirector_{std::move(redirector)} {}
 
-auto RedirectionProcessor::redirect_to_venue(const std::string& venue_id,
-                                             Pistache::Http::Method method,
-                                             const std::string& url) const
+auto RedirectionProcessorImpl::redirect_to_venue(const std::string& venue_id,
+                                                 Pistache::Http::Method method,
+                                                 const std::string& url) const
     -> Result {
   auto [destination, status] = resolver_->resolve_by_venue_id(venue_id);
   if (!destination.has_value() || status != Resolver::Status::Success) {
@@ -40,14 +40,14 @@ auto RedirectionProcessor::redirect_to_venue(const std::string& venue_id,
   return *response;
 }
 
-auto RedirectionProcessor::create(
-    const data_bridge::VenueAccessor& venue_accessor)
+auto RedirectionProcessorImpl::create(
+    std::shared_ptr<data_bridge::VenueAccessor> venue_accessor)
     -> std::shared_ptr<RedirectionProcessor> {
-  return std::make_shared<RedirectionProcessor>(venue_accessor);
+  return std::make_shared<RedirectionProcessorImpl>(std::move(venue_accessor));
 }
 
-auto RedirectionProcessor::process_resolve_error(Resolver::Status status,
-                                                 std::string_view venue_id)
+auto RedirectionProcessorImpl::process_resolve_error(Resolver::Status status,
+                                                     std::string_view venue_id)
     -> Result {
   auto response_code = Pistache::Http::Code::Ok;
   std::string message;
@@ -80,8 +80,8 @@ auto RedirectionProcessor::process_resolve_error(Resolver::Status status,
   return response;
 }
 
-auto RedirectionProcessor::process_redirect_error(Redirector::Status status,
-                                                  std::string_view venue_id)
+auto RedirectionProcessorImpl::process_redirect_error(Redirector::Status status,
+                                                      std::string_view venue_id)
     -> Result {
   auto response_code = Pistache::Http::Code::Ok;
   std::string message;

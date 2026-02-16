@@ -20,8 +20,6 @@ auto Phase::phase() const -> TradingPhase { return phase_; }
 
 auto Phase::status() const -> TradingStatus { return status_; }
 
-auto Phase::settings() const -> std::optional<Settings> {
-  return settings_;
-}
+auto Phase::settings() const -> std::optional<Settings> { return settings_; }
 
 }  // namespace simulator::trading_system

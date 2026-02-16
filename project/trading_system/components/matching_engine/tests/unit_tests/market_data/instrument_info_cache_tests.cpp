@@ -5,12 +5,12 @@
 #include "ih/market_data/cache/instrument_info_cache.hpp"
 #include "tools/order_book_notification_builder.hpp"
 
+namespace simulator::trading_system::matching_engine::mdata::test {
+namespace {
+
 using namespace ::testing;  // NOLINT
 
 // NOLINTBEGIN(*magic-numbers*)
-
-namespace simulator::trading_system::matching_engine::mdata {
-namespace {
 
 struct InstrumentInfoCache : Test {
   static auto make_trade(const Price price) {
@@ -560,6 +560,6 @@ TEST_F(InstrumentInfoCache,
 }
 
 }  // namespace
-}  // namespace simulator::trading_system::matching_engine::mdata
+}  // namespace simulator::trading_system::matching_engine::mdata::test
 
 // NOLINTEND(*magic-numbers*)

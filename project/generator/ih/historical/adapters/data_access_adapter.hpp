@@ -34,7 +34,8 @@ class DataAccessAdapter {
   [[nodiscard]]
   virtual auto has_next_record() const noexcept -> bool = 0;
 
-  virtual auto parse_next_record(Record::Builder& builder) -> void = 0;
+  virtual auto parse_next_record(std::unique_ptr<Record::Builder>& builder)
+      -> void = 0;
 };
 
 class DataAccessAdapterFactory {

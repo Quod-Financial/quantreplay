@@ -43,8 +43,8 @@ class GeneratorHistoricalRecordApplierFixture : public testing::Test {
     constexpr std::uint64_t source_row = 1;
     const auto receive_time = std::chrono::system_clock::now();
 
-    Record::Builder builder;
-    builder.with_receive_time(receive_time)
+    Record::BuilderImpl builder;
+    builder.with_received_time(receive_time)
         .with_instrument(*listing_.symbol())
         .with_source_row(source_row);
 
@@ -53,7 +53,7 @@ class GeneratorHistoricalRecordApplierFixture : public testing::Test {
       builder.add_level(index++, level);
     }
 
-    return historical::Record::Builder::construct(std::move(builder));
+    return builder.construct();
   }
 
   static auto make_registered_order(const ClientOrderId& order_id,
@@ -210,7 +210,7 @@ MATCHER_P5(IsGeneratedOrder, side, order_id, price, quantity, party, "") {
 }
 
 TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
-       DoesNotGenerateMessagesFromNotProcessableLevel) {
+       DoesNotGenerateMessagesFromNotProcessableBidLevel) {
   constexpr double bid_px = 101.1;
   constexpr double offer_qty = 202.2;
 
@@ -220,7 +220,7 @@ TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
                                 std::nullopt,
                                 offer_qty,
                                 std::nullopt);
-  ASSERT_FALSE(historical::RecordApplier::RecordChecker::is_processable(level));
+  ASSERT_FALSE(historical::RecordApplier::RecordChecker::has_valid_bid(level));
 
   EXPECT_CALL(registry(), select_by)
       .Times(1)
@@ -229,6 +229,420 @@ TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
   const auto messages = apply(make_record({level}));
 
   EXPECT_TRUE(messages.empty());
+}
+
+TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
+       DoesNotGenerateMessagesFromNotProcessableOfferLevel) {
+  constexpr double bid_px = 101.1;
+  constexpr double offer_qty = 202.2;
+
+  const auto level = make_level(bid_px,
+                                std::nullopt,
+                                std::nullopt,
+                                std::nullopt,
+                                offer_qty,
+                                std::nullopt);
+  ASSERT_FALSE(
+      historical::RecordApplier::RecordChecker::has_valid_offer(level));
+
+  EXPECT_CALL(registry(), select_by)
+      .Times(1)
+      .WillOnce(Return(std::vector<GeneratedOrderData>{}));
+
+  const auto messages = apply(make_record({level}));
+
+  EXPECT_TRUE(messages.empty());
+}
+
+TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
+       IgnoresBidIfPriceEmptyButProcessesValidOffer) {
+  constexpr double bid_quantity = 12.0;
+  constexpr double offer_price = 114.5;
+  constexpr double offer_quantity = 10.0;
+  const auto level = make_level(std::nullopt,
+                                bid_quantity,
+                                "Counterparty1",
+                                offer_price,
+                                offer_quantity,
+                                "Counterparty2");
+
+  const auto record = make_record({level});
+
+  EXPECT_CALL(registry(), select_by)
+      .Times(1)
+      .WillOnce(Return(std::vector<GeneratedOrderData>{}));
+
+  EXPECT_CALL(context(), get_synthetic_identifier)
+      .Times(1)
+      .WillOnce(Return("OrderA1"));
+
+  EXPECT_CALL(registry(), find_all_by_owner(_))
+      .Times(2)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
+
+  std::optional<GeneratedOrderData> generated_order;
+  EXPECT_CALL(registry(), add(_))
+      .Times(1)
+      .WillOnce(DoAll(CaptureGeneratedOrder(std::ref(generated_order)),
+                      Return(true)));
+
+  const auto msgs = apply(record);
+  ASSERT_EQ(msgs.size(), 1);
+  ASSERT_THAT(msgs[0],
+              IsNewOrderRequest(Side::Option::Sell,
+                                ClientOrderId{"OrderA1"},
+                                offer_price,
+                                offer_quantity,
+                                PartyId{"Counterparty2"}));
+
+  ASSERT_THAT(generated_order,
+              Optional(IsGeneratedOrder(Side::Option::Sell,
+                                        ClientOrderId{"OrderA1"},
+                                        offer_price,
+                                        offer_quantity,
+                                        PartyId{"Counterparty2"})));
+}
+
+TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
+       IgnoresBidIfQtyEmptyButProcessesValidOffer) {
+  constexpr double bid_price = 12.0;
+  constexpr double offer_price = 114.5;
+  constexpr double offer_quantity = 10.0;
+  const auto level = make_level(bid_price,
+                                std::nullopt,
+                                "Counterparty1",
+                                offer_price,
+                                offer_quantity,
+                                "Counterparty2");
+
+  const auto record = make_record({level});
+
+  EXPECT_CALL(registry(), select_by)
+      .Times(1)
+      .WillOnce(Return(std::vector<GeneratedOrderData>{}));
+
+  EXPECT_CALL(context(), get_synthetic_identifier)
+      .Times(1)
+      .WillOnce(Return("OrderA1"));
+
+  EXPECT_CALL(registry(), find_all_by_owner(_))
+      .Times(2)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
+
+  std::optional<GeneratedOrderData> generated_order;
+  EXPECT_CALL(registry(), add(_))
+      .Times(1)
+      .WillOnce(DoAll(CaptureGeneratedOrder(std::ref(generated_order)),
+                      Return(true)));
+
+  const auto msgs = apply(record);
+  ASSERT_EQ(msgs.size(), 1);
+  ASSERT_THAT(msgs[0],
+              IsNewOrderRequest(Side::Option::Sell,
+                                ClientOrderId{"OrderA1"},
+                                offer_price,
+                                offer_quantity,
+                                PartyId{"Counterparty2"}));
+
+  ASSERT_THAT(generated_order,
+              Optional(IsGeneratedOrder(Side::Option::Sell,
+                                        ClientOrderId{"OrderA1"},
+                                        offer_price,
+                                        offer_quantity,
+                                        PartyId{"Counterparty2"})));
+}
+
+TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
+       IgnoresBidIfQtyIsZeroButProcessesValidOffer) {
+  constexpr double bid_price = 12.0;
+  constexpr double bid_quantity = 0.0;
+  constexpr double offer_price = 114.5;
+  constexpr double offer_quantity = 10.0;
+  const auto level = make_level(bid_price,
+                                bid_quantity,
+                                std::nullopt,
+                                offer_price,
+                                offer_quantity,
+                                "Counterparty1");
+
+  const auto record = make_record({level});
+
+  EXPECT_CALL(registry(), select_by)
+      .Times(1)
+      .WillOnce(Return(std::vector<GeneratedOrderData>{}));
+
+  EXPECT_CALL(context(), get_synthetic_identifier)
+      .Times(1)
+      .WillOnce(Return("OrderA1"));
+
+  EXPECT_CALL(registry(), find_all_by_owner(_))
+      .Times(2)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
+
+  std::optional<GeneratedOrderData> generated_order;
+  EXPECT_CALL(registry(), add(_))
+      .Times(1)
+      .WillOnce(DoAll(CaptureGeneratedOrder(std::ref(generated_order)),
+                      Return(true)));
+
+  const auto msgs = apply(record);
+  ASSERT_EQ(msgs.size(), 1);
+  ASSERT_THAT(msgs[0],
+              IsNewOrderRequest(Side::Option::Sell,
+                                ClientOrderId{"OrderA1"},
+                                offer_price,
+                                offer_quantity,
+                                PartyId{"Counterparty1"}));
+
+  ASSERT_THAT(generated_order,
+              Optional(IsGeneratedOrder(Side::Option::Sell,
+                                        ClientOrderId{"OrderA1"},
+                                        offer_price,
+                                        offer_quantity,
+                                        PartyId{"Counterparty1"})));
+}
+
+TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
+       IgnoresOfferIfPriceEmptyButProcessesValidBid) {
+  constexpr double bid_price = 12.0;
+  constexpr double bid_quantity = 10.0;
+  constexpr double offer_quantity = 10.0;
+  const auto level = make_level(bid_price,
+                                bid_quantity,
+                                "Counterparty1",
+                                std::nullopt,
+                                offer_quantity,
+                                std::nullopt);
+
+  const auto record = make_record({level});
+
+  EXPECT_CALL(registry(), select_by)
+      .Times(1)
+      .WillOnce(Return(std::vector<GeneratedOrderData>{}));
+
+  EXPECT_CALL(context(), get_synthetic_identifier)
+      .Times(1)
+      .WillOnce(Return("OrderA1"));
+
+  EXPECT_CALL(registry(), find_all_by_owner(_))
+      .Times(2)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
+
+  std::optional<GeneratedOrderData> generated_order;
+  EXPECT_CALL(registry(), add(_))
+      .Times(1)
+      .WillOnce(DoAll(CaptureGeneratedOrder(std::ref(generated_order)),
+                      Return(true)));
+
+  const auto msgs = apply(record);
+  ASSERT_EQ(msgs.size(), 1);
+
+  ASSERT_THAT(msgs[0],
+              IsNewOrderRequest(Side::Option::Buy,
+                                ClientOrderId{"OrderA1"},
+                                bid_price,
+                                bid_quantity,
+                                PartyId{"Counterparty1"}));
+
+  ASSERT_THAT(generated_order,
+              Optional(IsGeneratedOrder(Side::Option::Buy,
+                                        ClientOrderId{"OrderA1"},
+                                        bid_price,
+                                        bid_quantity,
+                                        PartyId{"Counterparty1"})));
+}
+
+TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
+       IgnoresOfferIfQtyEmptyButProcessesValidBid) {
+  constexpr double bid_price = 12.0;
+  constexpr double bid_quantity = 10.0;
+  constexpr double offer_price = 10.0;
+  const auto level = make_level(bid_price,
+                                bid_quantity,
+                                "Counterparty1",
+                                offer_price,
+                                std::nullopt,
+                                std::nullopt);
+
+  const auto record = make_record({level});
+
+  EXPECT_CALL(registry(), select_by)
+      .Times(1)
+      .WillOnce(Return(std::vector<GeneratedOrderData>{}));
+
+  EXPECT_CALL(context(), get_synthetic_identifier)
+      .Times(1)
+      .WillOnce(Return("OrderA1"));
+  EXPECT_CALL(registry(), find_all_by_owner(_))
+      .Times(2)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
+
+  std::optional<GeneratedOrderData> generated_order;
+  EXPECT_CALL(registry(), add(_))
+      .Times(1)
+      .WillOnce(DoAll(CaptureGeneratedOrder(std::ref(generated_order)),
+                      Return(true)));
+
+  const auto msgs = apply(record);
+  ASSERT_EQ(msgs.size(), 1);
+  ASSERT_THAT(msgs[0],
+              IsNewOrderRequest(Side::Option::Buy,
+                                ClientOrderId{"OrderA1"},
+                                bid_price,
+                                bid_quantity,
+                                PartyId{"Counterparty1"}));
+
+  ASSERT_THAT(generated_order,
+              Optional(IsGeneratedOrder(Side::Option::Buy,
+                                        ClientOrderId{"OrderA1"},
+                                        bid_price,
+                                        bid_quantity,
+                                        PartyId{"Counterparty1"})));
+}
+
+TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
+       IgnoresOfferIfQtyIsZeroButProcessesValidBid) {
+  constexpr double bid_price = 12.0;
+  constexpr double bid_quantity = 10.0;
+  constexpr double offer_price = 10.0;
+  constexpr double offer_quantity = 0.0;
+  const auto level = make_level(bid_price,
+                                bid_quantity,
+                                "Counterparty1",
+                                offer_price,
+                                offer_quantity,
+                                std::nullopt);
+
+  const auto record = make_record({level});
+
+  EXPECT_CALL(registry(), select_by)
+      .Times(1)
+      .WillOnce(Return(std::vector<GeneratedOrderData>{}));
+
+  EXPECT_CALL(context(), get_synthetic_identifier)
+      .Times(1)
+      .WillOnce(Return("OrderA1"));
+  EXPECT_CALL(registry(), find_all_by_owner(_))
+      .Times(2)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
+
+  std::optional<GeneratedOrderData> generated_order;
+  EXPECT_CALL(registry(), add(_))
+      .Times(1)
+      .WillOnce(DoAll(CaptureGeneratedOrder(std::ref(generated_order)),
+                      Return(true)));
+
+  const auto msgs = apply(record);
+  ASSERT_EQ(msgs.size(), 1);
+  ASSERT_THAT(msgs[0],
+              IsNewOrderRequest(Side::Option::Buy,
+                                ClientOrderId{"OrderA1"},
+                                bid_price,
+                                bid_quantity,
+                                PartyId{"Counterparty1"}));
+
+  ASSERT_THAT(generated_order,
+              Optional(IsGeneratedOrder(Side::Option::Buy,
+                                        ClientOrderId{"OrderA1"},
+                                        bid_price,
+                                        bid_quantity,
+                                        PartyId{"Counterparty1"})));
+}
+
+TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
+       OnceBidIgnoredAllSubsequentBidLevelsAreIgnored) {
+  const auto level1 = make_level(
+      1.6, 10.0, "Counterparty1", std::nullopt, std::nullopt, std::nullopt);
+  const auto level2 = make_level(std::nullopt,
+                                 10.0,
+                                 "Counterparty2",
+                                 std::nullopt,
+                                 std::nullopt,
+                                 std::nullopt);
+  const auto level3 = make_level(
+      1.8, 10.0, "Counterparty3", std::nullopt, std::nullopt, std::nullopt);
+  const auto record = make_record({level1, level2, level3});
+
+  EXPECT_CALL(registry(), select_by)
+      .Times(1)
+      .WillOnce(Return(std::vector<GeneratedOrderData>{}));
+
+  EXPECT_CALL(context(), get_synthetic_identifier)
+      .Times(1)
+      .WillOnce(Return("OrderB1"));
+  EXPECT_CALL(registry(), find_all_by_owner(_))
+      .Times(2)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
+
+  std::optional<GeneratedOrderData> generated_order;
+  EXPECT_CALL(registry(), add(_))
+      .Times(1)
+      .WillOnce(DoAll(CaptureGeneratedOrder(std::ref(generated_order)),
+                      Return(true)));
+
+  const auto msgs = apply(record);
+  ASSERT_EQ(msgs.size(), 1);
+  ASSERT_THAT(msgs[0],
+              IsNewOrderRequest(Side::Option::Buy,
+                                ClientOrderId{"OrderB1"},
+                                1.6,
+                                10.0,
+                                PartyId{"Counterparty1"}));
+
+  ASSERT_THAT(generated_order,
+              Optional(IsGeneratedOrder(Side::Option::Buy,
+                                        ClientOrderId{"OrderB1"},
+                                        1.6,
+                                        10.0,
+                                        PartyId{"Counterparty1"})));
+}
+
+TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
+       OnceOfferIgnoredAllSubsequentOfferLevelsAreIgnored) {
+  const auto level1 = make_level(
+      std::nullopt, std::nullopt, std::nullopt, 1.6, 10.0, "Counterparty1");
+  const auto level2 = make_level(std::nullopt,
+                                 std::nullopt,
+                                 std::nullopt,
+                                 std::nullopt,
+                                 10.0,
+                                 "Counterparty2");
+  const auto level3 = make_level(
+      std::nullopt, std::nullopt, std::nullopt, 1.8, 10.0, "Counterparty3");
+  const auto record = make_record({level1, level2, level3});
+
+  EXPECT_CALL(registry(), select_by)
+      .Times(1)
+      .WillOnce(Return(std::vector<GeneratedOrderData>{}));
+
+  EXPECT_CALL(context(), get_synthetic_identifier)
+      .Times(1)
+      .WillOnce(Return("OrderB1"));
+  EXPECT_CALL(registry(), find_all_by_owner(_))
+      .Times(2)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
+
+  std::optional<GeneratedOrderData> generated_order;
+  EXPECT_CALL(registry(), add(_))
+      .Times(1)
+      .WillOnce(DoAll(CaptureGeneratedOrder(std::ref(generated_order)),
+                      Return(true)));
+
+  const auto msgs = apply(record);
+  ASSERT_EQ(msgs.size(), 1);
+  ASSERT_THAT(msgs[0],
+              IsNewOrderRequest(Side::Option::Sell,
+                                ClientOrderId{"OrderB1"},
+                                1.6,
+                                10.0,
+                                PartyId{"Counterparty1"}));
+
+  ASSERT_THAT(generated_order,
+              Optional(IsGeneratedOrder(Side::Option::Sell,
+                                        ClientOrderId{"OrderB1"},
+                                        1.6,
+                                        10.0,
+                                        PartyId{"Counterparty1"})));
 }
 
 TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
@@ -265,9 +679,9 @@ TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
       .Times(1)
       .WillOnce(Return(std::vector<GeneratedOrderData>{}));
 
-  EXPECT_CALL(registry(), find_by_owner(Eq(counterparty.value())))
-      .Times(1)
-      .WillOnce(Return(std::nullopt));
+  EXPECT_CALL(registry(), find_all_by_owner(Eq(counterparty.value())))
+      .Times(2)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
 
   // A storage of our new order which was generated from the level
   std::optional<GeneratedOrderData> generated_order;
@@ -309,9 +723,9 @@ TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
       .Times(1)
       .WillOnce(Return(std::vector<GeneratedOrderData>{}));
 
-  EXPECT_CALL(registry(), find_by_owner(Eq(counterparty)))
-      .Times(1)
-      .WillOnce(Return(std::nullopt));
+  EXPECT_CALL(registry(), find_all_by_owner(Eq(counterparty)))
+      .Times(2)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
 
   // A storage of our new order which was generated from the level
   std::optional<GeneratedOrderData> generated_order;
@@ -361,11 +775,11 @@ TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
       .Times(1)
       .WillOnce(Return(std::vector<GeneratedOrderData>{}));
 
-  EXPECT_CALL(registry(), find_by_owner(Eq(counterparty.value())))
-      .Times(1)
-      .WillOnce(Return(stored_order));
+  EXPECT_CALL(registry(), find_all_by_owner(Eq(counterparty.value())))
+      .Times(2)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{stored_order}));
 
-  EXPECT_CALL(registry(), update_by_owner(Eq(counterparty.value()), testing::_))
+  EXPECT_CALL(registry(), update_by_identifier(Eq(stored_order_id.value()), _))
       .Times(1)
       .WillOnce(Return(true));
 
@@ -398,9 +812,9 @@ TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
       .Times(1)
       .WillOnce(Return(std::vector<GeneratedOrderData>{}));
 
-  EXPECT_CALL(registry(), find_by_owner(Eq(counterparty.value())))
-      .Times(1)
-      .WillOnce(Return(std::nullopt));
+  EXPECT_CALL(registry(), find_all_by_owner(Eq(counterparty.value())))
+      .Times(2)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
 
   std::optional<GeneratedOrderData> generated_order;
   EXPECT_CALL(registry(), add(testing::_))
@@ -442,9 +856,9 @@ TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
       .Times(1)
       .WillOnce(Return(std::vector<GeneratedOrderData>{}));
 
-  EXPECT_CALL(registry(), find_by_owner(Eq(counterparty)))
-      .Times(1)
-      .WillOnce(Return(std::nullopt));
+  EXPECT_CALL(registry(), find_all_by_owner(Eq(counterparty)))
+      .Times(2)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
 
   // A storage of our new order which was generated from the level
   std::optional<GeneratedOrderData> generated_order;
@@ -494,11 +908,11 @@ TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
       .Times(1)
       .WillOnce(Return(std::vector<GeneratedOrderData>{}));
 
-  EXPECT_CALL(registry(), find_by_owner(Eq(counterparty.value())))
-      .Times(1)
-      .WillOnce(Return(stored_order));
+  EXPECT_CALL(registry(), find_all_by_owner(Eq(counterparty.value())))
+      .Times(2)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{stored_order}));
 
-  EXPECT_CALL(registry(), update_by_owner(Eq(counterparty.value()), testing::_))
+  EXPECT_CALL(registry(), update_by_identifier(Eq(stored_order_id.value()), _))
       .Times(1)
       .WillOnce(Return(true));
 
@@ -519,10 +933,12 @@ TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
       .Times(1)
       .WillOnce(Return(std::vector<GeneratedOrderData>{}));
 
-  EXPECT_CALL(registry(), find_by_owner(Eq("CP1")))
-      .WillOnce(Return(std::nullopt));
-  EXPECT_CALL(registry(), find_by_owner(Eq("CP2")))
-      .WillOnce(Return(std::nullopt));
+  EXPECT_CALL(registry(), find_all_by_owner(Eq("CP1")))
+      .Times(2)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
+  EXPECT_CALL(registry(), find_all_by_owner(Eq("CP2")))
+      .Times(2)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
 
   EXPECT_CALL(context(), get_synthetic_identifier)
       .Times(2)
@@ -558,12 +974,12 @@ TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
       .Times(2)
       .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
 
-  EXPECT_CALL(registry(), find_by_owner("CP1"))
-      .Times(2)
-      .WillRepeatedly(Return(std::nullopt));
-  EXPECT_CALL(registry(), find_by_owner("CP2"))
-      .Times(2)
-      .WillRepeatedly(Return(std::nullopt));
+  EXPECT_CALL(registry(), find_all_by_owner("CP1"))
+      .Times(4)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
+  EXPECT_CALL(registry(), find_all_by_owner("CP2"))
+      .Times(4)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
 
   EXPECT_CALL(context(), get_synthetic_identifier)
       .Times(4)
@@ -605,14 +1021,24 @@ TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
       .Times(1)
       .WillOnce(Return(std::vector<GeneratedOrderData>{}));
 
-  EXPECT_CALL(registry(), find_by_owner("CP1")).WillOnce(Return(std::nullopt));
-  EXPECT_CALL(registry(), find_by_owner("Counterparty1"))
-      .WillOnce(Return(std::nullopt));
-  EXPECT_CALL(registry(), find_by_owner("Counterparty2"))
-      .WillOnce(Return(std::nullopt));
-  EXPECT_CALL(registry(), find_by_owner("CP2")).WillOnce(Return(std::nullopt));
-  EXPECT_CALL(registry(), find_by_owner("CP3")).WillOnce(Return(std::nullopt));
-  EXPECT_CALL(registry(), find_by_owner("CP4")).WillOnce(Return(std::nullopt));
+  EXPECT_CALL(registry(), find_all_by_owner("CP1"))
+      .Times(2)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
+  EXPECT_CALL(registry(), find_all_by_owner("Counterparty1"))
+      .Times(2)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
+  EXPECT_CALL(registry(), find_all_by_owner("Counterparty2"))
+      .Times(2)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
+  EXPECT_CALL(registry(), find_all_by_owner("CP2"))
+      .Times(2)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
+  EXPECT_CALL(registry(), find_all_by_owner("CP3"))
+      .Times(2)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
+  EXPECT_CALL(registry(), find_all_by_owner("CP4"))
+      .Times(2)
+      .WillRepeatedly(Return(std::vector<GeneratedOrderData>{}));
 
   EXPECT_CALL(context(), get_synthetic_identifier)
       .Times(6)
@@ -765,16 +1191,16 @@ TEST_F(
   std::vector<GeneratedMessage> messages = apply(record);
   ASSERT_EQ(messages.size(), 2);
 
-  ASSERT_THAT(messages[0],
-              IsCancelRequest(Side::Option::Buy,
-                              better_order_id,
-                              better_ord_px.value(),
-                              better_ord_qty.value(),
-                              better_order_owner));
+  ASSERT_THAT(messages,
+              Contains(IsCancelRequest(Side::Option::Buy,
+                                       better_order_id,
+                                       better_ord_px.value(),
+                                       better_ord_qty.value(),
+                                       better_order_owner)));
 
-  ASSERT_THAT(messages[1],
-              IsNewOrderRequest(
-                  Side::Option::Buy, order_id, price, quantity, counterparty));
+  ASSERT_THAT(messages,
+              Contains(IsNewOrderRequest(
+                  Side::Option::Buy, order_id, price, quantity, counterparty)));
 
   ASSERT_TRUE(registry_select_by_party_id(better_order_owner).empty());
 
@@ -875,23 +1301,22 @@ TEST_F(GeneratorHistoricalRecordApplier,
   ASSERT_EQ(messages.size(), 4);
   ASSERT_THAT(messages[0],
               IsCancelRequest(Side::Option::Sell,
+                              ClientOrderId{"StoredOrderID1"},
+                              33.4,
+                              33.5,
+                              counterparty2));
+  ASSERT_THAT(messages[1],
+              IsCancelRequest(Side::Option::Sell,
                               ClientOrderId{"StoredOrderID2"},
                               35.4,
                               50.5,
                               counterparty1));
-
-  ASSERT_THAT(messages[1],
+  ASSERT_THAT(messages[2],
               IsNewOrderRequest(Side::Option::Buy,
                                 ClientOrderId{"Order1"},
                                 33.4,
                                 24.44,
                                 counterparty1));
-  ASSERT_THAT(messages[2],
-              IsCancelRequest(Side::Option::Sell,
-                              ClientOrderId{"StoredOrderID1"},
-                              33.4,
-                              33.5,
-                              counterparty2));
   ASSERT_THAT(messages[3],
               IsNewOrderRequest(Side::Option::Buy,
                                 ClientOrderId{"Order2"},
@@ -952,15 +1377,16 @@ TEST_F(
   std::vector<GeneratedMessage> messages = apply(record);
   ASSERT_EQ(messages.size(), 2);
 
-  ASSERT_THAT(messages[0],
-              IsCancelRequest(Side::Option::Sell,
-                              better_order_id,
-                              better_ord_px.value(),
-                              better_ord_qty.value(),
-                              better_order_owner));
-  ASSERT_THAT(messages[1],
-              IsNewOrderRequest(
-                  Side::Option::Sell, order_id, price, quantity, counterparty));
+  ASSERT_THAT(messages,
+              Contains(IsCancelRequest(Side::Option::Sell,
+                                       better_order_id,
+                                       better_ord_px.value(),
+                                       better_ord_qty.value(),
+                                       better_order_owner)));
+  ASSERT_THAT(
+      messages,
+      Contains(IsNewOrderRequest(
+          Side::Option::Sell, order_id, price, quantity, counterparty)));
 
   ASSERT_TRUE(registry_select_by_party_id(better_order_owner).empty());
 
@@ -1060,23 +1486,22 @@ TEST_F(GeneratorHistoricalRecordApplier,
   ASSERT_EQ(messages.size(), 4);
   ASSERT_THAT(messages[0],
               IsCancelRequest(Side::Option::Buy,
+                              ClientOrderId{"StoredOrderID1"},
+                              35.4,
+                              50.5,
+                              counterparty2));
+  ASSERT_THAT(messages[1],
+              IsCancelRequest(Side::Option::Buy,
                               ClientOrderId{"StoredOrderID2"},
                               33.4,
                               33.5,
                               counterparty1));
-
-  ASSERT_THAT(messages[1],
+  ASSERT_THAT(messages[2],
               IsNewOrderRequest(Side::Option::Sell,
                                 ClientOrderId{"Order1"},
                                 32.4,
                                 23.44,
                                 counterparty1));
-  ASSERT_THAT(messages[2],
-              IsCancelRequest(Side::Option::Buy,
-                              ClientOrderId{"StoredOrderID1"},
-                              35.4,
-                              50.5,
-                              counterparty2));
   ASSERT_THAT(messages[3],
               IsNewOrderRequest(Side::Option::Sell,
                                 ClientOrderId{"Order2"},
@@ -1130,18 +1555,18 @@ TEST_F(GeneratorHistoricalRecordApplier,
   std::vector<GeneratedMessage> messages = apply(record);
 
   ASSERT_EQ(messages.size(), 4);
-  ASSERT_THAT(messages[0],
-              IsCancelRequest(Side::Option::Buy,
-                              ClientOrderId{"OldOrder1"},
-                              20.,
-                              20.,
-                              PartyId{"CP1"}));
-  ASSERT_THAT(messages[1],
-              IsCancelRequest(Side::Option::Buy,
-                              ClientOrderId{"OldOrder2"},
-                              2.,
-                              3.,
-                              PartyId{"CP2"}));
+  ASSERT_THAT(messages,
+              Contains(IsCancelRequest(Side::Option::Buy,
+                                       ClientOrderId{"OldOrder1"},
+                                       20.,
+                                       20.,
+                                       PartyId{"CP1"})));
+  ASSERT_THAT(messages,
+              Contains(IsCancelRequest(Side::Option::Buy,
+                                       ClientOrderId{"OldOrder2"},
+                                       2.,
+                                       3.,
+                                       PartyId{"CP2"})));
 
   ASSERT_TRUE(registry_select_by_party_id(PartyId{"CP1"}).empty());
   ASSERT_TRUE(registry_select_by_party_id(PartyId{"CP2"}).empty());
@@ -1176,18 +1601,18 @@ TEST_F(GeneratorHistoricalRecordApplier,
   std::vector<GeneratedMessage> messages = apply(record);
 
   ASSERT_EQ(messages.size(), 4);
-  ASSERT_THAT(messages[0],
-              IsCancelRequest(Side::Option::Sell,
-                              ClientOrderId{"OldOrder1"},
-                              2.,
-                              3.,
-                              PartyId{"CP1"}));
-  ASSERT_THAT(messages[1],
-              IsCancelRequest(Side::Option::Sell,
-                              ClientOrderId{"OldOrder2"},
-                              20.,
-                              20.,
-                              PartyId{"CP2"}));
+  ASSERT_THAT(messages,
+              Contains(IsCancelRequest(Side::Option::Sell,
+                                       ClientOrderId{"OldOrder1"},
+                                       2.,
+                                       3.,
+                                       PartyId{"CP1"})));
+  ASSERT_THAT(messages,
+              Contains(IsCancelRequest(Side::Option::Sell,
+                                       ClientOrderId{"OldOrder2"},
+                                       20.,
+                                       20.,
+                                       PartyId{"CP2"})));
 
   ASSERT_TRUE(registry_select_by_party_id(PartyId{"CP1"}).empty());
   ASSERT_TRUE(registry_select_by_party_id(PartyId{"CP2"}).empty());
@@ -1306,6 +1731,538 @@ TEST_F(GeneratorHistoricalRecordApplier,
                                12.,
                                12.,
                                PartyId{"Counterparty2"}));
+}
+
+TEST_F(GeneratorHistoricalRecordApplier,
+       CancelsPrevRecordSecondLevelBidOrderIfNewRecordHasInvalidFirstLevel) {
+  const auto level1 = make_level(12.,
+                                 std::nullopt,
+                                 "Counterparty1",
+                                 std::nullopt,
+                                 std::nullopt,
+                                 std::nullopt);
+  const auto level2 = make_level(
+      10., 10., "Counterparty2", std::nullopt, std::nullopt, std::nullopt);
+
+  const auto record = make_record({level1, level2});
+
+  auto old_buy_order_level1 = make_registered_order(ClientOrderId{"OldOrder1"},
+                                                    OrderPrice{20.},
+                                                    Side::Option::Buy,
+                                                    Quantity{20.},
+                                                    PartyId{"Counterparty1"});
+  auto old_buy_order_level2 = make_registered_order(ClientOrderId{"OldOrder2"},
+                                                    OrderPrice{2.},
+                                                    Side::Option::Buy,
+                                                    Quantity{3.},
+                                                    PartyId{"Counterparty2"});
+  registry().add(std::move(old_buy_order_level1));
+  registry().add(std::move(old_buy_order_level2));
+
+  std::vector<GeneratedMessage> messages = apply(record);
+  ASSERT_EQ(messages.size(), 2);
+  ASSERT_THAT(messages[0],
+              IsCancelRequest(Side::Option::Buy,
+                              ClientOrderId{"OldOrder1"},
+                              20.,
+                              20.,
+                              PartyId{"Counterparty1"}));
+  ASSERT_THAT(messages[1],
+              IsCancelRequest(Side::Option::Buy,
+                              ClientOrderId{"OldOrder2"},
+                              2.,
+                              3.,
+                              PartyId{"Counterparty2"}));
+
+  ASSERT_EQ(registry_select_by_party_id(PartyId{"Counterparty1"}).size(), 0);
+  ASSERT_EQ(registry_select_by_party_id(PartyId{"Counterparty2"}).size(), 0);
+}
+
+TEST_F(GeneratorHistoricalRecordApplier,
+       CancelsPrevRecordSecondLevelOfferOrderIfNewRecordHasInvalidFirstLevel) {
+  const auto level1 = make_level(std::nullopt,
+                                 std::nullopt,
+                                 std::nullopt,
+                                 10.,
+                                 std::nullopt,
+                                 "Counterparty1");
+  const auto level2 = make_level(
+      std::nullopt, std::nullopt, std::nullopt, 12., 10., "Counterparty2");
+
+  const auto record = make_record({level1, level2});
+
+  auto old_buy_order_level1 = make_registered_order(ClientOrderId{"OldOrder1"},
+                                                    OrderPrice{2.},
+                                                    Side::Option::Sell,
+                                                    Quantity{20.},
+                                                    PartyId{"Counterparty1"});
+  auto old_buy_order_level2 = make_registered_order(ClientOrderId{"OldOrder2"},
+                                                    OrderPrice{20.},
+                                                    Side::Option::Sell,
+                                                    Quantity{3.},
+                                                    PartyId{"Counterparty2"});
+  registry().add(std::move(old_buy_order_level1));
+  registry().add(std::move(old_buy_order_level2));
+
+  std::vector<GeneratedMessage> messages = apply(record);
+  ASSERT_EQ(messages.size(), 2);
+  ASSERT_THAT(messages[0],
+              IsCancelRequest(Side::Option::Sell,
+                              ClientOrderId{"OldOrder1"},
+                              2.,
+                              20.,
+                              PartyId{"Counterparty1"}));
+  ASSERT_THAT(messages[1],
+              IsCancelRequest(Side::Option::Sell,
+                              ClientOrderId{"OldOrder2"},
+                              20.,
+                              3.,
+                              PartyId{"Counterparty2"}));
+
+  ASSERT_EQ(registry_select_by_party_id(PartyId{"Counterparty1"}).size(), 0);
+  ASSERT_EQ(registry_select_by_party_id(PartyId{"Counterparty2"}).size(), 0);
+}
+
+// Tests for Smart Matching Algorithm - Multiple Orders Per Counterparty
+
+TEST_F(GeneratorHistoricalRecordApplier, SameOrdersGenerateNoMessages) {
+  const PartyId counterparty1{"Counterparty1"};
+  const PartyId counterparty2{"Counterparty2"};
+  constexpr double price1 = 100.0;
+  constexpr double qty1 = 50.0;
+  constexpr double price2 = 99.0;
+  constexpr double qty2 = 30.0;
+  const std::string order_id1 = "Order1";
+  const std::string order_id2 = "Order2";
+
+  const auto level1 = make_level(price1,
+                                 qty1,
+                                 counterparty1.value(),
+                                 std::nullopt,
+                                 std::nullopt,
+                                 std::nullopt);
+  const auto level2 = make_level(price2,
+                                 qty2,
+                                 counterparty2.value(),
+                                 std::nullopt,
+                                 std::nullopt,
+                                 std::nullopt);
+  const auto record = make_record({level1, level2});
+
+  auto existing_order1 = make_registered_order(ClientOrderId{order_id1},
+                                               OrderPrice{price1},
+                                               Side::Option::Buy,
+                                               Quantity{qty1},
+                                               counterparty1);
+  auto existing_order2 = make_registered_order(ClientOrderId{order_id2},
+                                               OrderPrice{price2},
+                                               Side::Option::Buy,
+                                               Quantity{qty2},
+                                               counterparty2);
+  registry().add(std::move(existing_order1));
+  registry().add(std::move(existing_order2));
+
+  std::vector<GeneratedMessage> messages = apply(record);
+  ASSERT_EQ(messages.size(), 0);
+}
+
+TEST_F(GeneratorHistoricalRecordApplier, SameCounterpartyOnBothSidesOfBook) {
+  const PartyId counterparty{"Counterparty1"};
+  constexpr double bid_price = 99.0;
+  constexpr double bid_qty = 100.0;
+  constexpr double ask_price = 101.0;
+  constexpr double ask_qty = 50.0;
+
+  const auto level = make_level(bid_price,
+                                bid_qty,
+                                counterparty.value(),
+                                ask_price,
+                                ask_qty,
+                                counterparty.value());
+  const auto record = make_record({level});
+
+  EXPECT_CALL(context(), get_synthetic_identifier)
+      .Times(2)
+      .WillOnce(Return("BidOrder1"))
+      .WillOnce(Return("AskOrder1"));
+
+  std::vector<GeneratedMessage> messages = apply(record);
+  ASSERT_EQ(messages.size(), 2);
+
+  ASSERT_THAT(messages[0],
+              IsNewOrderRequest(Side::Option::Buy,
+                                ClientOrderId{"BidOrder1"},
+                                bid_price,
+                                bid_qty,
+                                counterparty));
+  ASSERT_THAT(messages[1],
+              IsNewOrderRequest(Side::Option::Sell,
+                                ClientOrderId{"AskOrder1"},
+                                ask_price,
+                                ask_qty,
+                                counterparty));
+
+  auto orders = registry_select_by_party_id(counterparty);
+  ASSERT_EQ(orders.size(), 2);
+}
+
+TEST_F(GeneratorHistoricalRecordApplier, SameCounterpartyAtMultipleBidLevels) {
+  const PartyId counterparty{"Counterparty1"};
+  constexpr double price1 = 100.0;
+  constexpr double qty1 = 50.0;
+  constexpr double price2 = 99.0;
+  constexpr double qty2 = 30.0;
+  const std::string order_id1 = "Order1";
+  const std::string order_id2 = "Order2";
+
+  const auto level1 = make_level(price1,
+                                 qty1,
+                                 counterparty.value(),
+                                 std::nullopt,
+                                 std::nullopt,
+                                 std::nullopt);
+  const auto level2 = make_level(price2,
+                                 qty2,
+                                 counterparty.value(),
+                                 std::nullopt,
+                                 std::nullopt,
+                                 std::nullopt);
+  const auto record = make_record({level1, level2});
+
+  EXPECT_CALL(context(), get_synthetic_identifier)
+      .Times(2)
+      .WillOnce(Return(order_id1))
+      .WillOnce(Return(order_id2));
+
+  std::vector<GeneratedMessage> messages = apply(record);
+  ASSERT_EQ(messages.size(), 2);
+
+  ASSERT_THAT(messages[0],
+              IsNewOrderRequest(Side::Option::Buy,
+                                ClientOrderId{order_id1},
+                                price1,
+                                qty1,
+                                counterparty));
+  ASSERT_THAT(messages[1],
+              IsNewOrderRequest(Side::Option::Buy,
+                                ClientOrderId{order_id2},
+                                price2,
+                                qty2,
+                                counterparty));
+
+  auto orders = registry_select_by_party_id(counterparty);
+  ASSERT_EQ(orders.size(), 2);
+}
+
+TEST_F(GeneratorHistoricalRecordApplier,
+       SameCounterpartyAtMultipleOfferLevels) {
+  const PartyId counterparty{"Counterparty1"};
+  constexpr double price1 = 101.0;
+  constexpr double qty1 = 50.0;
+  constexpr double price2 = 102.0;
+  constexpr double qty2 = 30.0;
+  const std::string order_id1 = "Order1";
+  const std::string order_id2 = "Order2";
+
+  const auto level1 = make_level(std::nullopt,
+                                 std::nullopt,
+                                 std::nullopt,
+                                 price1,
+                                 qty1,
+                                 counterparty.value());
+  const auto level2 = make_level(std::nullopt,
+                                 std::nullopt,
+                                 std::nullopt,
+                                 price2,
+                                 qty2,
+                                 counterparty.value());
+  const auto record = make_record({level1, level2});
+
+  EXPECT_CALL(context(), get_synthetic_identifier)
+      .Times(2)
+      .WillOnce(Return(order_id1))
+      .WillOnce(Return(order_id2));
+
+  std::vector<GeneratedMessage> messages = apply(record);
+  ASSERT_EQ(messages.size(), 2);
+
+  ASSERT_THAT(messages[0],
+              IsNewOrderRequest(Side::Option::Sell,
+                                ClientOrderId{order_id1},
+                                price1,
+                                qty1,
+                                counterparty));
+  ASSERT_THAT(messages[1],
+              IsNewOrderRequest(Side::Option::Sell,
+                                ClientOrderId{order_id2},
+                                price2,
+                                qty2,
+                                counterparty));
+
+  auto orders = registry_select_by_party_id(counterparty);
+  ASSERT_EQ(orders.size(), 2);
+}
+
+TEST_F(GeneratorHistoricalRecordApplier,
+       ReusesExistingOrderOnSameSideAndCounterpartyForModification) {
+  const PartyId counterparty{"Counterparty1"};
+  constexpr double price1 = 100.0;
+  constexpr double qty1 = 50.0;
+  constexpr double price2 = 99.0;
+  constexpr double qty2 = 30.0;
+  constexpr double existing_price1 = 95.0;
+  constexpr double existing_qty1 = 20.0;
+  constexpr double existing_price2 = 94.0;
+  constexpr double existing_qty2 = 10.0;
+  const std::string existing_order_id1 = "ExistingOrder1";
+  const std::string existing_order_id2 = "ExistingOrder2";
+
+  const auto level1 = make_level(price1,
+                                 qty1,
+                                 counterparty.value(),
+                                 std::nullopt,
+                                 std::nullopt,
+                                 std::nullopt);
+  const auto level2 = make_level(price2,
+                                 qty2,
+                                 counterparty.value(),
+                                 std::nullopt,
+                                 std::nullopt,
+                                 std::nullopt);
+  const auto record = make_record({level1, level2});
+
+  auto existing_order1 =
+      make_registered_order(ClientOrderId{existing_order_id1},
+                            OrderPrice{existing_price1},
+                            Side::Option::Buy,
+                            Quantity{existing_qty1},
+                            counterparty);
+  auto existing_order2 =
+      make_registered_order(ClientOrderId{existing_order_id2},
+                            OrderPrice{existing_price2},
+                            Side::Option::Buy,
+                            Quantity{existing_qty2},
+                            counterparty);
+  registry().add(std::move(existing_order1));
+  registry().add(std::move(existing_order2));
+
+  std::vector<GeneratedMessage> messages = apply(record);
+  ASSERT_EQ(messages.size(), 2);
+
+  ASSERT_THAT(messages[0],
+              IsModificationRequest(Side::Option::Buy,
+                                    ClientOrderId{existing_order_id1},
+                                    price1,
+                                    qty1,
+                                    counterparty));
+  ASSERT_THAT(messages[1],
+              IsModificationRequest(Side::Option::Buy,
+                                    ClientOrderId{existing_order_id2},
+                                    price2,
+                                    qty2,
+                                    counterparty));
+}
+
+TEST_F(GeneratorHistoricalRecordApplier, DoesNotReuseOrderFromOppositeSide) {
+  const PartyId counterparty{"Counterparty1"};
+  constexpr double price = 100.0;
+  constexpr double qty = 50.0;
+  constexpr double existing_sell_price = 101.0;
+  constexpr double existing_sell_qty = 30.0;
+  const std::string existing_sell_order_id = "SellOrder";
+  const std::string new_buy_order_id = "NewBuyOrder";
+
+  const auto level = make_level(price,
+                                qty,
+                                counterparty.value(),
+                                std::nullopt,
+                                std::nullopt,
+                                std::nullopt);
+  const auto record = make_record({level});
+
+  auto existing_sell_order =
+      make_registered_order(ClientOrderId{existing_sell_order_id},
+                            OrderPrice{existing_sell_price},
+                            Side::Option::Sell,
+                            Quantity{existing_sell_qty},
+                            counterparty);
+  registry().add(std::move(existing_sell_order));
+
+  EXPECT_CALL(context(), get_synthetic_identifier)
+      .Times(1)
+      .WillOnce(Return(new_buy_order_id));
+
+  std::vector<GeneratedMessage> messages = apply(record);
+  ASSERT_EQ(messages.size(), 2);
+
+  ASSERT_THAT(messages[0],
+              IsCancelRequest(Side::Option::Sell,
+                              ClientOrderId{existing_sell_order_id},
+                              existing_sell_price,
+                              existing_sell_qty,
+                              counterparty));
+  ASSERT_THAT(messages[1],
+              IsNewOrderRequest(Side::Option::Buy,
+                                ClientOrderId{new_buy_order_id},
+                                price,
+                                qty,
+                                counterparty));
+}
+
+TEST_F(GeneratorHistoricalRecordApplier, AppliesSameAndModifiedOrders) {
+  const PartyId counterparty1{"Counterparty1"};
+  const PartyId counterparty2{"Counterparty2"};
+  constexpr double price1 = 100.0;
+  constexpr double qty1 = 50.0;
+  constexpr double price2 = 99.0;
+  constexpr double qty2 = 30.0;
+  constexpr double existing_price2 = 98.0;
+  constexpr double existing_qty2 = 25.0;
+  const std::string order_id1 = "Order1";
+  const std::string order_id2 = "Order2";
+
+  const auto level1 = make_level(price1,
+                                 qty1,
+                                 counterparty1.value(),
+                                 std::nullopt,
+                                 std::nullopt,
+                                 std::nullopt);
+  const auto level2 = make_level(price2,
+                                 qty2,
+                                 counterparty2.value(),
+                                 std::nullopt,
+                                 std::nullopt,
+                                 std::nullopt);
+  const auto record = make_record({level1, level2});
+
+  auto existing_order1 = make_registered_order(ClientOrderId{order_id1},
+                                               OrderPrice{price1},
+                                               Side::Option::Buy,
+                                               Quantity{qty1},
+                                               counterparty1);
+  auto existing_order2 = make_registered_order(ClientOrderId{order_id2},
+                                               OrderPrice{existing_price2},
+                                               Side::Option::Buy,
+                                               Quantity{existing_qty2},
+                                               counterparty2);
+  registry().add(std::move(existing_order1));
+  registry().add(std::move(existing_order2));
+
+  std::vector<GeneratedMessage> messages = apply(record);
+  ASSERT_EQ(messages.size(), 1);
+
+  ASSERT_THAT(messages[0],
+              IsModificationRequest(Side::Option::Buy,
+                                    ClientOrderId{order_id2},
+                                    price2,
+                                    qty2,
+                                    counterparty2));
+}
+
+TEST_F(GeneratorHistoricalRecordApplier,
+       CancelsExtraOrdersWhenFewerLevelsInNewRecord) {
+  const PartyId counterparty{"Counterparty1"};
+  constexpr double price1 = 100.0;
+  constexpr double qty1 = 50.0;
+  constexpr double existing_price2 = 99.0;
+  constexpr double existing_qty2 = 30.0;
+  const std::string order_id1 = "Order1";
+  const std::string order_id2 = "Order2";
+
+  const auto level = make_level(price1,
+                                qty1,
+                                counterparty.value(),
+                                std::nullopt,
+                                std::nullopt,
+                                std::nullopt);
+  const auto record = make_record({level});
+
+  auto existing_order1 = make_registered_order(ClientOrderId{order_id1},
+                                               OrderPrice{price1},
+                                               Side::Option::Buy,
+                                               Quantity{qty1},
+                                               counterparty);
+  auto existing_order2 = make_registered_order(ClientOrderId{order_id2},
+                                               OrderPrice{existing_price2},
+                                               Side::Option::Buy,
+                                               Quantity{existing_qty2},
+                                               counterparty);
+  registry().add(std::move(existing_order1));
+  registry().add(std::move(existing_order2));
+
+  std::vector<GeneratedMessage> messages = apply(record);
+  ASSERT_EQ(messages.size(), 1);
+
+  ASSERT_THAT(messages[0],
+              IsCancelRequest(Side::Option::Buy,
+                              ClientOrderId{order_id2},
+                              existing_price2,
+                              existing_qty2,
+                              counterparty));
+
+  auto orders = registry_select_by_party_id(counterparty);
+  ASSERT_EQ(orders.size(), 1);
+}
+
+TEST_F(GeneratorHistoricalRecordApplier,
+       GeneratesCorrectMessageOrderCancelThenNewThenModify) {
+  const PartyId counterparty_mod{"CounterpartyMod"};
+  const PartyId counterparty_cancel{"CounterpartyCancel"};
+  const PartyId counterparty_new{"CounterpartyNew"};
+  constexpr double existing_price_mod = 100.0;
+  constexpr double new_price_mod = 101.0;
+  constexpr double qty_mod = 10.0;
+  constexpr double price_cancel = 90.0;
+  constexpr double qty_cancel = 10.0;
+  constexpr double price_new = 80.0;
+  constexpr double qty_new = 10.0;
+  const std::string order_id_mod = "OrderMod";
+  const std::string order_id_cancel = "OrderCancel";
+  const std::string order_id_new = "OrderNew";
+
+  auto order_mod = make_registered_order(ClientOrderId{order_id_mod},
+                                         OrderPrice{existing_price_mod},
+                                         Side::Option::Buy,
+                                         Quantity{qty_mod},
+                                         counterparty_mod);
+  registry().add(std::move(order_mod));
+
+  auto order_cancel = make_registered_order(ClientOrderId{order_id_cancel},
+                                            OrderPrice{price_cancel},
+                                            Side::Option::Buy,
+                                            Quantity{qty_cancel},
+                                            counterparty_cancel);
+  registry().add(std::move(order_cancel));
+
+  const auto level1 = make_level(new_price_mod,
+                                 qty_mod,
+                                 counterparty_mod.value(),
+                                 std::nullopt,
+                                 std::nullopt,
+                                 std::nullopt);
+  const auto level2 = make_level(price_new,
+                                 qty_new,
+                                 counterparty_new.value(),
+                                 std::nullopt,
+                                 std::nullopt,
+                                 std::nullopt);
+  const auto record = make_record({level1, level2});
+
+  EXPECT_CALL(context(), get_synthetic_identifier)
+      .WillOnce(Return(order_id_new));
+
+  std::vector<GeneratedMessage> messages = apply(record);
+
+  ASSERT_EQ(messages.size(), 3);
+
+  EXPECT_EQ(messages[0].message_type, MessageType::OrderCancelRequest);
+  EXPECT_EQ(messages[0].client_order_id->value(), order_id_cancel);
+
+  EXPECT_EQ(messages[1].message_type, MessageType::NewOrderSingle);
+  EXPECT_EQ(messages[1].client_order_id->value(), order_id_new);
+
+  EXPECT_EQ(messages[2].message_type, MessageType::OrderCancelReplaceRequest);
+  EXPECT_EQ(messages[2].client_order_id->value(), order_id_mod);
 }
 
 }  // namespace

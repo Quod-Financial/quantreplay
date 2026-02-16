@@ -15,7 +15,8 @@ namespace simulator::generator::historical {
 
 auto DataAccessAdapter::accept(const RecordVisitor& visitor) noexcept -> void {
   while (has_next_record()) {
-    Record::Builder builder{};
+    std::unique_ptr<Record::Builder> builder =
+        std::make_unique<Record::BuilderImpl>();
 
     try {
       parse_next_record(builder);
@@ -26,7 +27,7 @@ auto DataAccessAdapter::accept(const RecordVisitor& visitor) noexcept -> void {
     }
 
     try {
-      Record record = Record::Builder::construct(std::move(builder));
+      Record record = builder->construct();
       visitor(std::move(record));
     } catch (const std::exception& exception) {
       log::warn("failed to process historical data record: {}",

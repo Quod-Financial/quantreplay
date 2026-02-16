@@ -1,8 +1,6 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_MATCHERS_ORDER_MATCHER_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_MATCHERS_ORDER_MATCHER_HPP_
 
-#include <cstdint>
-
 #include "ih/orders/book/limit_order.hpp"
 #include "ih/orders/book/market_order.hpp"
 

@@ -100,8 +100,8 @@ struct fmt::formatter<simulator::trading_system::matching_engine::LimitOrder> {
 
   constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
-  auto format(const formattable& order,
-              format_context& context) const -> decltype(context.out());
+  auto format(const formattable& order, format_context& context) const
+      -> decltype(context.out());
 };
 
 #endif  // SIMULATOR_MATCHING_ENGINE_IH_ORDERS_BOOK_LIMIT_ORDER_HPP_

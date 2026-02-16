@@ -1,9 +1,7 @@
 #include <fmt/format.h>
-#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
-#include "core/domain/json/party.hpp"
 #include "core/domain/party.hpp"
-#include "test_utils/matchers.hpp"
 
 namespace simulator::core::test {
 namespace {
@@ -41,36 +39,6 @@ TEST(CorePartyIdentifier, Format) {
 
   EXPECT_EQ(fmt::format("{}", identifier),
             R"({ PartyID="ProprietaryPartyId", PartyIDSource=Proprietary })");
-}
-
-struct CorePartyIdentifierJson : public ::testing::Test {
-  rapidjson::Document doc;
-  rapidjson::Value json_value{rapidjson::Type::kObjectType};
-};
-
-TEST_F(CorePartyIdentifierJson, ReadsFromJson) {
-  json_value.AddMember("party_id", "PartyId", doc.GetAllocator());
-  json_value.AddMember("source", "Proprietary", doc.GetAllocator());
-
-  const auto identifier =
-      simulator::core::json::Type<PartyIdentifier>::read_json_value(json_value);
-
-  ASSERT_EQ(identifier.party_id(), PartyId{"PartyId"});
-  ASSERT_EQ(identifier.source(), PartyIdSource::Option::Proprietary);
-}
-
-TEST_F(CorePartyIdentifierJson, WritesToJson) {
-  using namespace json::test;
-
-  const auto identifier =
-      PartyIdentifier{PartyId{"PartyId"}, PartyIdSource::Option::Proprietary};
-
-  json::Type<PartyIdentifier>::write_json_value(
-      json_value, doc.GetAllocator(), identifier);
-
-  ASSERT_TRUE(json_value.IsObject());
-  ASSERT_THAT(json_value, HasString("party_id", "PartyId"));
-  ASSERT_THAT(json_value, HasString("source", "Proprietary"));
 }
 
 TEST(CoreParty, Create) {
@@ -149,50 +117,6 @@ TEST(CoreParty, Format) {
   EXPECT_EQ(fmt::format("{}", party),
             "{ PartyIdentifier={ PartyID=\"Identifier\", "
             "PartyIDSource=Proprietary }, PartyRole=ExecutingFirm }");
-}
-
-struct CorePartyJson : public ::testing::Test {
-  auto identifier_json(const PartyIdentifier& identifier) -> rapidjson::Value {
-    rapidjson::Value identifier_value;
-    json::Type<PartyIdentifier>::write_json_value(
-        identifier_value, doc.GetAllocator(), identifier);
-    return identifier_value;
-  }
-
-  rapidjson::Document doc;
-  rapidjson::Value json_value{rapidjson::Type::kObjectType};
-};
-
-TEST_F(CorePartyJson, ReadsFromJson) {
-  const PartyIdentifier identifier{PartyId{"PartyId"},
-                                   PartyIdSource::Option::Proprietary};
-  json_value.AddMember(
-      "identifier", identifier_json(identifier).Move(), doc.GetAllocator());
-  json_value.AddMember("role", "Locate", doc.GetAllocator());
-
-  const auto party =
-      simulator::core::json::Type<Party>::read_json_value(json_value);
-
-  ASSERT_EQ(party.party_id(), PartyId{"PartyId"});
-  ASSERT_EQ(party.source(), PartyIdSource::Option::Proprietary);
-  ASSERT_EQ(party.role(), PartyRole::Option::Locate);
-}
-
-TEST_F(CorePartyJson, WritesToJson) {
-  using namespace json::test;
-
-  const PartyIdentifier identifier{PartyId{"PartyId"},
-                                   PartyIdSource::Option::Proprietary};
-  const Party party{identifier, PartyRole::Option::ExecutingFirm};
-
-  json::Type<Party>::write_json_value(json_value, doc.GetAllocator(), party);
-
-  ASSERT_TRUE(json_value.IsObject());
-  ASSERT_THAT(json_value, HasString("role", "ExecutingFirm"));
-  ASSERT_THAT(json_value,
-              HasInner("identifier", HasString("party_id", "PartyId")));
-  ASSERT_THAT(json_value,
-              HasInner("identifier", HasString("source", "Proprietary")));
 }
 
 }  // namespace

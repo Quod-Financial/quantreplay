@@ -7,14 +7,14 @@
 namespace simulator::http::redirect {
 
 DestinationResolver::DestinationResolver(
-    const data_bridge::VenueAccessor& venue_accessor,
+    std::shared_ptr<data_bridge::VenueAccessor> venue_accessor,
     bool use_venue_id_as_peer_host) noexcept
-    : venue_accessor_{venue_accessor},
+    : venue_accessor_{std::move(venue_accessor)},
       use_venue_id_as_peer_host_{use_venue_id_as_peer_host} {}
 
 auto DestinationResolver::resolve_by_venue_id(const std::string& venue_id)
     const noexcept -> Resolver::ResolvingResult try {
-  auto result = venue_accessor_.get().select_single(venue_id);
+  auto result = venue_accessor_->select_single(venue_id);
   if (!result) {
     log::err(
         "failed to resolve destination with '{0}' VenueID - "
@@ -55,13 +55,13 @@ auto DestinationResolver::resolve_by_venue_id(const std::string& venue_id)
 }
 
 auto DestinationResolver::create(
-    const data_bridge::VenueAccessor& venue_accessor)
+    std::shared_ptr<data_bridge::VenueAccessor> venue_accessor)
     -> std::shared_ptr<DestinationResolver> {
   const bool resolve_hostname_as_venue_id =
       cfg::http().peer_resolution ==
       cfg::HttpConfiguration::PeerHostResolution::VenueId;
 
-  return std::make_shared<DestinationResolver>(venue_accessor,
+  return std::make_shared<DestinationResolver>(std::move(venue_accessor),
                                                resolve_hostname_as_venue_id);
 }
 

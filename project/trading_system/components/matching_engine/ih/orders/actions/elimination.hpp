@@ -1,10 +1,9 @@
-#ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_EOD_ELIMINATION_HPP_
-#define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_EOD_ELIMINATION_HPP_
+#ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_ELIMINATION_HPP_
+#define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_ELIMINATION_HPP_
 
 #include <gsl/pointers>
 
 #include "common/events.hpp"
-#include "core/domain/attributes.hpp"
 #include "core/tools/time.hpp"
 #include "ih/common/abstractions/event_listener.hpp"
 #include "ih/common/events/event_reporter.hpp"
@@ -78,4 +77,4 @@ class OnDisconnectElimination : EventReporter {
 
 }  // namespace simulator::trading_system::matching_engine::order
 
-#endif  // SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_EOD_ELIMINATION_HPP_
+#endif  // SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_ELIMINATION_HPP_

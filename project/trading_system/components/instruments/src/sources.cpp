@@ -81,8 +81,7 @@ auto create_instrument(const data_layer::Listing& listing) noexcept
 
 }  // namespace detail
 
-DatabaseSource::DatabaseSource(
-    data_layer::database::Context db) noexcept
+DatabaseSource::DatabaseSource(data_layer::database::Context db) noexcept
     : db_(std::move(db)) {}
 
 auto DatabaseSource::load_instruments(LoadingProcedure loading_proc) const
@@ -104,7 +103,8 @@ auto DatabaseSource::predicate() -> data_layer::Listing::Predicate {
   using data_layer::Listing;
   using data_layer::ListingCmp;
 
-  return ListingCmp::eq(Listing::Attribute::VenueId, simulator::cfg::venue().name) &&
+  return ListingCmp::eq(Listing::Attribute::VenueId,
+                        simulator::cfg::venue().name) &&
          ListingCmp::eq(Listing::Attribute::Enabled, true);
 }
 

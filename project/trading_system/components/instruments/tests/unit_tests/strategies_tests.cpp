@@ -16,10 +16,8 @@ struct InstrumentLookupFixture : testing::Test {
               PartyRole::Option::LiquidityProvider};
 };
 
-/*----------------------------------------------------------------------------*/
-
 struct InstrumentsSymbolLookup : InstrumentLookupFixture {
-  void SetUp() override {
+  auto SetUp() -> void override {
     descriptor.symbol = Symbol{"AAPL"};
     instrument.symbol = Symbol{"AAPL"};
   }
@@ -92,10 +90,8 @@ TEST_F(InstrumentsSymbolLookup, MatchesParty) {
   EXPECT_EQ(match_rate, MatchRate(2U));
 }
 
-/*----------------------------------------------------------------------------*/
-
 struct InstrumentsSedolIdLookup : InstrumentLookupFixture {
-  void SetUp() override {
+  auto SetUp() -> void override {
     instrument.sedol = SedolId{"SEDOL"};
     descriptor.security_id = SecurityId{"SEDOL"};
     descriptor.security_id_source = SecurityIdSource::Option::Sedol;
@@ -194,10 +190,8 @@ TEST_F(InstrumentsSedolIdLookup, MatchesParty) {
   EXPECT_EQ(match, MatchRate(2U));
 }
 
-/*----------------------------------------------------------------------------*/
-
 struct InstrumentsCusipIdLookup : public InstrumentLookupFixture {
-  void SetUp() override {
+  auto SetUp() -> void override {
     instrument.cusip = CusipId{"CUSIP"};
     descriptor.security_id = SecurityId{"CUSIP"};
     descriptor.security_id_source = SecurityIdSource::Option::Cusip;
@@ -298,10 +292,8 @@ TEST_F(InstrumentsCusipIdLookup, MatchesParty) {
   EXPECT_EQ(match, MatchRate(2U));
 }
 
-/*----------------------------------------------------------------------------*/
-
 struct InstrumentsIsinIdLookup : InstrumentLookupFixture {
-  void SetUp() override {
+  auto SetUp() -> void override {
     instrument.isin = IsinId{"ISIN"};
     instrument.price_currency = PriceCurrency{"USD"};
     instrument.security_type = SecurityType::Option::CommonStock;
@@ -434,10 +426,8 @@ TEST_F(InstrumentsIsinIdLookup, MatchesParty) {
   EXPECT_EQ(match, MatchRate(5U));
 }
 
-/*----------------------------------------------------------------------------*/
-
 struct InstrumentsRicIdLookup : InstrumentLookupFixture {
-  void SetUp() override {
+  auto SetUp() -> void override {
     instrument.ric = RicId{"RIC"};
     descriptor.security_id = SecurityId{"RIC"};
     descriptor.security_id_source = SecurityIdSource::Option::Ric;
@@ -536,10 +526,8 @@ TEST_F(InstrumentsRicIdLookup, MatchesParty) {
   EXPECT_EQ(match, MatchRate(2U));
 }
 
-/*----------------------------------------------------------------------------*/
-
 struct InstrumentsExchangeIdLookup : InstrumentLookupFixture {
-  void SetUp() override {
+  auto SetUp() -> void override {
     instrument.exchange_id = ExchangeId{"EXCHANGE"};
     descriptor.security_id = SecurityId{"EXCHANGE"};
     descriptor.security_id_source = SecurityIdSource::Option::ExchangeSymbol;
@@ -638,10 +626,8 @@ TEST_F(InstrumentsExchangeIdLookup, MatchesParty) {
   EXPECT_EQ(match, MatchRate(2U));
 }
 
-/*----------------------------------------------------------------------------*/
-
 struct InstrumentsBloombergIdLookup : InstrumentLookupFixture {
-  void SetUp() override {
+  auto SetUp() -> void override {
     instrument.bloomberg_id = BloombergId{"BBG"};
     descriptor.security_id = SecurityId{"BBG"};
     descriptor.security_id_source = SecurityIdSource::Option::BloombergSymbol;
@@ -739,8 +725,6 @@ TEST_F(InstrumentsBloombergIdLookup, MatchesParty) {
 
   EXPECT_EQ(match, MatchRate(2U));
 }
-
-/*----------------------------------------------------------------------------*/
 
 }  // namespace
 }  // namespace simulator::trading_system::instrument::lookup::test

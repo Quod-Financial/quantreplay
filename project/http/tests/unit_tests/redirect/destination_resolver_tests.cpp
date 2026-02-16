@@ -38,7 +38,8 @@ class HttpRedirectDestinationResolver : public testing::Test {
     return data_layer::Venue::create(std::move(patch));
   }
 
-  mock::VenueAccessor venue_accessor;
+  std::shared_ptr<mock::VenueAccessor> venue_accessor =
+      std::make_shared<mock::VenueAccessor>();
 
  private:
   auto make_resolver() -> redirect::DestinationResolver {
@@ -55,7 +56,7 @@ TEST_F(HttpRedirectDestinationResolver,
   const mock::VenueAccessor::VenueResult accessor_reply{
       tl::unexpected(data_bridge::Failure::ResponseCardinalityError)};
 
-  EXPECT_CALL(venue_accessor, select_single(Eq(venue_id)))
+  EXPECT_CALL(*venue_accessor, select_single(Eq(venue_id)))
       .Times(1)
       .WillOnce(Return(accessor_reply));
 
@@ -71,7 +72,7 @@ TEST_F(HttpRedirectDestinationResolver,
   const auto venue = make_venue(venue_id);
 
   const mock::VenueAccessor::VenueResult accessor_reply{venue};
-  EXPECT_CALL(venue_accessor, select_single(Eq(venue_id)))
+  EXPECT_CALL(*venue_accessor, select_single(Eq(venue_id)))
       .Times(1)
       .WillOnce(Return(accessor_reply));
 
@@ -88,7 +89,7 @@ TEST_F(HttpRedirectDestinationResolver, ResolvesByVenueIDIfRestPortIsPresent) {
   const auto venue = make_venue(venue_id, venue_port);
 
   const mock::VenueAccessor::VenueResult accessor_reply{venue};
-  EXPECT_CALL(venue_accessor, select_single(Eq(venue_id)))
+  EXPECT_CALL(*venue_accessor, select_single(Eq(venue_id)))
       .Times(1)
       .WillOnce(Return(accessor_reply));
 
@@ -108,7 +109,7 @@ TEST_F(HttpRedirectDestinationResolver, ResolvesByHostnameIfItIsUsedAsVenueId) {
   const auto venue = make_venue("XLSE", 9000);
 
   const mock::VenueAccessor::VenueResult accessor_reply{venue};
-  EXPECT_CALL(venue_accessor, select_single(Eq("XLSE")))
+  EXPECT_CALL(*venue_accessor, select_single(Eq("XLSE")))
       .Times(1)
       .WillOnce(Return(accessor_reply));
 

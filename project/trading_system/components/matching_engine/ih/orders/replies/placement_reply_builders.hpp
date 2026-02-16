@@ -2,6 +2,7 @@
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_REPLIES_PLACEMENT_REPLY_BUILDERS_HPP_
 
 #include "common/attributes.hpp"
+#include "core/domain/attributes.hpp"
 #include "ih/orders/book/limit_order.hpp"
 #include "ih/orders/book/market_order.hpp"
 #include "protocol/app/order_placement_confirmation.hpp"
@@ -71,7 +72,7 @@ auto prepare_placement_reject(const LimitOrder& order)
     -> PlacementRejectBuilder;
 
 [[nodiscard]]
- auto prepare_placement_reject(const MarketOrder& order)
+auto prepare_placement_reject(const MarketOrder& order)
     -> PlacementRejectBuilder;
 
 }  // namespace simulator::trading_system::matching_engine

@@ -32,6 +32,23 @@ class Marshaller {
   MOCK_METHOD(void, datasource_format, (Attribute, Datasource::Format));
   MOCK_METHOD(void, datasource_type, (Attribute, Datasource::Type));
   MOCK_METHOD(void, market_phase_type, (Attribute, MarketPhase::Phase));
+  MOCK_METHOD(void, optional_boolean, (Attribute, const std::optional<bool>&));
+  MOCK_METHOD(void,
+              optional_int32,
+              (Attribute, const std::optional<std::int32_t>&));
+  MOCK_METHOD(void,
+              optional_uint16,
+              (Attribute, const std::optional<std::uint16_t>&));
+  MOCK_METHOD(void,
+              optional_uint32,
+              (Attribute, const std::optional<std::uint32_t>&));
+  MOCK_METHOD(void, optional_real, (Attribute, const std::optional<double>&));
+  MOCK_METHOD(void,
+              optional_string,
+              (Attribute, const std::optional<std::string>&));
+  MOCK_METHOD(void,
+              optional_engine_type,
+              (Attribute, const std::optional<Venue::EngineType>&));
 
 #define DEFINE_MARSHALLING_OPERATOR(TYPE, ACCEPTOR) \
   auto operator()(Attribute field, TYPE value)->void { ACCEPTOR(field, value); }
@@ -48,6 +65,18 @@ class Marshaller {
   DEFINE_MARSHALLING_OPERATOR(Datasource::Format, datasource_format);
   DEFINE_MARSHALLING_OPERATOR(Datasource::Type, datasource_type);
   DEFINE_MARSHALLING_OPERATOR(MarketPhase::Phase, market_phase_type);
+  DEFINE_MARSHALLING_OPERATOR(const std::optional<bool>&, optional_boolean);
+  DEFINE_MARSHALLING_OPERATOR(const std::optional<std::int32_t>&,
+                              optional_int32);
+  DEFINE_MARSHALLING_OPERATOR(const std::optional<double>&, optional_real);
+  DEFINE_MARSHALLING_OPERATOR(const std::optional<std::uint16_t>&,
+                              optional_uint16);
+  DEFINE_MARSHALLING_OPERATOR(const std::optional<std::uint32_t>&,
+                              optional_uint32);
+  DEFINE_MARSHALLING_OPERATOR(const std::optional<std::string>&,
+                              optional_string);
+  DEFINE_MARSHALLING_OPERATOR(const std::optional<Venue::EngineType>&,
+                              optional_engine_type);
 
 #undef DEFINE_MARSHALLING_OPERATOR
 };
@@ -69,6 +98,23 @@ class Unmarshaller {
   MOCK_METHOD(bool, datasource_format, (Attribute, Datasource::Format&));
   MOCK_METHOD(bool, datasource_type, (Attribute, Datasource::Type&));
   MOCK_METHOD(bool, market_phase_type, (Attribute, MarketPhase::Phase&));
+  MOCK_METHOD(bool, optional_boolean, (Attribute, std::optional<bool>&));
+  MOCK_METHOD(bool, optional_character, (Attribute, std::optional<char>&));
+  MOCK_METHOD(bool, optional_int32, (Attribute, std::optional<std::int32_t>&));
+  MOCK_METHOD(bool,
+              optional_uint16,
+              (Attribute, std::optional<std::uint16_t>&));
+  MOCK_METHOD(bool,
+              optional_uint32,
+              (Attribute, std::optional<std::uint32_t>&));
+  MOCK_METHOD(bool,
+              optional_uint64,
+              (Attribute, std::optional<std::uint64_t>&));
+  MOCK_METHOD(bool, optional_real, (Attribute, std::optional<double>&));
+  MOCK_METHOD(bool, optional_string, (Attribute, std::optional<std::string>&));
+  MOCK_METHOD(bool,
+              optional_engine_type,
+              (Attribute, std::optional<Venue::EngineType>&));
 
 #define DEFINE_UNMARSHALLING_OPERATOR(TYPE, ACCEPTOR) \
   auto operator()(Attribute field, TYPE type)->bool { \
@@ -87,6 +133,16 @@ class Unmarshaller {
   DEFINE_UNMARSHALLING_OPERATOR(Datasource::Format&, datasource_format);
   DEFINE_UNMARSHALLING_OPERATOR(Datasource::Type&, datasource_type);
   DEFINE_UNMARSHALLING_OPERATOR(MarketPhase::Phase&, market_phase_type);
+  DEFINE_UNMARSHALLING_OPERATOR(std::optional<bool>&, optional_boolean);
+  DEFINE_UNMARSHALLING_OPERATOR(std::optional<char>&, optional_character);
+  DEFINE_UNMARSHALLING_OPERATOR(std::optional<std::int32_t>&, optional_int32);
+  DEFINE_UNMARSHALLING_OPERATOR(std::optional<std::uint16_t>&, optional_uint16);
+  DEFINE_UNMARSHALLING_OPERATOR(std::optional<std::uint32_t>&, optional_uint32);
+  DEFINE_UNMARSHALLING_OPERATOR(std::optional<std::uint64_t>&, optional_uint64);
+  DEFINE_UNMARSHALLING_OPERATOR(std::optional<double>&, optional_real);
+  DEFINE_UNMARSHALLING_OPERATOR(std::optional<std::string>&, optional_string);
+  DEFINE_UNMARSHALLING_OPERATOR(std::optional<Venue::EngineType>&,
+                                optional_engine_type);
 
 #undef DEFINE_UNMARSHALLING_OPERATOR
 };

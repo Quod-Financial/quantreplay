@@ -1,7 +1,6 @@
 #ifndef SIMULATOR_RUNTIME_IH_LOOP_IMPL_HPP_
 #define SIMULATOR_RUNTIME_IH_LOOP_IMPL_HPP_
 
-#include <chrono>
 #include <functional>
 
 #include "runtime/loop.hpp"

@@ -5,7 +5,7 @@
 #include "ih/instruments_container.hpp"
 #include "ih/lookup/lookup.hpp"
 
-namespace simulator::trading_system::instrument::lookup::tests {
+namespace simulator::trading_system::instrument::lookup::test {
 namespace {
 
 using namespace ::testing;  // NOLINT
@@ -159,4 +159,4 @@ TEST_F(InstrumentsLookup, ReportsDescriptorAmbiguous) {
 }
 
 }  // namespace
-}  // namespace simulator::trading_system::instrument::lookup::tests
+}  // namespace simulator::trading_system::instrument::lookup::test

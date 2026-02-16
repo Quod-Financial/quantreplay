@@ -17,7 +17,13 @@ struct TestModel {
     UnsignedIntegerField,
     DecimalField,
     StringField,
-    CustomField
+    CustomField,
+    OptionalBooleanField,
+    OptionalIntegerField,
+    OptionalUnsignedIntegerField,
+    OptionalDecimalField,
+    OptionalStringField,
+    OptionalCustomField
   };
 
   enum class CustomFieldType { Value1, Value2, Value3 };
@@ -50,6 +56,24 @@ struct FakeColumnResolver {
         break;
       case TestModel::Attribute::CustomField:
         column_name = "CustomField";
+        break;
+      case TestModel::Attribute::OptionalBooleanField:
+        column_name = "OptionalBooleanField";
+        break;
+      case TestModel::Attribute::OptionalIntegerField:
+        column_name = "OptionalIntegerField";
+        break;
+      case TestModel::Attribute::OptionalUnsignedIntegerField:
+        column_name = "OptionalUnsignedIntegerField";
+        break;
+      case TestModel::Attribute::OptionalDecimalField:
+        column_name = "OptionalDecimalField";
+        break;
+      case TestModel::Attribute::OptionalStringField:
+        column_name = "OptionalStringField";
+        break;
+      case TestModel::Attribute::OptionalCustomField:
+        column_name = "OptionalCustomField";
         break;
     }
 

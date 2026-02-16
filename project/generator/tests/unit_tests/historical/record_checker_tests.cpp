@@ -39,83 +39,84 @@ class GeneratorHistoricalRecordChecker : public testing::Test {
 };
 
 TEST_F(GeneratorHistoricalRecordChecker,
-       ReturnsProcessableIfBidPriceAndQuantityAreNotSet) {
+       ReturnsHasValidBidFalseIfBidPriceAndQuantityAreNotSet) {
   const auto level = make_level(LevelAttributes{}, LevelAttributes{});
-  EXPECT_TRUE(RecordApplier::RecordChecker::is_processable(level));
+  EXPECT_FALSE(RecordApplier::RecordChecker::has_valid_bid(level));
 }
 
 TEST_F(GeneratorHistoricalRecordChecker,
-       ReturnsNotProcessableIfBidQuantityIsNotSet) {
+       ReturnsHasValidBidFalseIfBidQuantityIsNotSet) {
   const auto level =
       make_level(LevelAttributes{12.0, std::nullopt}, LevelAttributes{});
-  EXPECT_FALSE(RecordApplier::RecordChecker::is_processable(level));
+  EXPECT_FALSE(RecordApplier::RecordChecker::has_valid_bid(level));
 }
 
 TEST_F(GeneratorHistoricalRecordChecker,
-       ReturnsNotProcessableIfBidPriceIsNotSet) {
+       ReturnsHasValidBidFalseIfBidPriceIsNotSet) {
   const auto level =
       make_level(LevelAttributes{std::nullopt, 114.5}, LevelAttributes{});
-  EXPECT_FALSE(RecordApplier::RecordChecker::is_processable(level));
+  EXPECT_FALSE(RecordApplier::RecordChecker::has_valid_bid(level));
 }
 
 TEST_F(GeneratorHistoricalRecordChecker,
-       ReturnsProcessableIfBidPriceAndQuantityAreSet) {
+       ReturnsHasValidBidFalseIfBidQuantityIsZero) {
+  const auto level =
+      make_level(LevelAttributes{std::nullopt, 0}, LevelAttributes{});
+  EXPECT_FALSE(RecordApplier::RecordChecker::has_valid_bid(level));
+}
+
+TEST_F(GeneratorHistoricalRecordChecker,
+       ReturnsHasValidBidFalseIfBidQuantityIsLessThenZero) {
+  const auto level =
+      make_level(LevelAttributes{std::nullopt, -25}, LevelAttributes{});
+  EXPECT_FALSE(RecordApplier::RecordChecker::has_valid_bid(level));
+}
+
+TEST_F(GeneratorHistoricalRecordChecker,
+       ReturnsHasValidBidTrueIfBidPriceAndQuantityAreSet) {
   const auto level =
       make_level(LevelAttributes{12.0, 114.5}, LevelAttributes{});
-  EXPECT_TRUE(RecordApplier::RecordChecker::is_processable(level));
+  EXPECT_TRUE(RecordApplier::RecordChecker::has_valid_bid(level));
 }
 
 TEST_F(GeneratorHistoricalRecordChecker,
-       ReturnsProcessableIfOfferPriceAndQuantityAreNotSet) {
+       ReturnsHasValidOfferFalseIfOfferPriceAndQuantityAreNotSet) {
   const auto level = make_level(LevelAttributes{}, LevelAttributes{});
-  EXPECT_TRUE(RecordApplier::RecordChecker::is_processable(level));
+  EXPECT_FALSE(RecordApplier::RecordChecker::has_valid_offer(level));
 }
 
 TEST_F(GeneratorHistoricalRecordChecker,
-       ReturnsNotProcessableIfOfferQuantityIsNotSet) {
+       ReturnsHasValidOfferFalseIfOfferQuantityIsNotSet) {
   const auto level =
       make_level(LevelAttributes{}, LevelAttributes{12.0, std::nullopt});
-  EXPECT_FALSE(RecordApplier::RecordChecker::is_processable(level));
+  EXPECT_FALSE(RecordApplier::RecordChecker::has_valid_offer(level));
 }
 
 TEST_F(GeneratorHistoricalRecordChecker,
-       ReturnsNotProcessableIfOfferPriceIsNotSet) {
+       ReturnsHasValidOfferFalseIfOfferPriceIsNotSet) {
   const auto level =
       make_level(LevelAttributes{}, LevelAttributes{std::nullopt, 114.5});
-  EXPECT_FALSE(RecordApplier::RecordChecker::is_processable(level));
+  EXPECT_FALSE(RecordApplier::RecordChecker::has_valid_offer(level));
 }
 
 TEST_F(GeneratorHistoricalRecordChecker,
-       ReturnsProcessableIfOfferPriceAndQuantityAreSet) {
+       ReturnsHasValidOfferFalseIfOfferQuantityIsZero) {
+  const auto level = make_level(LevelAttributes{}, LevelAttributes{14.0, 0});
+  EXPECT_FALSE(RecordApplier::RecordChecker::has_valid_offer(level));
+}
+
+TEST_F(GeneratorHistoricalRecordChecker,
+       ReturnsHasValidOfferFalseIfOfferQuantityIsLessThenZero) {
+  const auto level =
+      make_level(LevelAttributes{}, LevelAttributes{25.0, -114.5});
+  EXPECT_FALSE(RecordApplier::RecordChecker::has_valid_offer(level));
+}
+
+TEST_F(GeneratorHistoricalRecordChecker,
+       ReturnsHasValidOfferTrueIfOfferPriceAndQuantityAreSet) {
   const auto level =
       make_level(LevelAttributes{}, LevelAttributes{12.0, 114.5});
-  EXPECT_TRUE(RecordApplier::RecordChecker::is_processable(level));
-}
-
-TEST_F(GeneratorHistoricalRecordChecker,
-       ReturnsLevelNotHasBidPartIfBidPriceAndQuantityAreNotSet) {
-  const auto level = make_level(LevelAttributes{}, LevelAttributes{});
-  EXPECT_FALSE(RecordApplier::RecordChecker::has_bid_part(level));
-}
-
-TEST_F(GeneratorHistoricalRecordChecker,
-       ReturnsLevelHasBidPartIfBidPriceAndQuantityAreSet) {
-  const auto level =
-      make_level(LevelAttributes{120.4, 43.3}, LevelAttributes{});
-  EXPECT_TRUE(RecordApplier::RecordChecker::has_bid_part(level));
-}
-
-TEST_F(GeneratorHistoricalRecordChecker,
-       ReturnsLevelNotHasOfferPartIfOfferPriceAndQuantityAreNotSet) {
-  const auto level = make_level(LevelAttributes{}, LevelAttributes{});
-  EXPECT_FALSE(RecordApplier::RecordChecker::has_offer_part(level));
-}
-
-TEST_F(GeneratorHistoricalRecordChecker,
-       ReturnsLevelHasOfferPartIfOfferPriceAndQuantityAreSet) {
-  const auto level =
-      make_level(LevelAttributes{}, LevelAttributes{453.5, 33.4});
-  EXPECT_TRUE(RecordApplier::RecordChecker::has_offer_part(level));
+  EXPECT_TRUE(RecordApplier::RecordChecker::has_valid_offer(level));
 }
 
 }  // namespace

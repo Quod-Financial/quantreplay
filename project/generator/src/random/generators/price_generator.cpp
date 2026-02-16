@@ -123,7 +123,8 @@ auto PriceGeneratorImpl::resolve_base_price(
     // try to resolve base price as the best price for a current side
     // and return it immediately.
     resolved_price = Utils::select_price(actual_prices, price_side);
-    return core::equal(*resolved_price, 0.) ? std::nullopt : resolved_price;
+    return core::equal(resolved_price.value_or(0.), 0.) ? std::nullopt
+                                                        : resolved_price;
   }
 
   if (event.is_resting_order_event()) {
@@ -144,8 +145,17 @@ auto PriceGeneratorImpl::resolve_configured_price(
   assert(event.is_buy_event() || event.is_sell_event());
   const auto price_side = event.target_side();
 
-  return price_side == Side::Option::Buy ? *configured_prices.bid_price()
-                                         : *configured_prices.offer_price();
+  if (price_side == Side::Option::Buy) {
+    if (configured_prices.bid_price().has_value()) {
+      return *configured_prices.bid_price();
+    }
+  } else {
+    if (configured_prices.offer_price().has_value()) {
+      return *configured_prices.offer_price();
+    }
+  }
+
+  return *configured_prices.mid_price();
 }
 
 }  // namespace simulator::generator::random

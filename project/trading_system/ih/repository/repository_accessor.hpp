@@ -1,8 +1,6 @@
 #ifndef SIMULATOR_TRADING_SYSTEM_IH_REPOSITORY_REPOSITORY_ACCESSOR_HPP_
 #define SIMULATOR_TRADING_SYSTEM_IH_REPOSITORY_REPOSITORY_ACCESSOR_HPP_
 
-#include <concepts>
-#include <functional>
 #include <memory>
 #include <tl/function_ref.hpp>
 
@@ -43,8 +41,8 @@ class RepositoryAccessor {
       -> std::unique_ptr<RepositoryAccessor>;
 
  private:
-  virtual auto unicast_impl(InstrumentId instrument_id,
-                            Action action) const -> void = 0;
+  virtual auto unicast_impl(InstrumentId instrument_id, Action action) const
+      -> void = 0;
 
   virtual auto broadcast_impl(Action action) const -> void = 0;
 };

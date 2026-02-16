@@ -28,9 +28,9 @@ function(run_conan)
       gtest/1.13.0
       benchmark/1.8.3
       libpqxx/7.7.5
-      pistache/cci.20201127
+      pistache/0.0.5
       quickfix/1.15.1
-      rapidjson/cci.20220822
+      rapidjson/cci.20230929
       spdlog/1.14.1
       tinyxml2/9.0.0
       vincentlaucsb-csv-parser/2.1.3

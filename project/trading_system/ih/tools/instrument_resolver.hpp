@@ -26,7 +26,8 @@ struct InstrumentResolver {
       -> tl::expected<instrument::View, instrument::LookupError> = 0;
 
   [[nodiscard]]
-  virtual auto resolve_instrument(const Instrument& instrument) const
+  virtual auto resolve_instrument(
+      const instrument::Cache::InstrumentSpecification& specification) const
       -> tl::expected<instrument::View, instrument::LookupError> = 0;
 };
 

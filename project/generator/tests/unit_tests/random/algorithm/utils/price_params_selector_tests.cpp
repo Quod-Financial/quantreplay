@@ -78,5 +78,27 @@ TEST_F(GeneratorRandomPriceParamsSelector, SelectsPriceSpread) {
   EXPECT_DOUBLE_EQ(params.get_price_spread(), price_spread);
 }
 
+TEST_F(GeneratorRandomPriceParamsSelector,
+       SelectsPriceTickSizeIfPriceSpreadIsLessThanTickSize) {
+  constexpr double tick_size = 0.2;
+  constexpr double price_spread = 0.1;
+  patch.with_price_tick_size(tick_size).with_random_orders_spread(price_spread);
+  const auto listing = data_layer::Listing::create(patch, listing_id);
+
+  const PriceGenerationParams params = PriceParamsSelector::select(listing);
+  ASSERT_DOUBLE_EQ(params.get_price_spread(), tick_size);
+}
+
+TEST_F(GeneratorRandomPriceParamsSelector,
+       SelectsPriceSpreadIfItIsGreaterThanTickSize) {
+  constexpr double tick_size = 0.1;
+  constexpr double price_spread = 0.2;
+  patch.with_price_tick_size(tick_size).with_random_orders_spread(price_spread);
+  const auto listing = data_layer::Listing::create(patch, listing_id);
+
+  const PriceGenerationParams params = PriceParamsSelector::select(listing);
+  ASSERT_DOUBLE_EQ(params.get_price_spread(), price_spread);
+}
+
 }  // namespace
 }  // namespace simulator::generator::random::test

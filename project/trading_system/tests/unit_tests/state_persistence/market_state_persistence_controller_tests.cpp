@@ -60,15 +60,17 @@ TEST_F(TradingSystemMarketStatePersistenceController,
   config.set_persistence_file_path("file_name");
 
   Instrument instrument;
-  instrument.symbol = Symbol{"Symbol"};
+  instrument.identifier = InstrumentId{1};
   std::vector<Instrument> instruments{instrument};
 
   market_state::InstrumentState instrument_state;
-  instrument_state.instrument = instrument;
+  std::pair<InstrumentId, market_state::InstrumentState&> pair{
+      InstrumentId{1}, instrument_state};
 
-  EXPECT_CALL(executor, store_state_request(ElementsAre(instrument_state)));
+  EXPECT_CALL(executor, store_state_request(ElementsAre(pair)));
 
-  ON_CALL(*serializer, serialize(_, _)).WillByDefault(Return(true));
+  ON_CALL(*serializer, serialize(_, _))
+      .WillByDefault(Return(tl::expected<void, std::string>{}));
 
   MarketStatePersistenceController controller{
       config, executor, std::move(serializer), {}, std::move(instruments)};
@@ -86,7 +88,7 @@ TEST_F(TradingSystemMarketStatePersistenceController,
   EXPECT_CALL(
       *strict_serializer,
       serialize(Field(&market_state::Snapshot::venue_id, Eq("Venue")), _))
-      .WillRepeatedly(Return(true));
+      .WillRepeatedly(Return(tl::expected<void, std::string>{}));
 
   MarketStatePersistenceController controller{
       config, executor, std::move(strict_serializer), "Venue", {}};
@@ -99,7 +101,8 @@ TEST_F(TradingSystemMarketStatePersistenceController,
   config.set_persistence(true);
   config.set_persistence_file_path("file_name");
 
-  EXPECT_CALL(*serializer, serialize(_, _)).WillOnce(Return(false));
+  EXPECT_CALL(*serializer, serialize(_, _))
+      .WillOnce(Return(tl::unexpected<std::string>{std::string{}}));
 
   MarketStatePersistenceController controller{
       config, executor, std::move(serializer), {}, {}};
@@ -113,7 +116,8 @@ TEST_F(TradingSystemMarketStatePersistenceController,
   config.set_persistence(true);
   config.set_persistence_file_path("file_name");
 
-  EXPECT_CALL(*serializer, serialize(_, _)).WillOnce(Return(true));
+  EXPECT_CALL(*serializer, serialize(_, _))
+      .WillOnce(Return(tl::expected<void, std::string>{}));
 
   MarketStatePersistenceController controller{
       config, executor, std::move(serializer), {}, {}};
@@ -211,16 +215,16 @@ TEST_F(TradingSystemMarketStatePersistenceControllerRealFile,
 
 TEST_F(TradingSystemMarketStatePersistenceControllerRealFile,
        RecoverCallsExecutorRecoverStateRequestWithInstruments) {
-  market_state::InstrumentState state1;
-  state1.instrument.symbol = Symbol{"Symbol1"};
-  market_state::InstrumentState state2;
-  state2.instrument.symbol = Symbol{"Symbol2"};
+  market_state::InstrumentData data1;
+  data1.specification.symbol = Symbol{"Symbol1"};
+  market_state::InstrumentData data2;
+  data2.specification.symbol = Symbol{"Symbol2"};
   market_state::Snapshot snapshot;
-  snapshot.instruments = {state1, state2};
+  snapshot.instruments = {data1, data2};
 
   ON_CALL(*serializer, deserialize(_)).WillByDefault(Return(snapshot));
 
-  EXPECT_CALL(executor, recover_state_request(ElementsAre(state1, state2)));
+  EXPECT_CALL(executor, recover_state_request(ElementsAre(data1, data2)));
 
   MarketStatePersistenceController controller{
       config, executor, std::move(serializer), {}, {}};

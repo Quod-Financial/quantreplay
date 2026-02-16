@@ -3,17 +3,6 @@
 
 #include <pistache/router.h>
 
-#include "data_layer/api/database/context.hpp"
-#include "ih/controllers/datasource_controller.hpp"
-#include "ih/controllers/listing_controller.hpp"
-#include "ih/controllers/price_seed_controller.hpp"
-#include "ih/controllers/setting_controller.hpp"
-#include "ih/controllers/venue_controller.hpp"
-#include "ih/data_bridge/datasource_accessor.hpp"
-#include "ih/data_bridge/listing_accessor.hpp"
-#include "ih/data_bridge/price_seed_accessor.hpp"
-#include "ih/data_bridge/setting_accessor.hpp"
-#include "ih/data_bridge/venue_accessor.hpp"
 #include "ih/processors/delete_processor.hpp"
 #include "ih/processors/get_processor.hpp"
 #include "ih/processors/post_processor.hpp"
@@ -25,7 +14,10 @@ class Router : public Pistache::Http::Handler {
  public:
   HTTP_PROTOTYPE(Router)
 
-  explicit Router(data_layer::database::Context database);
+  explicit Router(std::shared_ptr<GetProcessor> get_processor,
+                  std::shared_ptr<PostProcessor> post_processor,
+                  std::shared_ptr<PutProcessor> put_processor,
+                  std::shared_ptr<DeleteProcessor> delete_processor);
 
   auto onRequest(const Pistache::Http::Request& request,
                  Pistache::Http::ResponseWriter response) -> void override;
@@ -49,23 +41,10 @@ class Router : public Pistache::Http::Handler {
 
   Pistache::Rest::Router router_;
 
-  data_bridge::DataLayerDatasourceAccessor datasource_accessor_;
-  data_bridge::DataLayerListingAccessor listing_accessor_;
-  data_bridge::DataLayerPriceSeedAccessor price_seed_accessor_;
-  data_bridge::DataLayerSettingAccessor settings_accessor_;
-  data_bridge::DataLayerVenueAccessor venue_accessor_;
-
-  DatasourceController datasource_controller_;
-  ListingController listing_controller_;
-  PriceSeedController price_seed_controller_;
-  SettingController setting_controller_;
-  TradingController trading_controller_;
-  VenueController venue_controller_;
-
-  GetProcessor get_processor_;
-  PostProcessor post_processor_;
-  PutProcessor put_processor_;
-  DeleteProcessor delete_processor_;
+  std::shared_ptr<GetProcessor> get_processor_;
+  std::shared_ptr<PostProcessor> post_processor_;
+  std::shared_ptr<PutProcessor> put_processor_;
+  std::shared_ptr<DeleteProcessor> delete_processor_;
 };
 
 }  // namespace simulator::http

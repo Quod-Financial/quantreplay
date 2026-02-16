@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "ih/orders/replies/modification_reply_builders.hpp"
-#include "tools/order_test_tools.hpp"
+#include "tools/order_builder.hpp"
 
 namespace simulator::trading_system::matching_engine::test {
 namespace {
@@ -12,8 +12,6 @@ using namespace std::chrono_literals;
 using namespace ::testing;  // NOLINT
 
 // NOLINTBEGIN(*magic-numbers*)
-
-// region ModificationConfirmationBuilder
 
 struct ModificationConfirmationBuilder : public Test {
   const protocol::Session test_session{protocol::generator::Session{}};
@@ -162,10 +160,6 @@ TEST_F(ModificationConfirmationBuilder, SetsOrigClientOrderId) {
               Optional(Eq(OrigClientOrderId{"ORIG-123"})));
 }
 
-// endregion ModificationConfirmationBuilder
-
-// region ModificationRejectBuilder
-
 struct ModificationRejectBuilder : public Test {
   protocol::Session test_session{protocol::generator::Session{}};
   protocol::OrderModificationRequest request{test_session};
@@ -243,8 +237,6 @@ TEST_F(ModificationRejectBuilder, SetsOrigClientOrderId) {
   ASSERT_THAT(reject.orig_client_order_id,
               Optional(Eq(OrigClientOrderId{"ORIG-123"})));
 }
-
-// endregion ModificationRejectBuilder
 
 // NOLINTEND(*magic-numbers*)
 

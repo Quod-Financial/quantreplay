@@ -22,15 +22,24 @@ auto get_fix_configuration_path() -> std::filesystem::path {
   return cfg::quickfix().session_settings;
 }
 
+auto convert_to_http_callbacks(const ControlCallbacks& callbacks)
+    -> http::ControlCallbacks {
+  http::ControlCallbacks http_callbacks;
+  http_callbacks.reset_app_state = callbacks.reset_app_state;
+  return http_callbacks;
+}
+
 }  // namespace
 
 VenueSimulationPlatform::VenueSimulationPlatform(
-    const data_layer::database::Context& database) {
+    const data_layer::database::Context& database,
+    const ControlCallbacks& callbacks) {
   log::debug("creating venue simulation platform");
   trading_engine_ = std::make_shared<TradingEngine>(database);
   fix_acceptor_ = std::make_shared<FixAcceptor>(get_fix_configuration_path());
   generator_ = std::make_shared<Generator>(database);
-  http_server_ = std::make_shared<HttpServer>(database);
+  http_server_ = std::make_shared<HttpServer>(
+      database, convert_to_http_callbacks(callbacks));
 
   middleware::bind_trading_admin_channel(trading_engine_);
   middleware::bind_trading_reply_channel(

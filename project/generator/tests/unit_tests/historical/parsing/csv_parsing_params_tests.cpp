@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include "data_layer/api/models/datasource.hpp"
 #include "ih/historical/parsing/params.hpp"
 
 namespace simulator::generator::historical::test {
@@ -28,7 +29,7 @@ TEST_F(GeneratorHistoricalParsingCsvParsingParams,
        ReturnsDefaultMaxDepthLevels) {
   const CsvParsingParams params{general_params};
   ASSERT_EQ(params.datasource_max_depth_levels(),
-            constant::historical::AllDepthLevels);
+            data_layer::Datasource::AllDepthLevels);
 }
 
 TEST_F(GeneratorHistoricalParsingCsvParsingParams, ReturnsMaxDepthLevels) {

@@ -5,48 +5,54 @@
 #include "data_layer/api/validations/datasource.hpp"
 #include "ih/historical/mapping/column_mapping_filter.hpp"
 #include "ih/historical/mapping/configurator.hpp"
+#include "ih/historical/mapping/csv_no_header_configurator.hpp"
 #include "log/logging.hpp"
 
 namespace simulator::generator::historical {
-namespace {
 
-auto datasource_params(const data_layer::Datasource& datasource)
-    -> DatasourceParams {
-  switch (datasource.format()) {
-    case data_layer::Datasource::Format::Postgres:
-      return DatasourceParams::Postgres;
-    case data_layer::Datasource::Format::Csv:
-      return datasource.text_header_row() > 0 ? DatasourceParams::CsvHasHeader
-                                              : DatasourceParams::CsvNoHeader;
+MappingParams::MappingParams(ColumnMappings mapping_configs) noexcept
+    : column_mappings_{std::move(mapping_configs)} {}
+
+auto MappingParams::initialize(std::uint32_t column_count,
+                               std::uint32_t max_depth_levels) -> void {
+  const mapping::CsvNoHeaderConfigurator configurator{column_count,
+                                                      max_depth_levels};
+  const auto column_configs = mapping::filter(column_mappings_);
+  if (auto result = configurator.configure(column_configs);
+      result.has_value()) {
+    spec_ = std::move(*result);
+  } else {
+    throw std::invalid_argument{
+        fmt::format("Invalid column mapping: {}", result.error())};
   }
-  core::unreachable();
-}
 
-}  // namespace
-
-MappingParams::MappingParams(ColumnMappings mapping_configs,
-                             DatasourceParams datasource_params) noexcept
-    : column_mappings_{std::move(mapping_configs)},
-      datasource_params_{std::move(datasource_params)} {}
-
-auto MappingParams::initialize(mapping::DepthConfig depth_config) -> void {
-  initialize(ColumnNames{}, std::move(depth_config));
+  const auto datasource_id =
+      column_mappings_.empty() ? 0 : column_mappings_.front().datasource_id();
+  log::debug(
+      "Historic column mapping has been configured for data_source_id `{}': {}",
+      datasource_id,
+      spec_);
 }
 
 auto MappingParams::initialize(ColumnNames column_names,
-                               mapping::DepthConfig depth_config) -> void {
-  mapping::Configurator configurator{spec_,
-                                     std::move(column_names),
-                                     std::move(depth_config),
-                                     datasource_params_};
+                               std::uint32_t max_depth_levels) -> void {
+  mapping::Configurator configurator{std::move(column_names), max_depth_levels};
 
-  const auto column_configs =
-      mapping::filter(column_mappings_, depth_config.depth_to_parse);
-  for (const auto& config : column_configs) {
-    configurator.configure(config);
+  const auto column_configs = mapping::filter(column_mappings_);
+  if (auto result = configurator.configure(column_configs);
+      result.has_value()) {
+    spec_ = std::move(*result);
+  } else {
+    throw std::invalid_argument{
+        fmt::format("Invalid column mapping: {}", result.error())};
   }
 
-  log::debug("Historic column mapping has been configured: {}", spec_);
+  const auto datasource_id =
+      column_mappings_.empty() ? 0 : column_mappings_.front().datasource_id();
+  log::debug(
+      "Historic column mapping has been configured for data_source_id `{}': {}",
+      datasource_id,
+      spec_);
 }
 
 auto MappingParams::column_idx(data_layer::converter::ColumnFrom column) const
@@ -57,19 +63,20 @@ auto MappingParams::column_idx(data_layer::converter::ColumnFrom column) const
              : std::nullopt;
 }
 
+auto MappingParams::max_depth() const -> std::uint32_t {
+  return spec_.max_depth();
+}
+
 auto make_mapping_params(const data_layer::Datasource& datasource)
     -> MappingParams {
-  const auto datasource_valid = data_layer::validation::valid(datasource);
-  if (!datasource_valid.has_value()) {
-    log::warn(
-        "The default column mapping for datasource `{}' is used because the "
-        "specified is not valid: {}",
-        datasource.datasource_id(),
-        datasource_valid.error());
-    return MappingParams{{}, datasource_params(datasource)};
+  if (const auto datasource_valid = data_layer::validation::valid(datasource);
+      !datasource_valid.has_value()) {
+    throw std::invalid_argument(
+        fmt::format("the datasource `{}' is invalid: {}",
+                    datasource.datasource_id(),
+                    datasource_valid.error()));
   }
-  return MappingParams{datasource.columns_mapping(),
-                       datasource_params(datasource)};
+  return MappingParams{datasource.columns_mapping()};
 }
 
 }  // namespace simulator::generator::historical

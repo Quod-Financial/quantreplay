@@ -6,6 +6,7 @@
 
 #include "api/models/datasource.hpp"
 #include "ih/common/exceptions.hpp"
+#include "tests/test_utils/matchers.hpp"
 
 namespace simulator::data_layer::test {
 namespace {
@@ -37,9 +38,14 @@ TEST_F(DataLayerModelsDatasourcePatch, DoesNotContainDefaultValues) {
   ASSERT_FALSE(patch.columns_mapping().has_value());
 }
 
+TEST_F(DataLayerModelsDatasourcePatch, SetsEnabledFlagNull) {
+  patch.with_enabled_flag(std::nullopt);
+  EXPECT_THAT(patch.enabled_flag(), IsPatchFieldWithValue(std::nullopt));
+}
+
 TEST_F(DataLayerModelsDatasourcePatch, SetsEnabledFlag) {
   patch.with_enabled_flag(false);
-  EXPECT_THAT(patch.enabled_flag(), Optional(Eq(false)));
+  EXPECT_THAT(patch.enabled_flag(), IsPatchFieldWithValue(Optional(Eq(false))));
 }
 
 TEST_F(DataLayerModelsDatasourcePatch, SetsName) {
@@ -67,29 +73,56 @@ TEST_F(DataLayerModelsDatasourcePatch, SetsType) {
   EXPECT_THAT(patch.type(), Optional(Eq(Type::OrderBook)));
 }
 
+TEST_F(DataLayerModelsDatasourcePatch, SetsRepeatFlagNull) {
+  patch.with_repeat_flag(std::nullopt);
+  EXPECT_THAT(patch.repeat_flag(), IsPatchFieldWithValue(std::nullopt));
+}
+
 TEST_F(DataLayerModelsDatasourcePatch, SetsRepeatFlag) {
   patch.with_repeat_flag(true);
-  EXPECT_THAT(patch.repeat_flag(), Optional(Eq(true)));
+  EXPECT_THAT(patch.repeat_flag(), IsPatchFieldWithValue(Optional(Eq(true))));
+}
+
+TEST_F(DataLayerModelsDatasourcePatch, SetsTextDelimiterNull) {
+  patch.with_text_delimiter(std::nullopt);
+  EXPECT_THAT(patch.text_delimiter(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(DataLayerModelsDatasourcePatch, SetsTextDelimiter) {
   patch.with_text_delimiter('\t');
-  EXPECT_THAT(patch.text_delimiter(), Optional(Eq('\t')));
+  EXPECT_THAT(patch.text_delimiter(),
+              IsPatchFieldWithValue(Optional(Eq('\t'))));
+}
+
+TEST_F(DataLayerModelsDatasourcePatch, SetsTextHeaderRowNull) {
+  patch.with_text_header_row(std::nullopt);
+  EXPECT_THAT(patch.text_header_row(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(DataLayerModelsDatasourcePatch, SetsTextHeaderRow) {
   patch.with_text_header_row(42);
-  EXPECT_THAT(patch.text_header_row(), Optional(Eq(42)));
+  EXPECT_THAT(patch.text_header_row(), IsPatchFieldWithValue(Optional(Eq(42))));
+}
+
+TEST_F(DataLayerModelsDatasourcePatch, SetsTextDataRowNull) {
+  patch.with_text_data_row(std::nullopt);
+  EXPECT_THAT(patch.text_data_row(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(DataLayerModelsDatasourcePatch, SetsTextDataRow) {
   patch.with_text_data_row(42);
-  EXPECT_THAT(patch.text_data_row(), Optional(Eq(42)));
+  EXPECT_THAT(patch.text_data_row(), IsPatchFieldWithValue(Optional(Eq(42))));
+}
+
+TEST_F(DataLayerModelsDatasourcePatch, SetsTableNameNull) {
+  patch.with_table_name(std::nullopt);
+  EXPECT_THAT(patch.table_name(), IsPatchFieldWithValue(std::nullopt));
 }
 
 TEST_F(DataLayerModelsDatasourcePatch, SetsTableName) {
   patch.with_table_name("historical_table");
-  EXPECT_THAT(patch.table_name(), Optional(Eq("historical_table")));
+  EXPECT_THAT(patch.table_name(),
+              IsPatchFieldWithValue(Optional(Eq("historical_table"))));
 }
 
 TEST_F(DataLayerModelsDatasourcePatch, SetsColumnMapping) {
@@ -114,9 +147,15 @@ TEST_F(DataLayerModelsDatasourcePatch, SetsWithoutColumnMapping) {
   ASSERT_THAT(patch.columns_mapping(), Optional(IsEmpty()));
 }
 
+TEST_F(DataLayerModelsDatasourcePatch, SetsMaxDepthLevelsNull) {
+  patch.with_max_depth_levels(std::nullopt);
+  EXPECT_THAT(patch.max_depth_levels(), IsPatchFieldWithValue(std::nullopt));
+}
+
 TEST_F(DataLayerModelsDatasourcePatch, SetsMaxDepthLevels) {
   patch.with_max_depth_levels(42);
-  EXPECT_THAT(patch.max_depth_levels(), Optional(Eq(42)));
+  EXPECT_THAT(patch.max_depth_levels(),
+              IsPatchFieldWithValue(Optional(Eq(42))));
 }
 
 struct DataLayerModelsDatasource : public Test {
