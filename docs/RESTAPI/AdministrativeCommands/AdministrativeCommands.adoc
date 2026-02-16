@@ -267,7 +267,7 @@ Start or stop random order generation and historical data playback for the curre
 _Resource URI_
 
 ----
-PUT /api/[genstart|genstop]
+POST /api/[genstart|genstop]
 ----
 
 Start or stop random order generation and historical data playback for a specific market simulator venue instance.
@@ -282,7 +282,7 @@ _Example_: Request to start generation for the current venue
 
 [,http]
 ----
-PUT /api/genstart HTTP/1.1
+POST /api/genstart HTTP/1.1
 Accept: application/json;charset=UTF-8
 Host: localhost
 ----
@@ -326,7 +326,7 @@ _Example_: Request to stop generation for the current venue
 
 [,http]
 ----
-PUT /api/genstop HTTP/1.1
+POST /api/genstop HTTP/1.1
 Accept: application/json;charset=UTF-8
 Host: localhost
 ----
@@ -402,7 +402,7 @@ Halt or resume the current market phase for the current market simulator venue i
 _Resource URI_
 
 ----
-PUT /api/[halt|resume]
+POST /api/[halt|resume]
 ----
 
 Halt or resume current market phase for a specific market simulator venue instance.
@@ -417,7 +417,7 @@ _Example_: Halt market for the current venue
 
 [,http]
 ----
-PUT /api/halt HTTP/1.1
+POST /api/halt HTTP/1.1
 Accept: application/json;charset=UTF-8
 Host: localhost
 
@@ -547,7 +547,7 @@ _Example_: Resume market for the current venue
 
 [,http]
 ----
-PUT /api/resume HTTP/1.1
+POST /api/resume HTTP/1.1
 Accept: application/json;charset=UTF-8
 Host: localhost
 ----
