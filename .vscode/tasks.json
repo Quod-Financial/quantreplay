@@ -1,0 +1,38 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build all_tests",
+      "type": "process",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "--preset",
+        "ci-gitlab-release-with-debug-info",
+        "--target",
+        "all_tests"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Launch CTest",
+      "type": "process",
+      "command": "ctest",
+      "args": [
+        "--preset",
+        "ci-gitlab-release-with-debug-info-test"
+      ],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "dependsOn": [
+        "Build all_tests"
+      ],
+      "dependsOrder": "sequence"
+    }
+  ]
+}

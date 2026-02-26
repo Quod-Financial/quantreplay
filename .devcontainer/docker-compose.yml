@@ -1,0 +1,60 @@
+networks:
+  market-simulator-net:
+    driver: bridge
+
+volumes:
+  quantreplay-bashhistory:
+
+services:
+  xetra:
+    build:
+      dockerfile: Rocky8.Dockerfile
+      context: .
+    platform: linux/amd64
+    networks:
+      - market-simulator-net
+    ports:
+      - "9050:9050" # Port to send REST API requests
+      - "9051:9051" # Port to send FIX messages
+    volumes:
+      - ../:/market-simulator/quod/quantreplay
+      - ../devenv:/market-simulator/quod/data # Volume for logs, cfg, conan cache, ccache, etc.
+      - quantreplay-bashhistory:/commandhistory # Volume for bash history
+    environment:
+      - INSTANCE_ID=XETRA
+      - PREFIX=QUOD
+      - LOG_DIR=/market-simulator/quod/data/log
+      - CONAN_USER_HOME=/market-simulator/quod/data/conan
+      - CCACHE_DIR=/market-simulator/quod/data/ccache
+      - CCACHE_SLOPPINESS=pch_defines,time_macros,include_file_mtime,include_file_ctime
+      - CCACHE_MAXSIZE=8G
+    command: /bin/sh -c "while sleep 1000; do :; done"
+    depends_on:
+      liquibase:
+        condition: service_completed_successfully
+
+  database:
+    image: ghcr.io/quod-financial/postgres_marketsim:develop
+    container_name: market-simulator-database
+    networks:
+      - market-simulator-net
+    ports:
+      - "15432:5432"
+    environment:
+      - POSTGRES_DB=simdb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready --user=postgres --dbname=simdb" ]
+      retries: 2
+      interval: 5s
+      timeout: 10s
+
+  liquibase:
+    image: ghcr.io/quod-financial/liquibase:develop
+    container_name: market-simulator-liquibase
+    networks:
+      - market-simulator-net
+    depends_on:
+      database:
+        condition: service_healthy
