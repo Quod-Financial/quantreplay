@@ -112,7 +112,7 @@ Server::Implementation::Implementation(std::uint16_t accept_port,
                                        database::Context database,
                                        ControlCallbacks callbacks)
     : endpoint_(create_endpoint(accept_port)) {
-  setup_handler(std::move(database), std::move(callbacks));
+  setup_handler(std::move(database), accept_port, std::move(callbacks));
 }
 
 auto Server::Implementation::launch() -> void { endpoint_->serveThreaded(); }
@@ -136,6 +136,7 @@ auto Server::Implementation::create_endpoint(std::uint16_t accept_port)
 }
 
 auto Server::Implementation::setup_handler(database::Context database,
+                                           std::uint16_t current_rest_port,
                                            ControlCallbacks callbacks) -> void {
   auto listing_accessor =
       std::make_unique<data_bridge::DataLayerListingAccessor>(database);
@@ -160,8 +161,8 @@ auto Server::Implementation::setup_handler(database::Context database,
       std::make_shared<data_bridge::DataLayerVenueAccessor>(database);
   auto venue_controller = std::make_shared<VenueController>(venue_accessor);
 
-  auto redirector =
-      std::make_shared<redirect::RedirectionProcessorImpl>(venue_accessor);
+  auto redirector = std::make_shared<redirect::RedirectionProcessorImpl>(
+      venue_accessor, current_rest_port);
 
   const auto venue_name = cfg::venue().name;
 

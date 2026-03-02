@@ -40,6 +40,7 @@
 !**.xml
 !**.yml
 !**.yml.example
+!**.csv
 
 # ...even if they are in subdirectories
 !*/
@@ -53,8 +54,7 @@ cmake-install-*/
 # and local development environment
 devenv/*
 
-# Ignore PySys output files
-**/Output/**
+# Ignore folder
 .idea/*
 
 # Ignore Python virtual environment

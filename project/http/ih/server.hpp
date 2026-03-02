@@ -23,6 +23,7 @@ struct Server::Implementation {
       -> std::unique_ptr<Pistache::Http::Endpoint>;
 
   auto setup_handler(data_layer::database::Context database,
+                     std::uint16_t current_rest_port,
                      ControlCallbacks callbacks) -> void;
 
   std::unique_ptr<Pistache::Http::Endpoint> endpoint_;

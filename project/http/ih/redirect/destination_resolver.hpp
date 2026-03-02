@@ -15,16 +15,22 @@ class DestinationResolver final : public Resolver {
 
   explicit DestinationResolver(
       std::shared_ptr<data_bridge::VenueAccessor> venue_accessor,
+      std::string current_venue_id,
+      std::uint16_t current_rest_port,
       bool use_venue_id_as_peer_host = false) noexcept;
 
   auto resolve_by_venue_id(const std::string& venue_id) const noexcept
-      -> ResolvingResult override;
+      -> tl::expected<Destination, Error> override;
 
-  static auto create(std::shared_ptr<data_bridge::VenueAccessor> venue_accessor)
+  static auto create(std::shared_ptr<data_bridge::VenueAccessor> venue_accessor,
+                     const std::string& current_venue_id,
+                     std::uint16_t current_rest_port)
       -> std::shared_ptr<DestinationResolver>;
 
  private:
   std::shared_ptr<data_bridge::VenueAccessor> venue_accessor_;
+  std::string current_venue_id_;
+  std::uint16_t current_rest_port_;
   bool use_venue_id_as_peer_host_ = false;
 };
 

@@ -57,4 +57,21 @@ MATCHER_P(IsPatchFieldWithValue, matcher, "") {
 
 }  // namespace simulator::http::json::test
 
+namespace simulator::http::redirect::test {
+
+using namespace ::testing;
+
+MATCHER_P2(IsExpected, host, port, "") {
+  return ExplainMatchResult(IsTrue, arg.has_value(), result_listener) &&
+         ExplainMatchResult(Eq(host), arg->host(), result_listener) &&
+         ExplainMatchResult(Eq(port), arg->port(), result_listener);
+}
+
+MATCHER_P(IsUnexpected, error, "") {
+  return ExplainMatchResult(IsFalse(), arg.has_value(), result_listener) &&
+         ExplainMatchResult(Eq(error), arg.error(), result_listener);
+}
+
+}  // namespace simulator::http::redirect::test
+
 #endif  // SIMULATOR_HTTP_TESTS_TEST_UTILS_MATCHERS_HPP_

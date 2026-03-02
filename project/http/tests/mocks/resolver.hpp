@@ -3,7 +3,7 @@
 
 #include <gmock/gmock.h>
 
-#include <optional>
+#include <tl/expected.hpp>
 #include <utility>
 
 #include "ih/redirect/destination.hpp"
@@ -13,21 +13,10 @@ namespace simulator::http::mock {
 
 class Resolver : public redirect::Resolver {
  public:
-  MOCK_METHOD(ResolvingResult,
+  MOCK_METHOD((tl::expected<redirect::Destination, Error>),
               resolve_by_venue_id,
               (const std::string&),
               (const, noexcept, override));
-
-  static auto make_output(redirect::Destination destination)
-      -> redirect::Resolver::ResolvingResult {
-    return std::make_pair(std::make_optional(std::move(destination)),
-                          redirect::Resolver::Status::Success);
-  }
-
-  static auto make_output(redirect::Resolver::Status status)
-      -> redirect::Resolver::ResolvingResult {
-    return std::make_pair(std::nullopt, status);
-  }
 };
 
 }  // namespace simulator::http::mock
