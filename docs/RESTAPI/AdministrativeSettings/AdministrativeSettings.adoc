@@ -798,19 +798,6 @@ Content-Length: XXX
 }
 ----
 
-_Example_: Negative reply
-
-[,http]
-----
-HTTP/1.1 400 Bad Request
-Connection: Close
-Content-Length: XXX
-
-{
-    "result":"Requested operation violates data integrity constraints"
-}
-----
-
 [[adminsets-listings-update]]
 ==== Update Listing
 Update existing market simulator listing entity via ID.
@@ -1446,19 +1433,6 @@ Content-Length: XXX
 
 {
     "result":"Successfully inserted new price seed"
-}
-----
-
-_Example_: Negative reply
-
-[,http]
-----
-HTTP/1.1 400 Bad Request
-Connection: Close
-Content-Length: XXX
-
-{
-    "result" : "Requested operation violates data integrity constraints"
 }
 ----
 
