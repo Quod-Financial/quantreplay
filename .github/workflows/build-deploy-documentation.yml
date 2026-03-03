@@ -25,9 +25,21 @@ jobs:
           ruby-version: '3.2'
           bundler-cache: true
 
+      - name: Install system dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            cmake \
+            libcairo2-dev \
+            libgdk-pixbuf2.0-dev \
+            libglib2.0-dev \
+            libpango1.0-dev \
+            texlive-latex-extra
+
       - name: Install dependencies
         run: |
           gem install asciidoctor -v 2.0.23
+          gem install asciidoctor-mathematical -v 0.3.5
           gem install asciidoctor-pdf -v 2.3.19
           gem install rouge -v 4.5.1
 
@@ -51,10 +63,10 @@ jobs:
           asciidoctor "Overview/Overview.adoc" -o "${PUBLISH_DIR}/Overview/Overview.html"
 
           asciidoctor "FIXRulesOfEngagement/FIXRulesOfEngagement.adoc" -o "${PUBLISH_DIR}/FIXRulesOfEngagement/FIXRulesOfEngagement.html"
-          asciidoctor-pdf -a allow-uri-read -a pdf-theme="common/pdf/PDFTheme.yml" "FIXRulesOfEngagement/FIXRulesOfEngagement.adoc" -D "${PUBLISH_DIR}/FIXRulesOfEngagement"
+          asciidoctor-pdf -r asciidoctor-mathematical -a allow-uri-read -a pdf-theme="common/pdf/PDFTheme.yml" "FIXRulesOfEngagement/FIXRulesOfEngagement.adoc" -D "${PUBLISH_DIR}/FIXRulesOfEngagement"
 
           asciidoctor "RESTAPI/RESTAPI.adoc" -o "${PUBLISH_DIR}/RESTAPI/RESTAPI.html"
-          asciidoctor-pdf -a allow-uri-read -a pdf-theme="common/pdf/PDFTheme.yml" "RESTAPI/RESTAPI.adoc" -D "${PUBLISH_DIR}/RESTAPI"
+          asciidoctor-pdf -r asciidoctor-mathematical -a allow-uri-read -a pdf-theme="common/pdf/PDFTheme.yml" "RESTAPI/RESTAPI.adoc" -D "${PUBLISH_DIR}/RESTAPI"
 
 
       - name: Deploy to GitHub Pages

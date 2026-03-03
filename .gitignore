@@ -39,6 +39,7 @@
 !**.txt
 !**.xml
 !**.yml
+!**.yaml
 !**.yml.example
 !**.csv
 

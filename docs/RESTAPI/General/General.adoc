@@ -290,9 +290,10 @@ The specific action taken is randomly chosen each time by a statistically correc
 
 There is a hard-coded 1/3 probability of the simulator choosing to "do nothing" as an action, therefore the effective applied frequency of choosing a random action 
 (including "do nothing") is:
-
-Actual Effective Random Action Frequency = (Configured randomOrdersRate value * 3 ) / 2
-
+[stem]
+++++
+\text{Actual Effective Random Action Frequency} = \frac{randomOrdersRate \times 3}{2}
+++++
 Of actual actions taken, there is a hard-coded probability distribution of:
 
 40% probability of resting bid action
@@ -368,7 +369,7 @@ Once this initial price value is determined, the setting Listings → randomTick
 relative to the starting value. 
 New resting Bid order prices and aggressive Sell order prices are randomly chosen as a number of ticks below the initial value, 
 and new resting Ask order prices and new aggressive Buy order prices are randomly chosen as a number of ticks above the initial value. 
-The frequency distribution of random prices across this range of prices is exponentially weighted by a factor of 1.05 ^ (randomTickRange - 1) 
+The frequency distribution of random prices across this range of prices is exponentially weighted by a factor of stem:[1.05 ^ {randomTickRange - 1}]
 so that more orders are placed near the top of the book than lower down. 
 
 The following diagram represents this distribution:
