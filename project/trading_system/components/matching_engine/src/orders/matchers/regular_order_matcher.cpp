@@ -7,6 +7,7 @@
 #include "core/domain/party.hpp"
 #include "ih/common/events/client_notification.hpp"
 #include "ih/orders/book/order_algorithms.hpp"
+#include "ih/orders/replies/cancellation_reply_builders.hpp"
 #include "ih/orders/replies/execution_reply_builders.hpp"
 #include "ih/orders/tools/notification_creators.hpp"
 #include "log/logging.hpp"
@@ -133,7 +134,6 @@ auto RegularOrderMatcher::trade_ioc_taker(
     throw std::logic_error("no orders can be traded with IoC order");
   }
 
-  const auto last_maker_it = std::prev(makers.end());
   for (auto maker_iter = makers.begin(); maker_iter != makers.end();
        ++maker_iter) {
     if (taker.executed()) {
@@ -149,10 +149,6 @@ auto RegularOrderMatcher::trade_ioc_taker(
                *maker);
     taker.execute(trade_qty);
     maker->execute(trade_qty);
-
-    if (maker_iter == last_maker_it && !taker.executed()) {
-      taker.cancel();
-    }
 
     emit(ClientNotification(
         prepare_execution_report(taker)
@@ -172,6 +168,14 @@ auto RegularOrderMatcher::trade_ioc_taker(
 
     emit(order::make_making_order_reduced_notification(*maker));
     emit(order::make_trade_notification(taker, *maker, trade_px, trade_qty));
+  }
+
+  if (!taker.executed()) {
+    taker.cancel();
+    emit(ClientNotification(prepare_cancellation_confirmation(taker)
+                                .with_execution_id(taker.make_execution_id())
+                                .with_client_order_id(taker.client_order_id())
+                                .build()));
   }
 }
 

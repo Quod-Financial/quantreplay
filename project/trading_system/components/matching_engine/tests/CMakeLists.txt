@@ -5,7 +5,6 @@ add_target_tests(
     mocks/event_listener_mock.hpp
     mocks/market_data_publisher_mock.hpp
     mocks/client_notification_listener_mock.hpp
-    mocks/execution_reports_listener_mock.hpp
     mocks/market_entry_id_generator_mock.hpp
     mocks/order_id_generator_mock.hpp
     mocks/order_event_handler_mock.hpp

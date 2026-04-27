@@ -23,11 +23,13 @@
 !**.bat
 !**.cmake
 !**.cpp
+!**.csv
 !**.Dockerfile
 !**.err
 !**.hpp
 !**.html
 !**.ico
+!**.ini
 !**.json
 !**.odt
 !**.pdf
@@ -36,12 +38,12 @@
 !**.py
 !**.sh
 !**.sky
+!**.sql
 !**.txt
 !**.xml
 !**.yml
 !**.yaml
 !**.yml.example
-!**.csv
 
 # ...even if they are in subdirectories
 !*/

@@ -2,7 +2,6 @@
 
 #include "core/tools/overload.hpp"
 #include "mocks/client_notification_listener_mock.hpp"
-#include "mocks/execution_reports_listener_mock.hpp"
 #include "mocks/order_id_generator_mock.hpp"
 #include "mocks/trading_reply_receiver_mock.hpp"
 
@@ -50,20 +49,6 @@ auto ClientNotificationListenerMock::on(Event event) -> void {
   if (auto* notification = std::get_if<ClientNotification>(&event.value)) {
     std::visit(dispatcher, std::move(notification->value));
   }
-}
-
-auto ExecutionReportsListenerMock::on(Event event) -> void {
-  if (!std::holds_alternative<ClientNotification>(event.value)) {
-    return;
-  }
-
-  auto& notification = std::get<ClientNotification>(event.value);
-  if (!std::holds_alternative<protocol::ExecutionReport>(notification.value)) {
-    return;
-  }
-
-  reports.emplace_back(
-      std::get<protocol::ExecutionReport>(std::move(notification.value)));
 }
 
 auto OrderIdGeneratorMock::operator()() -> OrderId { return generate(); }

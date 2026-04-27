@@ -9,6 +9,7 @@
 namespace simulator::trading_system::matching_engine {
 
 MATCHER_P(IsOrderBookNotification, matcher, "") {
+  using namespace ::testing;
   return ExplainMatchResult(Field(&Event::value,
                                   VariantWith<OrderBookNotification>(Field(
                                       &OrderBookNotification::value, matcher))),
@@ -17,6 +18,7 @@ MATCHER_P(IsOrderBookNotification, matcher, "") {
 }
 
 MATCHER_P(IsClientNotification, matcher, "") {
+  using namespace ::testing;
   return ExplainMatchResult(Field(&Event::value,
                                   VariantWith<ClientNotification>(Field(
                                       &ClientNotification::value, matcher))),

@@ -23,6 +23,9 @@ struct OrderReduced {
   Quantity order_quantity;
   OrderId order_id;
   Side order_side;
+
+  [[nodiscard]]
+  auto operator==(const OrderReduced& other) const -> bool = default;
 };
 
 struct OrderRemoved {
