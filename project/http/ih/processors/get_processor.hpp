@@ -8,6 +8,7 @@
 #include <string>
 
 #include "data_layer/api/models/venue.hpp"
+#include "ih/config_provider.hpp"
 #include "ih/controllers/datasource_controller.hpp"
 #include "ih/controllers/listing_controller.hpp"
 #include "ih/controllers/price_seed_controller.hpp"
@@ -79,7 +80,7 @@ class GetProcessorImpl : public GetProcessor {
       std::shared_ptr<PriceSeedController> price_seed_controller,
       std::shared_ptr<SettingController> setting_controller,
       std::shared_ptr<VenueController> venue_controller,
-      std::string venue_name);
+      std::shared_ptr<ConfigProvider> config_provider);
 
   auto get_venue(const Pistache::Rest::Request& request,
                  Pistache::Http::ResponseWriter response) -> void override;
@@ -124,9 +125,8 @@ class GetProcessorImpl : public GetProcessor {
       -> void override;
 
  private:
-  auto get_venue_status_str(const data_layer::Venue& venue,
-                            bool send_response_code,
-                            bool& available) const -> std::string;
+  auto get_venue_status_str(const data_layer::Venue& venue) const
+      -> std::string;
 
   auto handle_generation_status_request(const Pistache::Rest::Request& request,
                                         Pistache::Http::ResponseWriter response)
@@ -149,7 +149,7 @@ class GetProcessorImpl : public GetProcessor {
   std::shared_ptr<PriceSeedController> price_seed_controller_;
   std::shared_ptr<SettingController> setting_controller_;
   std::shared_ptr<VenueController> venue_controller_;
-  std::string venue_id_;
+  std::shared_ptr<ConfigProvider> config_provider_;
 };
 
 }  // namespace simulator::http

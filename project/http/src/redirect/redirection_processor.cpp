@@ -4,6 +4,7 @@
 
 #include <utility>
 
+#include "cfg/api/cfg.hpp"
 #include "ih/data_bridge/venue_accessor.hpp"
 #include "ih/redirect/destination_resolver.hpp"
 #include "ih/redirect/redirector.hpp"

@@ -6,8 +6,8 @@
 #include <memory>
 #include <stdexcept>
 
-#include "cfg/api/cfg.hpp"
 #include "data_layer/api/data_access_layer.hpp"
+#include "ih/config_provider.hpp"
 #include "ih/headers/x_api_version.hpp"
 #include "ih/router.hpp"
 #include "ih/server.hpp"
@@ -164,10 +164,10 @@ auto Server::Implementation::setup_handler(database::Context database,
   auto redirector = std::make_shared<redirect::RedirectionProcessorImpl>(
       venue_accessor, current_rest_port);
 
-  const auto venue_name = cfg::venue().name;
+  auto config_provider = std::make_shared<ConfigProviderImpl>();
 
   auto app_controller = std::make_unique<AppControllerImpl>(
-      venue_accessor, venue_name, std::move(callbacks));
+      venue_accessor, config_provider->venue_id(), std::move(callbacks));
 
   auto get_processor = std::make_shared<GetProcessorImpl>(venue_accessor,
                                                           redirector,
@@ -176,7 +176,7 @@ auto Server::Implementation::setup_handler(database::Context database,
                                                           price_seed_controller,
                                                           setting_controller,
                                                           venue_controller,
-                                                          venue_name);
+                                                          config_provider);
   auto post_processor =
       std::make_shared<PostProcessorImpl>(redirector,
                                           datasource_controller,
@@ -186,7 +186,7 @@ auto Server::Implementation::setup_handler(database::Context database,
                                           trading_controller,
                                           venue_controller,
                                           std::move(app_controller),
-                                          venue_name);
+                                          config_provider->venue_id());
   auto put_processor = std::make_shared<PutProcessorImpl>(datasource_controller,
                                                           listing_controller,
                                                           price_seed_controller,

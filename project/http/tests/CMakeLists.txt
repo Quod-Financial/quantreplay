@@ -2,6 +2,7 @@ add_target_tests(
   TARGET ${PROJECT_NAME}
   HEADERS
     mocks/app_controller.hpp
+    mocks/config_provider.hpp
     mocks/delete_processor.hpp
     mocks/generator_admin_receiver.hpp
     mocks/get_processor.hpp
@@ -37,4 +38,5 @@ add_target_tests(
     unit_tests/redirect/redirection_processor_tests.cpp
     unit_tests/redirect/request_redirector_tests.cpp
     unit_tests/redirect/result_tests.cpp
+    unit_tests/utils/response_formatters_tests.cpp
     unit_tests/router_tests.cpp)

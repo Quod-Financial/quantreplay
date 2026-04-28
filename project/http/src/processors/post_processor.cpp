@@ -18,7 +18,7 @@ PostProcessorImpl::PostProcessorImpl(
     std::shared_ptr<TradingController> trading_controller,
     std::shared_ptr<VenueController> venue_controller,
     std::unique_ptr<AppController> app_controller,
-    std::string venue_name)
+    std::string venue_id)
     : redirector_{std::move(redirector)},
       datasource_controller_{std::move(datasource_controller)},
       listing_controller_{std::move(listing_controller)},
@@ -27,7 +27,7 @@ PostProcessorImpl::PostProcessorImpl(
       trading_controller_{std::move(trading_controller)},
       venue_controller_{std::move(venue_controller)},
       app_controller_{std::move(app_controller)},
-      venue_id_{std::move(venue_name)} {}
+      venue_id_{std::move(venue_id)} {}
 
 auto PostProcessorImpl::add_venue(const Pistache::Rest::Request& request,
                                   Pistache::Http::ResponseWriter response)

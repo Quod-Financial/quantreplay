@@ -65,6 +65,7 @@ add_static_library(
     ih/processors/get_processor.hpp
     ih/processors/post_processor.hpp
     ih/processors/put_processor.hpp
+    ih/config_provider.hpp
     ih/endpoint.hpp
     ih/router.hpp
     ih/server.hpp
@@ -97,6 +98,7 @@ add_static_library(
     src/redirect/destination_resolver.cpp
     src/redirect/redirection_processor.cpp
     src/redirect/request_redirector.cpp
+    src/config_provider.cpp
     src/http.cpp
     src/router.cpp
   PUBLIC_INCLUDE_DIRECTORIES

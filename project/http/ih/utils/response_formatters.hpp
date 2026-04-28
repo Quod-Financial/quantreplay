@@ -7,9 +7,8 @@
 #include <string>
 #include <string_view>
 
-#include "cfg/api/cfg.hpp"
-#include "core/version.hpp"
 #include "data_layer/api/models/venue.hpp"
+#include "ih/config_provider.hpp"
 #include "ih/marshalling/json/detail/utils.hpp"
 
 namespace simulator::http {
@@ -28,7 +27,9 @@ inline auto format_result_response(std::string_view result_message)
 
 [[nodiscard]]
 inline auto format_venue_status(const data_layer::Venue& venue,
-                                int response_code) -> std::string {
+                                const Pistache::Http::Code& response_code,
+                                const ConfigProvider* config_provider = nullptr)
+    -> std::string {
   rapidjson::Document document;
   rapidjson::Value value;
 
@@ -43,17 +44,19 @@ inline auto format_venue_status(const data_layer::Venue& venue,
     document.AddMember("name", value, allocator);
   }
 
-  auto time_str = fmt::format("{:%Y-%b-%d %T}", cfg::venue().start_time);
-  value.SetString(time_str.data(), allocator);
-  document.AddMember("startTime", value, allocator);
+  if (config_provider != nullptr) {
+    auto time_str =
+        fmt::format("{:%Y-%b-%d %T}", config_provider->venue_start_time());
+    value.SetString(time_str.data(), allocator);
+    document.AddMember("startTime", value, allocator);
 
-  value.SetString(core::version().data(), allocator);
-  document.AddMember("version", value, allocator);
-
-  if (response_code != 0) {
-    value.SetInt(response_code);
-    document.AddMember("statusCode", value, allocator);
+    const auto& version = config_provider->version();
+    value.SetString(version.data(), allocator);
+    document.AddMember("version", value, allocator);
   }
+
+  value.SetInt(static_cast<int>(response_code));
+  document.AddMember("statusCode", value, allocator);
 
   return json::encode(document);
 }

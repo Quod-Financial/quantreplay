@@ -6,6 +6,7 @@
 #include "ih/router.hpp"
 #include "middleware/channels/generator_admin_channel.hpp"
 #include "middleware/routing/generator_admin_channel.hpp"
+#include "mocks/config_provider.hpp"
 #include "mocks/delete_processor.hpp"
 #include "mocks/generator_admin_receiver.hpp"
 #include "mocks/post_processor.hpp"
@@ -22,6 +23,7 @@ using ::testing::A;
 using ::testing::Eq;
 using ::testing::NiceMock;
 using ::testing::Return;
+using ::testing::ReturnRef;
 
 class HttpGetProcessor : public ::testing::Test {
  protected:
@@ -32,6 +34,12 @@ class HttpGetProcessor : public ::testing::Test {
 
     venue_accessor = std::make_shared<NiceMock<http::mock::VenueAccessor>>();
     redirector = std::make_shared<mock::RedirectionProcessor>();
+    config_provider = std::make_shared<NiceMock<http::mock::ConfigProvider>>();
+
+    ON_CALL(*config_provider, venue_id).WillByDefault(ReturnRef(VenueName));
+    ON_CALL(*config_provider, venue_start_time)
+        .WillByDefault(ReturnRef(venue_start_time));
+    ON_CALL(*config_provider, version).WillByDefault(ReturnRef(version));
 
     get_processor = std::make_shared<GetProcessorImpl>(venue_accessor,
                                                        redirector,
@@ -40,7 +48,7 @@ class HttpGetProcessor : public ::testing::Test {
                                                        nullptr,
                                                        nullptr,
                                                        nullptr,
-                                                       VenueName);
+                                                       config_provider);
 
     router = std::make_unique<Router>(get_processor,
                                       std::move(post_processor),
@@ -59,8 +67,12 @@ class HttpGetProcessor : public ::testing::Test {
 
   std::shared_ptr<NiceMock<http::mock::VenueAccessor>> venue_accessor;
   std::shared_ptr<mock::RedirectionProcessor> redirector;
+  std::shared_ptr<NiceMock<http::mock::ConfigProvider>> config_provider;
   std::shared_ptr<GetProcessorImpl> get_processor;
   std::unique_ptr<Router> router;
+
+  core::tz_us venue_start_time{std::chrono::microseconds(1773840208583000)};
+  std::string version{"test-version"};
 };
 
 class HttpGetProcessorGetVenueStatus : public HttpGetProcessor {};
