@@ -13,13 +13,26 @@ _Response Properties_
 
 [1,1,1]
 |===
-| Path | Type |Description
+| Path | Type | Description
 
-| id	| Text	| Venue short name
-| name	| Text	| Venue full name
-| startTime	| Text	| Time when the instance started
-| version	| Text	| Version of MktSimulator
-| responseCode	| Integer	| HTTP code received in response to venue status request
+| id | Text | Venue short name
+| name | Text | Venue full name
+| startTime | Text | Time when the instance started
+| version | Text | Version of MktSimulator
+| sessionSettings | Array | QuickFIX session settings configured for this venue instance, as parsed by the venue
+| statusCode | Integer | HTTP code received in response to venue status request
+|===
+
+_Session Settings Sub-List_
+
+[1,1,1]
+|===
+| Path | Type | Description
+
+| section | Text | Section name (e.g. `DEFAULT` or `SESSION`)
+| id | Text | Session identifier in the format `+{BeginString}:{SenderCompID}->{TargetCompID}+` — only present for `SESSION` sections
+| settings | Object | Key-value pairs of settings for the section; `SESSION` sections contain only session-specific settings, excluding common `DEFAULT` settings
+
 |===
 
 [[admincmds-vensts-getsgl]]
@@ -58,11 +71,59 @@ Content-Type: application/json;charset=UTF-8
 Content-Length: XXX
 
 {
-    "id" : "LSE",
-    "name": "London Stock Exchange",
-    "startTime":"2022-Feb-03 12:16:50"
-    "version" : "99.116.15829062-734713bc (28/02/2020 17:40:18)"
-    "statusCode" : 200
+  "id": "LSE",
+  "name": "LondonStockExchange",
+  "startTime": "2026-Mar-19 16:54:48.874227",
+  "version": "unversioned.1773921825_8f0c76bf(2026-03-19 12:03:45 +0000)",
+  "sessionSettings": [
+    {
+      "section": "DEFAULT",
+      "settings": {
+        "ALLOWUNKNOWNMSGFIELDS": "Y",
+        "APPDATADICTIONARY": "/cfg/default/FIX50SP2_marketsimulator.xml",
+        "CHECKLATENCY": "N",
+        "CONNECTIONTYPE": "acceptor",
+        "ENDTIME": "00:00:00",
+        "FILESTOREPATH": "/quickfix_persistence",
+        "HEARTBTINT": "600",
+        "LOGOUTTIMEOUT": "30",
+        "SOCKETACCEPTPORT": "9001",
+        "SOCKETNODELAY": "Y",
+        "SOCKETREUSEADDRESS": "Y",
+        "STARTTIME": "00:00:00",
+        "TRANSPORTDATADICTIONARY": "/cfg/default/FIXT11_marketsimulator.xml",
+        "VALIDATEUSERDEFINEDFIELDS": "N"
+      }
+    },
+    {
+      "section": "SESSION",
+      "id": "FIXT.1.1:MktSimulator->QuodFeedhandler",
+      "settings": {
+        "BEGINSTRING": "FIXT.1.1",
+        "DEFAULTAPPLVERID": "9",
+        "PERSISTMESSAGES": "N",
+        "RESETONLOGON": "Y",
+        "SENDERCOMPID": "MktSimulator",
+        "TARGETCOMPID": "QuodFeedhandler"
+      }
+    },
+    {
+      "section": "SESSION",
+      "id": "FIXT.1.1:MktSimulator->QuodGateway",
+      "settings": {
+        "BEGINSTRING": "FIXT.1.1",
+        "DEFAULTAPPLVERID": "9",
+        "MILLISECONDSINTIMESTAMP": "Y",
+        "PERSISTMESSAGES": "Y",
+        "REFRESHONLOGON": "Y",
+        "RESETONLOGON": "N",
+        "SENDERCOMPID": "MktSimulator",
+        "TARGETCOMPID": "QuodGateway",
+        "TIMESTAMPPRECISION": "5"
+      }
+    }
+  ],
+  "statusCode": 200
 }
 ----
 
@@ -84,11 +145,59 @@ Content-Type: application/json;charset=UTF-8
 Content-Length: XXX
 
 {
-    "id" : "LSE",
-    "name": "London Stock Exchange",
-    "startTime":"2022-Feb-03 12:16:50"
-    "version" : "99.116.15829062-734713bc (28/02/2020 17:40:18)"
-    "statusCode" : 200
+  "id": "LSE",
+  "name": "LondonStockExchange",
+  "startTime": "2026-Mar-19 16:54:48.874227",
+  "version": "unversioned.1773921825_8f0c76bf(2026-03-19 12:03:45 +0000)",
+  "sessionSettings": [
+    {
+      "section": "DEFAULT",
+      "settings": {
+        "ALLOWUNKNOWNMSGFIELDS": "Y",
+        "APPDATADICTIONARY": "/cfg/default/FIX50SP2_marketsimulator.xml",
+        "CHECKLATENCY": "N",
+        "CONNECTIONTYPE": "acceptor",
+        "ENDTIME": "00:00:00",
+        "FILESTOREPATH": "/quickfix_persistence",
+        "HEARTBTINT": "600",
+        "LOGOUTTIMEOUT": "30",
+        "SOCKETACCEPTPORT": "9001",
+        "SOCKETNODELAY": "Y",
+        "SOCKETREUSEADDRESS": "Y",
+        "STARTTIME": "00:00:00",
+        "TRANSPORTDATADICTIONARY": "/cfg/default/FIXT11_marketsimulator.xml",
+        "VALIDATEUSERDEFINEDFIELDS": "N"
+      }
+    },
+    {
+      "section": "SESSION",
+      "id": "FIXT.1.1:MktSimulator->QuodFeedhandler",
+      "settings": {
+        "BEGINSTRING": "FIXT.1.1",
+        "DEFAULTAPPLVERID": "9",
+        "PERSISTMESSAGES": "N",
+        "RESETONLOGON": "Y",
+        "SENDERCOMPID": "MktSimulator",
+        "TARGETCOMPID": "QuodFeedhandler"
+      }
+    },
+    {
+      "section": "SESSION",
+      "id": "FIXT.1.1:MktSimulator->QuodGateway",
+      "settings": {
+        "BEGINSTRING": "FIXT.1.1",
+        "DEFAULTAPPLVERID": "9",
+        "MILLISECONDSINTIMESTAMP": "Y",
+        "PERSISTMESSAGES": "Y",
+        "REFRESHONLOGON": "Y",
+        "RESETONLOGON": "N",
+        "SENDERCOMPID": "MktSimulator",
+        "TARGETCOMPID": "QuodGateway",
+        "TIMESTAMPPRECISION": "5"
+      }
+    }
+  ],
+  "statusCode": 200
 }
 ----
 
@@ -120,29 +229,123 @@ Content-Type: application/json;charset=UTF-8
 Content-Length: XXX
 
 {
-    "venuestatus": [
+  "venuestatus": [
+    {
+      "id": "LSE",
+      "name": "LondonStockExchange",
+      "startTime": "2026-Mar-19 16:54:48.874227",
+      "version": "unversioned.1773921825_8f0c76bf(2026-03-19 12:03:45 +0000)",
+      "sessionSettings": [
         {
-            "id":"FASTMATCH",
-            "name":"FASTMATCH",
-            "startTime":"2023-Feb-09 09:34:42.216182",
-            "version":"develop.3.1675934598-87a7b61c(2023-02-09 11:23:18 +0200)",
-            "statusCode":200
+          "section": "DEFAULT",
+          "settings": {
+            "ALLOWUNKNOWNMSGFIELDS": "Y",
+            "APPDATADICTIONARY": "/cfg/default/FIX50SP2_marketsimulator.xml",
+            "CHECKLATENCY": "N",
+            "CONNECTIONTYPE": "acceptor",
+            "ENDTIME": "00:00:00",
+            "FILESTOREPATH": "/quickfix_persistence",
+            "HEARTBTINT": "600",
+            "LOGOUTTIMEOUT": "30",
+            "SOCKETACCEPTPORT": "9001",
+            "SOCKETNODELAY": "Y",
+            "SOCKETREUSEADDRESS": "Y",
+            "STARTTIME": "00:00:00",
+            "TRANSPORTDATADICTIONARY": "/cfg/default/FIXT11_marketsimulator.xml",
+            "VALIDATEUSERDEFINEDFIELDS": "N"
+          }
         },
         {
-            "id":"XETRA",
-            "name":"XETRA",
-            "startTime":"2023-Feb-09 09:34:42.216182",
-            "version":"develop.3.1675934598-87a7b61c(2023-02-09 11:23:18 +0200)",
-            "statusCode":200
+          "section": "SESSION",
+          "id": "FIXT.1.1:MktSimulator->QuodFeedhandler",
+          "settings": {
+            "BEGINSTRING": "FIXT.1.1",
+            "DEFAULTAPPLVERID": "9",
+            "PERSISTMESSAGES": "N",
+            "RESETONLOGON": "Y",
+            "SENDERCOMPID": "MktSimulator",
+            "TARGETCOMPID": "QuodFeedhandler"
+          }
         },
         {
-            "id":"BSE",
-            "name":"BSE",
-            "startTime":"2023-Aug-07 11:28:19.623110",
-            "version":"3.1691404393_9ee00fc9(2023-08-07 13:33:13 +0300)",
-            "statusCode":503
+          "section": "SESSION",
+          "id": "FIXT.1.1:MktSimulator->QuodGateway",
+          "settings": {
+            "BEGINSTRING": "FIXT.1.1",
+            "DEFAULTAPPLVERID": "9",
+            "MILLISECONDSINTIMESTAMP": "Y",
+            "PERSISTMESSAGES": "Y",
+            "REFRESHONLOGON": "Y",
+            "RESETONLOGON": "N",
+            "SENDERCOMPID": "MktSimulator",
+            "TARGETCOMPID": "QuodGateway",
+            "TIMESTAMPPRECISION": "5"
+          }
         }
-    ]
+      ],
+      "statusCode": 200
+    },
+    {
+      "id": "XETRA",
+      "name": "XETRA",
+      "startTime": "2026-Mar-19 15:01:58.096831",
+      "version": "unversioned.1773921825_8f0c76bf(2026-03-19 12:03:45 +0000)",
+      "sessionSettings": [
+        {
+          "section": "DEFAULT",
+          "settings": {
+            "ALLOWUNKNOWNMSGFIELDS": "Y",
+            "APPDATADICTIONARY": "/market-simulator/quod/cfg/default/FIX50SP2_marketsimulator.xml",
+            "CHECKLATENCY": "N",
+            "CONNECTIONTYPE": "acceptor",
+            "ENDTIME": "00:00:00",
+            "FILESTOREPATH": "/quickfix_persistence",
+            "HEARTBTINT": "600",
+            "LOGOUTTIMEOUT": "30",
+            "SOCKETACCEPTPORT": "9051",
+            "SOCKETNODELAY": "Y",
+            "SOCKETREUSEADDRESS": "Y",
+            "STARTTIME": "00:00:00",
+            "TRANSPORTDATADICTIONARY": "/market-simulator/quod/cfg/default/FIXT11_marketsimulator.xml",
+            "VALIDATEUSERDEFINEDFIELDS": "N"
+          }
+        },
+        {
+          "section": "SESSION",
+          "id": "FIXT.1.1:MktSimulator->QuodFeedhandler",
+          "settings": {
+            "BEGINSTRING": "FIXT.1.1",
+            "DEFAULTAPPLVERID": "9",
+            "PERSISTMESSAGES": "N",
+            "RESETONLOGON": "Y",
+            "SENDERCOMPID": "MktSimulator",
+            "TARGETCOMPID": "QuodFeedhandler"
+          }
+        },
+        {
+          "section": "SESSION",
+          "id": "FIXT.1.1:MktSimulator->QuodGateway",
+          "settings": {
+            "BEGINSTRING": "FIXT.1.1",
+            "DEFAULTAPPLVERID": "9",
+            "MILLISECONDSINTIMESTAMP": "Y",
+            "PERSISTMESSAGES": "N",
+            "REFRESHONLOGON": "Y",
+            "RESETONLOGON": "N",
+            "SENDERCOMPID": "MktSimulator",
+            "TARGETCOMPID": "QuodGateway",
+            "TIMESTAMPPRECISION": "5"
+          }
+        }
+      ],
+      "statusCode": 200
+    },
+    {
+      "id": "FASTMATCH",
+      "name": "FASTMATCH",
+      "statusCode": 502
+    }
+  ]
 }
 ----
 

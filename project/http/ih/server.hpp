@@ -12,7 +12,8 @@ struct Server::Implementation {
  public:
   Implementation(std::uint16_t accept_port,
                  data_layer::database::Context database,
-                 ControlCallbacks callbacks);
+                 ControlCallbacks callbacks,
+                 const std::vector<core::FixSessionSettings>& session_settings);
 
   auto launch() -> void;
 
@@ -22,9 +23,11 @@ struct Server::Implementation {
   static auto create_endpoint(std::uint16_t accept_port)
       -> std::unique_ptr<Pistache::Http::Endpoint>;
 
-  auto setup_handler(data_layer::database::Context database,
-                     std::uint16_t current_rest_port,
-                     ControlCallbacks callbacks) -> void;
+  auto setup_handler(
+      data_layer::database::Context database,
+      std::uint16_t current_rest_port,
+      ControlCallbacks callbacks,
+      const std::vector<core::FixSessionSettings>& session_settings) -> void;
 
   std::unique_ptr<Pistache::Http::Endpoint> endpoint_;
 };

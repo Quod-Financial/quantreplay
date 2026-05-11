@@ -26,6 +26,7 @@ add_static_library(
     ih/acceptor.hpp
     include/acceptor/acceptor.hpp
     include/acceptor/lifetime.hpp
+    include/acceptor/session_settings.hpp
     include/acceptor/transport.hpp
   SOURCES
     src/communicators/application.cpp

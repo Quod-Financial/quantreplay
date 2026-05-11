@@ -2,15 +2,7 @@
 
 #include <utility>
 
-#include "cfg/api/cfg.hpp"
-#include "core/version.hpp"
-
 namespace simulator::http {
-
-ConfigProviderImpl::ConfigProviderImpl()
-    : runtime_configuration_{cfg::venue().name,
-                             cfg::venue().start_time,
-                             std::string{core::version()}} {}
 
 ConfigProviderImpl::ConfigProviderImpl(
     RuntimeConfiguration runtime_configuration)
@@ -26,6 +18,11 @@ auto ConfigProviderImpl::venue_start_time() const -> const core::tz_us& {
 
 auto ConfigProviderImpl::version() const -> const std::string& {
   return runtime_configuration_.version;
+}
+
+auto ConfigProviderImpl::session_settings() const
+    -> const std::vector<core::FixSessionSettings>& {
+  return runtime_configuration_.session_settings;
 }
 
 }  // namespace simulator::http

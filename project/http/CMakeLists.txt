@@ -50,6 +50,7 @@ add_static_library(
     ih/marshalling/json/halt.hpp
     ih/marshalling/json/listing.hpp
     ih/marshalling/json/price_seed.hpp
+    ih/marshalling/json/session_settings.hpp
     ih/marshalling/json/setting.hpp
     ih/marshalling/json/venue.hpp
     ih/redirect/destination.hpp
@@ -89,6 +90,7 @@ add_static_library(
     src/marshalling/json/halt.cpp
     src/marshalling/json/listing.cpp
     src/marshalling/json/price_seed.cpp
+    src/marshalling/json/session_settings.cpp
     src/marshalling/json/setting.cpp
     src/marshalling/json/venue.cpp
     src/processors/delete_processor.cpp

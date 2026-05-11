@@ -1,7 +1,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "core/common/session_settings.hpp"
 #include "ih/endpoint.hpp"
+#include "ih/marshalling/json/session_settings.hpp"
 #include "ih/processors/get_processor.hpp"
 #include "ih/router.hpp"
 #include "middleware/channels/generator_admin_channel.hpp"
@@ -40,6 +42,8 @@ class HttpGetProcessor : public ::testing::Test {
     ON_CALL(*config_provider, venue_start_time)
         .WillByDefault(ReturnRef(venue_start_time));
     ON_CALL(*config_provider, version).WillByDefault(ReturnRef(version));
+    ON_CALL(*config_provider, session_settings)
+        .WillByDefault(ReturnRef(session_settings));
 
     get_processor = std::make_shared<GetProcessorImpl>(venue_accessor,
                                                        redirector,
@@ -73,6 +77,7 @@ class HttpGetProcessor : public ::testing::Test {
 
   core::tz_us venue_start_time{std::chrono::microseconds(1773840208583000)};
   std::string version{"test-version"};
+  std::vector<core::FixSessionSettings> session_settings{};
 };
 
 class HttpGetProcessorGetVenueStatus : public HttpGetProcessor {};

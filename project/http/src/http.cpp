@@ -6,6 +6,7 @@
 #include <memory>
 #include <stdexcept>
 
+#include "core/version.hpp"
 #include "data_layer/api/data_access_layer.hpp"
 #include "ih/config_provider.hpp"
 #include "ih/headers/x_api_version.hpp"
@@ -43,14 +44,16 @@ namespace {
       "database record");
 }
 
-[[nodiscard]] auto create_server_implementation(database::Context db,
-                                                ControlCallbacks callbacks)
+[[nodiscard]] auto create_server_implementation(
+    database::Context db,
+    ControlCallbacks callbacks,
+    const std::vector<core::FixSessionSettings>& session_settings)
     -> std::unique_ptr<Server::Implementation> {
   try {
     const std::uint16_t server_port =
         retrieve_configured_http_port(data_layer::select_simulated_venue(db));
     return std::make_unique<Server::Implementation>(
-        server_port, std::move(db), std::move(callbacks));
+        server_port, std::move(db), std::move(callbacks), session_settings);
   } catch (const std::exception& exception) {
     log::err("failed to create http server, an error occurred: {}",
              exception.what());
@@ -108,11 +111,14 @@ auto Server::implementation() noexcept -> Implementation& {
   std::abort();
 }
 
-Server::Implementation::Implementation(std::uint16_t accept_port,
-                                       database::Context database,
-                                       ControlCallbacks callbacks)
+Server::Implementation::Implementation(
+    std::uint16_t accept_port,
+    database::Context database,
+    ControlCallbacks callbacks,
+    const std::vector<core::FixSessionSettings>& session_settings)
     : endpoint_(create_endpoint(accept_port)) {
-  setup_handler(std::move(database), accept_port, std::move(callbacks));
+  setup_handler(
+      std::move(database), accept_port, std::move(callbacks), session_settings);
 }
 
 auto Server::Implementation::launch() -> void { endpoint_->serveThreaded(); }
@@ -135,9 +141,11 @@ auto Server::Implementation::create_endpoint(std::uint16_t accept_port)
   return endpoint;
 }
 
-auto Server::Implementation::setup_handler(database::Context database,
-                                           std::uint16_t current_rest_port,
-                                           ControlCallbacks callbacks) -> void {
+auto Server::Implementation::setup_handler(
+    database::Context database,
+    std::uint16_t current_rest_port,
+    ControlCallbacks callbacks,
+    const std::vector<core::FixSessionSettings>& session_settings) -> void {
   auto listing_accessor =
       std::make_unique<data_bridge::DataLayerListingAccessor>(database);
   auto setting_accessor =
@@ -164,7 +172,11 @@ auto Server::Implementation::setup_handler(database::Context database,
   auto redirector = std::make_shared<redirect::RedirectionProcessorImpl>(
       venue_accessor, current_rest_port);
 
-  auto config_provider = std::make_shared<ConfigProviderImpl>();
+  auto config_provider = std::make_shared<ConfigProviderImpl>(
+      RuntimeConfiguration{cfg::venue().name,
+                           cfg::venue().start_time,
+                           std::string{core::version()},
+                           session_settings});
 
   auto app_controller = std::make_unique<AppControllerImpl>(
       venue_accessor, config_provider->venue_id(), std::move(callbacks));
@@ -203,11 +215,13 @@ auto Server::Implementation::setup_handler(database::Context database,
                                                  std::move(delete_processor)));
 }
 
-auto create_http_server(database::Context database, ControlCallbacks callbacks)
-    -> Server {
+auto create_http_server(
+    database::Context database,
+    ControlCallbacks callbacks,
+    const std::vector<core::FixSessionSettings>& session_settings) -> Server {
   log::debug("creating http server");
-  Server server{
-      create_server_implementation(std::move(database), std::move(callbacks))};
+  Server server{create_server_implementation(
+      std::move(database), std::move(callbacks), session_settings)};
   log::info("http server has been created");
   return server;
 }

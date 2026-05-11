@@ -38,8 +38,10 @@ VenueSimulationPlatform::VenueSimulationPlatform(
   trading_engine_ = std::make_shared<TradingEngine>(database);
   fix_acceptor_ = std::make_shared<FixAcceptor>(get_fix_configuration_path());
   generator_ = std::make_shared<Generator>(database);
-  http_server_ = std::make_shared<HttpServer>(
-      database, convert_to_http_callbacks(callbacks));
+  http_server_ =
+      std::make_shared<HttpServer>(database,
+                                   convert_to_http_callbacks(callbacks),
+                                   fix_acceptor_->session_settings());
 
   middleware::bind_trading_admin_channel(trading_engine_);
   middleware::bind_trading_reply_channel(

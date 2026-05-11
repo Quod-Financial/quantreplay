@@ -4,6 +4,7 @@
 #include <filesystem>
 
 #include "acceptor/lifetime.hpp"
+#include "acceptor/session_settings.hpp"
 #include "acceptor/transport.hpp"
 #include "middleware/channels/trading_reply_channel.hpp"
 
@@ -67,6 +68,10 @@ class FixAcceptor final : public middleware::TradingReplyReceiver {
 
   auto process(protocol::SecurityStatus status) -> void override {
     fix::send_reply(status, acceptor_);
+  }
+
+  auto session_settings() -> std::vector<core::FixSessionSettings> {
+    return fix::session_settings(acceptor_);
   }
 
  private:

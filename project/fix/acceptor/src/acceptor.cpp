@@ -7,6 +7,7 @@
 #include <stdexcept>
 
 #include "acceptor/lifetime.hpp"
+#include "acceptor/session_settings.hpp"
 #include "acceptor/transport.hpp"
 #include "common/fix_logger.hpp"
 #include "common/message_store.hpp"
@@ -116,7 +117,8 @@ auto Acceptor::implementation() noexcept -> Implementation& {
 }
 
 Acceptor::Implementation::Implementation(const FIX::SessionSettings& settings)
-    : application_(
+    : settings_{settings},
+      application_(
           create_acceptor_application(request_processor_, event_processor_)),
       persistence_factory_(create_message_store_factory(settings)),
       logger_factory_(create_log_factory()),
@@ -158,6 +160,11 @@ auto Acceptor::Implementation::stop_server() noexcept -> void {
   }
 }
 
+auto Acceptor::Implementation::session_settings() const noexcept
+    -> const FIX::SessionSettings& {
+  return settings_;
+}
+
 auto Acceptor::Implementation::fix_acceptor_server() noexcept
     -> FIX::Acceptor& {
   if (server_) [[likely]] {
@@ -197,6 +204,11 @@ auto stop_fix_acceptor(Acceptor& acceptor) noexcept -> void {
   acceptor.implementation().stop_server();
 
   log::info("stopped FIX acceptor");
+}
+
+auto session_settings(Acceptor& acceptor)
+    -> std::vector<core::FixSessionSettings> {
+  return to_fix_session_settings(acceptor.implementation().session_settings());
 }
 
 auto send_reply(const protocol::BusinessMessageReject& reply,

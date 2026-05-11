@@ -10,6 +10,7 @@
 #include "data_layer/api/models/venue.hpp"
 #include "ih/config_provider.hpp"
 #include "ih/marshalling/json/detail/utils.hpp"
+#include "ih/marshalling/json/session_settings.hpp"
 
 namespace simulator::http {
 
@@ -53,6 +54,9 @@ inline auto format_venue_status(const data_layer::Venue& venue,
     const auto& version = config_provider->version();
     value.SetString(version.data(), allocator);
     document.AddMember("version", value, allocator);
+
+    json::marshal_session_settings(document,
+                                   config_provider->session_settings());
   }
 
   value.SetInt(static_cast<int>(response_code));

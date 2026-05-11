@@ -14,6 +14,11 @@ class ConfigProvider : public http::ConfigProvider {
   MOCK_METHOD(const core::tz_us&, venue_start_time, (), (const, override));
 
   MOCK_METHOD(const std::string&, version, (), (const, override));
+
+  MOCK_METHOD(const std::vector<core::FixSessionSettings>&,
+              session_settings,
+              (),
+              (const, override));
 };
 
 }  // namespace simulator::http::mock

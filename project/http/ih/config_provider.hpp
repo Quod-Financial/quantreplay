@@ -3,6 +3,7 @@
 
 #include <string>
 
+#include "core/common/session_settings.hpp"
 #include "core/tools/time.hpp"
 
 namespace simulator::http {
@@ -11,6 +12,7 @@ struct RuntimeConfiguration {
   std::string venue_id;
   core::tz_us venue_start_time;
   std::string version;
+  std::vector<core::FixSessionSettings> session_settings;
 };
 
 class ConfigProvider {
@@ -25,12 +27,14 @@ class ConfigProvider {
 
   [[nodiscard]]
   virtual auto version() const -> const std::string& = 0;
+
+  [[nodiscard]]
+  virtual auto session_settings() const
+      -> const std::vector<core::FixSessionSettings>& = 0;
 };
 
 class ConfigProviderImpl : public ConfigProvider {
  public:
-  ConfigProviderImpl();
-
   explicit ConfigProviderImpl(RuntimeConfiguration runtime_configuration);
 
   [[nodiscard]]
@@ -41,6 +45,10 @@ class ConfigProviderImpl : public ConfigProvider {
 
   [[nodiscard]]
   auto version() const -> const std::string& override;
+
+  [[nodiscard]]
+  auto session_settings() const
+      -> const std::vector<core::FixSessionSettings>& override;
 
  private:
   RuntimeConfiguration runtime_configuration_;

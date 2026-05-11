@@ -30,6 +30,7 @@ add_target_tests(
     unit_tests/marshalling/json/datasource_marshalling_tests.cpp
     unit_tests/marshalling/json/listing_marshalling_tests.cpp
     unit_tests/marshalling/json/price_seed_marshalling_tests.cpp
+    unit_tests/marshalling/json/session_settings_marshalling_tests.cpp
     unit_tests/marshalling/json/setting_marshalling_tests.cpp
     unit_tests/marshalling/json/venue_marshalling_tests.cpp
     unit_tests/processors/get_processor_tests.cpp
