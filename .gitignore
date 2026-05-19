@@ -17,7 +17,6 @@
 
 !CMakeLists.txt
 !CMakePresets.json
-!README.md
 
 !**.adoc
 !**.bat
@@ -31,6 +30,7 @@
 !**.ico
 !**.ini
 !**.json
+!**.md
 !**.odt
 !**.pdf
 !**.png
