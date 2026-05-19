@@ -28,12 +28,14 @@ auto get_expire_date(const LimitOrder& order)
 }  // namespace
 
 SystemElimination::SystemElimination(EventListener& event_listener,
-                                     event::Tick system_tick)
-    : EventReporter(event_listener),
-      current_expire_time_(system_tick.sys_tick_time),
-      current_expire_date_(
-          core::as_local_time(core::to_date(system_tick.tz_tick_time))),
-      is_new_day_(system_tick.is_new_tz_day) {}
+                                     event::Tick system_tick,
+                                     std::optional<PriceTick> price_tick)
+    : EventReporter{event_listener},
+      current_expire_time_{system_tick.sys_tick_time},
+      current_expire_date_{
+          core::as_local_time(core::to_date(system_tick.tz_tick_time))},
+      is_new_day_{system_tick.is_new_tz_day},
+      price_tick_{price_tick} {}
 
 auto SystemElimination::operator()(OrderBook& book) const -> void {
   log::trace("eliminating buy orders");
@@ -79,7 +81,7 @@ auto SystemElimination::eliminate(LimitOrder& order) const -> void {
   log::trace("eliminating expired order: {}", order);
   order.cancel();
   emit(make_making_order_removed_from_book_notification(order));
-  emit(ClientNotification(prepare_cancellation_confirmation(order)
+  emit(ClientNotification(prepare_cancellation_confirmation(order, price_tick_)
                               .with_execution_id(order.make_execution_id())
                               .with_client_order_id(order.client_order_id())
                               .build()));
@@ -114,11 +116,14 @@ auto AllOrdersElimination::eliminate(LimitOrder& order) const -> void {
   log::debug("eliminated the order {}", order.id());
 }
 
-ClosedPhaseElimination::ClosedPhaseElimination(EventListener& event_listener,
-                                               core::tz_us phase_tz_start_time)
-    : EventReporter(event_listener),
-      phase_start_date_(
-          core::as_local_time(core::to_date(phase_tz_start_time))) {}
+ClosedPhaseElimination::ClosedPhaseElimination(
+    EventListener& event_listener,
+    core::tz_us phase_tz_start_time,
+    std::optional<PriceTick> price_tick)
+    : EventReporter{event_listener},
+      phase_start_date_{
+          core::as_local_time(core::to_date(phase_tz_start_time))},
+      price_tick_{price_tick} {}
 
 auto ClosedPhaseElimination::operator()(OrderBook& book) const -> void {
   log::trace("eliminating buy orders");
@@ -163,7 +168,7 @@ auto ClosedPhaseElimination::eliminate(LimitOrder& order) const -> void {
   log::trace("client disconnected, eliminating order: {}", order);
   order.cancel();
   emit(make_making_order_removed_from_book_notification(order));
-  emit(ClientNotification(prepare_cancellation_confirmation(order)
+  emit(ClientNotification(prepare_cancellation_confirmation(order, price_tick_)
                               .with_execution_id(order.make_execution_id())
                               .with_client_order_id(order.client_order_id())
                               .build()));
@@ -172,9 +177,11 @@ auto ClosedPhaseElimination::eliminate(LimitOrder& order) const -> void {
 
 OnDisconnectElimination::OnDisconnectElimination(
     EventListener& event_listener,
-    const protocol::Session& disconnected_session)
-    : EventReporter(event_listener),
-      disconnected_session_(&disconnected_session) {}
+    const protocol::Session& disconnected_session,
+    std::optional<PriceTick> price_tick)
+    : EventReporter{event_listener},
+      disconnected_session_{&disconnected_session},
+      price_tick_{price_tick} {}
 
 auto OnDisconnectElimination::operator()(OrderBook& book) const -> void {
   log::trace("eliminating buy orders due to user disconnect");
@@ -208,7 +215,7 @@ auto OnDisconnectElimination::eliminate(LimitOrder& order) const -> void {
   log::trace("client disconnected, eliminating order: {}", order);
   order.cancel();
   emit(make_making_order_removed_from_book_notification(order));
-  emit(ClientNotification(prepare_cancellation_confirmation(order)
+  emit(ClientNotification(prepare_cancellation_confirmation(order, price_tick_)
                               .with_execution_id(order.make_execution_id())
                               .with_client_order_id(order.client_order_id())
                               .build()));

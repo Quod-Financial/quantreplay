@@ -54,6 +54,7 @@ struct LimitOrder {
   double order_price;
   double total_quantity;
   double cum_executed_quantity;
+  double cum_px_qty;
 };
 
 struct InstrumentInfo {

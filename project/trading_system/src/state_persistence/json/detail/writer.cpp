@@ -348,6 +348,7 @@ auto write(rapidjson::Value& json_value,
   model.order_price = source.order_price.value();
   model.total_quantity = source.total_quantity.value();
   model.cum_executed_quantity = source.cum_executed_quantity.value();
+  model.cum_px_qty = source.cum_px_qty;
 
   json_value.SetObject();
   return write(json_value,
@@ -380,7 +381,9 @@ auto write(rapidjson::Value& json_value,
       .and_then(
           write_field(json_value, allocator, "OrderQty", model.total_quantity))
       .and_then(write_field(
-          json_value, allocator, "CumQty", model.cum_executed_quantity));
+          json_value, allocator, "CumQty", model.cum_executed_quantity))
+      .and_then(
+          write_field(json_value, allocator, "CumPxQty", model.cum_px_qty));
 }
 
 auto write(rapidjson::Value& json_value,

@@ -781,7 +781,8 @@ For instance, the file content indicated below contains the state of the venue â
                         "OrdStatus": "Replaced",
                         "Price": 0.38799,
                         "OrderQty": 3000000.0,
-                        "CumQty": 1000535.0
+                        "CumQty": 1000535.0,
+                        "CumPxQty": 388197.57465
                     }
                 ],
                 "SellOrders": [
@@ -825,7 +826,8 @@ For instance, the file content indicated below contains the state of the venue â
                         "OrdStatus": "Replaced",
                         "Price": 1.188,
                         "OrderQty": 408.0,
-                        "CumQty": 0.0
+                        "CumQty": 0.0,
+                        "CumPxQty": 0.0
                     },
                     {
                         "ClientInstrumentDescriptor": {
@@ -862,7 +864,8 @@ For instance, the file content indicated below contains the state of the venue â
                         "OrdStatus": "Replaced",
                         "Price": 1.18812,
                         "OrderQty": 606.0,
-                        "CumQty": 0.0
+                        "CumQty": 0.0,
+                        "CumPxQty": 0.0
                     }
                 ]
             }

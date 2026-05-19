@@ -92,7 +92,8 @@ TEST_F(TradingSystemCommonLimitOrderFmt, FormatsToString) {
       .order_status = OrderStatus::Option::PartiallyFilled,
       .order_price = OrderPrice{100.1},
       .total_quantity = OrderQuantity{200.2},
-      .cum_executed_quantity = CumExecutedQuantity{50.5}};
+      .cum_executed_quantity = CumExecutedQuantity{50.5},
+      .cum_px_qty = 5065.05};
 
   ASSERT_EQ(
       fmt::to_string(order),
@@ -111,7 +112,7 @@ TEST_F(TradingSystemCommonLimitOrderFmt, FormatsToString) {
       "\"time_in_force\": GoodTillDate, \"order_id\": 42, \"order_time\": "
       "2023-Oct-01 13:00:00.123456, \"side\": SellShort, \"order_status\": "
       "PartiallyFilled, \"order_price\": 100.1, \"total_quantity\": 200.2, "
-      "\"cum_executed_quantity\": 50.5 }\"");
+      "\"cum_executed_quantity\": 50.5, \"cum_px_qty\": 5065.05 }\"");
 }
 
 }  // namespace

@@ -14,7 +14,7 @@ struct MatchingEngineSystemElimination : public Test {
   inline static const core::TzClock Timezone{"Europe/Kyiv"};
 
   auto make_eliminator(event::Tick tick) -> SystemElimination {
-    return SystemElimination{event_listener, std::move(tick)};
+    return SystemElimination{event_listener, std::move(tick), std::nullopt};
   }
 
   static auto default_tick() -> event::Tick {

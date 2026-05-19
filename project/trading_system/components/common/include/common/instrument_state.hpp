@@ -37,6 +37,7 @@ struct LimitOrder {
   OrderPrice order_price{0.};
   OrderQuantity total_quantity{0.};
   CumExecutedQuantity cum_executed_quantity{0.};
+  double cum_px_qty{0.};
 
   [[nodiscard]]
   auto operator==(const LimitOrder&) const -> bool = default;

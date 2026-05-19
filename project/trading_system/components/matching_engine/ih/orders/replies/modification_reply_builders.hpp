@@ -15,7 +15,8 @@ namespace simulator::trading_system::matching_engine {
 
 class ModificationConfirmationBuilder {
  public:
-  explicit ModificationConfirmationBuilder(protocol::Session client_session);
+  ModificationConfirmationBuilder(protocol::Session client_session,
+                                  std::optional<PriceTick> price_tick);
 
   [[nodiscard]]
   auto build() const -> protocol::OrderModificationConfirmation;
@@ -30,10 +31,12 @@ class ModificationConfirmationBuilder {
 
  private:
   protocol::OrderModificationConfirmation message_;
+  std::optional<PriceTick> price_tick_;
 };
 
 [[nodiscard]]
-auto prepare_modification_confirmation(const LimitOrder& order)
+auto prepare_modification_confirmation(const LimitOrder& order,
+                                       std::optional<PriceTick> price_tick)
     -> ModificationConfirmationBuilder;
 
 class ModificationRejectBuilder {

@@ -65,7 +65,10 @@ class MarketOrder {
   [[nodiscard]]
   auto executed() const -> bool;
 
-  auto execute(ExecutedQuantity quantity) -> void;
+  [[nodiscard]]
+  auto average_price() const -> std::optional<AveragePrice>;
+
+  auto execute(ExecutedQuantity quantity, ExecutionPrice price) -> void;
 
   auto cancel() -> void;
 
@@ -75,6 +78,7 @@ class MarketOrder {
   std::shared_ptr<OrderRecord> record_;
   OrderQuantity total_quantity_;
   CumExecutedQuantity cum_executed_quantity_;
+  double cum_px_qty_;
 };
 
 }  // namespace simulator::trading_system::matching_engine

@@ -13,12 +13,16 @@
 namespace simulator::trading_system::matching_engine {
 
 RegularOrderActionProcessor::RegularOrderActionProcessor(
-    EventListener& event_listener, OrderBook& order_book)
-    : event_listener_(event_listener), order_book_(order_book) {}
+    EventListener& event_listener,
+    OrderBook& order_book,
+    std::optional<PriceTick> price_tick)
+    : event_listener_{event_listener},
+      order_book_{order_book},
+      price_tick_{price_tick} {}
 
 auto RegularOrderActionProcessor::place_limit_order(LimitOrder order) -> void {
-  RegularOrderMatcher matcher(event_listener_, order_book_);
-  RegularPlacement operation(event_listener_, order_book_, matcher);
+  RegularOrderMatcher matcher{event_listener_, order_book_, price_tick_};
+  RegularPlacement operation{event_listener_, order_book_, matcher};
 
   log::debug(
       "regular order action processor is executing limit order placement "
@@ -29,8 +33,8 @@ auto RegularOrderActionProcessor::place_limit_order(LimitOrder order) -> void {
 
 auto RegularOrderActionProcessor::place_market_order(MarketOrder order)
     -> void {
-  RegularOrderMatcher matcher(event_listener_, order_book_);
-  RegularPlacement operation(event_listener_, order_book_, matcher);
+  RegularOrderMatcher matcher{event_listener_, order_book_, price_tick_};
+  RegularPlacement operation{event_listener_, order_book_, matcher};
 
   log::debug(
       "regular order action processor is executing market order placement "
@@ -41,8 +45,9 @@ auto RegularOrderActionProcessor::place_market_order(MarketOrder order)
 
 auto RegularOrderActionProcessor::amend_limit_order(LimitUpdate update)
     -> void {
-  RegularOrderMatcher matcher(event_listener_, order_book_);
-  RegularAmendment operation(event_listener_, order_book_, matcher);
+  RegularOrderMatcher matcher{event_listener_, order_book_, price_tick_};
+  RegularAmendment operation{
+      event_listener_, order_book_, matcher, price_tick_};
 
   log::debug(
       "regular order action processor is executing limit order amendment "
@@ -53,7 +58,7 @@ auto RegularOrderActionProcessor::amend_limit_order(LimitUpdate update)
 
 auto RegularOrderActionProcessor::cancel_order(const OrderCancel& cancel)
     -> void {
-  Cancellation operation(event_listener_, order_book_);
+  Cancellation operation{event_listener_, order_book_, price_tick_};
 
   log::debug(
       "regular order action processor is executing order cancellation action");

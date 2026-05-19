@@ -1,10 +1,10 @@
 add_target_tests(
   TARGET ${PROJECT_NAME}
   HEADERS
+    fixtures/given_expected_fixture.hpp
     test_definitions/test_attributes.hpp
     test_utils/matchers.hpp
     test_utils/utils.hpp
-    fixtures/given_expected_fixture.hpp
   UNIT_TESTS
     unit_tests/common/json/attribute_tests.cpp
     unit_tests/common/json/attributes_tests.cpp
@@ -17,6 +17,7 @@ add_target_tests(
     unit_tests/common/return_code_tests.cpp
     unit_tests/domain/enumerators_tests.cpp
     unit_tests/domain/party_tests.cpp
+    unit_tests/tools/numeric_round_to_tick_tests.cpp
     unit_tests/tools/numeric_tests.cpp
     unit_tests/tools/string_checkers_tests.cpp
     unit_tests/tools/time_tests.cpp)

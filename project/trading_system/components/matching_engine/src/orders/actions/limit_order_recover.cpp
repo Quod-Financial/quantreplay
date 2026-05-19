@@ -1,6 +1,5 @@
 #include "ih/orders/actions/limit_order_recover.hpp"
 
-#include "core/tools/numeric.hpp"
 #include "ih/orders/tools/notification_creators.hpp"
 
 namespace simulator::trading_system::matching_engine {
@@ -44,16 +43,11 @@ auto convert_order(market_state::LimitOrder&& order_state) -> LimitOrder {
   record.set_order_time(order_state.order_time);
   record.set_order_status(order_state.order_status);
 
-  LimitOrder order{OrderPrice{order_state.order_price},
-                   OrderQuantity{order_state.total_quantity},
-                   std::move(record)};
-
-  const auto executed_qty = order_state.cum_executed_quantity.value();
-  if (!core::equal(executed_qty, 0.0)) {
-    order.execute(ExecutedQuantity{executed_qty});
-  }
-
-  return order;
+  return LimitOrder{OrderPrice{order_state.order_price},
+                    OrderQuantity{order_state.total_quantity},
+                    std::move(record),
+                    order_state.cum_executed_quantity,
+                    order_state.cum_px_qty};
 }
 
 }  // namespace

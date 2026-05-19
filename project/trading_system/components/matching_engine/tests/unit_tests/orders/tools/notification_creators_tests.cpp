@@ -74,7 +74,7 @@ TEST_F(OrderBookNotificationOrderAddedCreation,
        SetsOrderQuantityFromLeavesQuanityOfLimitOrder) {
   auto order =
       builder.with_order_quantity(OrderQuantity{10.5}).build_limit_order();
-  order.execute(ExecutedQuantity{7.4});
+  order.execute(ExecutedQuantity{7.4}, ExecutionPrice{10.0});
 
   const auto notification = make_making_order_added_to_book_notification(order);
   const auto& order_added = std::get<OrderAdded>(notification.value);
@@ -159,7 +159,7 @@ TEST_F(OrderBookNotificationOrderReducedCreation,
        SetsOrderQuantityFromLeavesQuantityOfLimitOrder) {
   auto order =
       builder.with_order_quantity(OrderQuantity{10.5}).build_limit_order();
-  order.execute(ExecutedQuantity{7.4});
+  order.execute(ExecutedQuantity{7.4}, ExecutionPrice{10.0});
 
   const auto notification = make_making_order_reduced_notification(order);
   const auto& order_reduced = std::get<OrderReduced>(notification.value);

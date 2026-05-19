@@ -15,7 +15,8 @@ namespace simulator::trading_system::matching_engine {
 
 class CancellationConfirmationBuilder {
  public:
-  explicit CancellationConfirmationBuilder(protocol::Session session);
+  CancellationConfirmationBuilder(protocol::Session session,
+                                  std::optional<PriceTick> price_tick);
 
   [[nodiscard]]
   auto build() const -> protocol::OrderCancellationConfirmation;
@@ -33,10 +34,12 @@ class CancellationConfirmationBuilder {
 
  private:
   protocol::OrderCancellationConfirmation message_;
+  std::optional<PriceTick> price_tick_;
 };
 
 [[nodiscard]]
-auto prepare_cancellation_confirmation(const LimitOrder& order)
+auto prepare_cancellation_confirmation(const LimitOrder& order,
+                                       std::optional<PriceTick> price_tick)
     -> CancellationConfirmationBuilder;
 
 class CancellationRejectBuilder {

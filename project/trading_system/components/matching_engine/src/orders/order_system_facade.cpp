@@ -205,7 +205,8 @@ auto OrderSystemFacade::reject_on_halt(
 }
 
 auto OrderSystemFacade::handle(const event::Tick& tick) -> void {
-  order::SystemElimination eliminator(*event_listener_, tick);
+  order::SystemElimination eliminator(
+      *event_listener_, tick, configuration_.order_price_tick);
   eliminator(*depr_order_book_);
 }
 
@@ -217,7 +218,8 @@ auto OrderSystemFacade::handle(const event::PhaseTransition& phase_transition)
 
   if (phase_handler_.in_closed_phase()) {
     order::ClosedPhaseElimination eliminator(*event_listener_,
-                                             phase_transition.tz_time_point);
+                                             phase_transition.tz_time_point,
+                                             configuration_.order_price_tick);
     eliminator(*depr_order_book_);
   }
 }
@@ -225,7 +227,8 @@ auto OrderSystemFacade::handle(const event::PhaseTransition& phase_transition)
 auto OrderSystemFacade::handle_disconnection(const protocol::Session& session)
     -> void {
   if (configuration_.enable_cancel_on_disconnect) {
-    order::OnDisconnectElimination eliminator(*event_listener_, session);
+    order::OnDisconnectElimination eliminator(
+        *event_listener_, session, configuration_.order_price_tick);
     eliminator(*depr_order_book_);
     log::debug("eliminated orders due to user disconnect: {}", session);
     return;
@@ -246,7 +249,8 @@ auto OrderSystemFacade::setup(const Instrument& instrument,
 
   auto depr_order_book = std::make_unique<OrderBook>();
   auto depr_order_action_handler =
-      std::make_unique<RegularOrderActionProcessor>(listener, *depr_order_book);
+      std::make_unique<RegularOrderActionProcessor>(
+          listener, *depr_order_book, configuration.order_price_tick);
 
   return {listener,
           instrument,

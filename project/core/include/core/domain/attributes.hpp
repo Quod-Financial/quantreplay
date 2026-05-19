@@ -323,6 +323,12 @@ struct ExecutionPrice {
                                    .plural = "ExecutionPrices"};
 };
 
+struct AveragePrice {
+  using primary_type = simulator::Price;
+  constexpr static core::Name name{.singular = "AveragePrice",
+                                   .plural = "AveragePrices"};
+};
+
 struct CumExecutedQuantity {
   using primary_type = simulator::Quantity;
   constexpr static core::Name name{.singular = "CumExecutedQuantity",
@@ -383,6 +389,7 @@ SIMULATOR_DECLARE_ATTRIBUTE(simulator, OrderPrice, Derived);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, BestBidPrice, Derived);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, BestOfferPrice, Derived);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, ExecutionPrice, Derived);
+SIMULATOR_DECLARE_ATTRIBUTE(simulator, AveragePrice, Derived);
 
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, CumExecutedQuantity, Derived);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, LeavesQuantity, Derived);

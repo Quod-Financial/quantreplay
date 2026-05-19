@@ -3,6 +3,7 @@
 
 #include <optional>
 
+#include "common/attributes.hpp"
 #include "core/domain/attributes.hpp"
 #include "core/domain/party.hpp"
 #include "ih/orders/book/limit_order.hpp"
@@ -14,7 +15,8 @@ namespace simulator::trading_system::matching_engine {
 
 class ExecutionReportBuilder {
  public:
-  explicit ExecutionReportBuilder(protocol::Session session);
+  ExecutionReportBuilder(protocol::Session session,
+                         std::optional<PriceTick> price_tick);
 
   [[nodiscard]]
   auto build() const -> protocol::ExecutionReport;
@@ -35,14 +37,17 @@ class ExecutionReportBuilder {
 
  private:
   protocol::ExecutionReport message_;
+  std::optional<PriceTick> price_tick_;
 };
 
 [[nodiscard]]
-auto prepare_execution_report(const LimitOrder& order)
+auto prepare_execution_report(const LimitOrder& order,
+                              std::optional<PriceTick> price_tick)
     -> ExecutionReportBuilder;
 
 [[nodiscard]]
-auto prepare_execution_report(const MarketOrder& order)
+auto prepare_execution_report(const MarketOrder& order,
+                              std::optional<PriceTick> price_tick)
     -> ExecutionReportBuilder;
 
 }  // namespace simulator::trading_system::matching_engine

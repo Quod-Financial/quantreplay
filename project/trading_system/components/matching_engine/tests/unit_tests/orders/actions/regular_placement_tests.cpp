@@ -257,7 +257,8 @@ TEST_F(MatchingEngineRegularPlacementLimitOrder,
                   VariantWith<protocol::OrderPlacementConfirmation>(_))));
 
   EXPECT_CALL(matcher, match(A<LimitOrder&>())).WillOnce([](LimitOrder& ord) {
-    ord.execute(ExecutedQuantity{ord.leaves_quantity().value()});
+    ord.execute(ExecutedQuantity{ord.leaves_quantity().value()},
+                ExecutionPrice{ord.price().value()});
   });
 
   regular_placement(std::move(order));
@@ -273,7 +274,8 @@ TEST_F(MatchingEngineRegularPlacementLimitOrder,
               on(IsClientNotification(
                   VariantWith<protocol::OrderPlacementConfirmation>(_))));
   EXPECT_CALL(matcher, match(A<LimitOrder&>())).WillOnce([](LimitOrder& ord) {
-    ord.execute(ExecutedQuantity{ord.leaves_quantity().value()});
+    ord.execute(ExecutedQuantity{ord.leaves_quantity().value()},
+                ExecutionPrice{ord.price().value()});
   });
 
   EXPECT_CALL(event_listener,

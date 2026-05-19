@@ -140,10 +140,22 @@ auto OrderRecord::make_execution_id() -> ExecutionId {
 LimitOrder::LimitOrder(OrderPrice price,
                        OrderQuantity quantity,
                        OrderRecord record)
-    : record_(std::make_shared<OrderRecord>(std::move(record))),
-      price_(price),
-      total_quantity_(quantity),
-      cum_executed_quantity_(0.0) {}
+    : record_{std::make_shared<OrderRecord>(std::move(record))},
+      price_{price},
+      total_quantity_{quantity},
+      cum_executed_quantity_{0.0},
+      cum_px_qty_{0.0} {}
+
+LimitOrder::LimitOrder(OrderPrice price,
+                       OrderQuantity quantity,
+                       OrderRecord record,
+                       CumExecutedQuantity cum_executed_quantity,
+                       double cum_px_qty)
+    : record_{std::make_shared<OrderRecord>(std::move(record))},
+      price_{price},
+      total_quantity_{quantity},
+      cum_executed_quantity_{cum_executed_quantity},
+      cum_px_qty_{cum_px_qty} {}
 
 auto LimitOrder::id() const -> OrderId {
   assert(record_);
@@ -232,14 +244,27 @@ auto LimitOrder::executed() const -> bool {
          static_cast<double>(total_quantity_);
 }
 
+auto LimitOrder::average_price() const -> std::optional<AveragePrice> {
+  const auto cum_qty = static_cast<double>(cum_executed_quantity_);
+  if (cum_qty <= 0.0) {
+    return std::nullopt;
+  }
+  return AveragePrice{cum_px_qty_ / cum_qty};
+}
+
+auto LimitOrder::cum_px_qty() const -> double { return cum_px_qty_; }
+
 auto LimitOrder::make_execution_id() -> ExecutionId {
   assert(record_);
   return record_->make_execution_id();
 }
 
-auto LimitOrder::execute(ExecutedQuantity quantity) -> void {
+auto LimitOrder::execute(ExecutedQuantity quantity, ExecutionPrice price)
+    -> void {
   const auto prev_executed = static_cast<double>(cum_executed_quantity_);
   const auto curr_executed = static_cast<double>(quantity);
+
+  cum_px_qty_ += static_cast<double>(price) * curr_executed;
   cum_executed_quantity_ = CumExecutedQuantity{prev_executed + curr_executed};
 
   assert(record_);
@@ -285,9 +310,10 @@ OrderCancel::OrderCancel(protocol::Session session, Side side)
 // region MarketOrder
 
 MarketOrder::MarketOrder(OrderQuantity quantity, OrderRecord record)
-    : record_(std::make_shared<OrderRecord>(std::move(record))),
-      total_quantity_(quantity),
-      cum_executed_quantity_(0.0) {}
+    : record_{std::make_shared<OrderRecord>(std::move(record))},
+      total_quantity_{quantity},
+      cum_executed_quantity_{0.0},
+      cum_px_qty_{0.0} {}
 
 auto MarketOrder::id() const -> OrderId {
   assert(record_);
@@ -369,9 +395,20 @@ auto MarketOrder::executed() const -> bool {
          static_cast<double>(total_quantity_);
 }
 
-auto MarketOrder::execute(ExecutedQuantity quantity) -> void {
+auto MarketOrder::average_price() const -> std::optional<AveragePrice> {
+  const auto cum_qty = static_cast<double>(cum_executed_quantity_);
+  if (cum_qty <= 0.0) {
+    return std::nullopt;
+  }
+  return AveragePrice{cum_px_qty_ / cum_qty};
+}
+
+auto MarketOrder::execute(ExecutedQuantity quantity, ExecutionPrice price)
+    -> void {
   const auto prev_executed = static_cast<double>(cum_executed_quantity_);
   const auto curr_executed = static_cast<double>(quantity);
+
+  cum_px_qty_ += static_cast<double>(price) * curr_executed;
   cum_executed_quantity_ = CumExecutedQuantity{prev_executed + curr_executed};
 
   assert(record_);

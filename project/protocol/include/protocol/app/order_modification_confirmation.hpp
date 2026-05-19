@@ -28,6 +28,8 @@ struct OrderModificationConfirmation {
   std::optional<OrderPrice> order_price;
   std::optional<LeavesQuantity> leaving_quantity;
   std::optional<CumExecutedQuantity> cum_executed_quantity;
+  std::optional<OrderQuantity> order_quantity;
+  std::optional<AveragePrice> average_price;
   std::optional<ShortSaleExemptionReason> short_sale_exempt_reason;
   std::optional<OrderStatus> order_status;
   std::optional<Side> side;

@@ -15,8 +15,11 @@
 namespace simulator::trading_system::matching_engine {
 
 RegularOrderMatcher::RegularOrderMatcher(EventListener& event_listener,
-                                         OrderBook& order_book)
-    : EventReporter(event_listener), order_book_(order_book) {}
+                                         OrderBook& order_book,
+                                         std::optional<PriceTick> price_tick)
+    : EventReporter{event_listener},
+      order_book_{order_book},
+      price_tick_{price_tick} {}
 
 auto RegularOrderMatcher::match(LimitOrder& taker) -> void {
   log::debug("matching: {}", taker);
@@ -100,11 +103,11 @@ auto RegularOrderMatcher::trade_taker(LimitOrder& taker,
                trade_px,
                *maker,
                taker);
-    taker.execute(trade_qty);
-    maker->execute(trade_qty);
+    taker.execute(trade_qty, trade_px);
+    maker->execute(trade_qty, trade_px);
 
     emit(ClientNotification(
-        prepare_execution_report(taker)
+        prepare_execution_report(taker, price_tick_)
             .with_execution_id(taker.make_execution_id())
             .with_execution_price(trade_px)
             .with_executed_quantity(trade_qty)
@@ -112,7 +115,7 @@ auto RegularOrderMatcher::trade_taker(LimitOrder& taker,
             .build()));
 
     emit(ClientNotification(
-        prepare_execution_report(*maker)
+        prepare_execution_report(*maker, price_tick_)
             .with_execution_id(maker->make_execution_id())
             .with_execution_price(trade_px)
             .with_executed_quantity(trade_qty)
@@ -147,11 +150,11 @@ auto RegularOrderMatcher::trade_ioc_taker(
                trade_px,
                taker,
                *maker);
-    taker.execute(trade_qty);
-    maker->execute(trade_qty);
+    taker.execute(trade_qty, trade_px);
+    maker->execute(trade_qty, trade_px);
 
     emit(ClientNotification(
-        prepare_execution_report(taker)
+        prepare_execution_report(taker, price_tick_)
             .with_execution_id(taker.make_execution_id())
             .with_execution_price(trade_px)
             .with_executed_quantity(trade_qty)
@@ -159,7 +162,7 @@ auto RegularOrderMatcher::trade_ioc_taker(
             .build()));
 
     emit(ClientNotification(
-        prepare_execution_report(*maker)
+        prepare_execution_report(*maker, price_tick_)
             .with_execution_id(maker->make_execution_id())
             .with_execution_price(trade_px)
             .with_executed_quantity(trade_qty)
@@ -172,10 +175,11 @@ auto RegularOrderMatcher::trade_ioc_taker(
 
   if (!taker.executed()) {
     taker.cancel();
-    emit(ClientNotification(prepare_cancellation_confirmation(taker)
-                                .with_execution_id(taker.make_execution_id())
-                                .with_client_order_id(taker.client_order_id())
-                                .build()));
+    emit(
+        ClientNotification(prepare_cancellation_confirmation(taker, price_tick_)
+                               .with_execution_id(taker.make_execution_id())
+                               .with_client_order_id(taker.client_order_id())
+                               .build()));
   }
 }
 
@@ -203,15 +207,15 @@ auto RegularOrderMatcher::trade_market_taker(
                trade_px,
                taker,
                *maker);
-    taker.execute(trade_qty);
-    maker->execute(trade_qty);
+    taker.execute(trade_qty, trade_px);
+    maker->execute(trade_qty, trade_px);
 
     if (maker_iter == last_maker_it && !taker.executed()) {
       taker.cancel();
     }
 
     emit(ClientNotification(
-        prepare_execution_report(taker)
+        prepare_execution_report(taker, price_tick_)
             .with_execution_id(taker.make_execution_id())
             .with_execution_price(trade_px)
             .with_executed_quantity(trade_qty)
@@ -219,7 +223,7 @@ auto RegularOrderMatcher::trade_market_taker(
             .build()));
 
     emit(ClientNotification(
-        prepare_execution_report(*maker)
+        prepare_execution_report(*maker, price_tick_)
             .with_execution_id(maker->make_execution_id())
             .with_execution_price(trade_px)
             .with_executed_quantity(trade_qty)

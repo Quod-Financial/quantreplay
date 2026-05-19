@@ -1,8 +1,5 @@
 #include <gmock/gmock.h>
 
-#include <stdexcept>
-
-#include "common/attributes.hpp"
 #include "ih/orders/book/market_order.hpp"
 #include "tools/order_builder.hpp"
 
@@ -29,21 +26,21 @@ TEST_F(MarketOrderEntry, HasNewStatusOnceCreated) {
 
 TEST_F(MarketOrderEntry, HasPartiallyFilledStatusOncePartiallyFilled) {
   auto order = make_order(OrderQuantity{10});
-  order.execute(ExecutedQuantity{5});
+  order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
 
   ASSERT_THAT(order.status(), Eq(OrderStatus::Option::PartiallyFilled));
 }
 
 TEST_F(MarketOrderEntry, HasFilledStatusOnceFullyFilled) {
   auto order = make_order(OrderQuantity{10});
-  order.execute(ExecutedQuantity{10});
+  order.execute(ExecutedQuantity{10}, ExecutionPrice{10.0});
 
   ASSERT_THAT(order.status(), Eq(OrderStatus::Option::Filled));
 }
 
 TEST_F(MarketOrderEntry, HasFilledStatusOnceOverfilled) {
   auto order = make_order(OrderQuantity{10});
-  order.execute(ExecutedQuantity{15});
+  order.execute(ExecutedQuantity{15}, ExecutionPrice{10.0});
 
   ASSERT_THAT(order.status(), Eq(OrderStatus::Option::Filled));
 }
@@ -63,8 +60,8 @@ TEST_F(MarketOrderEntry, KeepsEnteredTotalQty) {
 
 TEST_F(MarketOrderEntry, KeepsCumExecutedQty) {
   auto order = make_order(OrderQuantity{10});
-  order.execute(ExecutedQuantity{3});
-  order.execute(ExecutedQuantity{2});
+  order.execute(ExecutedQuantity{3}, ExecutionPrice{10.0});
+  order.execute(ExecutedQuantity{2}, ExecutionPrice{10.0});
 
   ASSERT_THAT(order.cum_executed_quantity(), Eq(CumExecutedQuantity{5}));
 }
@@ -77,22 +74,22 @@ TEST_F(MarketOrderEntry, HasLeavesQtyEqualToTotalQtyWhenNotExecuted) {
 
 TEST_F(MarketOrderEntry, HasLeavesQtyEqualToTotalQtyMinusTotalExecutedQty) {
   auto order = make_order(OrderQuantity{10});
-  order.execute(ExecutedQuantity{3});
-  order.execute(ExecutedQuantity{3});
+  order.execute(ExecutedQuantity{3}, ExecutionPrice{10.0});
+  order.execute(ExecutedQuantity{3}, ExecutionPrice{10.0});
 
   ASSERT_THAT(order.leaves_quantity(), Eq(LeavesQuantity{4}));
 }
 
 TEST_F(MarketOrderEntry, HasZeroLeavesQtyWhenFilled) {
   auto order = make_order(OrderQuantity{10});
-  order.execute(ExecutedQuantity{10});
+  order.execute(ExecutedQuantity{10}, ExecutionPrice{10.0});
 
   ASSERT_THAT(order.leaves_quantity(), LeavesQuantity{0});
 }
 
 TEST_F(MarketOrderEntry, HasZeroLeavesQtyWhenOverfilled) {
   auto order = make_order(OrderQuantity{10});
-  order.execute(ExecutedQuantity{15});
+  order.execute(ExecutedQuantity{15}, ExecutionPrice{10.0});
 
   ASSERT_THAT(order.leaves_quantity(), LeavesQuantity{0});
 }
@@ -105,7 +102,7 @@ TEST_F(MarketOrderEntry, ReportsThatIsNotExecutedOnceCreated) {
 
 TEST_F(MarketOrderEntry, ReportsThatIsNotExecutedWhenPartiallyFilled) {
   auto order = make_order(OrderQuantity{10});
-  order.execute(ExecutedQuantity{5});
+  order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
 
   ASSERT_THAT(order.executed(), IsFalse());
 }
@@ -119,16 +116,39 @@ TEST_F(MarketOrderEntry, ReportsThatIsNotExecutedWhenCancelled) {
 
 TEST_F(MarketOrderEntry, ReportsThatIsExecutedWhenFullyFilled) {
   auto order = make_order(OrderQuantity{10});
-  order.execute(ExecutedQuantity{10});
+  order.execute(ExecutedQuantity{10}, ExecutionPrice{10.0});
 
   ASSERT_THAT(order.executed(), IsTrue());
 }
 
 TEST_F(MarketOrderEntry, ReportsThatIsExecutedWhenOverfilled) {
   auto order = make_order(OrderQuantity{10});
-  order.execute(ExecutedQuantity{15});
+  order.execute(ExecutedQuantity{15}, ExecutionPrice{10.0});
 
   ASSERT_THAT(order.executed(), IsTrue());
+}
+
+TEST_F(MarketOrderEntry, HasNoAveragePriceWhenNoFills) {
+  const auto order = make_order(OrderQuantity{10});
+
+  ASSERT_THAT(order.average_price(), Eq(std::nullopt));
+}
+
+TEST_F(MarketOrderEntry, SetsAveragePriceAfterSingleFillWithPrice) {
+  auto order = make_order(OrderQuantity{10});
+
+  order.execute(ExecutedQuantity{5}, ExecutionPrice{42.5});
+
+  ASSERT_THAT(order.average_price(), Optional(Eq(AveragePrice{42.5})));
+}
+
+TEST_F(MarketOrderEntry, SetsWeightedAveragePriceAcrossMultipleFills) {
+  auto order = make_order(OrderQuantity{10});
+
+  order.execute(ExecutedQuantity{4}, ExecutionPrice{10.0});
+  order.execute(ExecutedQuantity{6}, ExecutionPrice{15.0});
+
+  ASSERT_THAT(order.average_price(), Optional(Eq(AveragePrice{13.0})));
 }
 
 // NOLINTEND(*-magic-numbers)

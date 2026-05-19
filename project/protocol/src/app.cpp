@@ -118,7 +118,7 @@ auto fmt::formatter<simulator::protocol::ExecutionReport>::format(
                    "ExecutionReport={{ "
                    "{}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, "
                    "{}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, "
-                   "{}={}, {}={}, {}={}, {:p}={} "
+                   "{}={}, {}={}, {}={}, {}={}, {}={}, {:p}={} "
                    "}}",
                    message.session,
                    name_of(message.execution_type),
@@ -145,6 +145,10 @@ auto fmt::formatter<simulator::protocol::ExecutionReport>::format(
                    message.cum_executed_quantity,
                    name_of(message.leaves_quantity),
                    message.leaves_quantity,
+                   name_of(message.order_quantity),
+                   message.order_quantity,
+                   name_of(message.average_price),
+                   message.average_price,
                    name_of(message.order_price),
                    message.order_price,
                    name_of(message.expire_date),
@@ -265,7 +269,8 @@ auto fmt::formatter<simulator::protocol::OrderCancellationConfirmation>::format(
                    "OrderCancellationConfirmation={{ "
                    "{}, "
                    "{}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, "
-                   "{}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {:p}={} "
+                   "{}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, "
+                   "{}={}, {:p}={} "
                    "}}",
                    message.session,
                    name_of(message.client_order_id),
@@ -280,6 +285,12 @@ auto fmt::formatter<simulator::protocol::OrderCancellationConfirmation>::format(
                    message.leaving_quantity,
                    name_of(message.cum_executed_quantity),
                    message.cum_executed_quantity,
+                   name_of(message.order_quantity),
+                   message.order_quantity,
+                   name_of(message.average_price),
+                   message.average_price,
+                   name_of(message.order_price),
+                   message.order_price,
                    name_of(message.order_status),
                    message.order_status,
                    name_of(message.order_type),
@@ -356,7 +367,8 @@ auto fmt::formatter<simulator::protocol::OrderModificationConfirmation>::format(
                    "OrderModificationConfirmation={{ "
                    "{}, "
                    "{}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, "
-                   "{}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {:p}={} "
+                   "{}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, "
+                   "{}={}, {:p}={} "
                    "}}",
                    message.session,
                    name_of(message.client_order_id),
@@ -371,6 +383,10 @@ auto fmt::formatter<simulator::protocol::OrderModificationConfirmation>::format(
                    message.leaving_quantity,
                    name_of(message.cum_executed_quantity),
                    message.cum_executed_quantity,
+                   name_of(message.order_quantity),
+                   message.order_quantity,
+                   name_of(message.average_price),
+                   message.average_price,
                    name_of(message.order_price),
                    message.order_price,
                    name_of(message.order_status),
@@ -503,7 +519,7 @@ auto fmt::formatter<simulator::protocol::OrderPlacementReject>::format(
   return format_to(context.out(),
                    "OrderPlacementReject={{ "
                    "{}, "
-                   "{}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, "
+                   "{}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, "
                    "{}={}, {}={}, {}={}, {}={}, {}={}, {:p}={} "
                    "}}",
                    message.session,
@@ -515,6 +531,8 @@ auto fmt::formatter<simulator::protocol::OrderPlacementReject>::format(
                    message.execution_id,
                    name_of(message.order_quantity),
                    message.order_quantity,
+                   name_of(message.order_price),
+                   message.order_price,
                    name_of(message.order_type),
                    message.order_type,
                    name_of(message.time_in_force),
@@ -584,9 +602,11 @@ auto fmt::formatter<simulator::protocol::SecurityStatus>::format(
   using simulator::core::name_of;
   return format_to(context.out(),
                    "SecurityStatus={{ "
-                   "{}, {}={}, {}={}, {}={} "
+                   "{}, {}={}, {}={}, {}={}, {}={} "
                    "}}",
                    message.session,
+                   name_of(message.request_id),
+                   message.request_id,
                    name_of(message.trading_phase),
                    message.trading_phase,
                    name_of(message.trading_status),

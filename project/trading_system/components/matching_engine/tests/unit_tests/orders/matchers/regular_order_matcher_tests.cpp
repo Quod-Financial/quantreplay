@@ -144,7 +144,7 @@ struct BuyLimitOrderMatching : public Test {
 
  public:
   NiceMock<EventListenerMock> listener;
-  RegularOrderMatcher matcher{listener, book_};
+  RegularOrderMatcher matcher{listener, book_, std::nullopt};
 };
 
 TEST_F(BuyLimitOrderMatching, DoesNotDetectFacingOrdersInEmptyPage) {
@@ -393,6 +393,72 @@ TEST_F(BuyLimitOrderMatching, MatchesByRestingOrderPrice) {
       on(IsClientNotification(VariantWith<protocol::ExecutionReport>(Field(
           &protocol::ExecutionReport::execution_price, Optional(Price{99}))))))
       .Times(2);
+
+  matcher.match(order);
+}
+
+TEST_F(BuyLimitOrderMatching, SetsAggressorAveragePriceFromRestingOrderPrice) {
+  add_resting_order(OrderId{1}, Price{99}, Quantity{100});
+
+  LimitOrder order = make_aggressor(OrderId{2}, Price{100}, Quantity{100});
+  matcher.match(order);
+
+  ASSERT_THAT(order.average_price(), Optional(Eq(AveragePrice{99.0})));
+}
+
+TEST_F(BuyLimitOrderMatching, SetsRestingOrderAveragePriceToItsOwnPrice) {
+  add_resting_order(OrderId{1}, Price{99}, Quantity{100});
+
+  LimitOrder order = make_aggressor(OrderId{2}, Price{100}, Quantity{50});
+  matcher.match(order);
+
+  ASSERT_THAT(resting_orders(),
+              ElementsAre(Property(&LimitOrder::average_price,
+                                   Optional(Eq(AveragePrice{99.0})))));
+}
+
+TEST_F(BuyLimitOrderMatching, SetsAveragePriceOnIocAggressor) {
+  add_resting_order(OrderId{1}, Price{99}, Quantity{50});
+
+  LimitOrder order = make_ioc_aggressor(OrderId{2}, Price{100}, Quantity{50});
+  matcher.match(order);
+
+  ASSERT_THAT(order.average_price(), Optional(Eq(AveragePrice{99.0})));
+}
+
+TEST_F(BuyLimitOrderMatching, SetsAveragePriceOnIocRestingOrder) {
+  add_resting_order(OrderId{1}, Price{99}, Quantity{100});
+
+  LimitOrder order = make_ioc_aggressor(OrderId{2}, Price{100}, Quantity{50});
+  matcher.match(order);
+
+  ASSERT_THAT(resting_orders(),
+              ElementsAre(Property(&LimitOrder::average_price,
+                                   Optional(Eq(AveragePrice{99.0})))));
+}
+
+TEST_F(BuyLimitOrderMatching, PopulatesAveragePriceInExecutionReports) {
+  add_resting_order(OrderId{1}, Price{98}, Quantity{100});
+  add_resting_order(OrderId{2}, Price{99}, Quantity{100});
+
+  LimitOrder order = make_aggressor(OrderId{3}, Price{100}, Quantity{200});
+
+  EXPECT_CALL(listener, on(IsOrderBookNotification(_))).Times(4);
+  EXPECT_CALL(listener,
+              on(IsClientNotification(VariantWith<protocol::ExecutionReport>(
+                  Field(&protocol::ExecutionReport::average_price,
+                        Optional(AveragePrice{98.0}))))))
+      .Times(2);
+  EXPECT_CALL(listener,
+              on(IsClientNotification(VariantWith<protocol::ExecutionReport>(
+                  Field(&protocol::ExecutionReport::average_price,
+                        Optional(AveragePrice{99.0}))))))
+      .Times(1);
+  EXPECT_CALL(listener,
+              on(IsClientNotification(VariantWith<protocol::ExecutionReport>(
+                  Field(&protocol::ExecutionReport::average_price,
+                        Optional(AveragePrice{98.5}))))))
+      .Times(1);
 
   matcher.match(order);
 }
@@ -923,7 +989,7 @@ struct SellLimitOrderMatching : public Test {
 
  public:
   NiceMock<EventListenerMock> listener;
-  RegularOrderMatcher matcher{listener, book_};
+  RegularOrderMatcher matcher{listener, book_, std::nullopt};
 };
 
 TEST_F(SellLimitOrderMatching, DoesNotDetectFacingOrdersInEmptyPage) {
@@ -1172,6 +1238,72 @@ TEST_F(SellLimitOrderMatching, MatchesByRestingOrderPrice) {
       on(IsClientNotification(VariantWith<protocol::ExecutionReport>(Field(
           &protocol::ExecutionReport::execution_price, Optional(Price{101}))))))
       .Times(2);
+
+  matcher.match(order);
+}
+
+TEST_F(SellLimitOrderMatching, SetsAggressorAveragePriceFromRestingOrderPrice) {
+  add_resting_order(OrderId{1}, Price{101}, Quantity{100});
+
+  LimitOrder order = make_aggressor(OrderId{2}, Price{100}, Quantity{100});
+  matcher.match(order);
+
+  ASSERT_THAT(order.average_price(), Optional(Eq(AveragePrice{101.0})));
+}
+
+TEST_F(SellLimitOrderMatching, SetsRestingOrderAveragePriceToItsOwnPrice) {
+  add_resting_order(OrderId{1}, Price{101}, Quantity{100});
+
+  LimitOrder order = make_aggressor(OrderId{2}, Price{100}, Quantity{50});
+  matcher.match(order);
+
+  ASSERT_THAT(resting_orders(),
+              ElementsAre(Property(&LimitOrder::average_price,
+                                   Optional(Eq(AveragePrice{101.0})))));
+}
+
+TEST_F(SellLimitOrderMatching, SetsAveragePriceOnIocAggressor) {
+  add_resting_order(OrderId{1}, Price{101}, Quantity{50});
+
+  LimitOrder order = make_ioc_aggressor(OrderId{2}, Price{100}, Quantity{50});
+  matcher.match(order);
+
+  ASSERT_THAT(order.average_price(), Optional(Eq(AveragePrice{101.0})));
+}
+
+TEST_F(SellLimitOrderMatching, SetsAveragePriceOnIocRestingOrder) {
+  add_resting_order(OrderId{1}, Price{101}, Quantity{100});
+
+  LimitOrder order = make_ioc_aggressor(OrderId{2}, Price{100}, Quantity{50});
+  matcher.match(order);
+
+  ASSERT_THAT(resting_orders(),
+              ElementsAre(Property(&LimitOrder::average_price,
+                                   Optional(Eq(AveragePrice{101.0})))));
+}
+
+TEST_F(SellLimitOrderMatching, PopulatesAveragePriceInExecutionReports) {
+  add_resting_order(OrderId{1}, Price{102}, Quantity{100});
+  add_resting_order(OrderId{2}, Price{101}, Quantity{100});
+
+  LimitOrder order = make_aggressor(OrderId{3}, Price{100}, Quantity{200});
+
+  EXPECT_CALL(listener, on(IsOrderBookNotification(_))).Times(4);
+  EXPECT_CALL(listener,
+              on(IsClientNotification(VariantWith<protocol::ExecutionReport>(
+                  Field(&protocol::ExecutionReport::average_price,
+                        Optional(AveragePrice{102.0}))))))
+      .Times(2);
+  EXPECT_CALL(listener,
+              on(IsClientNotification(VariantWith<protocol::ExecutionReport>(
+                  Field(&protocol::ExecutionReport::average_price,
+                        Optional(AveragePrice{101.0}))))))
+      .Times(1);
+  EXPECT_CALL(listener,
+              on(IsClientNotification(VariantWith<protocol::ExecutionReport>(
+                  Field(&protocol::ExecutionReport::average_price,
+                        Optional(AveragePrice{101.5}))))))
+      .Times(1);
 
   matcher.match(order);
 }
@@ -1671,7 +1803,7 @@ struct BuyMarketOrderMatching : public Test {
 
  public:
   NiceMock<EventListenerMock> listener;
-  RegularOrderMatcher matcher{listener, book_};
+  RegularOrderMatcher matcher{listener, book_, std::nullopt};
 };
 
 TEST_F(BuyMarketOrderMatching, DoesNotDetectFacingOrdersInEmptyPage) {
@@ -1774,6 +1906,32 @@ TEST_F(BuyMarketOrderMatching, EmitsTradeOnMatch) {
                                                      Price{100},
                                                      Quantity{100},
                                                      Side::Option::Buy))))
+      .Times(1);
+
+  matcher.match(order);
+}
+
+TEST_F(BuyMarketOrderMatching, PopulatesAveragePriceInExecutionReports) {
+  add_resting_order(OrderId{1}, Price{100}, Quantity{100});
+  add_resting_order(OrderId{2}, Price{101}, Quantity{100});
+
+  MarketOrder order = make_aggressor(OrderId{3}, Quantity{200});
+
+  EXPECT_CALL(listener, on(IsOrderBookNotification(_))).Times(4);
+  EXPECT_CALL(listener,
+              on(IsClientNotification(VariantWith<protocol::ExecutionReport>(
+                  Field(&protocol::ExecutionReport::average_price,
+                        Optional(AveragePrice{100.0}))))))
+      .Times(2);
+  EXPECT_CALL(listener,
+              on(IsClientNotification(VariantWith<protocol::ExecutionReport>(
+                  Field(&protocol::ExecutionReport::average_price,
+                        Optional(AveragePrice{101.0}))))))
+      .Times(1);
+  EXPECT_CALL(listener,
+              on(IsClientNotification(VariantWith<protocol::ExecutionReport>(
+                  Field(&protocol::ExecutionReport::average_price,
+                        Optional(AveragePrice{100.5}))))))
       .Times(1);
 
   matcher.match(order);
@@ -1927,6 +2085,25 @@ TEST_F(BuyMarketOrderMatching, MatchesWithSeveralFacingOrders) {
   matcher.match(order);
 }
 
+TEST_F(BuyMarketOrderMatching, SetsAggressorAveragePriceFromRestingOrderPrice) {
+  add_resting_order(OrderId{1}, Price{100}, Quantity{100});
+
+  MarketOrder order = make_aggressor(OrderId{2}, Quantity{100});
+  matcher.match(order);
+
+  ASSERT_THAT(order.average_price(), Optional(Eq(AveragePrice{100.0})));
+}
+
+TEST_F(BuyMarketOrderMatching, SetsWeightedAveragePriceAcrossMultipleFills) {
+  add_resting_order(OrderId{1}, Price{100}, Quantity{100});
+  add_resting_order(OrderId{2}, Price{101}, Quantity{100});
+
+  MarketOrder order = make_aggressor(OrderId{3}, Quantity{200});
+  matcher.match(order);
+
+  ASSERT_THAT(order.average_price(), Optional(Eq(AveragePrice{100.5})));
+}
+
 struct SellMarketOrderMatching : public Test {
   auto make_aggressor(OrderId order_id,
                       Quantity quantity,
@@ -1968,7 +2145,7 @@ struct SellMarketOrderMatching : public Test {
 
  public:
   NiceMock<EventListenerMock> listener;
-  RegularOrderMatcher matcher{listener, book_};
+  RegularOrderMatcher matcher{listener, book_, std::nullopt};
 };
 
 TEST_F(SellMarketOrderMatching, DoesNotDetectFacingOrdersInEmptyPage) {
@@ -2071,6 +2248,32 @@ TEST_F(SellMarketOrderMatching, EmitsTradeOnMatch) {
                                                      Price{100},
                                                      Quantity{100},
                                                      Side::Option::Sell))))
+      .Times(1);
+
+  matcher.match(order);
+}
+
+TEST_F(SellMarketOrderMatching, PopulatesAveragePriceInExecutionReports) {
+  add_resting_order(OrderId{1}, Price{101}, Quantity{100});
+  add_resting_order(OrderId{2}, Price{100}, Quantity{100});
+
+  MarketOrder order = make_aggressor(OrderId{3}, Quantity{200});
+
+  EXPECT_CALL(listener, on(IsOrderBookNotification(_))).Times(4);
+  EXPECT_CALL(listener,
+              on(IsClientNotification(VariantWith<protocol::ExecutionReport>(
+                  Field(&protocol::ExecutionReport::average_price,
+                        Optional(AveragePrice{101.0}))))))
+      .Times(2);
+  EXPECT_CALL(listener,
+              on(IsClientNotification(VariantWith<protocol::ExecutionReport>(
+                  Field(&protocol::ExecutionReport::average_price,
+                        Optional(AveragePrice{100.0}))))))
+      .Times(1);
+  EXPECT_CALL(listener,
+              on(IsClientNotification(VariantWith<protocol::ExecutionReport>(
+                  Field(&protocol::ExecutionReport::average_price,
+                        Optional(AveragePrice{100.5}))))))
       .Times(1);
 
   matcher.match(order);
@@ -2222,6 +2425,26 @@ TEST_F(SellMarketOrderMatching, MatchesWithSeveralFacingOrders) {
       .Times(1);
 
   matcher.match(order);
+}
+
+TEST_F(SellMarketOrderMatching,
+       SetsAggressorAveragePriceFromRestingOrderPrice) {
+  add_resting_order(OrderId{1}, Price{100}, Quantity{100});
+
+  MarketOrder order = make_aggressor(OrderId{2}, Quantity{100});
+  matcher.match(order);
+
+  ASSERT_THAT(order.average_price(), Optional(Eq(AveragePrice{100.0})));
+}
+
+TEST_F(SellMarketOrderMatching, SetsWeightedAveragePriceAcrossMultipleFills) {
+  add_resting_order(OrderId{1}, Price{101}, Quantity{100});
+  add_resting_order(OrderId{2}, Price{100}, Quantity{100});
+
+  MarketOrder order = make_aggressor(OrderId{3}, Quantity{200});
+  matcher.match(order);
+
+  ASSERT_THAT(order.average_price(), Optional(Eq(AveragePrice{100.5})));
 }
 
 // NOLINTEND(*magic-numbers*,*non-private-member*)

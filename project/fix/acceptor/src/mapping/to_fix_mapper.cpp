@@ -64,6 +64,8 @@ auto ToFixMapper::map(const protocol::ExecutionReport& reply,
   map_fix_field<FIX::LeavesQty>(reply.leaves_quantity, fix_message);
   map_fix_field<FIX::CumQty>(reply.cum_executed_quantity, fix_message);
   map_fix_field<FIX::LastQty>(reply.executed_quantity, fix_message);
+  const auto avg_px = reply.average_price.value_or(AveragePrice{0.0}).value();
+  set_fix_field<FIX::AvgPx>(avg_px, fix_message);
 }
 
 auto ToFixMapper::map(const protocol::OrderPlacementConfirmation& reply,
@@ -74,6 +76,7 @@ auto ToFixMapper::map(const protocol::OrderPlacementConfirmation& reply,
   set_fix_field<FIX::ExecType>(FIX::ExecType_NEW, fix_message);
   set_fix_field<FIX::OrdStatus>(FIX::OrdStatus_NEW, fix_message);
   set_fix_field<FIX::CumQty>(0.0, fix_message);
+  set_fix_field<FIX::AvgPx>(0.0, fix_message);
   map_fix_field<FIX::LeavesQty>(reply.order_quantity, fix_message);
 }
 
@@ -85,6 +88,7 @@ auto ToFixMapper::map(const protocol::OrderPlacementReject& reply,
   set_fix_field<FIX::ExecType>(FIX::ExecType_REJECTED, fix_message);
   set_fix_field<FIX::OrdStatus>(FIX::OrdStatus_REJECTED, fix_message);
   set_fix_field<FIX::CumQty>(0.0, fix_message);
+  set_fix_field<FIX::AvgPx>(0.0, fix_message);
   map_fix_field<FIX::LeavesQty>(reply.order_quantity, fix_message);
   map_fix_field<FIX::Text>(reply.reject_text, fix_message);
 }
@@ -100,6 +104,8 @@ auto ToFixMapper::map(const protocol::OrderModificationConfirmation& reply,
   map_fix_field<FIX::LeavesQty>(reply.leaving_quantity, fix_message);
   map_fix_field<FIX::CumQty>(reply.cum_executed_quantity, fix_message);
   map_fix_field<FIX::OrdStatus>(reply.order_status, fix_message);
+  const auto avg_px = reply.average_price.value_or(AveragePrice{0.0}).value();
+  set_fix_field<FIX::AvgPx>(avg_px, fix_message);
 }
 
 auto ToFixMapper::map(const protocol::OrderModificationReject& reply,
@@ -123,6 +129,8 @@ auto ToFixMapper::map(const protocol::OrderCancellationConfirmation& reply,
   map_fix_field<FIX::LeavesQty>(reply.leaving_quantity, fix_message);
   map_fix_field<FIX::CumQty>(reply.cum_executed_quantity, fix_message);
   map_fix_field<FIX::OrdStatus>(reply.order_status, fix_message);
+  const auto avg_px = reply.average_price.value_or(AveragePrice{0.0}).value();
+  set_fix_field<FIX::AvgPx>(avg_px, fix_message);
 }
 
 auto ToFixMapper::map(const protocol::OrderCancellationReject& reply,
@@ -248,6 +256,7 @@ auto ToFixMapper::map_fix_execution_report_common_fields(
   map_fix_field<FIX::ExpireDate>(reply.expire_date, fix_message);
   map_fix_field<FIX::ShortSaleExemptionReason>(reply.short_sale_exempt_reason,
                                                fix_message);
+  map_fix_field<FIX::OrderQty>(reply.order_quantity, fix_message);
 }
 
 template <typename InternalMessage>

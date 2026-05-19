@@ -43,6 +43,21 @@ constexpr auto is_fully_divisible(T value, U divisor) -> bool {
   return remainder < tolerance;
 }
 
+template <typename T, typename U>
+  requires std::floating_point<T> && std::floating_point<U>
+[[nodiscard]]
+constexpr auto round_to_tick(T value, U tick) -> double {
+  const auto v = static_cast<double>(value);
+  const auto t = static_cast<double>(tick);
+  if (!std::isfinite(v) || !std::isfinite(t) || t <= 0.0) {
+    return v;
+  }
+  constexpr double tolerance = 4.0 * std::numeric_limits<double>::epsilon();
+  const double quotient = v / t;
+  const double adjusted = quotient * (1.0 + tolerance);
+  return std::round(adjusted) * t;
+}
+
 }  // namespace simulator::core
 
 #endif  // SIMULATOR_CORE_TOOLS_NUMERIC_HPP_

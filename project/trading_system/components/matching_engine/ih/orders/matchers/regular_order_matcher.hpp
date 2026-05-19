@@ -2,7 +2,9 @@
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_MATCHERS_REGULAR_ORDER_MATCHER_HPP_
 
 #include <functional>
+#include <optional>
 
+#include "common/attributes.hpp"
 #include "ih/common/abstractions/event_listener.hpp"
 #include "ih/common/events/event_reporter.hpp"
 #include "ih/orders/book/order_book.hpp"
@@ -12,7 +14,9 @@ namespace simulator::trading_system::matching_engine {
 
 class RegularOrderMatcher : public RegularMatcher, private EventReporter {
  public:
-  RegularOrderMatcher(EventListener& event_listener, OrderBook& order_book);
+  RegularOrderMatcher(EventListener& event_listener,
+                      OrderBook& order_book,
+                      std::optional<PriceTick> price_tick);
 
   RegularOrderMatcher(const RegularOrderMatcher&) = default;
   RegularOrderMatcher(RegularOrderMatcher&&) = default;
@@ -64,6 +68,7 @@ class RegularOrderMatcher : public RegularMatcher, private EventReporter {
       -> std::pair<ExecutionPrice, ExecutedQuantity>;
 
   OrderBook& order_book_;
+  std::optional<PriceTick> price_tick_;
 };
 
 }  // namespace simulator::trading_system::matching_engine

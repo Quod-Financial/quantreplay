@@ -353,6 +353,7 @@ auto read(const rapidjson::Value& json_value, market_state::Session& dest)
 auto read(const rapidjson::Value& json_value, market_state::LimitOrder& dest)
     -> tl::expected<void, std::string> {
   json::LimitOrder model;
+  std::optional<double> cum_px_qty;
 
   auto result =
       read(json_value,
@@ -376,7 +377,8 @@ auto read(const rapidjson::Value& json_value, market_state::LimitOrder& dest)
           .and_then(read_field(json_value, "Price", model.order_price))
           .and_then(read_field(json_value, "OrderQty", model.total_quantity))
           .and_then(
-              read_field(json_value, "CumQty", model.cum_executed_quantity));
+              read_field(json_value, "CumQty", model.cum_executed_quantity))
+          .and_then(read_field(json_value, "CumPxQty", cum_px_qty));
   if (result) {
     dest.client_instrument_descriptor =
         std::move(model.client_instrument_descriptor);
@@ -416,6 +418,8 @@ auto read(const rapidjson::Value& json_value, market_state::LimitOrder& dest)
     dest.total_quantity = OrderQuantity{model.total_quantity};
     dest.cum_executed_quantity =
         CumExecutedQuantity{model.cum_executed_quantity};
+    dest.cum_px_qty =
+        cum_px_qty.value_or(model.cum_executed_quantity * model.order_price);
   }
 
   return result;

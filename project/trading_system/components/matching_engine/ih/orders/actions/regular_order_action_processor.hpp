@@ -1,6 +1,9 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_REGULAR_ORDER_ACTION_PROCESSOR_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_REGULAR_ORDER_ACTION_PROCESSOR_HPP_
 
+#include <optional>
+
+#include "common/attributes.hpp"
 #include "ih/common/abstractions/event_listener.hpp"
 #include "ih/orders/actions/order_action_handler.hpp"
 #include "ih/orders/book/limit_order.hpp"
@@ -11,8 +14,9 @@ namespace simulator::trading_system::matching_engine {
 
 class RegularOrderActionProcessor : public OrderActionHandler {
  public:
-  explicit RegularOrderActionProcessor(EventListener& event_listener,
-                                       OrderBook& order_book);
+  RegularOrderActionProcessor(EventListener& event_listener,
+                              OrderBook& order_book,
+                              std::optional<PriceTick> price_tick);
 
   auto place_limit_order(LimitOrder order) -> void override;
 
@@ -27,6 +31,7 @@ class RegularOrderActionProcessor : public OrderActionHandler {
  private:
   EventListener& event_listener_;
   OrderBook& order_book_;
+  std::optional<PriceTick> price_tick_;
 };
 
 }  // namespace simulator::trading_system::matching_engine

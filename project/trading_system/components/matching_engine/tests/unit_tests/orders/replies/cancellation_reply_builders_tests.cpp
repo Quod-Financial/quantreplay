@@ -18,7 +18,8 @@ using namespace ::testing;  // NOLINT
 struct CancellationConfirmationBuilder : public Test {
   const protocol::Session test_session{protocol::generator::Session{}};
   OrderBuilder order_builder;
-  matching_engine::CancellationConfirmationBuilder builder{test_session};
+  matching_engine::CancellationConfirmationBuilder builder{test_session,
+                                                           std::nullopt};
 };
 
 TEST_F(CancellationConfirmationBuilder, BuildsConfirmationForSession) {
@@ -133,6 +134,65 @@ TEST_F(CancellationConfirmationBuilder, SetsLimitOrderExpireDate) {
   const auto confirmation = builder.for_order(order).build();
 
   ASSERT_THAT(confirmation.expire_date, Ne(std::nullopt));
+}
+
+TEST_F(CancellationConfirmationBuilder, SetsLimitOrderQuantity) {
+  const auto limit_order =
+      order_builder.with_order_quantity(OrderQuantity{123}).build_limit_order();
+
+  const auto confirmation = builder.for_order(limit_order).build();
+
+  ASSERT_THAT(confirmation.order_quantity, Eq(limit_order.total_quantity()));
+}
+
+TEST_F(CancellationConfirmationBuilder, SetsLimitOrderAveragePrice) {
+  auto limit_order =
+      order_builder.with_order_quantity(OrderQuantity{100}).build_limit_order();
+  limit_order.execute(ExecutedQuantity{30}, ExecutionPrice{42.5});
+  limit_order.execute(ExecutedQuantity{20}, ExecutionPrice{43.2});
+
+  const auto confirmation = builder.for_order(limit_order).build();
+
+  ASSERT_THAT(confirmation.average_price, Eq(limit_order.average_price()));
+}
+
+TEST_F(CancellationConfirmationBuilder, RoundsAveragePriceToPriceTick) {
+  auto limit_order =
+      order_builder.with_order_quantity(OrderQuantity{10}).build_limit_order();
+  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
+  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
+
+  const auto confirmation =
+      matching_engine::CancellationConfirmationBuilder{test_session,
+                                                       PriceTick{0.1}}
+          .for_order(limit_order)
+          .build();
+
+  ASSERT_THAT(confirmation.average_price, Optional(Eq(AveragePrice{10.1})));
+}
+
+TEST_F(CancellationConfirmationBuilder,
+       DoesNotRoundAveragePriceWhenPriceTickIsNullopt) {
+  auto limit_order =
+      order_builder.with_order_quantity(OrderQuantity{10}).build_limit_order();
+  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
+  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
+
+  const auto confirmation = builder.for_order(limit_order).build();
+
+  ASSERT_THAT(confirmation.average_price, Optional(Eq(AveragePrice{10.05})));
+}
+
+TEST_F(CancellationConfirmationBuilder, PrepareFactoryForwardsPriceTick) {
+  auto limit_order =
+      order_builder.with_order_quantity(OrderQuantity{10}).build_limit_order();
+  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
+  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
+
+  const auto confirmation =
+      prepare_cancellation_confirmation(limit_order, PriceTick{0.1}).build();
+
+  ASSERT_THAT(confirmation.average_price, Optional(Eq(AveragePrice{10.1})));
 }
 
 TEST_F(CancellationConfirmationBuilder, SetsExecutionId) {

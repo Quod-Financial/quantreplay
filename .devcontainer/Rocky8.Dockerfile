@@ -15,13 +15,15 @@ RUN dnf install -y epel-release && \
         git \
         gobject-introspection-devel \
         libxml2-devel \
+        lyx-fonts \
         make \
         openssl-devel \
         pango-devel \
         perl \
         python3.11-pip \
         @ruby:3.3 \
-        ruby-devel
+        ruby-devel \
+        texlive-latex
 
 RUN pip3 install --upgrade pip && \
     pip3 install conan==1.59

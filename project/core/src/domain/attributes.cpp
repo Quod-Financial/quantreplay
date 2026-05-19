@@ -56,6 +56,7 @@ SIMULATOR_DEFINE_ATTRIBUTE(simulator, OrderPrice, Derived);
 SIMULATOR_DEFINE_ATTRIBUTE(simulator, BestBidPrice, Derived);
 SIMULATOR_DEFINE_ATTRIBUTE(simulator, BestOfferPrice, Derived);
 SIMULATOR_DEFINE_ATTRIBUTE(simulator, ExecutionPrice, Derived);
+SIMULATOR_DEFINE_ATTRIBUTE(simulator, AveragePrice, Derived);
 
 SIMULATOR_DEFINE_ATTRIBUTE(simulator, CumExecutedQuantity, Derived);
 SIMULATOR_DEFINE_ATTRIBUTE(simulator, LeavesQuantity, Derived);

@@ -16,7 +16,7 @@ using namespace ::testing;  // NOLINT
 struct ExecutionReportBuilder : public Test {
   const protocol::Session test_session{protocol::generator::Session{}};
   OrderBuilder order_builder;
-  matching_engine::ExecutionReportBuilder builder{test_session};
+  matching_engine::ExecutionReportBuilder builder{test_session, std::nullopt};
 };
 
 TEST_F(ExecutionReportBuilder, BuildsReportForSession) {
@@ -167,6 +167,64 @@ TEST_F(ExecutionReportBuilder, SetsLimitOrderExpireDate) {
   ASSERT_THAT(confirmation.expire_date, Ne(std::nullopt));
 }
 
+TEST_F(ExecutionReportBuilder, SetsLimitOrderQuantity) {
+  const auto limit_order =
+      order_builder.with_order_quantity(OrderQuantity{123}).build_limit_order();
+
+  const auto report = builder.for_order(limit_order).build();
+
+  ASSERT_THAT(report.order_quantity, Eq(limit_order.total_quantity()));
+}
+
+TEST_F(ExecutionReportBuilder, SetsLimitOrderAveragePrice) {
+  auto limit_order =
+      order_builder.with_order_quantity(OrderQuantity{100}).build_limit_order();
+  limit_order.execute(ExecutedQuantity{60}, ExecutionPrice{42.5});
+  limit_order.execute(ExecutedQuantity{40}, ExecutionPrice{43.2});
+
+  const auto report = builder.for_order(limit_order).build();
+
+  ASSERT_THAT(report.average_price, Eq(limit_order.average_price()));
+}
+
+TEST_F(ExecutionReportBuilder, RoundsLimitOrderAveragePriceToPriceTick) {
+  auto limit_order =
+      order_builder.with_order_quantity(OrderQuantity{10}).build_limit_order();
+  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
+  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
+
+  const auto report =
+      matching_engine::ExecutionReportBuilder{test_session, PriceTick{0.1}}
+          .for_order(limit_order)
+          .build();
+
+  ASSERT_THAT(report.average_price, Optional(Eq(AveragePrice{10.1})));
+}
+
+TEST_F(ExecutionReportBuilder,
+       DoesNotRoundLimitOrderAveragePriceWhenPriceTickIsNullopt) {
+  auto limit_order =
+      order_builder.with_order_quantity(OrderQuantity{10}).build_limit_order();
+  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
+  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
+
+  const auto report = builder.for_order(limit_order).build();
+
+  ASSERT_THAT(report.average_price, Optional(Eq(AveragePrice{10.05})));
+}
+
+TEST_F(ExecutionReportBuilder, PrepareFactoryForwardsPriceTickForLimitOrder) {
+  auto limit_order =
+      order_builder.with_order_quantity(OrderQuantity{10}).build_limit_order();
+  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
+  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
+
+  const auto report =
+      prepare_execution_report(limit_order, PriceTick{0.1}).build();
+
+  ASSERT_THAT(report.average_price, Optional(Eq(AveragePrice{10.1})));
+}
+
 TEST_F(ExecutionReportBuilder, SetsMarketOrderInstrumentDescriptor) {
   InstrumentDescriptor instrument;
   instrument.symbol = Symbol{"AAPL"};
@@ -298,6 +356,63 @@ TEST_F(ExecutionReportBuilder, SetsMarketOrderExpireDate) {
   const auto confirmation = builder.for_order(order).build();
 
   ASSERT_THAT(confirmation.expire_date, Ne(std::nullopt));
+}
+
+TEST_F(ExecutionReportBuilder, SetsMarketOrderQuantity) {
+  const auto order = order_builder.with_order_quantity(OrderQuantity{123})
+                         .build_market_order();
+
+  const auto report = builder.for_order(order).build();
+
+  ASSERT_THAT(report.order_quantity, Eq(order.total_quantity()));
+}
+
+TEST_F(ExecutionReportBuilder, SetsMarketOrderAveragePrice) {
+  auto order = order_builder.with_order_quantity(OrderQuantity{100})
+                   .build_market_order();
+  order.execute(ExecutedQuantity{60}, ExecutionPrice{42.5});
+  order.execute(ExecutedQuantity{40}, ExecutionPrice{43.2});
+
+  const auto report = builder.for_order(order).build();
+
+  ASSERT_THAT(report.average_price, Eq(order.average_price()));
+}
+
+TEST_F(ExecutionReportBuilder, RoundsMarketOrderAveragePriceToPriceTick) {
+  auto order =
+      order_builder.with_order_quantity(OrderQuantity{10}).build_market_order();
+  order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
+  order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
+
+  const auto report =
+      matching_engine::ExecutionReportBuilder{test_session, PriceTick{0.1}}
+          .for_order(order)
+          .build();
+
+  ASSERT_THAT(report.average_price, Optional(Eq(AveragePrice{10.1})));
+}
+
+TEST_F(ExecutionReportBuilder,
+       DoesNotRoundMarketOrderAveragePriceWhenPriceTickIsNullopt) {
+  auto order =
+      order_builder.with_order_quantity(OrderQuantity{10}).build_market_order();
+  order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
+  order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
+
+  const auto report = builder.for_order(order).build();
+
+  ASSERT_THAT(report.average_price, Optional(Eq(AveragePrice{10.05})));
+}
+
+TEST_F(ExecutionReportBuilder, PrepareFactoryForwardsPriceTickForMarketOrder) {
+  auto order =
+      order_builder.with_order_quantity(OrderQuantity{10}).build_market_order();
+  order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
+  order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
+
+  const auto report = prepare_execution_report(order, PriceTick{0.1}).build();
+
+  ASSERT_THAT(report.average_price, Optional(Eq(AveragePrice{10.1})));
 }
 
 TEST_F(ExecutionReportBuilder, SetsExecutionId) {

@@ -48,7 +48,7 @@ auto fmt::formatter<simulator::trading_system::market_state::LimitOrder>::
       "\"short_sale_exemption_reason\": {}, \"time_in_force\": {}, "
       "\"order_id\": {}, \"order_time\": {}, \"side\": {}, \"order_status\": "
       "{}, \"order_price\": {}, \"total_quantity\": {}, "
-      "\"cum_executed_quantity\": {} }}\"",
+      "\"cum_executed_quantity\": {}, \"cum_px_qty\": {} }}\"",
       order.client_instrument_descriptor,
       order.client_session,
       order.client_order_id,
@@ -63,7 +63,8 @@ auto fmt::formatter<simulator::trading_system::market_state::LimitOrder>::
       order.order_status,
       order.order_price,
       order.total_quantity,
-      order.cum_executed_quantity);
+      order.cum_executed_quantity,
+      order.cum_px_qty);
 }
 
 auto fmt::formatter<simulator::trading_system::market_state::InstrumentInfo>::

@@ -2,7 +2,9 @@
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_ELIMINATION_HPP_
 
 #include <gsl/pointers>
+#include <optional>
 
+#include "common/attributes.hpp"
 #include "common/events.hpp"
 #include "core/tools/time.hpp"
 #include "ih/common/abstractions/event_listener.hpp"
@@ -13,7 +15,9 @@ namespace simulator::trading_system::matching_engine::order {
 
 class SystemElimination : EventReporter {
  public:
-  SystemElimination(EventListener& event_listener, event::Tick system_tick);
+  SystemElimination(EventListener& event_listener,
+                    event::Tick system_tick,
+                    std::optional<PriceTick> price_tick);
 
   auto operator()(OrderBook& book) const -> void;
 
@@ -27,6 +31,7 @@ class SystemElimination : EventReporter {
   core::sys_us current_expire_time_;
   core::local_days current_expire_date_;
   bool is_new_day_;
+  std::optional<PriceTick> price_tick_;
 };
 
 class AllOrdersElimination : EventReporter {
@@ -44,7 +49,8 @@ class AllOrdersElimination : EventReporter {
 class ClosedPhaseElimination : EventReporter {
  public:
   ClosedPhaseElimination(EventListener& event_listener,
-                         core::tz_us phase_tz_start_time);
+                         core::tz_us phase_tz_start_time,
+                         std::optional<PriceTick> price_tick);
 
   auto operator()(OrderBook& book) const -> void;
 
@@ -56,12 +62,14 @@ class ClosedPhaseElimination : EventReporter {
   auto eliminate(LimitOrder& order) const -> void;
 
   core::local_days phase_start_date_;
+  std::optional<PriceTick> price_tick_;
 };
 
 class OnDisconnectElimination : EventReporter {
  public:
   OnDisconnectElimination(EventListener& event_listener,
-                          const protocol::Session& disconnected_session);
+                          const protocol::Session& disconnected_session,
+                          std::optional<PriceTick> price_tick);
 
   auto operator()(OrderBook& book) const -> void;
 
@@ -73,6 +81,7 @@ class OnDisconnectElimination : EventReporter {
   auto eliminate(LimitOrder& order) const -> void;
 
   gsl::not_null<const protocol::Session*> disconnected_session_;
+  std::optional<PriceTick> price_tick_;
 };
 
 }  // namespace simulator::trading_system::matching_engine::order

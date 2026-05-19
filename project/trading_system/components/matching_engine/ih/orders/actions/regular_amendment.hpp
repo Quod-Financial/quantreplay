@@ -1,6 +1,9 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_REGULAR_AMENDMENT_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_REGULAR_AMENDMENT_HPP_
 
+#include <optional>
+
+#include "common/attributes.hpp"
 #include "ih/common/abstractions/event_listener.hpp"
 #include "ih/common/events/event_reporter.hpp"
 #include "ih/orders/book/order_book.hpp"
@@ -13,7 +16,8 @@ class RegularAmendment : private EventReporter {
  public:
   RegularAmendment(EventListener& event_listener,
                    OrderBook& order_book,
-                   RegularMatcher& matcher);
+                   RegularMatcher& matcher,
+                   std::optional<PriceTick> price_tick);
 
   RegularAmendment(const RegularAmendment&) = default;
   RegularAmendment(RegularAmendment&&) = default;
@@ -29,6 +33,7 @@ class RegularAmendment : private EventReporter {
 
   OrderBook& order_book_;
   RegularMatcher& matcher_;
+  std::optional<PriceTick> price_tick_;
 };
 
 }  // namespace simulator::trading_system::matching_engine

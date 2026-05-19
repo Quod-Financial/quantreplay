@@ -9,8 +9,12 @@
 
 namespace simulator::trading_system::matching_engine {
 
-Cancellation::Cancellation(EventListener& event_listener, OrderBook& order_book)
-    : EventReporter(event_listener), order_book_(order_book) {}
+Cancellation::Cancellation(EventListener& event_listener,
+                           OrderBook& order_book,
+                           std::optional<PriceTick> price_tick)
+    : EventReporter{event_listener},
+      order_book_{order_book},
+      price_tick_{price_tick} {}
 
 auto Cancellation::operator()(const OrderCancel& cancel) -> void {
   log::debug("running order cancellation operation");
@@ -36,7 +40,7 @@ auto Cancellation::cancel_order(const OrderCancel& cancel, OrderPage& page)
   order.cancel();
 
   emit(ClientNotification(
-      prepare_cancellation_confirmation(order)
+      prepare_cancellation_confirmation(order, price_tick_)
           .with_execution_id(order.make_execution_id())
           .with_client_order_id(cancel.client_order_id)
           .with_orig_client_order_id(cancel.orig_client_order_id)

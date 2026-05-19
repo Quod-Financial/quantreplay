@@ -206,15 +206,13 @@ TEST_F(MatchingEngineLimitOrderRecover, RecoversCumExecutedQuantity) {
                                    Eq(CumExecutedQuantity{500.0}))));
 }
 
-TEST_F(MatchingEngineLimitOrderRecover,
-       DoesNotChangeOrderStatusWhenCumExecutedQuantityIsZero) {
-  market_state_order.order_status = OrderStatus::Option::New;
-  market_state_order.cum_executed_quantity = CumExecutedQuantity{0.0};
+TEST_F(MatchingEngineLimitOrderRecover, RecoversCummulativePriceQuantity) {
+  market_state_order.cum_px_qty = 21250.0;
 
   recover(std::move(market_state_order));
   ASSERT_THAT(
       order_book.buy_page().limit_orders(),
-      ElementsAre(Property(&LimitOrder::status, Eq(OrderStatus::Option::New))));
+      ElementsAre(Property(&LimitOrder::cum_px_qty, DoubleEq(21250.0))));
 }
 
 TEST_F(MatchingEngineLimitOrderRecover, EmitsOrderAddedOnRecover) {

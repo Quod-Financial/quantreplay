@@ -37,6 +37,7 @@ auto store(const LimitOrder& order, market_state::LimitOrder& order_state) {
   order_state.order_price = order.price();
   order_state.total_quantity = order.total_quantity();
   order_state.cum_executed_quantity = order.cum_executed_quantity();
+  order_state.cum_px_qty = order.cum_px_qty();
 }
 
 auto store(OrderPage& page,
