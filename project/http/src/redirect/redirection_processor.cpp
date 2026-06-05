@@ -2,6 +2,7 @@
 
 #include <fmt/format.h>
 
+#include <optional>
 #include <utility>
 
 #include "cfg/api/cfg.hpp"
@@ -26,16 +27,17 @@ RedirectionProcessorImpl::RedirectionProcessorImpl(
     std::shared_ptr<Redirector> redirector) noexcept
     : resolver_{std::move(resolver)}, redirector_{std::move(redirector)} {}
 
-auto RedirectionProcessorImpl::redirect_to_venue(const std::string& venue_id,
-                                                 Pistache::Http::Method method,
-                                                 const std::string& url) const
-    -> Result {
+auto RedirectionProcessorImpl::redirect_to_venue(
+    const std::string& venue_id,
+    Pistache::Http::Method method,
+    const std::string& url,
+    std::optional<std::string> body) const -> Result {
   auto result = resolver_->resolve_by_venue_id(venue_id);
   if (!result) {
     return process_resolve_error(result.error(), venue_id);
   }
 
-  const Request request{*result, method, url};
+  const Request request{*result, method, url, std::move(body)};
   auto [response, redirect_status] = redirector_->redirect(request);
   if (!response.has_value() || redirect_status != Redirector::Status::Success) {
     return process_redirect_error(redirect_status, venue_id);

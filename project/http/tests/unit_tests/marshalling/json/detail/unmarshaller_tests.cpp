@@ -3,6 +3,7 @@
 #include <rapidjson/document.h>
 
 #include <limits>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
@@ -121,6 +122,46 @@ TEST_F(HttpJsonUnmarshaller, UnmarshallsBooleanByKey) {
 
   ASSERT_TRUE(unmarshaller(Key, decoded));
   ASSERT_EQ(decoded, true);
+}
+
+TEST_F(HttpJsonUnmarshaller, UnmarshallsOptionalStringByKey) {
+  add_member(Key, std::string{"value"}, document);
+
+  Unmarshaller unmarshaller{document};
+  std::optional<std::string> decoded;
+
+  ASSERT_TRUE(unmarshaller(Key, decoded));
+  ASSERT_THAT(decoded, Optional(Eq("value")));
+}
+
+TEST_F(HttpJsonUnmarshaller, UnmarshallsOptionalStringNullByKey) {
+  add_null_member(Key, document);
+
+  Unmarshaller unmarshaller{document};
+  std::optional<std::string> decoded{"sentinel"};
+
+  ASSERT_TRUE(unmarshaller(Key, decoded));
+  ASSERT_EQ(decoded, std::nullopt);
+}
+
+TEST_F(HttpJsonUnmarshaller, ReturnsFalseWhenOptionalStringKeyIsAbsent) {
+  document.SetObject();
+
+  Unmarshaller unmarshaller{document};
+  std::optional<std::string> decoded;
+
+  ASSERT_FALSE(unmarshaller(Key, decoded));
+  ASSERT_EQ(decoded, std::nullopt);
+}
+
+TEST_F(HttpJsonUnmarshaller,
+       ThrowsExceptionWhenUnmarshallingOptionalStringNotStringEncoded) {
+  add_member(Key, 1, document);
+
+  Unmarshaller unmarshaller{document};
+  std::optional<std::string> decoded;
+
+  ASSERT_THROW(unmarshaller(Key, decoded), std::runtime_error);
 }
 
 TEST_F(HttpJsonUnmarshaller, UnmarshallsBooleanByAttribute) {

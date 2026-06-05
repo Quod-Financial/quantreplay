@@ -4,6 +4,7 @@
 #include <fmt/format.h>
 
 #include <optional>
+#include <string>
 #include <string_view>
 
 #include "core/common/std_formatter.hpp"
@@ -18,7 +19,9 @@ struct GenerationStatusReply {
   std::optional<Status> status;
 };
 
-struct StartGenerationRequest {};
+struct StartGenerationRequest {
+  std::optional<std::string> seed;
+};
 
 struct StartGenerationReply {
   enum class Result : std::uint8_t { Started, ErrorOccurred };

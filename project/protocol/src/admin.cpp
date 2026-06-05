@@ -50,9 +50,10 @@ auto fmt::formatter<protocol::StartGenerationReply::Result>::format(
 }
 
 auto fmt::formatter<protocol::StartGenerationRequest>::format(
-    [[maybe_unused]] const formattable& request, format_context& context) const
+    const formattable& request, format_context& context) const
     -> decltype(context.out()) {
-  return format_to(context.out(), "StartGenerationRequest={{}}");
+  return format_to(
+      context.out(), "StartGenerationRequest={{ seed={} }}", request.seed);
 }
 
 auto fmt::formatter<protocol::StartGenerationReply>::format(

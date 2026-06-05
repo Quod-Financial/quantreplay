@@ -113,7 +113,7 @@ TEST_F(HttpGetProcessorGetVenueStatus, RedirectsRequestIfVenueIsNotCurrent) {
 
   ON_CALL(*venue_accessor, select_single(Eq(OtherVenueName)))
       .WillByDefault(Return(venue));
-  EXPECT_CALL(*redirector, redirect_to_venue(Eq(OtherVenueName), _, _))
+  EXPECT_CALL(*redirector, redirect_to_venue(Eq(OtherVenueName), _, _, _))
       .Times(1)
       .WillOnce(Return(redirect::Result(Pistache::Http::Code::Ok)));
 
@@ -225,7 +225,7 @@ TEST_F(HttpGetProcessorGetOrderGenStatus,
 }
 
 TEST_F(HttpGetProcessorGetOrderGenStatus, RedirectsWhenVenueIsDifferent) {
-  EXPECT_CALL(*redirector, redirect_to_venue(Eq(OtherVenueName), _, _))
+  EXPECT_CALL(*redirector, redirect_to_venue(Eq(OtherVenueName), _, _, _))
       .Times(1)
       .WillOnce(Return(redirect::Result(Pistache::Http::Code::Ok)));
 

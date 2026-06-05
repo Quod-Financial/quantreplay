@@ -30,6 +30,8 @@ class OrderGenerator : public Executable {
   [[nodiscard]]
   auto next_exec_timeout() const -> std::chrono::microseconds override;
 
+  auto reseed(std::uint64_t seed) -> void;
+
  private:
   auto init_execution_rate() -> void;
 

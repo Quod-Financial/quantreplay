@@ -465,6 +465,23 @@ Content-Length: XXX
 
 [[admincmds-ordergen-startstop]]
 ==== Start/Stop Order Generation
+Start or stop random order generation and historical data playback for a single market simulator venue instance.
+
+_Request Properties_
+
+[cols="1,1,1"]
+|===
+| Path | Type | Description
+
+| seed
+| String
+a| Optional static seed that can be used to override the default random seed value used for the random order generator in order to produce deterministic results on each separate run of the market simulator instance. Used only with genstart.
+
+* Any string value is valid, e.g. `42`, `hello`, `-1`. The provided static seed is combined with an internal hard-coded value using a hash function in order to maintain strong random properties for the initial seed.
+* If the value is missing or set to null, the default random seed for order generation will be used, and results will be non-deterministic on each separate run of the market simulator instance.
+* If this property is specified with a value, it will result in deterministic generation of orders that will be unique per listing. This deterministic generation of orders is only guaranteed within the sequence of updates per each listing. Since each listing is managed in a separate thread, overall updates mixed across all listings will still be produced with non-deterministic results.
+|===
+
 Start or stop random order generation and historical data playback for the current market simulator venue instance.
 
 _Resource URI_
@@ -488,6 +505,32 @@ _Example_: Request to start generation for the current venue
 POST /api/genstart HTTP/1.1
 Accept: application/json;charset=UTF-8
 Host: localhost
+----
+
+_Example_: Possible reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "result" : "Random orders generator started successfully"
+}
+----
+
+_Example_: Request to start generation with a static seed
+
+[,http]
+----
+POST /api/genstart HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+
+{
+    "seed":"abc"
+}
 ----
 
 _Example_: Possible reply

@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include <optional>
+#include <string>
 #include <utility>
 
 #include "data_layer/api/data_access_layer.hpp"
@@ -59,10 +60,11 @@ auto retrieve_generation_status(Generator::Implementation& generator)
   return std::nullopt;
 }
 
-auto resume_generator(Generator::Implementation& generator)
+auto resume_generator(Generator::Implementation& generator,
+                      const std::optional<std::string>& user_seed)
     -> protocol::StartGenerationReply::Result {
   try {
-    generator.resume();
+    generator.resume(user_seed);
     return protocol::StartGenerationReply::Result::Started;
   } catch (const std::exception& exception) {
     log::warn("failed to resume generation, an error occurred: {}",
@@ -209,12 +211,12 @@ auto process_admin_request(
   log::info("processed request to retrieve generation status");
 }
 
-auto process_admin_request(
-    Generator& generator,
-    [[maybe_unused]] const protocol::StartGenerationRequest& request,
-    protocol::StartGenerationReply& reply) -> void {
-  reply.result = resume_generator(generator.implementation());
-  log::info("processed request to start/resume generation");
+auto process_admin_request(Generator& generator,
+                           const protocol::StartGenerationRequest& request,
+                           protocol::StartGenerationReply& reply) -> void {
+  reply.result = resume_generator(generator.implementation(), request.seed);
+  log::info("processed request to start/resume generation (seed={})",
+            request.seed);
 }
 
 auto process_admin_request(

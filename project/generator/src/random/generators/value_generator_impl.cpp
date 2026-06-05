@@ -10,6 +10,10 @@ namespace simulator::generator::random {
 
 ValueGeneratorImpl::ValueGeneratorImpl() : engine_{std::random_device{}()} {}
 
+auto ValueGeneratorImpl::reseed(std::uint64_t seed) -> void {
+  engine_.seed(seed);
+}
+
 auto ValueGeneratorImpl::create() -> std::shared_ptr<ValueGeneratorImpl> {
   return std::make_shared<ValueGeneratorImpl>();
 }

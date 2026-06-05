@@ -1,9 +1,11 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <cstdint>
 #include <limits>
 #include <tuple>
 #include <type_traits>
+#include <vector>
 
 #include "ih/random/generators/value_generator_impl.hpp"
 
@@ -124,6 +126,49 @@ TYPED_TEST(Generator_Random_ValueGenerator_FloatingPoint,
   EXPECT_LE(random, max);
   EXPECT_GE(random, min);
 }
+
+// NOLINTBEGIN(*-magic-numbers)
+
+class Generator_Random_ValueGenerator_Seeded : public testing::Test {
+ protected:
+  static constexpr std::int64_t RangeMin = -1'000'000;
+  static constexpr std::int64_t RangeMax = 1'000'000;
+  static constexpr std::size_t SampleSize = 32;
+
+  static auto draw_sequence(ValueGeneratorImpl& generator)
+      -> std::vector<std::int64_t> {
+    std::vector<std::int64_t> sequence;
+    sequence.reserve(SampleSize);
+    for (std::size_t i = 0; i < SampleSize; ++i) {
+      sequence.push_back(generator.generate_uniform_value(RangeMin, RangeMax));
+    }
+    return sequence;
+  }
+};
+
+TEST_F(Generator_Random_ValueGenerator_Seeded,
+       SameSeedProducesSameSequenceAcrossInstances) {
+  constexpr std::uint64_t seed = 0xA5A5A5A5A5A5A5A5ULL;
+
+  ValueGeneratorImpl first{};
+  first.reseed(seed);
+  ValueGeneratorImpl second{};
+  second.reseed(seed);
+
+  EXPECT_EQ(draw_sequence(first), draw_sequence(second));
+}
+
+TEST_F(Generator_Random_ValueGenerator_Seeded,
+       DifferentSeedsProduceDifferentSequences) {
+  ValueGeneratorImpl first{};
+  first.reseed(std::uint64_t{1});
+  ValueGeneratorImpl second{};
+  second.reseed(std::uint64_t{2});
+
+  EXPECT_NE(draw_sequence(first), draw_sequence(second));
+}
+
+// NOLINTEND(*-magic-numbers)
 
 }  // namespace
 }  // namespace simulator::generator::random::test

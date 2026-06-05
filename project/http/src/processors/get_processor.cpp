@@ -5,6 +5,7 @@
 #include <pistache/router.h>
 
 #include <cassert>
+#include <optional>
 #include <regex>
 #include <utility>
 
@@ -183,7 +184,8 @@ auto GetProcessorImpl::get_venue_status_str(
   auto result = redirector_->redirect_to_venue(
       venue_id,
       Pistache::Http::Method::Get,
-      fmt::format(endpoint::VenueStatusByVenueIdFmt, venue_id));
+      fmt::format(endpoint::VenueStatusByVenueIdFmt, venue_id),
+      std::nullopt);
   const auto& response_code = result.http_code();
   if (response_code != Pistache::Http::Code::Ok) {
     return format_venue_status(venue, response_code);
@@ -281,7 +283,7 @@ auto GetProcessorImpl::redirect(const Pistache::Rest::Request& request,
     -> redirect::Result {
   assert(redirector_);
   return redirector_->redirect_to_venue(
-      instance_id, request.method(), request.resource());
+      instance_id, request.method(), request.resource(), std::nullopt);
 }
 
 }  // namespace simulator::http

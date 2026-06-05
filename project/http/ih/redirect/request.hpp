@@ -3,6 +3,7 @@
 
 #include <pistache/http.h>
 
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -16,9 +17,11 @@ class Request {
 
   Request(Destination destination,
           Pistache::Http::Method method,
-          std::string url) noexcept
+          std::string url,
+          std::optional<std::string> body) noexcept
       : request_destination_{std::move(destination)},
         request_url_{std::move(url)},
+        request_body_{std::move(body)},
         request_method_{method} {}
 
   auto destination() const noexcept -> const Destination& {
@@ -27,6 +30,10 @@ class Request {
 
   auto url() const noexcept -> const std::string& { return request_url_; }
 
+  auto body() const noexcept -> const std::optional<std::string>& {
+    return request_body_;
+  }
+
   auto method() const noexcept -> Pistache::Http::Method {
     return request_method_;
   }
@@ -34,6 +41,7 @@ class Request {
  private:
   Destination request_destination_;
   std::string request_url_;
+  std::optional<std::string> request_body_;
   Pistache::Http::Method request_method_;
 };
 

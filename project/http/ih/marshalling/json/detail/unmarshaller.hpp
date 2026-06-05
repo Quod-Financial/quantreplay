@@ -28,6 +28,9 @@ class Unmarshaller {
 
   auto operator()(std::string_view key, bool& value) -> bool;
 
+  auto operator()(std::string_view key, std::optional<std::string>& value)
+      -> bool;
+
   template <typename Attribute, typename T>
     requires std::is_enum_v<Attribute> &&
              (std::same_as<std::remove_cvref_t<T>, bool> ||
@@ -151,6 +154,16 @@ inline auto Unmarshaller::operator()(std::string_view key, bool& value)
     -> bool {
   if (const auto boolean = get_boolean(key)) {
     value = *boolean;
+    return true;
+  }
+  return false;
+}
+
+inline auto Unmarshaller::operator()(std::string_view key,
+                                     std::optional<std::string>& value)
+    -> bool {
+  if (auto result = get_optional_string(key)) {
+    value = std::move(*result);
     return true;
   }
   return false;

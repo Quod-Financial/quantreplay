@@ -84,6 +84,10 @@ auto OrderGenerator::next_exec_timeout() const -> std::chrono::microseconds {
   return execution_rate_;
 }
 
+auto OrderGenerator::reseed(std::uint64_t seed) -> void {
+  generation_algorithm_->reseed(seed);
+}
+
 auto OrderGenerator::init_execution_rate() -> void {
   constexpr double norm_numerator = 3.0;
   constexpr double norm_denominator = 2.0;

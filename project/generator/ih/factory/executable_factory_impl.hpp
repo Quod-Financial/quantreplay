@@ -22,7 +22,7 @@ class InstrumentRandomGeneratorFactoryImpl final
   auto create_orders_executable(
       std::shared_ptr<OrderInstrumentContext> instrument_context,
       const data_layer::PriceSeed& price_seed)
-      -> std::unique_ptr<Executable> override;
+      -> std::unique_ptr<random::OrderGenerator> override;
 };
 
 class HistoricalReplierFactoryImpl final
@@ -32,7 +32,7 @@ class HistoricalReplierFactoryImpl final
 
   [[nodiscard]]
   auto create_orders_executable(const Datasources& datasources,
-                              const InstrumentsContexts& contexts)
+                                const InstrumentsContexts& contexts)
       -> std::unique_ptr<Executable> override;
 };
 

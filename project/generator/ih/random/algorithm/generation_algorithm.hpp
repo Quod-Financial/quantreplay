@@ -1,6 +1,8 @@
 #ifndef SIMULATOR_GENERATOR_IH_RANDOM_ALGORITHM_GENERATION_ALGORITHM_HPP_
 #define SIMULATOR_GENERATOR_IH_RANDOM_ALGORITHM_GENERATION_ALGORITHM_HPP_
 
+#include <cstdint>
+
 #include "ih/adaptation/generated_message.hpp"
 
 namespace simulator::generator::random {
@@ -15,6 +17,10 @@ class GenerationAlgorithm {
   // - `target_message` content has to be ignored in case `false`
   // is returned
   virtual auto generate(GeneratedMessage& target_message) -> bool = 0;
+
+  // Re-seeds the underlying value generator so subsequent `generate` calls
+  // produce a deterministic sequence derived from `seed`.
+  virtual auto reseed(std::uint64_t seed) -> void = 0;
 };
 
 }  // namespace simulator::generator::random

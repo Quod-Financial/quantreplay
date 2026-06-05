@@ -47,6 +47,7 @@ add_static_library(
     ih/marshalling/json/detail/unmarshaller.hpp
     ih/marshalling/json/detail/utils.hpp
     ih/marshalling/json/datasource.hpp
+    ih/marshalling/json/generator.hpp
     ih/marshalling/json/halt.hpp
     ih/marshalling/json/listing.hpp
     ih/marshalling/json/price_seed.hpp
@@ -87,6 +88,7 @@ add_static_library(
     src/marshalling/json/detail/enumeration_resolver.cpp
     src/marshalling/json/detail/key_resolver.cpp
     src/marshalling/json/datasource.cpp
+    src/marshalling/json/generator.cpp
     src/marshalling/json/halt.cpp
     src/marshalling/json/listing.cpp
     src/marshalling/json/price_seed.cpp

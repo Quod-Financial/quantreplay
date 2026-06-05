@@ -5,6 +5,9 @@
 #include <pistache/http.h>
 #include <pistache/router.h>
 
+#include <memory>
+#include <mutex>
+#include <string>
 #include <utility>
 
 namespace simulator::http::test::util {
@@ -19,9 +22,29 @@ class Responder {
     body_ = std::move(response_body);
   }
 
+  auto last_request_body() -> std::string {
+    const std::lock_guard<std::mutex> lock{request_body_state_->mutex};
+    return request_body_state_->body;
+  }
+
  protected:
+  void store_request_body(std::string request_body) {
+    const std::lock_guard<std::mutex> lock{request_body_state_->mutex};
+    request_body_state_->body = std::move(request_body);
+  }
+
   std::string body_;
   Pistache::Http::Code code_{Pistache::Http::Code::Ok};
+
+ private:
+  // shared between handler clones made by HTTP_PROTOTYPE's copy-based clone()
+  struct RequestBodyState {
+    std::mutex mutex;
+    std::string body;
+  };
+
+  std::shared_ptr<RequestBodyState> request_body_state_{
+      std::make_shared<RequestBodyState>()};
 };
 
 class Router : public Pistache::Http::Handler, public Responder {
@@ -58,8 +81,9 @@ class Router : public Pistache::Http::Handler, public Responder {
         Pistache::Rest::Routes::bind(&Router::respond, this));
   }
 
-  auto respond([[maybe_unused]] const Pistache::Rest::Request& request,
+  auto respond(const Pistache::Rest::Request& request,
                Pistache::Http::ResponseWriter response) -> void {
+    store_request_body(request.body());
     response.send(code_, body_);
   }
 

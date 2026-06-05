@@ -1,13 +1,31 @@
 #include "ih/processors/post_processor.hpp"
 
+#include <fmt/format.h>
 #include <pistache/http_defs.h>
 
+#include <exception>
+#include <optional>
+#include <string>
+#include <utility>
+
+#include "ih/marshalling/json/generator.hpp"
 #include "ih/redirect/redirection_processor.hpp"
 #include "ih/utils/response_formatters.hpp"
 #include "log/logging.hpp"
 #include "middleware/routing/generator_admin_channel.hpp"
 
 namespace simulator::http {
+namespace {
+
+[[nodiscard]] auto normalize_seed(std::optional<std::string> seed)
+    -> std::optional<std::string> {
+  if (!seed.has_value() || seed->empty()) {
+    return std::nullopt;
+  }
+  return seed;
+}
+
+}  // namespace
 
 PostProcessorImpl::PostProcessorImpl(
     std::shared_ptr<redirect::RedirectionProcessor> redirector,
@@ -264,7 +282,11 @@ auto PostProcessorImpl::redirect(const Pistache::Rest::Request& request,
     -> redirect::Result {
   assert(redirector_);
   return redirector_->redirect_to_venue(
-      instance_id, request.method(), request.resource());
+      instance_id,
+      request.method(),
+      request.resource(),
+      request.body().empty() ? std::nullopt
+                             : std::make_optional(request.body()));
 }
 
 auto PostProcessorImpl::handle_generation_stop_request(
@@ -295,10 +317,28 @@ auto PostProcessorImpl::handle_generation_stop_request(
 auto PostProcessorImpl::handle_generation_start_request(
     const Pistache::Rest::Request& request,
     Pistache::Http::ResponseWriter response) -> void {
+  protocol::StartGenerationRequest protocol_request;
+
+  if (!request.body().empty()) {
+    try {
+      json::GenerationStartUnmarshaller::unmarshall(request.body(),
+                                                    protocol_request);
+    } catch (const std::exception& e) {
+      log::err("failed to unmarshall GenerationStart request: {}", e.what());
+      respond(request,
+              response,
+              Pistache::Http::Code::Bad_Request,
+              format_result_response(fmt::format(
+                  "Failed to unmarshall request body: {}.", e.what())));
+      return;
+    }
+  }
+
+  protocol_request.seed = normalize_seed(std::move(protocol_request.seed));
+
   protocol::StartGenerationReply reply;
 
   try {
-    protocol::StartGenerationRequest protocol_request;
     middleware::send_admin_request(protocol_request, reply);
   } catch (const middleware::ChannelUnboundError&) {
   }

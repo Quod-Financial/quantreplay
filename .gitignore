@@ -48,6 +48,9 @@
 # ...even if they are in subdirectories
 !*/
 
+# Ignore Allure runtime results/report
+test/Automation/mktsimtest/tests/docker_compose_mktsim/allure_output/
+
 # But make git ignore all cmake dev build directories,
 cmake-build-*/
 
@@ -62,3 +65,7 @@ devenv/*
 
 # Ignore Python virtual environment
 env/*
+
+# Documentation test output
+docs/*/output/
+

@@ -12,6 +12,7 @@
 #include "ih/random/generators/price_generator.hpp"
 #include "ih/random/generators/quantity_generator.hpp"
 #include "ih/random/generators/resting_order_action_generator.hpp"
+#include "ih/random/generators/value_generator.hpp"
 #include "ih/random/values/event.hpp"
 #include "ih/random/values/resting_order_action.hpp"
 #include "ih/registry/generated_order_data.hpp"
@@ -19,29 +20,22 @@
 namespace simulator::generator::random {
 
 class OrderGenerationAlgorithm final : public random::GenerationAlgorithm {
- private:
+ public:
   OrderGenerationAlgorithm(
       std::shared_ptr<OrderGenerationContext> algorithm_context,
+      std::shared_ptr<ValueGenerator> value_generator,
       std::unique_ptr<EventGenerator> event_generator,
       std::unique_ptr<CounterpartyGenerator> counterparty_generator,
       std::unique_ptr<RestingOrderActionGenerator> resting_action_generator,
       std::unique_ptr<PriceGenerator> price_generator,
       std::unique_ptr<QuantityGenerator> qty_generator) noexcept;
 
- public:
   static auto create(std::shared_ptr<OrderGenerationContext> algorithm_context)
       -> std::unique_ptr<OrderGenerationAlgorithm>;
 
-  static auto create(
-      std::shared_ptr<OrderGenerationContext> algorithm_context,
-      std::unique_ptr<EventGenerator> event_generator,
-      std::unique_ptr<CounterpartyGenerator> counterparty_generator,
-      std::unique_ptr<RestingOrderActionGenerator> resting_action_generator,
-      std::unique_ptr<PriceGenerator> price_generator,
-      std::unique_ptr<QuantityGenerator> qty_generator)
-      -> std::unique_ptr<OrderGenerationAlgorithm>;
-
   auto generate(GeneratedMessage& target_message) -> bool override;
+
+  auto reseed(std::uint64_t seed) -> void override;
 
  private:
   template <typename GenerationTracer>
@@ -119,6 +113,10 @@ class OrderGenerationAlgorithm final : public random::GenerationAlgorithm {
   auto take_qty_generator() noexcept -> QuantityGenerator&;
 
   std::shared_ptr<OrderGenerationContext> context_;
+  // Held as a shared_ptr so that re-seeding after construction propagates to
+  // every dependent sub-generator that was built on top of the same engine.
+  // Required by the constructor's precondition to be non-null.
+  std::shared_ptr<ValueGenerator> value_generator_;
   std::unique_ptr<EventGenerator> event_generator_;
   std::unique_ptr<CounterpartyGenerator> counterparty_generator_;
   std::unique_ptr<RestingOrderActionGenerator> resting_action_generator_;

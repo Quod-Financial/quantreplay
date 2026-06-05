@@ -47,6 +47,9 @@ struct fmt::formatter<Pistache::Http::Request>
     format_to(context.out(), "Request={{ ");
     format_to(context.out(), "Method={}, ", methodString(request.method()));
     format_to(context.out(), "Resource='{}', ", request.resource());
+    if (const auto query = request.query().as_str(); !query.empty()) {
+      format_to(context.out(), "Query='{}', ", query);
+    }
     format_to(context.out(), "Origin='{}', ", request.address());
     format_to(context.out(), "Body='{}', ", beautify_body(request.body()));
     format_to(context.out(), "Header='{}'", request.headers().rawList());

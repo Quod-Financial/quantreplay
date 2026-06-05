@@ -4,6 +4,7 @@
 #include <pistache/http.h>
 
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "ih/data_bridge/venue_accessor.hpp"
@@ -19,7 +20,9 @@ class RedirectionProcessor {
 
   virtual auto redirect_to_venue(const std::string& venue_id,
                                  Pistache::Http::Method method,
-                                 const std::string& url) const -> Result = 0;
+                                 const std::string& url,
+                                 std::optional<std::string> body) const
+      -> Result = 0;
 };
 
 class RedirectionProcessorImpl : public RedirectionProcessor {
@@ -35,7 +38,9 @@ class RedirectionProcessorImpl : public RedirectionProcessor {
 
   auto redirect_to_venue(const std::string& venue_id,
                          Pistache::Http::Method method,
-                         const std::string& url) const -> Result override;
+                         const std::string& url,
+                         std::optional<std::string> body) const
+      -> Result override;
 
   static auto create(std::shared_ptr<data_bridge::VenueAccessor> venue_accessor,
                      std::uint16_t current_rest_port)
@@ -54,4 +59,4 @@ class RedirectionProcessorImpl : public RedirectionProcessor {
 
 }  // namespace simulator::http::redirect
 
-#endif  // SIMULATOR_HTTP_SRC_REDIRECT_REDIRECTION_PROCESSOR_HPP_
+#endif  // SIMULATOR_HTTP_IH_REDIRECT_REDIRECTION_PROCESSOR_HPP_

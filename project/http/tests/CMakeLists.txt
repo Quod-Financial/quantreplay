@@ -26,6 +26,7 @@ add_target_tests(
     unit_tests/marshalling/json/detail/key_resolver_tests.cpp
     unit_tests/marshalling/json/detail/marshaller_tests.cpp
     unit_tests/marshalling/json/detail/unmarshaller_tests.cpp
+    unit_tests/marshalling/json/generator_unmarshalling_tests.cpp
     unit_tests/marshalling/json/halt_unmarshalling_tests.cpp
     unit_tests/marshalling/json/datasource_marshalling_tests.cpp
     unit_tests/marshalling/json/listing_marshalling_tests.cpp

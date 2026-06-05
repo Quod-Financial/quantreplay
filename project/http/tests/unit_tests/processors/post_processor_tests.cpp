@@ -1,6 +1,10 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cstdint>
+#include <optional>
+#include <string>
+
 #include "ih/endpoint.hpp"
 #include "ih/processors/post_processor.hpp"
 #include "ih/router.hpp"
@@ -19,9 +23,13 @@ namespace {
 
 using ::testing::_;
 using ::testing::A;
+using ::testing::DoAll;
+using ::testing::EndsWith;
 using ::testing::Eq;
 using ::testing::NiceMock;
+using ::testing::Optional;
 using ::testing::Return;
+using ::testing::SaveArg;
 
 class HttpPostProcessor : public ::testing::Test {
  protected:
@@ -90,7 +98,7 @@ TEST_F(HttpPostProcessorResumePhase,
 
 TEST_F(HttpPostProcessorResumePhase, RedirectsWhenVenueIsDifferent) {
   EXPECT_CALL(*trading_controller, resume()).Times(0);
-  EXPECT_CALL(*redirector, redirect_to_venue(Eq(OtherVenueName), _, _))
+  EXPECT_CALL(*redirector, redirect_to_venue(Eq(OtherVenueName), _, _, _))
       .Times(1)
       .WillOnce(Return(redirect::Result(Pistache::Http::Code::Ok)));
 
@@ -131,7 +139,7 @@ TEST_F(HttpPostProcessorHaltPhase,
 
 TEST_F(HttpPostProcessorHaltPhase, RedirectsWhenVenueIsDifferent) {
   EXPECT_CALL(*trading_controller, halt(_)).Times(0);
-  EXPECT_CALL(*redirector, redirect_to_venue(Eq(OtherVenueName), _, _))
+  EXPECT_CALL(*redirector, redirect_to_venue(Eq(OtherVenueName), _, _, _))
       .Times(1)
       .WillOnce(Return(redirect::Result(Pistache::Http::Code::Ok)));
 
@@ -139,6 +147,24 @@ TEST_F(HttpPostProcessorHaltPhase, RedirectsWhenVenueIsDifferent) {
       MethodName, endpoint::Halt + "/" + OtherVenueName, {}, HaltRequestBody);
   auto response_writer = util::make_response_writer(*router);
   router->onRequest(request, std::move(response_writer.writer));
+}
+
+TEST_F(HttpPostProcessorHaltPhase,
+       RedirectsWithBodyPreservedWhenVenueIsDifferent) {
+  std::optional<std::string> captured_body;
+
+  EXPECT_CALL(*trading_controller, halt(_)).Times(0);
+  EXPECT_CALL(*redirector, redirect_to_venue(Eq(OtherVenueName), _, _, _))
+      .Times(1)
+      .WillOnce(DoAll(SaveArg<3>(&captured_body),
+                      Return(redirect::Result(Pistache::Http::Code::Ok))));
+
+  const auto request = util::make_request(
+      MethodName, endpoint::Halt + "/" + OtherVenueName, {}, HaltRequestBody);
+  auto response_writer = util::make_response_writer(*router);
+  router->onRequest(request, std::move(response_writer.writer));
+
+  EXPECT_THAT(captured_body, Optional(Eq(HaltRequestBody)));
 }
 
 class HttpPostProcessorOrderGen : public HttpPostProcessor {
@@ -187,7 +213,7 @@ TEST_F(HttpPostProcessorStartOrderGen,
 }
 
 TEST_F(HttpPostProcessorStartOrderGen, RedirectsWhenVenueIsDifferent) {
-  EXPECT_CALL(*redirector, redirect_to_venue(Eq(OtherVenueName), _, _))
+  EXPECT_CALL(*redirector, redirect_to_venue(Eq(OtherVenueName), _, _, _))
       .Times(1)
       .WillOnce(Return(redirect::Result(Pistache::Http::Code::Ok)));
 
@@ -196,6 +222,173 @@ TEST_F(HttpPostProcessorStartOrderGen, RedirectsWhenVenueIsDifferent) {
   auto response_writer = util::make_response_writer(*router);
   router->onRequest(request, std::move(response_writer.writer));
 }
+
+// NOLINTBEGIN(*-magic-numbers)
+
+class HttpPostProcessorStartOrderGenSeed : public HttpPostProcessorOrderGen {
+ protected:
+  auto send_start_request(const std::string& target,
+                          const std::string& body = "") -> void {
+    const auto request = util::make_request(MethodName, target, {}, body);
+    auto response_writer = util::make_response_writer(*router);
+    router->onRequest(request, std::move(response_writer.writer));
+  }
+};
+
+TEST_F(HttpPostProcessorStartOrderGenSeed, ParsesSeedFromBodyForCurrentVenue) {
+  protocol::StartGenerationRequest captured;
+
+  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
+  EXPECT_CALL(receiver,
+              process(A<const protocol::StartGenerationRequest&>(),
+                      A<protocol::StartGenerationReply&>()))
+      .Times(1)
+      .WillOnce(SaveArg<0>(&captured));
+
+  send_start_request(endpoint::GenStart + "/" + VenueName,
+                     R"({"seed":"123"})");
+
+  EXPECT_THAT(captured.seed, Optional(Eq(std::string{"123"})));
+}
+
+TEST_F(HttpPostProcessorStartOrderGenSeed,
+       ParsesSeedFromBodyWhenRequestWithoutVenue) {
+  protocol::StartGenerationRequest captured;
+
+  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
+  EXPECT_CALL(receiver,
+              process(A<const protocol::StartGenerationRequest&>(),
+                      A<protocol::StartGenerationReply&>()))
+      .Times(1)
+      .WillOnce(SaveArg<0>(&captured));
+
+  send_start_request(endpoint::GenStart, R"({"seed":"42"})");
+
+  EXPECT_THAT(captured.seed, Optional(Eq(std::string{"42"})));
+}
+
+TEST_F(HttpPostProcessorStartOrderGenSeed, SeedIsEmptyWhenBodyIsAbsent) {
+  protocol::StartGenerationRequest captured{.seed = std::string{"sentinel"}};
+
+  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
+  EXPECT_CALL(receiver,
+              process(A<const protocol::StartGenerationRequest&>(),
+                      A<protocol::StartGenerationReply&>()))
+      .Times(1)
+      .WillOnce(SaveArg<0>(&captured));
+
+  send_start_request(endpoint::GenStart + "/" + VenueName);
+
+  EXPECT_EQ(captured.seed, std::nullopt);
+}
+
+TEST_F(HttpPostProcessorStartOrderGenSeed, SeedIsEmptyWhenSeedFieldIsAbsent) {
+  protocol::StartGenerationRequest captured{.seed = std::string{"sentinel"}};
+
+  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
+  EXPECT_CALL(receiver,
+              process(A<const protocol::StartGenerationRequest&>(),
+                      A<protocol::StartGenerationReply&>()))
+      .Times(1)
+      .WillOnce(SaveArg<0>(&captured));
+
+  send_start_request(endpoint::GenStart + "/" + VenueName, "{}");
+
+  EXPECT_EQ(captured.seed, std::nullopt);
+}
+
+TEST_F(HttpPostProcessorStartOrderGenSeed, SeedIsEmptyWhenSeedIsJsonNull) {
+  protocol::StartGenerationRequest captured{.seed = std::string{"sentinel"}};
+
+  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
+  EXPECT_CALL(receiver,
+              process(A<const protocol::StartGenerationRequest&>(),
+                      A<protocol::StartGenerationReply&>()))
+      .Times(1)
+      .WillOnce(SaveArg<0>(&captured));
+
+  send_start_request(endpoint::GenStart + "/" + VenueName,
+                     R"({"seed":null})");
+
+  EXPECT_EQ(captured.seed, std::nullopt);
+}
+
+TEST_F(HttpPostProcessorStartOrderGenSeed, SeedIsEmptyWhenSeedIsEmptyString) {
+  protocol::StartGenerationRequest captured{.seed = std::string{"sentinel"}};
+
+  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
+  EXPECT_CALL(receiver,
+              process(A<const protocol::StartGenerationRequest&>(),
+                      A<protocol::StartGenerationReply&>()))
+      .Times(1)
+      .WillOnce(SaveArg<0>(&captured));
+
+  send_start_request(endpoint::GenStart + "/" + VenueName, R"({"seed":""})");
+
+  EXPECT_EQ(captured.seed, std::nullopt);
+}
+
+TEST_F(HttpPostProcessorStartOrderGenSeed, ParsesNullLiteralStringAsSeed) {
+  protocol::StartGenerationRequest captured;
+
+  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
+  EXPECT_CALL(receiver,
+              process(A<const protocol::StartGenerationRequest&>(),
+                      A<protocol::StartGenerationReply&>()))
+      .Times(1)
+      .WillOnce(SaveArg<0>(&captured));
+
+  send_start_request(endpoint::GenStart + "/" + VenueName,
+                     R"({"seed":"null"})");
+
+  EXPECT_THAT(captured.seed, Optional(Eq(std::string{"null"})));
+}
+
+TEST_F(HttpPostProcessorStartOrderGenSeed,
+       DoesNotStartGeneratorOnMalformedBody) {
+  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
+  EXPECT_CALL(receiver,
+              process(A<const protocol::StartGenerationRequest&>(),
+                      A<protocol::StartGenerationReply&>()))
+      .Times(0);
+
+  send_start_request(endpoint::GenStart + "/" + VenueName, R"({"seed":)");
+}
+
+TEST_F(HttpPostProcessorStartOrderGenSeed,
+       DoesNotStartGeneratorOnNonStringSeed) {
+  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
+  EXPECT_CALL(receiver,
+              process(A<const protocol::StartGenerationRequest&>(),
+                      A<protocol::StartGenerationReply&>()))
+      .Times(0);
+
+  send_start_request(endpoint::GenStart + "/" + VenueName, R"({"seed":123})");
+}
+
+TEST_F(HttpPostProcessorStartOrderGenSeed,
+       RedirectsWithSeedBodyPreservedWhenVenueIsDifferent) {
+  std::string captured_url;
+  std::optional<std::string> captured_body;
+
+  EXPECT_CALL(receiver,
+              process(A<const protocol::StartGenerationRequest&>(),
+                      A<protocol::StartGenerationReply&>()))
+      .Times(0);
+  EXPECT_CALL(*redirector, redirect_to_venue(Eq(OtherVenueName), _, _, _))
+      .Times(1)
+      .WillOnce(DoAll(SaveArg<2>(&captured_url),
+                      SaveArg<3>(&captured_body),
+                      Return(redirect::Result(Pistache::Http::Code::Ok))));
+
+  send_start_request(endpoint::GenStart + "/" + OtherVenueName,
+                     R"({"seed":"7"})");
+
+  EXPECT_THAT(captured_url, EndsWith("/" + OtherVenueName));
+  EXPECT_THAT(captured_body, Optional(Eq(std::string{R"({"seed":"7"})"})));
+}
+
+// NOLINTEND(*-magic-numbers)
 
 class HttpPostProcessorStopOrderGen : public HttpPostProcessorOrderGen {};
 
@@ -226,7 +419,7 @@ TEST_F(HttpPostProcessorStopOrderGen,
 }
 
 TEST_F(HttpPostProcessorStopOrderGen, RedirectsWhenVenueIsDifferent) {
-  EXPECT_CALL(*redirector, redirect_to_venue(Eq(OtherVenueName), _, _))
+  EXPECT_CALL(*redirector, redirect_to_venue(Eq(OtherVenueName), _, _, _))
       .Times(1)
       .WillOnce(Return(redirect::Result(Pistache::Http::Code::Ok)));
 
