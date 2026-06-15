@@ -137,13 +137,11 @@ auto RegularOrderMatcher::trade_ioc_taker(
     throw std::logic_error("no orders can be traded with IoC order");
   }
 
-  for (auto maker_iter = makers.begin(); maker_iter != makers.end();
-       ++maker_iter) {
+  for (LimitOrder* maker : makers) {
     if (taker.executed()) {
       break;
     }
 
-    LimitOrder* maker = *maker_iter;
     const auto [trade_px, trade_qty] = compute_trade(taker, *maker);
     log::debug("trading {}@{}: taker: {}; maker: {}",
                trade_qty,
@@ -177,8 +175,12 @@ auto RegularOrderMatcher::trade_ioc_taker(
     taker.cancel();
     emit(
         ClientNotification(prepare_cancellation_confirmation(taker, price_tick_)
+                               .with_leaving_quantity(LeavesQuantity{0})
                                .with_execution_id(taker.make_execution_id())
                                .with_client_order_id(taker.client_order_id())
+                               .with_cancellation_text(CancellationText{
+                                   "not enough liquidity to fully fill IoC "
+                                   "order"})
                                .build()));
   }
 }
@@ -193,14 +195,11 @@ auto RegularOrderMatcher::trade_market_taker(
     throw std::logic_error("no orders can be traded with market order");
   }
 
-  const auto last_maker_it = std::prev(makers.end());
-  for (auto maker_iter = makers.begin(); maker_iter != makers.end();
-       ++maker_iter) {
+  for (LimitOrder* maker : makers) {
     if (taker.executed()) {
       break;
     }
 
-    LimitOrder* maker = *maker_iter;
     const auto [trade_px, trade_qty] = compute_trade(taker, *maker);
     log::debug("trading {}@{}: taker: {}; maker: {}",
                trade_qty,
@@ -209,10 +208,6 @@ auto RegularOrderMatcher::trade_market_taker(
                *maker);
     taker.execute(trade_qty, trade_px);
     maker->execute(trade_qty, trade_px);
-
-    if (maker_iter == last_maker_it && !taker.executed()) {
-      taker.cancel();
-    }
 
     emit(ClientNotification(
         prepare_execution_report(taker, price_tick_)
@@ -232,6 +227,18 @@ auto RegularOrderMatcher::trade_market_taker(
 
     emit(order::make_making_order_reduced_notification(*maker));
     emit(order::make_trade_notification(taker, *maker, trade_px, trade_qty));
+  }
+
+  if (!taker.executed()) {
+    taker.cancel();
+    emit(ClientNotification(
+        prepare_cancellation_confirmation(taker, price_tick_)
+            .with_leaving_quantity(LeavesQuantity{0})
+            .with_execution_id(taker.make_execution_id())
+            .with_client_order_id(taker.client_order_id())
+            .with_cancellation_text(CancellationText{
+                "not enough liquidity to fully fill market order"})
+            .build()));
   }
 }
 

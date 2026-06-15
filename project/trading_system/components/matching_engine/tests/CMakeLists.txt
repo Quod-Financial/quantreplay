@@ -40,7 +40,10 @@ add_target_tests(
     unit_tests/market_data/streaming_settings_tests.cpp
     unit_tests/market_data/trade_cache_tests.cpp
     unit_tests/orders/actions/all_orders_elimination_tests.cpp
+    unit_tests/orders/actions/cancellation_tests.cpp
+    unit_tests/orders/actions/closed_phase_elimination_tests.cpp
     unit_tests/orders/actions/limit_order_recover_tests.cpp
+    unit_tests/orders/actions/on_disconnect_elimination_tests.cpp
     unit_tests/orders/actions/regular_placement_tests.cpp
     unit_tests/orders/actions/system_elimination_tests.cpp
     unit_tests/orders/book/better_order_comparator_tests.cpp

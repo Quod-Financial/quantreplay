@@ -61,20 +61,73 @@ TEST_F(CancellationConfirmationBuilder, SetsLimitOrderId) {
   ASSERT_THAT(confirmation.venue_order_id, Optional(Eq(VenueOrderId{"123"})));
 }
 
-TEST_F(CancellationConfirmationBuilder, SetsLimitOrderLeavesQuantity) {
-  const auto limit_order = order_builder.build_limit_order();
-
-  const auto confirmation = builder.for_order(limit_order).build();
-
-  ASSERT_THAT(confirmation.leaving_quantity, Ne(std::nullopt));
-}
-
 TEST_F(CancellationConfirmationBuilder, SetsLimitOrderCumExecutedQuantity) {
   const auto limit_order = order_builder.build_limit_order();
 
   const auto confirmation = builder.for_order(limit_order).build();
 
   ASSERT_THAT(confirmation.cum_executed_quantity, Ne(std::nullopt));
+}
+
+TEST_F(CancellationConfirmationBuilder, SetsLimitOrderQuantity) {
+  const auto limit_order =
+      order_builder.with_order_quantity(OrderQuantity{123}).build_limit_order();
+
+  const auto confirmation = builder.for_order(limit_order).build();
+
+  ASSERT_THAT(confirmation.order_quantity, Eq(limit_order.total_quantity()));
+}
+
+TEST_F(CancellationConfirmationBuilder, SetsLimitOrderAveragePrice) {
+  auto limit_order =
+      order_builder.with_order_quantity(OrderQuantity{100}).build_limit_order();
+  limit_order.execute(ExecutedQuantity{30}, ExecutionPrice{42.5});
+  limit_order.execute(ExecutedQuantity{20}, ExecutionPrice{43.2});
+
+  const auto confirmation = builder.for_order(limit_order).build();
+
+  ASSERT_THAT(confirmation.average_price, Eq(limit_order.average_price()));
+}
+
+TEST_F(CancellationConfirmationBuilder,
+       RoundsLimitOrderAveragePriceToPriceTick) {
+  auto limit_order =
+      order_builder.with_order_quantity(OrderQuantity{10}).build_limit_order();
+  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
+  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
+
+  const auto confirmation =
+      matching_engine::CancellationConfirmationBuilder{test_session,
+                                                       PriceTick{0.1}}
+          .for_order(limit_order)
+          .build();
+
+  ASSERT_THAT(confirmation.average_price, Optional(Eq(AveragePrice{10.1})));
+}
+
+TEST_F(CancellationConfirmationBuilder,
+       DoesNotRoundLimitOrderAveragePriceWhenPriceTickIsNullopt) {
+  auto limit_order =
+      order_builder.with_order_quantity(OrderQuantity{10}).build_limit_order();
+  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
+  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
+
+  const auto confirmation = builder.for_order(limit_order).build();
+
+  ASSERT_THAT(confirmation.average_price, Optional(Eq(AveragePrice{10.05})));
+}
+
+TEST_F(CancellationConfirmationBuilder,
+       PrepareFactoryLimitOrderForwardsPriceTick) {
+  auto limit_order =
+      order_builder.with_order_quantity(OrderQuantity{10}).build_limit_order();
+  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
+  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
+
+  const auto confirmation =
+      prepare_cancellation_confirmation(limit_order, PriceTick{0.1}).build();
+
+  ASSERT_THAT(confirmation.average_price, Optional(Eq(AveragePrice{10.1})));
 }
 
 TEST_F(CancellationConfirmationBuilder, SetsLimitOrderPrice) {
@@ -101,6 +154,17 @@ TEST_F(CancellationConfirmationBuilder, SetsLimitOrderSide) {
   const auto confirmation = builder.for_order(limit_order).build();
 
   ASSERT_THAT(confirmation.side, Optional(Eq(Side::Option::Buy)));
+}
+
+TEST_F(CancellationConfirmationBuilder, SetsLimitOrderTimeInForce) {
+  const auto limit_order =
+      order_builder.with_time_in_force(TimeInForce::Option::ImmediateOrCancel)
+          .build_limit_order();
+
+  const auto confirmation = builder.for_order(limit_order).build();
+
+  ASSERT_THAT(confirmation.time_in_force,
+              Optional(Eq(TimeInForce::Option::ImmediateOrCancel)));
 }
 
 TEST_F(CancellationConfirmationBuilder,
@@ -136,63 +200,200 @@ TEST_F(CancellationConfirmationBuilder, SetsLimitOrderExpireDate) {
   ASSERT_THAT(confirmation.expire_date, Ne(std::nullopt));
 }
 
-TEST_F(CancellationConfirmationBuilder, SetsLimitOrderQuantity) {
-  const auto limit_order =
-      order_builder.with_order_quantity(OrderQuantity{123}).build_limit_order();
+TEST_F(CancellationConfirmationBuilder, SetsLimitOrderType) {
+  const auto limit_order = order_builder.build_limit_order();
 
   const auto confirmation = builder.for_order(limit_order).build();
 
-  ASSERT_THAT(confirmation.order_quantity, Eq(limit_order.total_quantity()));
+  ASSERT_THAT(confirmation.order_type, Optional(Eq(OrderType::Option::Limit)));
 }
 
-TEST_F(CancellationConfirmationBuilder, SetsLimitOrderAveragePrice) {
-  auto limit_order =
-      order_builder.with_order_quantity(OrderQuantity{100}).build_limit_order();
-  limit_order.execute(ExecutedQuantity{30}, ExecutionPrice{42.5});
-  limit_order.execute(ExecutedQuantity{20}, ExecutionPrice{43.2});
+TEST_F(CancellationConfirmationBuilder, SetsMarketOrderInstrumentDescriptor) {
+  InstrumentDescriptor instrument;
+  instrument.symbol = Symbol{"AAPL"};
+  const auto market_order =
+      order_builder.with_instrument(instrument).build_market_order();
 
-  const auto confirmation = builder.for_order(limit_order).build();
+  const auto confirmation = builder.for_order(market_order).build();
 
-  ASSERT_THAT(confirmation.average_price, Eq(limit_order.average_price()));
+  ASSERT_THAT(confirmation.instrument.symbol, Optional(Eq(instrument.symbol)));
 }
 
-TEST_F(CancellationConfirmationBuilder, RoundsAveragePriceToPriceTick) {
-  auto limit_order =
-      order_builder.with_order_quantity(OrderQuantity{10}).build_limit_order();
-  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
-  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
+TEST_F(CancellationConfirmationBuilder, SetsMarketOrderParties) {
+  const std::vector parties{Party{PartyId{"QUOD"},
+                                  PartyIdSource::Option::Proprietary,
+                                  PartyRole::Option::ExecutingFirm}};
+
+  const auto market_order =
+      order_builder.with_order_parties(parties).build_market_order();
+
+  const auto confirmation = builder.for_order(market_order).build();
+
+  ASSERT_THAT(confirmation.parties, ElementsAreArray(parties));
+}
+
+TEST_F(CancellationConfirmationBuilder, SetsMarketOrderId) {
+  const auto market_order =
+      order_builder.with_order_id(OrderId{123}).build_market_order();
+
+  const auto confirmation = builder.for_order(market_order).build();
+
+  ASSERT_THAT(confirmation.venue_order_id, Optional(Eq(VenueOrderId{"123"})));
+}
+
+TEST_F(CancellationConfirmationBuilder, SetsMarketOrderCumExecutedQuantity) {
+  const auto market_order = order_builder.build_market_order();
+
+  const auto confirmation = builder.for_order(market_order).build();
+
+  ASSERT_THAT(confirmation.cum_executed_quantity, Ne(std::nullopt));
+}
+
+TEST_F(CancellationConfirmationBuilder, SetsMarketOrderQuantity) {
+  const auto market_order =
+      order_builder.with_order_quantity(OrderQuantity{123})
+          .build_market_order();
+
+  const auto confirmation = builder.for_order(market_order).build();
+
+  ASSERT_THAT(confirmation.order_quantity, Eq(market_order.total_quantity()));
+}
+
+TEST_F(CancellationConfirmationBuilder, SetsMarketOrderAveragePrice) {
+  auto market_order = order_builder.with_order_quantity(OrderQuantity{100})
+                          .build_market_order();
+  market_order.execute(ExecutedQuantity{30}, ExecutionPrice{42.5});
+  market_order.execute(ExecutedQuantity{20}, ExecutionPrice{43.2});
+
+  const auto confirmation = builder.for_order(market_order).build();
+
+  ASSERT_THAT(confirmation.average_price, Eq(market_order.average_price()));
+}
+
+TEST_F(CancellationConfirmationBuilder,
+       RoundsMarketOrderAveragePriceToPriceTick) {
+  auto market_order =
+      order_builder.with_order_quantity(OrderQuantity{10}).build_market_order();
+  market_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
+  market_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
 
   const auto confirmation =
       matching_engine::CancellationConfirmationBuilder{test_session,
                                                        PriceTick{0.1}}
-          .for_order(limit_order)
+          .for_order(market_order)
           .build();
 
   ASSERT_THAT(confirmation.average_price, Optional(Eq(AveragePrice{10.1})));
 }
 
 TEST_F(CancellationConfirmationBuilder,
-       DoesNotRoundAveragePriceWhenPriceTickIsNullopt) {
-  auto limit_order =
-      order_builder.with_order_quantity(OrderQuantity{10}).build_limit_order();
-  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
-  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
+       DoesNotRoundMarketOrderAveragePriceWhenPriceTickIsNullopt) {
+  auto market_order =
+      order_builder.with_order_quantity(OrderQuantity{10}).build_market_order();
+  market_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
+  market_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
 
-  const auto confirmation = builder.for_order(limit_order).build();
+  const auto confirmation = builder.for_order(market_order).build();
 
   ASSERT_THAT(confirmation.average_price, Optional(Eq(AveragePrice{10.05})));
 }
 
-TEST_F(CancellationConfirmationBuilder, PrepareFactoryForwardsPriceTick) {
-  auto limit_order =
-      order_builder.with_order_quantity(OrderQuantity{10}).build_limit_order();
-  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
-  limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
+TEST_F(CancellationConfirmationBuilder,
+       PrepareFactoryMarketOrderForwardsPriceTick) {
+  auto market_order =
+      order_builder.with_order_quantity(OrderQuantity{10}).build_market_order();
+  market_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
+  market_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
 
   const auto confirmation =
-      prepare_cancellation_confirmation(limit_order, PriceTick{0.1}).build();
+      prepare_cancellation_confirmation(market_order, PriceTick{0.1}).build();
 
   ASSERT_THAT(confirmation.average_price, Optional(Eq(AveragePrice{10.1})));
+}
+
+TEST_F(CancellationConfirmationBuilder, SetsMarketOrderStatus) {
+  const auto market_order = order_builder.build_market_order();
+
+  const auto confirmation = builder.for_order(market_order).build();
+
+  ASSERT_THAT(confirmation.order_status, Ne(std::nullopt));
+}
+
+TEST_F(CancellationConfirmationBuilder, SetsMarketOrderSide) {
+  const auto market_order =
+      order_builder.with_side(Side::Option::Buy).build_market_order();
+
+  const auto confirmation = builder.for_order(market_order).build();
+
+  ASSERT_THAT(confirmation.side, Optional(Eq(Side::Option::Buy)));
+}
+
+TEST_F(CancellationConfirmationBuilder, SetsMarketOrderTimeInForce) {
+  const auto market_order =
+      order_builder.with_time_in_force(TimeInForce::Option::ImmediateOrCancel)
+          .build_market_order();
+
+  const auto confirmation = builder.for_order(market_order).build();
+
+  ASSERT_THAT(confirmation.time_in_force,
+              Optional(Eq(TimeInForce::Option::ImmediateOrCancel)));
+}
+
+TEST_F(CancellationConfirmationBuilder,
+       SetsMarketOrderShortSellExemptionReason) {
+  const auto market_order =
+      order_builder
+          .with_short_sell_exemption_reason(ShortSaleExemptionReason(0))
+          .build_market_order();
+
+  const auto confirmation = builder.for_order(market_order).build();
+
+  ASSERT_THAT(confirmation.short_sale_exempt_reason,
+              Optional(Eq(ShortSaleExemptionReason(0))));
+}
+
+TEST_F(CancellationConfirmationBuilder, SetsMarketOrderExpireTime) {
+  const auto market_order =
+      order_builder
+          .with_expire_time(ExpireTime(std::chrono::system_clock::now()))
+          .build_market_order();
+
+  const auto confirmation = builder.for_order(market_order).build();
+
+  ASSERT_THAT(confirmation.expire_time, Ne(std::nullopt));
+}
+
+TEST_F(CancellationConfirmationBuilder, SetsMarketOrderExpireDate) {
+  const auto market_order =
+      order_builder.with_expire_date(ExpireDate(2020y / 12 / 31))
+          .build_market_order();
+
+  const auto confirmation = builder.for_order(market_order).build();
+
+  ASSERT_THAT(confirmation.expire_date, Ne(std::nullopt));
+}
+
+TEST_F(CancellationConfirmationBuilder, SetsMarketOrderType) {
+  const auto market_order = order_builder.build_market_order();
+
+  const auto confirmation = builder.for_order(market_order).build();
+
+  ASSERT_THAT(confirmation.order_type, Optional(Eq(OrderType::Option::Market)));
+}
+
+TEST_F(CancellationConfirmationBuilder, SetsLeavingQuantity) {
+  const auto confirmation =
+      builder.with_leaving_quantity(LeavesQuantity{42}).build();
+
+  ASSERT_THAT(confirmation.leaving_quantity, Optional(Eq(LeavesQuantity{42})));
+}
+
+TEST_F(CancellationConfirmationBuilder, SetsCancellationText) {
+  const auto confirmation =
+      builder.with_cancellation_text(CancellationText{"some reason"}).build();
+
+  ASSERT_THAT(confirmation.cancellation_text,
+              Optional(Eq(CancellationText{"some reason"})));
 }
 
 TEST_F(CancellationConfirmationBuilder, SetsExecutionId) {

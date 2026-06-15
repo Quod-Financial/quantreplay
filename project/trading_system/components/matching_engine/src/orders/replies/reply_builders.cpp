@@ -38,7 +38,6 @@ auto CancellationConfirmationBuilder::for_order(const LimitOrder& order)
   message_.instrument = order.instrument();
   message_.parties = order.attributes().order_parties();
   message_.venue_order_id = order::to_venue_order_id(order.id());
-  message_.leaving_quantity = order.leaves_quantity();
   message_.cum_executed_quantity = order.cum_executed_quantity();
   message_.order_quantity = order.total_quantity();
   message_.average_price =
@@ -51,6 +50,37 @@ auto CancellationConfirmationBuilder::for_order(const LimitOrder& order)
   message_.expire_time = order.expire_time();
   message_.expire_date = order.expire_date();
   message_.order_type = OrderType::Option::Limit;
+  return *this;
+}
+
+auto CancellationConfirmationBuilder::for_order(const MarketOrder& order)
+    -> CancellationConfirmationBuilder& {
+  message_.instrument = order.instrument();
+  message_.parties = order.attributes().order_parties();
+  message_.venue_order_id = order::to_venue_order_id(order.id());
+  message_.cum_executed_quantity = order.cum_executed_quantity();
+  message_.order_quantity = order.total_quantity();
+  message_.average_price =
+      rounded_average_price(order.average_price(), price_tick_);
+  message_.order_status = order.status();
+  message_.side = order.side();
+  message_.time_in_force = order.time_in_force();
+  message_.short_sale_exempt_reason = order.short_sale_exemption_reason();
+  message_.expire_time = order.expire_time();
+  message_.expire_date = order.expire_date();
+  message_.order_type = OrderType::Option::Market;
+  return *this;
+}
+
+auto CancellationConfirmationBuilder::with_leaving_quantity(
+    LeavesQuantity quantity) -> CancellationConfirmationBuilder& {
+  message_.leaving_quantity = quantity;
+  return *this;
+}
+
+auto CancellationConfirmationBuilder::with_cancellation_text(
+    CancellationText text) -> CancellationConfirmationBuilder& {
+  message_.cancellation_text = std::move(text);
   return *this;
 }
 
@@ -75,6 +105,14 @@ auto CancellationConfirmationBuilder::with_orig_client_order_id(
 }
 
 auto prepare_cancellation_confirmation(const LimitOrder& order,
+                                       std::optional<PriceTick> price_tick)
+    -> CancellationConfirmationBuilder {
+  CancellationConfirmationBuilder builder{order.client_session(), price_tick};
+  builder.for_order(order);
+  return builder;
+}
+
+auto prepare_cancellation_confirmation(const MarketOrder& order,
                                        std::optional<PriceTick> price_tick)
     -> CancellationConfirmationBuilder {
   CancellationConfirmationBuilder builder{order.client_session(), price_tick};
@@ -432,22 +470,6 @@ auto PlacementRejectBuilder::build() const -> protocol::OrderPlacementReject {
   return message_;
 }
 
-auto PlacementRejectBuilder::for_request(
-    const protocol::OrderPlacementRequest& request) -> PlacementRejectBuilder& {
-  message_.instrument = request.instrument;
-  message_.order_price = request.order_price;
-  message_.order_quantity = request.order_quantity;
-  message_.side = request.side;
-  message_.order_type = request.order_type;
-  message_.time_in_force = request.time_in_force;
-  message_.client_order_id = request.client_order_id;
-  message_.parties = request.parties;
-  message_.short_sale_exempt_reason = request.short_sale_exempt_reason;
-  message_.expire_time = request.expire_time;
-  message_.expire_date = request.expire_date;
-  return *this;
-}
-
 auto PlacementRejectBuilder::for_order(const LimitOrder& order)
     -> PlacementRejectBuilder& {
   message_.venue_order_id = order::to_venue_order_id(order.id());
@@ -497,16 +519,6 @@ auto PlacementRejectBuilder::with_execution_id(ExecutionId identifier)
     -> PlacementRejectBuilder& {
   message_.execution_id = std::move(identifier);
   return *this;
-}
-
-auto prepare_placement_reject(const protocol::OrderPlacementRequest& request,
-                              OrderId rejected_order_id)
-    -> PlacementRejectBuilder {
-  PlacementRejectBuilder builder{request.session};
-  builder.for_request(request)
-      .with_order_id(rejected_order_id)
-      .with_execution_id(order::generate_aux_execution_id(rejected_order_id));
-  return builder;
 }
 
 auto prepare_placement_reject(const LimitOrder& order)

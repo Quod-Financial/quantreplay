@@ -41,6 +41,7 @@ auto Cancellation::cancel_order(const OrderCancel& cancel, OrderPage& page)
 
   emit(ClientNotification(
       prepare_cancellation_confirmation(order, price_tick_)
+          .with_leaving_quantity(LeavesQuantity{0})
           .with_execution_id(order.make_execution_id())
           .with_client_order_id(cancel.client_order_id)
           .with_orig_client_order_id(cancel.orig_client_order_id)

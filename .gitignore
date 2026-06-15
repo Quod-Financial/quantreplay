@@ -24,6 +24,7 @@
 !**.cpp
 !**.csv
 !**.Dockerfile
+!**.drawio
 !**.err
 !**.hpp
 !**.html

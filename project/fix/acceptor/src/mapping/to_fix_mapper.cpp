@@ -129,6 +129,7 @@ auto ToFixMapper::map(const protocol::OrderCancellationConfirmation& reply,
   map_fix_field<FIX::LeavesQty>(reply.leaving_quantity, fix_message);
   map_fix_field<FIX::CumQty>(reply.cum_executed_quantity, fix_message);
   map_fix_field<FIX::OrdStatus>(reply.order_status, fix_message);
+  map_fix_field<FIX::Text>(reply.cancellation_text, fix_message);
   const auto avg_px = reply.average_price.value_or(AveragePrice{0.0}).value();
   set_fix_field<FIX::AvgPx>(avg_px, fix_message);
 }

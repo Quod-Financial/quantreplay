@@ -1,5 +1,5 @@
-#ifndef SIMULATOR_HTTP_TEST_UTILS_TEST_SERVER_HPP_
-#define SIMULATOR_HTTP_TEST_UTILS_TEST_SERVER_HPP_
+#ifndef SIMULATOR_HTTP_TESTS_TEST_UTILS_TEST_SERVER_HPP_
+#define SIMULATOR_HTTP_TESTS_TEST_UTILS_TEST_SERVER_HPP_
 
 #include <pistache/endpoint.h>
 #include <pistache/http.h>
@@ -125,4 +125,4 @@ class Server {
 
 }  // namespace simulator::http::test::util
 
-#endif  // SIMULATOR_HTTP_TEST_TEST_UTILS_TEST_SERVER_HPP_
+#endif  // SIMULATOR_HTTP_TESTS_TEST_UTILS_TEST_SERVER_HPP_

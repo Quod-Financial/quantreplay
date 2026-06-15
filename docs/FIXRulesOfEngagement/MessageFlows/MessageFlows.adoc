@@ -117,13 +117,7 @@ NewOrderSingle message rejection reasons are listed in the table below:
 
 | Value in OrderQty (38) is greater than the requested listing’s quantity maximum | – | ‘maximal order quantity constraint is violated’
 
-| An opposite side has no orders matching the new order to be traded | Reported only for orders with
-
-OrdType=Market or TimeInForce=ImmediateOrCancel or TimeInForce=FillOrKill | ‘no facing orders found’
-
-| All matching opposite orders cannot fill a new FillOrKill order | Reported only for orders with TimeInForce=FillOrKill | 'not enough liquidity to fill FoK order'
-
-| Both ExpireDate (432) and ExpireTime (126) are missing for a GoodTillCancel order | Reported only for orders with TimeInForce=GoodTillCancel 
+| Both ExpireDate (432) and ExpireTime (126) are missing for a GoodTillCancel order | Reported only for orders with TimeInForce=GoodTillCancel
 | ‘neither expire date nor expire time specified’
 
 | Both ExpireDate (432) and ExpireTime (126) are specified for a GoodTillCancel order | Reported only for orders with TimeInForce=GoodTillCancel | 
@@ -140,6 +134,31 @@ It means that in the message SecurityStatus (35=f), the tags are:
 * SecurityTradingStatus is “Trading halt” - 326=2 | – | ‘request cannot be processed during halted trading status’
 
 |===
+
+A NewOrderSingle message can be cancelled by the simulator.
+An application-level cancellation is issued in the form of an *ExecutionReport* message with *ExecType=Cancelled*, *OrdStatus=Cancelled*,
+and a *Text* field specifying the reason for the cancellation:
+
+image::17MktDataNewOrderCancel.png[width = 600, height=300]
+
+NewOrderSingle message cancellation reasons are listed in the table below:
+
+[cols="1,1,1"]
+
+|===
+| Reason | Condition |  Text (tag 58) value
+
+| An opposite side has no orders matching the new order to be traded | Reported only for orders with
+
+OrdType=Market or TimeInForce=ImmediateOrCancel or TimeInForce=FillOrKill | ‘no facing orders found’
+
+| All matching opposite orders cannot fill a new FillOrKill order | Reported only for orders with TimeInForce=FillOrKill | ‘not enough liquidity to fill FoK order’
+
+| Matching opposite orders cannot fully fill a new order; the non-executed remainder is cancelled after partial execution | Reported only for orders with OrdType=Limit and TimeInForce=ImmediateOrCancel | ‘not enough liquidity to fully fill IoC order’
+
+| Matching opposite orders cannot fully fill a new order; the non-executed remainder is cancelled after partial execution | Reported only for orders with OrdType=Market | ‘not enough liquidity to fully fill market order’
+
+|===
 [[message-flows-trd-msg-exe-rpt]]
 ==== Execution Report
 
@@ -151,8 +170,9 @@ The diagram below illustrates the basic message flow for the order lifetime betw
 
 image::07MktDataExeRpt.png[width = 600, height=300]
 
-The simulator cancels orders with *TimeInForce=ImmediateOrCancel* automatically if there is a non-executed order part left after the order matching and trading process. 
-Such cancellation would be reported by *OrdStatus=Cancelled* in the last execution report for an order:
+The simulator cancels orders with *TimeInForce=ImmediateOrCancel* automatically if there is a non-executed order part left after the order matching and trading process.
+Such cancellation would be reported by *ExecType=Cancelled* and *OrdStatus=Cancelled* in the last execution report for an order,
+with the *Text* field specifying the cancellation reason:
 
 image::08MktDataCancel.png[width = 600, height=300]
 

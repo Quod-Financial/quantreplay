@@ -469,7 +469,7 @@ Start or stop random order generation and historical data playback for a single 
 
 _Request Properties_
 
-[cols="1,1,1"]
+[cols="15,15,70"]
 |===
 | Path | Type | Description
 

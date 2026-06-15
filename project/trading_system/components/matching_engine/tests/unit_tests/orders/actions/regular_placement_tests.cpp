@@ -11,6 +11,24 @@ namespace {
 
 using namespace ::testing;  // NOLINT
 
+MATCHER_P5(IsOrderCancellationConfirmationWithCancellationText,
+           venue_order_id,
+           order_status,
+           leaving_quantity,
+           client_order_id,
+           cancellation_text,
+           "") {
+  return ExplainMatchResult(
+      AllOf(
+          IsOrderCancellationConfirmation(
+              venue_order_id, order_status, leaving_quantity, client_order_id),
+          VariantWith<protocol::OrderCancellationConfirmation>(
+              Field(&protocol::OrderCancellationConfirmation::cancellation_text,
+                    Optional(Eq(cancellation_text))))),
+      arg,
+      result_listener);
+}
+
 struct MatchingEngineRegularPlacement : public Test {
   NiceMock<EventListenerMock> event_listener;
   OrderBook order_book;
@@ -26,39 +44,26 @@ struct MatchingEngineRegularPlacementLimitOrderImmediateOrCancel
     return OrderBuilder{}
         .with_time_in_force(TimeInForce::Option::ImmediateOrCancel)
         .with_order_id(order_id)
+        .with_client_order_id(ClientOrderId{"client-42"})
         .build_limit_order();
   }
 };
 
 TEST_F(MatchingEngineRegularPlacementLimitOrderImmediateOrCancel,
-       EmitsPlacementRejectWithExecutionIdWhenNoFacingOrders) {
+       EmitsCancellationConfirmationWhenNoFacingOrders) {
   const auto order = ioc_limit_order();
 
   EXPECT_CALL(matcher, has_facing_orders(A<const LimitOrder&>()))
       .WillOnce(Return(false));
 
-  EXPECT_CALL(
-      event_listener,
-      on(IsClientNotification(VariantWith<protocol::OrderPlacementReject>(Field(
-          &protocol::OrderPlacementReject::execution_id,
-          Optional(
-              Eq(ExecutionId{std::to_string(order_id.value()) + "-1"})))))));
-
-  regular_placement(std::move(order));
-}
-
-TEST_F(MatchingEngineRegularPlacementLimitOrderImmediateOrCancel,
-       EmitsPlacementRejectWithRejectTextWhenNoFacingOrders) {
-  const auto order = ioc_limit_order();
-
-  EXPECT_CALL(matcher, has_facing_orders(A<const LimitOrder&>()))
-      .WillOnce(Return(false));
-
-  EXPECT_CALL(
-      event_listener,
-      on(IsClientNotification(VariantWith<protocol::OrderPlacementReject>(
-          Field(&protocol::OrderPlacementReject::reject_text,
-                Optional(Eq(RejectText{"no facing orders found"})))))));
+  EXPECT_CALL(event_listener,
+              on(IsClientNotification(
+                  IsOrderCancellationConfirmationWithCancellationText(
+                      VenueOrderId{"42"},
+                      OrderStatus::Option::Cancelled,
+                      LeavesQuantity{0},
+                      ClientOrderId{"client-42"},
+                      CancellationText{"no facing orders found"}))));
 
   regular_placement(std::move(order));
 }
@@ -100,45 +105,32 @@ struct MatchingEngineRegularPlacementLimitOrderFillOrKill
     return OrderBuilder{}
         .with_time_in_force(TimeInForce::Option::FillOrKill)
         .with_order_id(order_id)
+        .with_client_order_id(ClientOrderId{"client-42"})
         .build_limit_order();
   }
 };
 
 TEST_F(MatchingEngineRegularPlacementLimitOrderFillOrKill,
-       EmitsPlacementRejectWithExecutionIdWhenNoFacingOrders) {
+       EmitsCancellationConfirmationWhenNoFacingOrders) {
   const auto order = fok_limit_order();
 
   EXPECT_CALL(matcher, has_facing_orders(A<const LimitOrder&>()))
       .WillOnce(Return(false));
 
-  EXPECT_CALL(
-      event_listener,
-      on(IsClientNotification(VariantWith<protocol::OrderPlacementReject>(Field(
-          &protocol::OrderPlacementReject::execution_id,
-          Optional(
-              Eq(ExecutionId{std::to_string(order_id.value()) + "-1"})))))));
+  EXPECT_CALL(event_listener,
+              on(IsClientNotification(
+                  IsOrderCancellationConfirmationWithCancellationText(
+                      VenueOrderId{"42"},
+                      OrderStatus::Option::Cancelled,
+                      LeavesQuantity{0},
+                      ClientOrderId{"client-42"},
+                      CancellationText{"no facing orders found"}))));
 
   regular_placement(std::move(order));
 }
 
 TEST_F(MatchingEngineRegularPlacementLimitOrderFillOrKill,
-       EmitsPlacementRejectWithRejectTextWhenNoFacingOrders) {
-  const auto order = fok_limit_order();
-
-  EXPECT_CALL(matcher, has_facing_orders(A<const LimitOrder&>()))
-      .WillOnce(Return(false));
-
-  EXPECT_CALL(
-      event_listener,
-      on(IsClientNotification(VariantWith<protocol::OrderPlacementReject>(
-          Field(&protocol::OrderPlacementReject::reject_text,
-                Optional(Eq(RejectText{"no facing orders found"})))))));
-
-  regular_placement(std::move(order));
-}
-
-TEST_F(MatchingEngineRegularPlacementLimitOrderFillOrKill,
-       EmitsPlacementRejectWithExecutionIdWhenOrderCannotBeFullyTraded) {
+       EmitsCancellationConfirmationWhenOrderCannotBeFullyTraded) {
   const auto order = fok_limit_order();
 
   EXPECT_CALL(matcher, has_facing_orders(A<const LimitOrder&>()))
@@ -148,29 +140,13 @@ TEST_F(MatchingEngineRegularPlacementLimitOrderFillOrKill,
 
   EXPECT_CALL(
       event_listener,
-      on(IsClientNotification(VariantWith<protocol::OrderPlacementReject>(Field(
-          &protocol::OrderPlacementReject::execution_id,
-          Optional(
-              Eq(ExecutionId{std::to_string(order_id.value()) + "-1"})))))));
-
-  regular_placement(std::move(order));
-}
-
-TEST_F(MatchingEngineRegularPlacementLimitOrderFillOrKill,
-       EmitsPlacementRejectWithRejectTextWhenOrderCannotBeFullyTraded) {
-  const auto order = fok_limit_order();
-
-  EXPECT_CALL(matcher, has_facing_orders(A<const LimitOrder&>()))
-      .WillOnce(Return(true));
-  EXPECT_CALL(matcher, can_fully_trade(A<const LimitOrder&>()))
-      .WillOnce(Return(false));
-
-  EXPECT_CALL(
-      event_listener,
-      on(IsClientNotification(VariantWith<protocol::OrderPlacementReject>(Field(
-          &protocol::OrderPlacementReject::reject_text,
-          Optional(
-              Eq(RejectText{"not enough liquidity to fill FoK order"})))))));
+      on(IsClientNotification(
+          IsOrderCancellationConfirmationWithCancellationText(
+              VenueOrderId{"42"},
+              OrderStatus::Option::Cancelled,
+              LeavesQuantity{0},
+              ClientOrderId{"client-42"},
+              CancellationText{"not enough liquidity to fill FoK order"}))));
 
   regular_placement(std::move(order));
 }
@@ -322,39 +298,28 @@ struct MatchingEngineRegularPlacementMarketOrder
   static constexpr OrderId order_id{42};
 
   static auto market_order() -> MarketOrder {
-    return OrderBuilder{}.with_order_id(order_id).build_market_order();
+    return OrderBuilder{}
+        .with_order_id(order_id)
+        .with_client_order_id(ClientOrderId{"client-42"})
+        .build_market_order();
   }
 };
 
 TEST_F(MatchingEngineRegularPlacementMarketOrder,
-       EmitsPlacementRejectWithExecutionIdWhenNoFacingOrders) {
+       EmitsCancellationConfirmationWhenNoFacingOrders) {
   const auto order = market_order();
 
   EXPECT_CALL(matcher, has_facing_orders(A<const MarketOrder&>()))
       .WillOnce(Return(false));
 
-  EXPECT_CALL(
-      event_listener,
-      on(IsClientNotification(VariantWith<protocol::OrderPlacementReject>(Field(
-          &protocol::OrderPlacementReject::execution_id,
-          Optional(
-              Eq(ExecutionId{std::to_string(order_id.value()) + "-1"})))))));
-
-  regular_placement(std::move(order));
-}
-
-TEST_F(MatchingEngineRegularPlacementMarketOrder,
-       EmitsPlacementRejectWithRejectTextWhenNoFacingOrders) {
-  const auto order = market_order();
-
-  EXPECT_CALL(matcher, has_facing_orders(A<const MarketOrder&>()))
-      .WillOnce(Return(false));
-
-  EXPECT_CALL(
-      event_listener,
-      on(IsClientNotification(VariantWith<protocol::OrderPlacementReject>(
-          Field(&protocol::OrderPlacementReject::reject_text,
-                Optional(Eq(RejectText{"no facing orders found"})))))));
+  EXPECT_CALL(event_listener,
+              on(IsClientNotification(
+                  IsOrderCancellationConfirmationWithCancellationText(
+                      VenueOrderId{"42"},
+                      OrderStatus::Option::Cancelled,
+                      LeavesQuantity{0},
+                      ClientOrderId{"client-42"},
+                      CancellationText{"no facing orders found"}))));
 
   regular_placement(std::move(order));
 }

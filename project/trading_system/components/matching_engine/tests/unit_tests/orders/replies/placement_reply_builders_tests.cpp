@@ -279,7 +279,6 @@ TEST_F(PlacementConfirmationBuilder, SetsMarketOrderShortSellExemptionReason) {
 
 struct PlacementRejectBuilder : public ::testing::Test {
   protocol::Session test_session{protocol::generator::Session{}};
-  protocol::OrderPlacementRequest request{test_session};
   OrderBuilder order_builder;
 
   matching_engine::PlacementRejectBuilder builder{test_session};
@@ -289,83 +288,6 @@ TEST_F(PlacementRejectBuilder, BuildsRejectForSession) {
   const auto reject = builder.build();
 
   ASSERT_THAT(reject.session, Eq(test_session));
-}
-
-TEST_F(PlacementRejectBuilder, SetsInstrumentFromRequest) {
-  InstrumentDescriptor instrument;
-  instrument.symbol = Symbol{"AAPL"};
-  request.instrument = instrument;
-
-  const auto reject = builder.for_request(request).build();
-
-  ASSERT_THAT(reject.instrument.symbol, Eq(instrument.symbol));
-}
-
-TEST_F(PlacementRejectBuilder, SetsOrderPartiesFromRequest) {
-  request.parties = {Party{PartyId{"QUOD"},
-                           PartyIdSource::Option::Proprietary,
-                           PartyRole::Option::ExecutingFirm}};
-
-  const auto reject = builder.for_request(request).build();
-
-  ASSERT_THAT(reject.parties, ElementsAreArray(request.parties));
-}
-
-TEST_F(PlacementRejectBuilder, SetsOrderPriceFromRequest) {
-  request.order_price = OrderPrice{123};
-
-  const auto reject = builder.for_request(request).build();
-
-  ASSERT_THAT(reject.order_price, Optional(Eq(OrderPrice{123})));
-}
-
-TEST_F(PlacementRejectBuilder, SetsOrderQuantityFromRequest) {
-  request.order_quantity = OrderQuantity{123};
-
-  const auto reject = builder.for_request(request).build();
-
-  ASSERT_THAT(reject.order_quantity, Optional(Eq(OrderQuantity{123})));
-}
-
-TEST_F(PlacementRejectBuilder, SetsOrderSideFromRequest) {
-  request.side = Side::Option::Buy;
-
-  const auto reject = builder.for_request(request).build();
-
-  ASSERT_THAT(reject.side, Optional(Eq(Side::Option::Buy)));
-}
-
-TEST_F(PlacementRejectBuilder, SetsClientOrderIdFromRequest) {
-  request.client_order_id = ClientOrderId{"CL-123"};
-
-  const auto reject = builder.for_request(request).build();
-
-  ASSERT_THAT(reject.client_order_id, Optional(Eq(ClientOrderId{"CL-123"})));
-}
-
-TEST_F(PlacementRejectBuilder, SetsShortSellExemptionReasonFromRequest) {
-  request.short_sale_exempt_reason = ShortSaleExemptionReason(0);
-
-  const auto reject = builder.for_request(request).build();
-
-  ASSERT_THAT(reject.short_sale_exempt_reason,
-              Optional(Eq(ShortSaleExemptionReason(0))));
-}
-
-TEST_F(PlacementRejectBuilder, SetsExpireTimeFromRequest) {
-  request.expire_time = ExpireTime(std::chrono::system_clock::now());
-
-  const auto reject = builder.for_request(request).build();
-
-  ASSERT_THAT(reject.expire_time, Ne(std::nullopt));
-}
-
-TEST_F(PlacementRejectBuilder, SetsExpireDateFromRequest) {
-  request.expire_date = ExpireDate(2020y / 12 / 31);
-
-  const auto reject = builder.for_request(request).build();
-
-  ASSERT_THAT(reject.expire_date, Ne(std::nullopt));
 }
 
 TEST_F(PlacementRejectBuilder, SetsInstrumentFromLimitOrder) {

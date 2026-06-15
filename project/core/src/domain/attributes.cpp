@@ -42,6 +42,7 @@ SIMULATOR_DEFINE_ATTRIBUTE(simulator, ExecutionId, Literal);
 SIMULATOR_DEFINE_ATTRIBUTE(simulator, OrigClientOrderId, Literal);
 SIMULATOR_DEFINE_ATTRIBUTE(simulator, PartyId, Literal);
 SIMULATOR_DEFINE_ATTRIBUTE(simulator, RejectText, Literal);
+SIMULATOR_DEFINE_ATTRIBUTE(simulator, CancellationText, Literal);
 SIMULATOR_DEFINE_ATTRIBUTE(simulator, SecurityExchange, Literal);
 SIMULATOR_DEFINE_ATTRIBUTE(simulator, SecurityId, Literal);
 SIMULATOR_DEFINE_ATTRIBUTE(simulator, Symbol, Literal);

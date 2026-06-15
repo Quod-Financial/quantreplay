@@ -107,6 +107,7 @@ TEST_F(
   const auto order = builder.with_order_id(OrderId{123})
                          .with_side(Side{Side::Option::Buy})
                          .with_time_in_force(TimeInForce::Option::Day)
+                         .with_client_order_id(ClientOrderId{"client-123"})
                          .build_limit_order();
   order_book.buy_page().limit_orders().emplace(order);
 
@@ -116,10 +117,11 @@ TEST_F(
 
   EXPECT_CALL(event_listener, on(_)).Times(AnyNumber());
   EXPECT_CALL(event_listener,
-              on(IsClientNotification(
-                  VariantWith<protocol::OrderCancellationConfirmation>(Field(
-                      &protocol::OrderCancellationConfirmation::venue_order_id,
-                      Eq(VenueOrderId{"123"}))))));
+              on(IsClientNotification(IsOrderCancellationConfirmation(
+                  VenueOrderId{"123"},
+                  OrderStatus::Option::Cancelled,
+                  LeavesQuantity{420},
+                  ClientOrderId{"client-123"}))));
 
   eliminator(order_book);
 }
@@ -167,6 +169,7 @@ TEST_F(
   const auto order = builder.with_order_id(OrderId{123})
                          .with_side(Side{Side::Option::Sell})
                          .with_time_in_force(TimeInForce::Option::Day)
+                         .with_client_order_id(ClientOrderId{"client-123"})
                          .build_limit_order();
   order_book.sell_page().limit_orders().emplace(order);
 
@@ -176,10 +179,11 @@ TEST_F(
 
   EXPECT_CALL(event_listener, on(_)).Times(AnyNumber());
   EXPECT_CALL(event_listener,
-              on(IsClientNotification(
-                  VariantWith<protocol::OrderCancellationConfirmation>(Field(
-                      &protocol::OrderCancellationConfirmation::venue_order_id,
-                      Eq(VenueOrderId{"123"}))))));
+              on(IsClientNotification(IsOrderCancellationConfirmation(
+                  VenueOrderId{"123"},
+                  OrderStatus::Option::Cancelled,
+                  LeavesQuantity{420},
+                  ClientOrderId{"client-123"}))));
 
   eliminator(order_book);
 }
@@ -284,6 +288,7 @@ TEST_F(
                          .with_side(Side{Side::Option::Buy})
                          .with_time_in_force(TimeInForce::Option::GoodTillDate)
                          .with_expire_time(ExpireTime(tick.sys_tick_time))
+                         .with_client_order_id(ClientOrderId{"client-123"})
                          .build_limit_order();
   order_book.buy_page().limit_orders().emplace(order);
 
@@ -291,10 +296,11 @@ TEST_F(
 
   EXPECT_CALL(event_listener, on(_)).Times(AnyNumber());
   EXPECT_CALL(event_listener,
-              on(IsClientNotification(
-                  VariantWith<protocol::OrderCancellationConfirmation>(Field(
-                      &protocol::OrderCancellationConfirmation::venue_order_id,
-                      Eq(VenueOrderId{"123"}))))));
+              on(IsClientNotification(IsOrderCancellationConfirmation(
+                  VenueOrderId{"123"},
+                  OrderStatus::Option::Cancelled,
+                  LeavesQuantity{420},
+                  ClientOrderId{"client-123"}))));
 
   eliminator(order_book);
 }
@@ -356,6 +362,7 @@ TEST_F(
                          .with_side(Side{Side::Option::Sell})
                          .with_time_in_force(TimeInForce::Option::GoodTillDate)
                          .with_expire_time(ExpireTime(tick.sys_tick_time))
+                         .with_client_order_id(ClientOrderId{"client-123"})
                          .build_limit_order();
   order_book.sell_page().limit_orders().emplace(order);
 
@@ -363,10 +370,11 @@ TEST_F(
 
   EXPECT_CALL(event_listener, on(_)).Times(AnyNumber());
   EXPECT_CALL(event_listener,
-              on(IsClientNotification(
-                  VariantWith<protocol::OrderCancellationConfirmation>(Field(
-                      &protocol::OrderCancellationConfirmation::venue_order_id,
-                      Eq(VenueOrderId{"123"}))))));
+              on(IsClientNotification(IsOrderCancellationConfirmation(
+                  VenueOrderId{"123"},
+                  OrderStatus::Option::Cancelled,
+                  LeavesQuantity{420},
+                  ClientOrderId{"client-123"}))));
 
   eliminator(order_book);
 }
@@ -428,6 +436,7 @@ TEST_F(
                          .with_side(Side{Side::Option::Buy})
                          .with_time_in_force(TimeInForce::Option::GoodTillDate)
                          .with_expire_time(ExpireTime(tick.sys_tick_time - 1s))
+                         .with_client_order_id(ClientOrderId{"client-123"})
                          .build_limit_order();
   order_book.buy_page().limit_orders().emplace(order);
 
@@ -435,10 +444,11 @@ TEST_F(
 
   EXPECT_CALL(event_listener, on(_)).Times(AnyNumber());
   EXPECT_CALL(event_listener,
-              on(IsClientNotification(
-                  VariantWith<protocol::OrderCancellationConfirmation>(Field(
-                      &protocol::OrderCancellationConfirmation::venue_order_id,
-                      Eq(VenueOrderId{"123"}))))));
+              on(IsClientNotification(IsOrderCancellationConfirmation(
+                  VenueOrderId{"123"},
+                  OrderStatus::Option::Cancelled,
+                  LeavesQuantity{420},
+                  ClientOrderId{"client-123"}))));
 
   eliminator(order_book);
 }
@@ -500,6 +510,7 @@ TEST_F(
                          .with_side(Side{Side::Option::Sell})
                          .with_time_in_force(TimeInForce::Option::GoodTillDate)
                          .with_expire_time(ExpireTime(tick.sys_tick_time - 1s))
+                         .with_client_order_id(ClientOrderId{"client-123"})
                          .build_limit_order();
   order_book.sell_page().limit_orders().emplace(order);
 
@@ -507,10 +518,11 @@ TEST_F(
 
   EXPECT_CALL(event_listener, on(_)).Times(AnyNumber());
   EXPECT_CALL(event_listener,
-              on(IsClientNotification(
-                  VariantWith<protocol::OrderCancellationConfirmation>(Field(
-                      &protocol::OrderCancellationConfirmation::venue_order_id,
-                      Eq(VenueOrderId{"123"}))))));
+              on(IsClientNotification(IsOrderCancellationConfirmation(
+                  VenueOrderId{"123"},
+                  OrderStatus::Option::Cancelled,
+                  LeavesQuantity{420},
+                  ClientOrderId{"client-123"}))));
 
   eliminator(order_book);
 }
@@ -699,7 +711,7 @@ TEST_F(
 }
 
 TEST_F(
-    MatchingEngineSystemEliminationDay,
+    MatchingEngineSystemEliminationGoodTillDateExpireDate,
     EmitsOrderCancellationConfirmationOnEliminationBuyOrderWhenTimezoneDayIsChangedAndExpireDateIsLessThanTimezoneDate) {
   using namespace std::chrono_literals;
   constexpr auto expire_date = core::sys_days{2025y / 12 / 30};
@@ -708,6 +720,7 @@ TEST_F(
                          .with_side(Side{Side::Option::Buy})
                          .with_time_in_force(TimeInForce::Option::GoodTillDate)
                          .with_expire_date(ExpireDate(expire_date))
+                         .with_client_order_id(ClientOrderId{"client-123"})
                          .build_limit_order();
   order_book.buy_page().limit_orders().emplace(order);
 
@@ -719,10 +732,11 @@ TEST_F(
 
   EXPECT_CALL(event_listener, on(_)).Times(AnyNumber());
   EXPECT_CALL(event_listener,
-              on(IsClientNotification(
-                  VariantWith<protocol::OrderCancellationConfirmation>(Field(
-                      &protocol::OrderCancellationConfirmation::venue_order_id,
-                      Eq(VenueOrderId{"123"}))))));
+              on(IsClientNotification(IsOrderCancellationConfirmation(
+                  VenueOrderId{"123"},
+                  OrderStatus::Option::Cancelled,
+                  LeavesQuantity{420},
+                  ClientOrderId{"client-123"}))));
 
   eliminator(order_book);
 }
@@ -778,7 +792,7 @@ TEST_F(
 }
 
 TEST_F(
-    MatchingEngineSystemEliminationDay,
+    MatchingEngineSystemEliminationGoodTillDateExpireDate,
     EmitsOrderCancellationConfirmationOnEliminationSellOrderWhenTimezoneDayIsChangedAndExpireDateIsLessThanTimezoneDate) {
   using namespace std::chrono_literals;
   constexpr auto expire_date = core::sys_days{2025y / 12 / 30};
@@ -787,6 +801,7 @@ TEST_F(
                          .with_side(Side{Side::Option::Sell})
                          .with_time_in_force(TimeInForce::Option::GoodTillDate)
                          .with_expire_date(ExpireDate(expire_date))
+                         .with_client_order_id(ClientOrderId{"client-123"})
                          .build_limit_order();
   order_book.sell_page().limit_orders().emplace(order);
 
@@ -798,10 +813,11 @@ TEST_F(
 
   EXPECT_CALL(event_listener, on(_)).Times(AnyNumber());
   EXPECT_CALL(event_listener,
-              on(IsClientNotification(
-                  VariantWith<protocol::OrderCancellationConfirmation>(Field(
-                      &protocol::OrderCancellationConfirmation::venue_order_id,
-                      Eq(VenueOrderId{"123"}))))));
+              on(IsClientNotification(IsOrderCancellationConfirmation(
+                  VenueOrderId{"123"},
+                  OrderStatus::Option::Cancelled,
+                  LeavesQuantity{420},
+                  ClientOrderId{"client-123"}))));
 
   eliminator(order_book);
 }

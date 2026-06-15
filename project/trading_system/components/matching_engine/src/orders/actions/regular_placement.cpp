@@ -1,5 +1,6 @@
 #include "ih/orders/actions/regular_placement.hpp"
 
+#include "ih/orders/replies/cancellation_reply_builders.hpp"
 #include "ih/orders/replies/placement_reply_builders.hpp"
 #include "ih/orders/tools/notification_creators.hpp"
 #include "log/logging.hpp"
@@ -29,10 +30,13 @@ auto RegularPlacement::operator()(MarketOrder order) -> void {
   log::debug("placing/matching market order: {}", order);
 
   if (!matcher_.has_facing_orders(order)) {
+    order.cancel();
     emit(ClientNotification(
-        prepare_placement_reject(order)
+        prepare_cancellation_confirmation(order, std::nullopt)
+            .with_leaving_quantity(LeavesQuantity{0})
             .with_execution_id(order.make_execution_id())
-            .with_reason(RejectText{"no facing orders found"})
+            .with_client_order_id(order.client_order_id())
+            .with_cancellation_text(CancellationText{"no facing orders found"})
             .build()));
     return;
   }
@@ -61,10 +65,13 @@ auto RegularPlacement::place_order(LimitOrder order) -> void {
 auto RegularPlacement::match_ioc_order(LimitOrder order) -> void {
   log::debug("matching IoC order {}", order);
   if (!matcher_.has_facing_orders(order)) {
+    order.cancel();
     emit(ClientNotification(
-        prepare_placement_reject(order)
+        prepare_cancellation_confirmation(order, std::nullopt)
+            .with_leaving_quantity(LeavesQuantity{0})
             .with_execution_id(order.make_execution_id())
-            .with_reason(RejectText{"no facing orders found"})
+            .with_client_order_id(order.client_order_id())
+            .with_cancellation_text(CancellationText{"no facing orders found"})
             .build()));
     return;
   }
@@ -79,19 +86,26 @@ auto RegularPlacement::match_fok_order(LimitOrder order) -> void {
   log::debug("matching FoK order {}", order);
 
   if (!matcher_.has_facing_orders(order)) {
+    order.cancel();
     emit(ClientNotification(
-        prepare_placement_reject(order)
+        prepare_cancellation_confirmation(order, std::nullopt)
+            .with_leaving_quantity(LeavesQuantity{0})
             .with_execution_id(order.make_execution_id())
-            .with_reason(RejectText{"no facing orders found"})
+            .with_client_order_id(order.client_order_id())
+            .with_cancellation_text(CancellationText{"no facing orders found"})
             .build()));
     return;
   }
 
   if (!matcher_.can_fully_trade(order)) {
+    order.cancel();
     emit(ClientNotification(
-        prepare_placement_reject(order)
+        prepare_cancellation_confirmation(order, std::nullopt)
+            .with_leaving_quantity(LeavesQuantity{0})
             .with_execution_id(order.make_execution_id())
-            .with_reason(RejectText("not enough liquidity to fill FoK order"))
+            .with_client_order_id(order.client_order_id())
+            .with_cancellation_text(
+                CancellationText{"not enough liquidity to fill FoK order"})
             .build()));
     return;
   }

@@ -45,9 +45,6 @@ class PlacementRejectBuilder {
   [[nodiscard]]
   auto build() const -> protocol::OrderPlacementReject;
 
-  auto for_request(const protocol::OrderPlacementRequest& request)
-      -> PlacementRejectBuilder&;
-
   auto for_order(const LimitOrder& order) -> PlacementRejectBuilder&;
 
   auto for_order(const MarketOrder& order) -> PlacementRejectBuilder&;
@@ -61,11 +58,6 @@ class PlacementRejectBuilder {
  private:
   protocol::OrderPlacementReject message_;
 };
-
-[[nodiscard]]
-auto prepare_placement_reject(const protocol::OrderPlacementRequest& request,
-                              OrderId rejected_order_id)
-    -> PlacementRejectBuilder;
 
 [[nodiscard]]
 auto prepare_placement_reject(const LimitOrder& order)

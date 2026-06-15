@@ -1196,6 +1196,16 @@ TEST_F(AcceptorToFixOrderCancellationConfirmationMapping, SetsZeroAvgPx) {
   ASSERT_THAT(get_fix_field<FIX::AvgPx>(fix_message), Optional(Eq(0.0)));
 }
 
+TEST_F(AcceptorToFixOrderCancellationConfirmationMapping,
+       MapsCancellationText) {
+  reply.cancellation_text = CancellationText{"CancellationText"};
+
+  ToFixMapper::map(reply, fix_message, {});
+
+  ASSERT_THAT(get_fix_field<FIX::Text>(fix_message),
+              Optional(Eq("CancellationText")));
+}
+
 // endregion OrderCancellationConfirmation mapping
 
 // region OrderCancellationReject mapping

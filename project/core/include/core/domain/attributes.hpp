@@ -114,6 +114,11 @@ struct RejectText {
                                    .plural = "RejectTexts"};
 };
 
+struct CancellationText {
+  constexpr static core::Name name{.singular = "CancellationText",
+                                   .plural = "CancellationTexts"};
+};
+
 struct SecurityExchange {
   constexpr static core::Name name{.singular = "SecurityExchange",
                                    .plural = "SecurityExchanges"};
@@ -285,6 +290,7 @@ SIMULATOR_DECLARE_ATTRIBUTE(simulator, ExecutionId, Literal);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, OrigClientOrderId, Literal);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, PartyId, Literal);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, RejectText, Literal);
+SIMULATOR_DECLARE_ATTRIBUTE(simulator, CancellationText, Literal);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, SecurityExchange, Literal);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, SecurityId, Literal);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, Symbol, Literal);

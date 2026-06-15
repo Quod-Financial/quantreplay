@@ -5,6 +5,7 @@
 
 #include "common/attributes.hpp"
 #include "ih/orders/book/limit_order.hpp"
+#include "ih/orders/book/market_order.hpp"
 #include "ih/orders/book/order_updates.hpp"
 #include "protocol/app/order_cancellation_confirmation.hpp"
 #include "protocol/app/order_cancellation_reject.hpp"
@@ -23,6 +24,14 @@ class CancellationConfirmationBuilder {
 
   auto for_order(const LimitOrder& order) -> CancellationConfirmationBuilder&;
 
+  auto for_order(const MarketOrder& order) -> CancellationConfirmationBuilder&;
+
+  auto with_leaving_quantity(LeavesQuantity quantity)
+      -> CancellationConfirmationBuilder&;
+
+  auto with_cancellation_text(CancellationText text)
+      -> CancellationConfirmationBuilder&;
+
   auto with_execution_id(ExecutionId identifier)
       -> CancellationConfirmationBuilder&;
 
@@ -39,6 +48,11 @@ class CancellationConfirmationBuilder {
 
 [[nodiscard]]
 auto prepare_cancellation_confirmation(const LimitOrder& order,
+                                       std::optional<PriceTick> price_tick)
+    -> CancellationConfirmationBuilder;
+
+[[nodiscard]]
+auto prepare_cancellation_confirmation(const MarketOrder& order,
                                        std::optional<PriceTick> price_tick)
     -> CancellationConfirmationBuilder;
 

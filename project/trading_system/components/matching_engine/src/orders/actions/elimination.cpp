@@ -82,6 +82,7 @@ auto SystemElimination::eliminate(LimitOrder& order) const -> void {
   order.cancel();
   emit(make_making_order_removed_from_book_notification(order));
   emit(ClientNotification(prepare_cancellation_confirmation(order, price_tick_)
+                              .with_leaving_quantity(order.leaves_quantity())
                               .with_execution_id(order.make_execution_id())
                               .with_client_order_id(order.client_order_id())
                               .build()));
@@ -169,6 +170,7 @@ auto ClosedPhaseElimination::eliminate(LimitOrder& order) const -> void {
   order.cancel();
   emit(make_making_order_removed_from_book_notification(order));
   emit(ClientNotification(prepare_cancellation_confirmation(order, price_tick_)
+                              .with_leaving_quantity(order.leaves_quantity())
                               .with_execution_id(order.make_execution_id())
                               .with_client_order_id(order.client_order_id())
                               .build()));
@@ -216,6 +218,7 @@ auto OnDisconnectElimination::eliminate(LimitOrder& order) const -> void {
   order.cancel();
   emit(make_making_order_removed_from_book_notification(order));
   emit(ClientNotification(prepare_cancellation_confirmation(order, price_tick_)
+                              .with_leaving_quantity(order.leaves_quantity())
                               .with_execution_id(order.make_execution_id())
                               .with_client_order_id(order.client_order_id())
                               .build()));

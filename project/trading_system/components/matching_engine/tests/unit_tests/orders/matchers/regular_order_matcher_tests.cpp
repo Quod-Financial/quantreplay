@@ -55,8 +55,13 @@ MATCHER_P5(IsTradeNotification,
       result_listener);
 }
 
-MATCHER_P4(
-    IsOrderCancellationConfirmation, price, quantity, side, order_status, "") {
+MATCHER_P5(IsCancellationConfirmationForOrder,
+           price,
+           quantity,
+           side,
+           order_status,
+           cancellation_text,
+           "") {
   using namespace ::testing;
 
   return ExplainMatchResult(
@@ -67,7 +72,30 @@ MATCHER_P4(
                 Optional(quantity)),
           Field(&protocol::OrderCancellationConfirmation::side, Optional(side)),
           Field(&protocol::OrderCancellationConfirmation::order_status,
-                Optional(order_status)))),
+                Optional(order_status)),
+          Field(&protocol::OrderCancellationConfirmation::cancellation_text,
+                Optional(Eq(cancellation_text))))),
+      arg,
+      result_listener);
+}
+
+MATCHER_P4(IsCancellationConfirmationForMarketOrder,
+           quantity,
+           side,
+           order_status,
+           cancellation_text,
+           "") {
+  using namespace ::testing;
+
+  return ExplainMatchResult(
+      VariantWith<protocol::OrderCancellationConfirmation>(AllOf(
+          Field(&protocol::OrderCancellationConfirmation::leaving_quantity,
+                Optional(quantity)),
+          Field(&protocol::OrderCancellationConfirmation::side, Optional(side)),
+          Field(&protocol::OrderCancellationConfirmation::order_status,
+                Optional(order_status)),
+          Field(&protocol::OrderCancellationConfirmation::cancellation_text,
+                Optional(Eq(cancellation_text))))),
       arg,
       result_listener);
 }
@@ -655,34 +683,7 @@ TEST_F(BuyLimitOrderMatching, EmitsTradeOnMatchIoc) {
 }
 
 TEST_F(BuyLimitOrderMatching,
-       EmitsOrderCancellationConfirmationWithExecutionIdOnPartialMatchIoc) {
-  add_resting_order(OrderId{1}, Price{100}, Quantity{50});
-  add_resting_order(OrderId{2}, Price{101}, Quantity{1000});
-
-  LimitOrder order = make_ioc_aggressor(OrderId{3}, Price{100}, Quantity{75});
-
-  EXPECT_CALL(
-      listener,
-      on(IsClientNotification(VariantWith<protocol::ExecutionReport>(_))))
-      .Times(2);
-  EXPECT_CALL(listener, on(IsOrderBookNotification(VariantWith<Trade>(_))))
-      .Times(1);
-  EXPECT_CALL(listener,
-              on(IsOrderBookNotification(VariantWith<OrderReduced>(_))))
-      .Times(1);
-
-  EXPECT_CALL(listener,
-              on(IsClientNotification(
-                  VariantWith<protocol::OrderCancellationConfirmation>(Field(
-                      &protocol::OrderCancellationConfirmation::execution_id,
-                      Ne(std::nullopt))))))
-      .Times(1);
-
-  matcher.match(order);
-}
-
-TEST_F(BuyLimitOrderMatching,
-       EmitsOrderCancellationConfirmationWithClientOrderIdOnPartialMatchIoc) {
+       EmitsOrderCancellationConfirmationOnPartialMatchIoc) {
   add_resting_order(OrderId{1}, Price{100}, Quantity{50});
   add_resting_order(OrderId{2}, Price{101}, Quantity{1000});
 
@@ -700,10 +701,11 @@ TEST_F(BuyLimitOrderMatching,
       .Times(1);
 
   EXPECT_CALL(listener,
-              on(IsClientNotification(
-                  VariantWith<protocol::OrderCancellationConfirmation>(Field(
-                      &protocol::OrderCancellationConfirmation::client_order_id,
-                      ClientOrderId{"ClientOrderId"})))))
+              on(IsClientNotification(IsOrderCancellationConfirmation(
+                  VenueOrderId{"3"},
+                  OrderStatus::Option::Cancelled,
+                  LeavesQuantity{0},
+                  ClientOrderId{"ClientOrderId"}))))
       .Times(1);
 
   matcher.match(order);
@@ -820,11 +822,13 @@ TEST_F(BuyLimitOrderMatching, PartiallyMatchesIocOrderWithRestingOrder) {
                                                      Side::Option::Buy))))
       .Times(1);
   EXPECT_CALL(listener,
-              on(IsClientNotification(IsOrderCancellationConfirmation(
-                  Price{100},
-                  Quantity{25},
+              on(IsClientNotification(IsCancellationConfirmationForOrder(
+                  OrderPrice{100},
+                  LeavesQuantity{0},
                   Side::Option::Buy,
-                  OrderStatus::Option::Cancelled))))
+                  OrderStatus::Option::Cancelled,
+                  CancellationText{"not enough liquidity to fully fill IoC "
+                                   "order"}))))
       .Times(1);
 
   matcher.match(order);
@@ -903,11 +907,13 @@ TEST_F(BuyLimitOrderMatching,
                                                      Side::Option::Buy))))
       .Times(1);
   EXPECT_CALL(listener,
-              on(IsClientNotification(IsOrderCancellationConfirmation(
-                  Price{100},
-                  Quantity{20},
+              on(IsClientNotification(IsCancellationConfirmationForOrder(
+                  OrderPrice{100},
+                  LeavesQuantity{0},
                   Side::Option::Buy,
-                  OrderStatus::Option::Cancelled))))
+                  OrderStatus::Option::Cancelled,
+                  CancellationText{"not enough liquidity to fully fill IoC "
+                                   "order"}))))
       .Times(1);
 
   matcher.match(order);
@@ -1500,34 +1506,7 @@ TEST_F(SellLimitOrderMatching, EmitsTradeOnMatchIoc) {
 }
 
 TEST_F(SellLimitOrderMatching,
-       EmitsOrderCancellationConfirmationWithExecutionIdOnPartialMatchIoc) {
-  add_resting_order(OrderId{1}, Price{100}, Quantity{50});
-  add_resting_order(OrderId{2}, Price{99}, Quantity{1000});
-
-  LimitOrder order = make_ioc_aggressor(OrderId{3}, Price{100}, Quantity{75});
-
-  EXPECT_CALL(
-      listener,
-      on(IsClientNotification(VariantWith<protocol::ExecutionReport>(_))))
-      .Times(2);
-  EXPECT_CALL(listener, on(IsOrderBookNotification(VariantWith<Trade>(_))))
-      .Times(1);
-  EXPECT_CALL(listener,
-              on(IsOrderBookNotification(VariantWith<OrderReduced>(_))))
-      .Times(1);
-
-  EXPECT_CALL(listener,
-              on(IsClientNotification(
-                  VariantWith<protocol::OrderCancellationConfirmation>(Field(
-                      &protocol::OrderCancellationConfirmation::execution_id,
-                      Ne(std::nullopt))))))
-      .Times(1);
-
-  matcher.match(order);
-}
-
-TEST_F(SellLimitOrderMatching,
-       EmitsOrderCancellationConfirmationWithClientOrderIdOnPartialMatchIoc) {
+       EmitsOrderCancellationConfirmationOnPartialMatchIoc) {
   add_resting_order(OrderId{1}, Price{100}, Quantity{50});
   add_resting_order(OrderId{2}, Price{99}, Quantity{1000});
 
@@ -1545,10 +1524,11 @@ TEST_F(SellLimitOrderMatching,
       .Times(1);
 
   EXPECT_CALL(listener,
-              on(IsClientNotification(
-                  VariantWith<protocol::OrderCancellationConfirmation>(Field(
-                      &protocol::OrderCancellationConfirmation::client_order_id,
-                      ClientOrderId{"ClientOrderId"})))))
+              on(IsClientNotification(IsOrderCancellationConfirmation(
+                  VenueOrderId{"3"},
+                  OrderStatus::Option::Cancelled,
+                  LeavesQuantity{0},
+                  ClientOrderId{"ClientOrderId"}))))
       .Times(1);
 
   matcher.match(order);
@@ -1665,11 +1645,13 @@ TEST_F(SellLimitOrderMatching, PartiallyMatchesIocOrderWithRestingOrder) {
                                                      Side::Option::Sell))))
       .Times(1);
   EXPECT_CALL(listener,
-              on(IsClientNotification(IsOrderCancellationConfirmation(
-                  Price{100},
-                  Quantity{25},
+              on(IsClientNotification(IsCancellationConfirmationForOrder(
+                  OrderPrice{100},
+                  LeavesQuantity{0},
                   Side::Option::Sell,
-                  OrderStatus::Option::Cancelled))))
+                  OrderStatus::Option::Cancelled,
+                  CancellationText{"not enough liquidity to fully fill IoC "
+                                   "order"}))))
       .Times(1);
 
   matcher.match(order);
@@ -1748,11 +1730,13 @@ TEST_F(SellLimitOrderMatching,
                                                      Side::Option::Sell))))
       .Times(1);
   EXPECT_CALL(listener,
-              on(IsClientNotification(IsOrderCancellationConfirmation(
-                  Price{100},
-                  Quantity{20},
+              on(IsClientNotification(IsCancellationConfirmationForOrder(
+                  OrderPrice{100},
+                  LeavesQuantity{0},
                   Side::Option::Sell,
-                  OrderStatus::Option::Cancelled))))
+                  OrderStatus::Option::Cancelled,
+                  CancellationText{"not enough liquidity to fully fill IoC "
+                                   "order"}))))
       .Times(1);
 
   matcher.match(order);
@@ -1989,7 +1973,7 @@ TEST_F(BuyMarketOrderMatching, PartiallyMatchesWithFacingOrder) {
                                     Quantity{99},
                                     Side::Option::Buy,
                                     ExecutionType::Option::OrderTraded,
-                                    OrderStatus::Option::Cancelled))))
+                                    OrderStatus::Option::PartiallyFilled))))
       .Times(1);
   EXPECT_CALL(listener,
               on(IsClientNotification(
@@ -2011,8 +1995,19 @@ TEST_F(BuyMarketOrderMatching, PartiallyMatchesWithFacingOrder) {
                                                      Quantity{99},
                                                      Side::Option::Buy))))
       .Times(1);
+  EXPECT_CALL(listener,
+              on(IsClientNotification(IsCancellationConfirmationForMarketOrder(
+                  LeavesQuantity{0},
+                  Side::Option::Buy,
+                  OrderStatus::Option::Cancelled,
+                  CancellationText{"not enough liquidity to fully fill market "
+                                   "order"}))))
+      .Times(1);
 
   matcher.match(order);
+
+  EXPECT_THAT(order.executed(), IsFalse());
+  EXPECT_THAT(order.status(), Eq(OrderStatus::Option::Cancelled));
 }
 
 TEST_F(BuyMarketOrderMatching, MatchesWithSeveralFacingOrders) {
@@ -2331,7 +2326,7 @@ TEST_F(SellMarketOrderMatching, PartiallyMatchesWithFacingOrder) {
                                     Quantity{99},
                                     Side::Option::Sell,
                                     ExecutionType::Option::OrderTraded,
-                                    OrderStatus::Option::Cancelled))))
+                                    OrderStatus::Option::PartiallyFilled))))
       .Times(1);
   EXPECT_CALL(listener,
               on(IsClientNotification(
@@ -2353,8 +2348,19 @@ TEST_F(SellMarketOrderMatching, PartiallyMatchesWithFacingOrder) {
                                                      Quantity{99},
                                                      Side::Option::Sell))))
       .Times(1);
+  EXPECT_CALL(listener,
+              on(IsClientNotification(IsCancellationConfirmationForMarketOrder(
+                  LeavesQuantity{0},
+                  Side::Option::Sell,
+                  OrderStatus::Option::Cancelled,
+                  CancellationText{"not enough liquidity to fully fill market "
+                                   "order"}))))
+      .Times(1);
 
   matcher.match(order);
+
+  EXPECT_THAT(order.executed(), IsFalse());
+  EXPECT_THAT(order.status(), Eq(OrderStatus::Option::Cancelled));
 }
 
 TEST_F(SellMarketOrderMatching, MatchesWithSeveralFacingOrders) {

@@ -270,7 +270,7 @@ auto fmt::formatter<simulator::protocol::OrderCancellationConfirmation>::format(
                    "{}, "
                    "{}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, "
                    "{}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, "
-                   "{}={}, {:p}={} "
+                   "{}={}, {}={}, {:p}={} "
                    "}}",
                    message.session,
                    name_of(message.client_order_id),
@@ -281,6 +281,8 @@ auto fmt::formatter<simulator::protocol::OrderCancellationConfirmation>::format(
                    message.venue_order_id,
                    name_of(message.execution_id),
                    message.execution_id,
+                   name_of(message.cancellation_text),
+                   message.cancellation_text,
                    name_of(message.leaving_quantity),
                    message.leaving_quantity,
                    name_of(message.cum_executed_quantity),
