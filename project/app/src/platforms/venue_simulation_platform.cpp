@@ -47,7 +47,9 @@ VenueSimulationPlatform::VenueSimulationPlatform(
   middleware::bind_trading_reply_channel(
       std::make_shared<VenueTradingReplyDispatcher>(generator_, fix_acceptor_));
   middleware::bind_trading_request_channel(trading_engine_);
-  middleware::bind_trading_session_event_channel(trading_engine_);
+  middleware::bind_trading_session_connection_event_channel(http_server_);
+  middleware::bind_trading_session_termination_event_channel(trading_engine_);
+  middleware::bind_trading_session_termination_event_channel(http_server_);
   middleware::bind_generator_admin_channel(generator_);
   log::debug("venue simulation platform has been created");
 }
@@ -71,7 +73,8 @@ auto VenueSimulationPlatform::terminate() -> void {
   middleware::release_trading_admin_channel();
   middleware::release_trading_reply_channel();
   middleware::release_trading_request_channel();
-  middleware::release_trading_session_event_channel();
+  middleware::release_trading_session_connection_event_channel();
+  middleware::release_trading_session_termination_event_channel();
   middleware::release_generator_admin_channel();
 
   trading_engine_.reset();

@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <stdexcept>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -17,12 +18,14 @@ template <typename Model>
 class Expression {
  public:
   using BasicLexeme = BasicPredicate<Model>;
+  using InLexeme = InPredicate<Model>;
   using CompositeLexeme = CompositePredicate;
   using SubExpressionBeginLexeme = SubExpressionBegin;
   using SubExpressionEndLexeme = SubExpressionEnd;
 
  private:
   using Lexeme = std::variant<BasicLexeme,
+                              InLexeme,
                               CompositeLexeme,
                               SubExpressionBeginLexeme,
                               SubExpressionEndLexeme>;
@@ -33,6 +36,9 @@ class Expression {
   // Creates a basic expression with a single BasicPredicate lexeme
   explicit Expression(BasicLexeme basic_lexeme)
       : lexemes_{std::move(basic_lexeme)} {}
+
+  // Creates a basic expression with a single InPredicate lexeme
+  explicit Expression(InLexeme in_lexeme) : lexemes_{std::move(in_lexeme)} {}
 
   template <typename Formatter>
   auto accept(Formatter& formatter) const -> void {
@@ -49,7 +55,8 @@ class Expression {
   auto is_basic() const noexcept -> bool {
     assert(!lexemes_.empty());
     return lexemes_.size() == 1 &&
-           std::holds_alternative<BasicLexeme>(lexemes_.front());
+           (std::holds_alternative<BasicLexeme>(lexemes_.front()) ||
+            std::holds_alternative<InLexeme>(lexemes_.front()));
   }
 
   [[nodiscard]]
@@ -369,6 +376,22 @@ inline auto eq(typename Traits::AttributeType field,
 template <typename Model, typename Traits = ModelTraits<Model>>
 inline auto neq(typename Traits::AttributeType field,
                 const char* value) = delete;
+
+// Membership (SQL `IN`) expressions
+
+template <typename Model, typename T, typename Traits = ModelTraits<Model>>
+inline auto in(typename Traits::AttributeType field, std::vector<T> values)
+    -> Expression<Model> {
+  using Expression = Expression<Model>;
+  using Lexeme = typename Expression::InLexeme;
+
+  if (values.empty()) {
+    throw std::invalid_argument{
+        "predicate 'in' requires a non-empty list of values"};
+  }
+
+  return Expression{Lexeme{field, std::move(values)}};
+}
 
 // Composite operations on expressions
 

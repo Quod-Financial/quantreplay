@@ -2,8 +2,10 @@
 #define SIMULATOR_DATA_LAYER_INCLUDE_DATA_LAYER_API_PREDICATE_PREDICATE_HPP_
 
 #include <tuple>
+#include <vector>
 
 #include "data_layer/api/models/datasource.hpp"
+#include "data_layer/api/models/fix_session.hpp"
 #include "data_layer/api/models/listing.hpp"
 #include "data_layer/api/models/price_seed.hpp"
 #include "data_layer/api/models/setting.hpp"
@@ -23,6 +25,12 @@ struct ModelTraits<data_layer::Datasource> {
 template <>
 struct ModelTraits<data_layer::Listing> {
   using AttributeType = Listing::Attribute;
+  using CustomFieldTypes = std::tuple<>;
+};
+
+template <>
+struct ModelTraits<data_layer::FixSession> {
+  using AttributeType = FixSession::Attribute;
   using CustomFieldTypes = std::tuple<>;
 };
 
@@ -162,6 +170,53 @@ struct PriceSeedCmp {
       -> ExpressionType {
     static_assert(predicate::is_less_greater_comparable_v<T>);
     return predicate::greater_eq<PriceSeed>(field, std::forward<T>(value));
+  }
+};
+
+struct FixSessionCmp {
+  using ExpressionType = predicate::Expression<data_layer::FixSession>;
+
+  template <typename T>
+  static auto eq(FixSession::Attribute field, T&& value) -> ExpressionType {
+    return predicate::eq<FixSession>(field, std::forward<T>(value));
+  }
+
+  template <typename T>
+  static auto in(FixSession::Attribute field, std::vector<T> values)
+      -> ExpressionType {
+    return predicate::in<FixSession>(field, std::move(values));
+  }
+
+  template <typename T>
+  static auto neq(FixSession::Attribute field, T&& value) -> ExpressionType {
+    return predicate::neq<FixSession>(field, std::forward<T>(value));
+  }
+
+  template <typename T>
+  static auto less(FixSession::Attribute field, T&& value) -> ExpressionType {
+    static_assert(predicate::is_less_greater_comparable_v<T>);
+    return predicate::less<FixSession>(field, std::forward<T>(value));
+  }
+
+  template <typename T>
+  static auto greater(FixSession::Attribute field, T&& value)
+      -> ExpressionType {
+    static_assert(predicate::is_less_greater_comparable_v<T>);
+    return predicate::greater<FixSession>(field, std::forward<T>(value));
+  }
+
+  template <typename T>
+  static auto less_eq(FixSession::Attribute field, T&& value)
+      -> ExpressionType {
+    static_assert(predicate::is_less_greater_comparable_v<T>);
+    return predicate::less_eq<FixSession>(field, std::forward<T>(value));
+  }
+
+  template <typename T>
+  static auto greater_eq(FixSession::Attribute field, T&& value)
+      -> ExpressionType {
+    static_assert(predicate::is_less_greater_comparable_v<T>);
+    return predicate::greater_eq<FixSession>(field, std::forward<T>(value));
   }
 };
 

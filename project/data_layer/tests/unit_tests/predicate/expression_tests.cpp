@@ -3,6 +3,8 @@
 #include <sstream>
 #include <string>
 #include <type_traits>
+#include <variant>
+#include <vector>
 
 #include "api/predicate/definitions.hpp"
 #include "api/predicate/expression.hpp"
@@ -46,6 +48,23 @@ class FormatterMock {
     format(value);
   }
 
+  template <typename... Values>
+  auto operator()(Field field,
+                  const std::vector<std::variant<Values...>>& values) -> void {
+    format(field);
+    stream_ << " IN (";
+    bool first = true;
+    for (const auto& value : values) {
+      if (!first) {
+        stream_ << ", ";
+      }
+      first = false;
+      std::visit([this](const auto& concrete) { format_value(concrete); },
+                 value);
+    }
+    stream_ << ")";
+  }
+
   auto operator()(CompositeOperation operation) -> void { format(operation); }
 
   auto operator()([[maybe_unused]] SubExpressionBegin lexeme) -> void {
@@ -59,6 +78,21 @@ class FormatterMock {
   auto string() const -> std::string { return stream_.str(); }
 
  private:
+  auto format_value(bool value) -> void {
+    stream_ << std::boolalpha << value << std::noboolalpha;
+  }
+
+  auto format_value(const std::string& value) -> void {
+    stream_ << "'" << value << "'";
+  }
+
+  auto format_value(TestModel::CustomFieldType value) -> void { format(value); }
+
+  template <typename T>
+  auto format_value(T value) -> std::enable_if_t<std::is_arithmetic_v<T>> {
+    stream_ << value;
+  }
+
   auto format(TestModel::Attribute field) -> void {
     switch (field) {
       case TestModel::Attribute::BooleanField:
@@ -266,6 +300,54 @@ TEST_F(DataLayer_Predicate_Expression, Format_Basic_CustomField_Value3) {
   ASSERT_NO_THROW(expression.accept(formatter));
 
   EXPECT_EQ(formatter.string(), "CustomField = Value3");
+}
+
+TEST_F(DataLayer_Predicate_Expression, In_IsBasic) {
+  const Expression expression =
+      in<TestModel>(Field::StringField, std::vector<std::string>{"ABC", "DEF"});
+
+  EXPECT_TRUE(expression.is_basic());
+  EXPECT_FALSE(expression.is_composite());
+}
+
+TEST_F(DataLayer_Predicate_Expression, In_EmptyValuesThrows) {
+  EXPECT_THROW(in<TestModel>(Field::StringField, std::vector<std::string>{}),
+               std::invalid_argument);
+}
+
+TEST_F(DataLayer_Predicate_Expression, Format_In_String) {
+  const Expression expression = in<TestModel>(
+      Field::StringField, std::vector<std::string>{"XETRA", "FASTMATCH"});
+
+  FormatterMock formatter;
+  ASSERT_NO_THROW(expression.accept(formatter));
+
+  EXPECT_EQ(formatter.string(), "StringField IN ('XETRA', 'FASTMATCH')");
+}
+
+TEST_F(DataLayer_Predicate_Expression, Format_In_SingleValue) {
+  const Expression expression =
+      in<TestModel>(Field::IntegerField, std::vector<std::int64_t>{42});
+
+  FormatterMock formatter;
+  ASSERT_NO_THROW(expression.accept(formatter));
+
+  EXPECT_EQ(formatter.string(), "IntegerField IN (42)");
+}
+
+TEST_F(DataLayer_Predicate_Expression, Format_Composite_InAndBasic_AND) {
+  const std::string str = "A STRING";
+  const Expression expression =
+      in<TestModel>(Field::StringField,
+                    std::vector<std::string>{"XETRA", "FASTMATCH"}) &&
+      neq<TestModel>(Field::StringField, str);
+
+  FormatterMock formatter;
+  ASSERT_NO_THROW(expression.accept(formatter));
+
+  EXPECT_EQ(formatter.string(),
+            "StringField IN ('XETRA', 'FASTMATCH') AND "
+            "StringField != 'A STRING'");
 }
 
 TEST_F(DataLayer_Predicate_Expression, Format_Composite_BasicLexemes_AND) {

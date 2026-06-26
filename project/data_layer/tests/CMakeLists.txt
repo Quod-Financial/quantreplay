@@ -13,6 +13,7 @@ add_target_tests(
     unit_tests/converters/column_mapping_tests.cpp
     unit_tests/inspectors/column_mapping_inspectors_tests.cpp
     unit_tests/inspectors/datasource_inspectors_tests.cpp
+    unit_tests/inspectors/fix_session_inspectors_tests.cpp
     unit_tests/inspectors/listing_inspectors_tests.cpp
     unit_tests/inspectors/market_phase_inspectors_tests.cpp
     unit_tests/inspectors/price_seed_inspectors_tests.cpp
@@ -20,6 +21,7 @@ add_target_tests(
     unit_tests/inspectors/venue_inspectors_tests.cpp
     unit_tests/models/column_mapping_tests.cpp
     unit_tests/models/datasource_tests.cpp
+    unit_tests/models/fix_session_tests.cpp
     unit_tests/models/listing_tests.cpp
     unit_tests/models/market_phase_tests.cpp
     unit_tests/models/patch_field_tests.cpp
@@ -36,6 +38,7 @@ add_target_tests(
     unit_tests/pqxx/queries/detail/select_query_builder_tests.cpp
     unit_tests/pqxx/queries/detail/update_query_builder_tests.cpp
     unit_tests/pqxx/queries/datasource_queries_tests.cpp
+    unit_tests/pqxx/queries/fix_session_queries_tests.cpp
     unit_tests/pqxx/queries/listing_queries_tests.cpp
     unit_tests/pqxx/queries/price_seed_queries_tests.cpp
     unit_tests/pqxx/queries/setting_queries_tests.cpp

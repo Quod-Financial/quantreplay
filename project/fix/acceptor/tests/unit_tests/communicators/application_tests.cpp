@@ -92,6 +92,26 @@ TEST_F(AcceptorApplication, HandlesUnknownException) {
   ASSERT_NO_THROW(application.fromApp(fix_message, fix_session));
 }
 
+TEST_F(AcceptorApplication, ReportsSessionConnection) {
+  EXPECT_CALL(event_processor, process_session_connection(fix_session));
+
+  application.onLogon(fix_session);
+}
+
+TEST_F(AcceptorApplication, HandlesExceptionWhenReportsConnection) {
+  EXPECT_CALL(event_processor, process_session_connection(fix_session))
+      .WillOnce(Throw(std::runtime_error{"error"}));
+
+  ASSERT_NO_THROW(application.onLogon(fix_session));
+}
+
+TEST_F(AcceptorApplication, HandlesUnknownErrorWhenReportsConnection) {
+  EXPECT_CALL(event_processor, process_session_connection(fix_session))
+      .WillOnce(Throw(42));  // NOLINT
+
+  ASSERT_NO_THROW(application.onLogon(fix_session));
+}
+
 TEST_F(AcceptorApplication, ReportsSessionDisconnection) {
   EXPECT_CALL(event_processor, process_session_disconnection(fix_session));
 
@@ -105,7 +125,7 @@ TEST_F(AcceptorApplication, HandlesExceptionWhenReportsDisconnection) {
   ASSERT_NO_THROW(application.onLogout(fix_session));
 }
 
-TEST_F(AcceptorApplication, HandlesUnknownErrrorWhenReportsDisconnection) {
+TEST_F(AcceptorApplication, HandlesUnknownErrorWhenReportsDisconnection) {
   EXPECT_CALL(event_processor, process_session_disconnection(fix_session))
       .WillOnce(Throw(42));  // NOLINT
 

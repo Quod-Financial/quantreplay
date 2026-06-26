@@ -4,6 +4,9 @@
 #include <fmt/ranges.h>
 
 #include <functional>
+#include <string>
+#include <variant>
+#include <vector>
 
 #include "api/predicate/predicate.hpp"
 
@@ -55,6 +58,25 @@ class PredicateFormatter {
     (*this)(column, basic_operation, string_value);
   }
 
+  template <typename Column, typename... Values>
+  auto operator()(Column column,
+                  const std::vector<std::variant<Values...>>& values) -> void {
+    const std::string col = column_resolver_(column);
+
+    std::vector<std::string> sanitized_values;
+    sanitized_values.reserve(values.size());
+    for (const std::variant<Values...>& value : values) {
+      std::visit(
+          [&](const auto& concrete_value) {
+            sanitized_values.emplace_back(render_value(concrete_value));
+          },
+          value);
+    }
+
+    lexemes_.emplace_back(
+        fmt::format("{} IN ({})", col, fmt::join(sanitized_values, ", ")));
+  }
+
   auto operator()([[maybe_unused]] predicate::SubExpressionBegin lexeme)
       -> void {
     lexemes_.emplace_back("(");
@@ -70,6 +92,18 @@ class PredicateFormatter {
   }
 
  private:
+  template <typename Value>
+  auto render_value(const Value& value)
+      -> std::enable_if_t<!is_enum_value_v<Value>, std::string> {
+    return sanitizer_(value);
+  }
+
+  template <typename Value>
+  auto render_value(Value value)
+      -> std::enable_if_t<is_enum_value_v<Value>, std::string> {
+    return sanitizer_(enum_resolver_(value));
+  }
+
   constexpr static auto format(predicate::BasicOperation basic_operation)
       -> std::string_view {
     std::string_view value{};

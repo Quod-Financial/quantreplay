@@ -12,6 +12,7 @@ struct FixSession {
   std::string begin_string;
   std::string sender_comp_id;
   std::string target_comp_id;
+  std::optional<std::string> session_qualifier;
   std::optional<std::string> client_sub_id;
 };
 

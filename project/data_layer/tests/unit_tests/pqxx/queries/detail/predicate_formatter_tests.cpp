@@ -1,5 +1,9 @@
 #include <gtest/gtest.h>
 
+#include <cstdint>
+#include <string>
+#include <vector>
+
 #include "api/predicate/expression.hpp"
 #include "common/model.hpp"
 #include "ih/pqxx/queries/detail/predicate_formatter.hpp"
@@ -94,6 +98,48 @@ TEST_F(DataLayer_Pqxx_PredicateFormatter,
   EXPECT_EQ(formatter.compose(), "CustomField = `Value3`");
 }
 
+TEST_F(DataLayer_Pqxx_PredicateFormatter, Format_In_SingleValue) {
+  const Predicate pred =
+      in<Model>(Field::IntegerField, std::vector<std::int64_t>{1});
+
+  Formatter formatter = make_formatter();
+  formatter.accept(pred);
+
+  EXPECT_EQ(formatter.compose(), "IntegerField IN (`1`)");
+}
+
+TEST_F(DataLayer_Pqxx_PredicateFormatter, Format_In_MultipleValues) {
+  const Predicate pred =
+      in<Model>(Field::IntegerField, std::vector<std::int64_t>{1, 2, 3});
+
+  Formatter formatter = make_formatter();
+  formatter.accept(pred);
+
+  EXPECT_EQ(formatter.compose(), "IntegerField IN (`1`, `2`, `3`)");
+}
+
+TEST_F(DataLayer_Pqxx_PredicateFormatter, Format_In_StringValues) {
+  const Predicate pred = in<Model>(
+      Field::StringField, std::vector<std::string>{"XETRA", "FASTMATCH"});
+
+  Formatter formatter = make_formatter();
+  formatter.accept(pred);
+
+  EXPECT_EQ(formatter.compose(), "StringField IN (`XETRA`, `FASTMATCH`)");
+}
+
+TEST_F(DataLayer_Pqxx_PredicateFormatter, Format_In_EnumerableValues) {
+  const Predicate pred = in<Model>(Field::CustomField,
+                                   std::vector<TestModel::CustomFieldType>{
+                                       TestModel::CustomFieldType::Value1,
+                                       TestModel::CustomFieldType::Value3});
+
+  Formatter formatter = make_formatter();
+  formatter.accept(pred);
+
+  EXPECT_EQ(formatter.compose(), "CustomField IN (`Value1`, `Value3`)");
+}
+
 TEST_F(DataLayer_Pqxx_PredicateFormatter, Format_CompositeOperation_AND) {
   const Predicate pred =
       eq<Model>(Field::IntegerField, 1) && eq<Model>(Field::BooleanField, true);
@@ -128,6 +174,20 @@ TEST_F(DataLayer_Pqxx_PredicateFormatter, Format_Subexpression) {
   EXPECT_EQ(formatter.compose(),
             "( IntegerField = `1` OR CustomField = `Value1` ) AND "
             "( DecimalField < `42.42` OR DecimalField > `32.32` )");
+}
+
+TEST_F(DataLayer_Pqxx_PredicateFormatter,
+       Format_In_StaysAtomicWithinComposite) {
+  const Predicate pred =
+      in<Model>(Field::StringField,
+                std::vector<std::string>{"XETRA", "FASTMATCH"}) &&
+      eq<Model>(Field::IntegerField, 1);
+
+  Formatter formatter = make_formatter();
+  formatter.accept(pred);
+
+  EXPECT_EQ(formatter.compose(),
+            "StringField IN (`XETRA`, `FASTMATCH`) AND IntegerField = `1`");
 }
 
 }  // namespace

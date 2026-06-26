@@ -137,6 +137,8 @@ auto read(const rapidjson::Value& json_value, json::FixSession& dest)
   return read(json_value, "BeginString", dest.begin_string)
       .and_then(read_field(json_value, "SenderCompID", dest.sender_comp_id))
       .and_then(read_field(json_value, "TargetCompID", dest.target_comp_id))
+      .and_then(
+          read_field(json_value, "SessionQualifier", dest.session_qualifier))
       .and_then(read_field(json_value, "SenderSubID", dest.client_sub_id));
 }
 
@@ -341,6 +343,11 @@ auto read(const rapidjson::Value& json_value, market_state::Session& dest)
             protocol::fix::BeginString{std::move(model->begin_string)},
             protocol::fix::SenderCompId{std::move(model->sender_comp_id)},
             protocol::fix::TargetCompId{std::move(model->target_comp_id)}};
+      }
+
+      if (model->session_qualifier.has_value()) {
+        dest.fix_session->session_qualifier = protocol::fix::SessionQualifier{
+            std::move(model->session_qualifier.value())};
       }
     } else {
       dest.fix_session = std::nullopt;

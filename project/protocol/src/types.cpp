@@ -7,6 +7,7 @@
 SIMULATOR_DEFINE_ATTRIBUTE(simulator::protocol::fix, BeginString, Literal);
 SIMULATOR_DEFINE_ATTRIBUTE(simulator::protocol::fix, SenderCompId, Literal);
 SIMULATOR_DEFINE_ATTRIBUTE(simulator::protocol::fix, TargetCompId, Literal);
+SIMULATOR_DEFINE_ATTRIBUTE(simulator::protocol::fix, SessionQualifier, Literal);
 SIMULATOR_DEFINE_ATTRIBUTE(simulator::protocol::fix, ClientSubId, Literal);
 
 namespace simulator::protocol::fix {
@@ -34,13 +35,15 @@ auto fmt::formatter<simulator::protocol::fix::Session>::format(
     -> decltype(context.out()) {
   using simulator::core::name_of;
   return format_to(context.out(),
-                   "{{ {}={}, {}={}, {}={}, {}={} }}",
+                   "{{ {}={}, {}={}, {}={}, {}={}, {}={} }}",
                    name_of(session.begin_string),
                    session.begin_string,
                    name_of(session.sender_comp_id),
                    session.sender_comp_id,
                    name_of(session.target_comp_id),
                    session.target_comp_id,
+                   name_of(session.session_qualifier),
+                   session.session_qualifier,
                    name_of(session.client_sub_id),
                    session.client_sub_id);
 }

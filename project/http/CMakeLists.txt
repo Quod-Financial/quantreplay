@@ -24,12 +24,14 @@ add_static_library(
     ih/constants.hpp
     ih/controllers/app_controller.hpp
     ih/controllers/datasource_controller.hpp
+    ih/controllers/fix_session_controller.hpp
     ih/controllers/listing_controller.hpp
     ih/controllers/price_seed_controller.hpp
     ih/controllers/setting_controller.hpp
     ih/controllers/trading_controller.hpp
     ih/controllers/venue_controller.hpp
     ih/data_bridge/datasource_accessor.hpp
+    ih/data_bridge/fix_session_accessor.hpp
     ih/data_bridge/operation_failure.hpp
     ih/data_bridge/listing_accessor.hpp
     ih/data_bridge/price_seed_accessor.hpp
@@ -47,11 +49,11 @@ add_static_library(
     ih/marshalling/json/detail/unmarshaller.hpp
     ih/marshalling/json/detail/utils.hpp
     ih/marshalling/json/datasource.hpp
+    ih/marshalling/json/fix_session.hpp
     ih/marshalling/json/generator.hpp
     ih/marshalling/json/halt.hpp
     ih/marshalling/json/listing.hpp
     ih/marshalling/json/price_seed.hpp
-    ih/marshalling/json/session_settings.hpp
     ih/marshalling/json/setting.hpp
     ih/marshalling/json/venue.hpp
     ih/redirect/destination.hpp
@@ -59,6 +61,7 @@ add_static_library(
     ih/redirect/request.hpp
     ih/redirect/resolver.hpp
     ih/redirect/result.hpp
+    ih/utils/host_resolver.hpp
     ih/utils/response_formatters.hpp
     ih/redirect/destination_resolver.hpp
     ih/redirect/redirection_processor.hpp
@@ -75,12 +78,14 @@ add_static_library(
   SOURCES
     src/controllers/app_controller.cpp
     src/controllers/datasource_controller.cpp
+    src/controllers/fix_session_controller.cpp
     src/controllers/listing_controller.cpp
     src/controllers/price_seed_controller.cpp
     src/controllers/setting_controller.cpp
     src/controllers/trading_controller.cpp
     src/controllers/venue_controller.cpp
     src/data_bridge/datasource_accessor.cpp
+    src/data_bridge/fix_session_accessor.cpp
     src/data_bridge/listing_accessor.cpp
     src/data_bridge/price_seed_accessor.cpp
     src/data_bridge/setting_accessor.cpp
@@ -88,11 +93,11 @@ add_static_library(
     src/marshalling/json/detail/enumeration_resolver.cpp
     src/marshalling/json/detail/key_resolver.cpp
     src/marshalling/json/datasource.cpp
+    src/marshalling/json/fix_session.cpp
     src/marshalling/json/generator.cpp
     src/marshalling/json/halt.cpp
     src/marshalling/json/listing.cpp
     src/marshalling/json/price_seed.cpp
-    src/marshalling/json/session_settings.cpp
     src/marshalling/json/setting.cpp
     src/marshalling/json/venue.cpp
     src/processors/delete_processor.cpp
@@ -102,6 +107,8 @@ add_static_library(
     src/redirect/destination_resolver.cpp
     src/redirect/redirection_processor.cpp
     src/redirect/request_redirector.cpp
+    src/utils/host_resolver.cpp
+    src/utils/response_formatters.cpp
     src/config_provider.cpp
     src/http.cpp
     src/router.cpp

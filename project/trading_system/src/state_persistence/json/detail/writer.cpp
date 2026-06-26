@@ -94,6 +94,8 @@ auto write(rapidjson::Value& json_value,
       .and_then(write_field(
           json_value, allocator, "TargetCompID", source.target_comp_id))
       .and_then(write_field(
+          json_value, allocator, "SessionQualifier", source.session_qualifier))
+      .and_then(write_field(
           json_value, allocator, "SenderSubID", source.client_sub_id));
 }
 
@@ -293,6 +295,12 @@ auto write(rapidjson::Value& json_value,
     fix_session.begin_string = source.fix_session->begin_string.value();
     fix_session.sender_comp_id = source.fix_session->sender_comp_id.value();
     fix_session.target_comp_id = source.fix_session->target_comp_id.value();
+    if (source.fix_session->session_qualifier.has_value()) {
+      fix_session.session_qualifier =
+          source.fix_session->session_qualifier->value();
+    } else {
+      fix_session.session_qualifier = std::nullopt;
+    }
     if (source.fix_session->client_sub_id.has_value()) {
       fix_session.client_sub_id = source.fix_session->client_sub_id->value();
     } else {

@@ -6,6 +6,8 @@
 
 #include "core/common/session_settings.hpp"
 #include "data_layer/api/database/context.hpp"
+#include "protocol/app/session_connected_event.hpp"
+#include "protocol/app/session_terminated_event.hpp"
 
 namespace simulator::http {
 
@@ -38,6 +40,12 @@ auto create_http_server(
 auto launch_http_server(Server& server) -> void;
 
 auto terminate_http_server(Server& server) noexcept -> void;
+
+auto react_on(const protocol::SessionConnectedEvent& event, Server& server)
+    -> void;
+
+auto react_on(const protocol::SessionTerminatedEvent& event, Server& server)
+    -> void;
 
 }  // namespace simulator::http
 

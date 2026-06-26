@@ -26,7 +26,8 @@ GetProcessorImpl::GetProcessorImpl(
     std::shared_ptr<PriceSeedController> price_seed_controller,
     std::shared_ptr<SettingController> setting_controller,
     std::shared_ptr<VenueController> venue_controller,
-    std::shared_ptr<ConfigProvider> config_provider)
+    std::shared_ptr<ConfigProvider> config_provider,
+    std::shared_ptr<FixSessionController> fix_session_controller)
     : redirector_{std::move(redirector)},
       venue_accessor_{std::move(venue_accessor)},
       datasource_controller_{std::move(datasource_controller)},
@@ -34,7 +35,8 @@ GetProcessorImpl::GetProcessorImpl(
       price_seed_controller_{std::move(price_seed_controller)},
       setting_controller_{std::move(setting_controller)},
       venue_controller_{std::move(venue_controller)},
-      config_provider_{std::move(config_provider)} {}
+      config_provider_{std::move(config_provider)},
+      fix_session_controller_{std::move(fix_session_controller)} {}
 
 auto GetProcessorImpl::get_venue(const Pistache::Rest::Request& request,
                                  Pistache::Http::ResponseWriter response)
@@ -177,8 +179,10 @@ auto GetProcessorImpl::get_venue_status_str(
   const auto& venue_id = venue.venue_id();
 
   if (venue_id == config_provider_->venue_id()) {
-    return format_venue_status(
-        venue, Pistache::Http::Code::Ok, config_provider_.get());
+    return format_current_venue_status(venue,
+                                       Pistache::Http::Code::Ok,
+                                       *config_provider_,
+                                       fix_session_controller_->sessions());
   }
 
   auto result = redirector_->redirect_to_venue(

@@ -26,7 +26,7 @@ TEST(TradingSystemCommonSessionFmt, FormatsFixToString) {
             "{ \"type\": \"Fix\", \"fix_session\": { "
             "BeginString=\"begin\", "
             "SenderCompID=\"sender\", TargetCompID=\"target\", "
-            "ClientSubID=none } }");
+            "SessionQualifier=none, ClientSubID=none } }");
 }
 
 TEST(TradingSystemCommonSessionFmt, FormatsGeneratedToString) {
@@ -104,8 +104,8 @@ TEST_F(TradingSystemCommonLimitOrderFmt, FormatsToString) {
       "PartyID=\"party_id\", PartyIDSource=BIC }, PartyRole=ExecutingFirm } ] "
       "}, \"client_session\": { \"type\": \"Fix\", \"fix_session\": { "
       "BeginString=\"FIX.4.2\", SenderCompID=\"sender\", "
-      "TargetCompID=\"target\", ClientSubID=none } }, \"client_order_id\": "
-      "\"ClientOrderId\", \"order_parties\": [ { PartyIdentifier={ "
+      "TargetCompID=\"target\", SessionQualifier=none, ClientSubID=none } }, "
+      "\"client_order_id\": \"ClientOrderId\", \"order_parties\": [ { PartyIdentifier={ "
       "PartyID=\"PartyId\", PartyIDSource=BIC }, PartyRole=ExecutingFirm } ], "
       "\"expire_time\": 2023-Oct-01 12:00:00.123456, \"expire_date\": "
       "2023-Oct-01, \"short_sale_exemption_reason\": -1, "

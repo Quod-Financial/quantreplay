@@ -2,6 +2,7 @@
 #define SIMULATOR_PROJECT_MIDDLEWARE_IH_CHANNEL_HPP_
 
 #include <memory>
+#include <vector>
 
 #include "middleware/channels/generator_admin_channel.hpp"
 #include "middleware/channels/trading_admin_channel.hpp"
@@ -11,8 +12,9 @@
 
 namespace simulator::middleware {
 
+// 1-to-1 channel to send request and receive reply
 template <typename Receiver>
-struct Channel {
+class RequestChannel {
  public:
   static auto bind(std::shared_ptr<Receiver> receiver) noexcept -> void {
     receiver_ = std::move(receiver);
@@ -26,11 +28,33 @@ struct Channel {
   static inline std::shared_ptr<Receiver> receiver_{nullptr};
 };
 
-using GeneratorAdminChannel = Channel<GeneratorAdminRequestReceiver>;
-using TradingAdminChannel = Channel<TradingAdminRequestReceiver>;
-using TradingReplyChannel = Channel<TradingReplyReceiver>;
-using TradingRequestChannel = Channel<TradingRequestReceiver>;
-using TradingSessionEventChannel = Channel<TradingSessionEventListener>;
+// 1-to-many channel to propagate the event without receiving a reply
+template <typename Receiver>
+class EventChannel {
+ public:
+  static auto bind(std::shared_ptr<Receiver> receiver) noexcept -> void {
+    receivers_.push_back(std::move(receiver));
+  }
+
+  static auto release() noexcept -> void { receivers_.clear(); }
+
+  static auto receivers() noexcept
+      -> const std::vector<std::shared_ptr<Receiver>>& {
+    return receivers_;
+  }
+
+ private:
+  static inline std::vector<std::shared_ptr<Receiver>> receivers_;
+};
+
+using GeneratorAdminChannel = RequestChannel<GeneratorAdminRequestReceiver>;
+using TradingAdminChannel = RequestChannel<TradingAdminRequestReceiver>;
+using TradingReplyChannel = EventChannel<TradingReplyReceiver>;
+using TradingRequestChannel = RequestChannel<TradingRequestReceiver>;
+using TradingSessionConnectionEventChannel =
+    EventChannel<TradingSessionConnectionEventListener>;
+using TradingSessionTerminationEventChannel =
+    EventChannel<TradingSessionTerminationEventListener>;
 
 }  // namespace simulator::middleware
 

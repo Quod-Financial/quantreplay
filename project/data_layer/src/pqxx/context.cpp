@@ -14,7 +14,7 @@ namespace simulator::data_layer::internal_pqxx {
 namespace {
 
 void validate_connection_attribute(std::string_view name,
-                                 const std::string& value) {
+                                   const std::string& value) {
   if (value.empty()) {
     throw ConnectionPropertyMissing{name};
   }

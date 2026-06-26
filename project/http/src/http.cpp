@@ -9,9 +9,12 @@
 #include "core/version.hpp"
 #include "data_layer/api/data_access_layer.hpp"
 #include "ih/config_provider.hpp"
+#include "ih/controllers/fix_session_controller.hpp"
+#include "ih/data_bridge/fix_session_accessor.hpp"
 #include "ih/headers/x_api_version.hpp"
 #include "ih/router.hpp"
 #include "ih/server.hpp"
+#include "ih/utils/host_resolver.hpp"
 #include "log/logging.hpp"
 
 namespace database = simulator::data_layer::database;
@@ -125,6 +128,23 @@ auto Server::Implementation::launch() -> void { endpoint_->serveThreaded(); }
 
 auto Server::Implementation::terminate() -> void { endpoint_->shutdown(); }
 
+auto Server::Implementation::react_on(
+    const protocol::SessionConnectedEvent& event) -> void {
+  log::info("http server notified about trading session connection: {}", event);
+  if (fix_session_controller_) [[likely]] {
+    fix_session_controller_->handle(event);
+  }
+}
+
+auto Server::Implementation::react_on(
+    const protocol::SessionTerminatedEvent& event) -> void {
+  log::info("http server notified about trading session termination: {}",
+            event);
+  if (fix_session_controller_) [[likely]] {
+    fix_session_controller_->handle(event);
+  }
+}
+
 auto Server::Implementation::create_endpoint(std::uint16_t accept_port)
     -> std::unique_ptr<Pistache::Http::Endpoint> {
   log::debug("creating http server endpoint");
@@ -181,14 +201,21 @@ auto Server::Implementation::setup_handler(
   auto app_controller = std::make_unique<AppControllerImpl>(
       venue_accessor, config_provider->venue_id(), std::move(callbacks));
 
-  auto get_processor = std::make_shared<GetProcessorImpl>(venue_accessor,
-                                                          redirector,
-                                                          datasource_controller,
-                                                          listing_controller,
-                                                          price_seed_controller,
-                                                          setting_controller,
-                                                          venue_controller,
-                                                          config_provider);
+  fix_session_controller_ = std::make_shared<FixSessionControllerImpl>(
+      std::make_shared<data_bridge::DataLayerFixSessionAccessor>(database),
+      config_provider,
+      resolve_host_ip());
+
+  auto get_processor =
+      std::make_shared<GetProcessorImpl>(venue_accessor,
+                                         redirector,
+                                         datasource_controller,
+                                         listing_controller,
+                                         price_seed_controller,
+                                         setting_controller,
+                                         venue_controller,
+                                         config_provider,
+                                         fix_session_controller_);
   auto post_processor =
       std::make_shared<PostProcessorImpl>(redirector,
                                           datasource_controller,
@@ -236,6 +263,18 @@ auto terminate_http_server(Server& server) noexcept -> void {
   log::debug("terminating http server");
   terminate_server(server.implementation());
   log::info("http server has been terminated");
+}
+
+auto react_on(const protocol::SessionConnectedEvent& event, Server& server)
+    -> void {
+  log::debug("called procedure to react on SessionConnectedEvent");
+  server.implementation().react_on(event);
+}
+
+auto react_on(const protocol::SessionTerminatedEvent& event, Server& server)
+    -> void {
+  log::debug("called procedure to react on SessionTerminatedEvent");
+  server.implementation().react_on(event);
 }
 
 }  // namespace simulator::http

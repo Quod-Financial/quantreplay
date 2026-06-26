@@ -6,6 +6,7 @@ project(data_layer
 #------------------------------------------------------------------------------#
 
 ensure_project_dependency_exist(libpqxx::libpqxx)
+ensure_project_dependency_exist(date::date)
 ensure_project_dependency_exist(simulator::core)
 ensure_project_dependency_exist(simulator::log)
 ensure_project_dependency_exist(simulator::cfg)
@@ -29,6 +30,7 @@ add_static_library(
     ih/pqxx/common/names/enumerations.hpp
     ih/pqxx/common/enumeration_resolver.hpp
     ih/pqxx/dao/datasource_dao.hpp
+    ih/pqxx/dao/fix_session_dao.hpp
     ih/pqxx/dao/listing_dao.hpp
     ih/pqxx/dao/price_seed_dao.hpp
     ih/pqxx/dao/setting_dao.hpp
@@ -42,12 +44,14 @@ add_static_library(
     ih/pqxx/queries/detail/select_query_builder.hpp
     ih/pqxx/queries/detail/update_query_builder.hpp
     ih/pqxx/queries/datasource_queries.hpp
+    ih/pqxx/queries/fix_session_queries.hpp
     ih/pqxx/queries/listing_queries.hpp
     ih/pqxx/queries/price_seed_queries.hpp
     ih/pqxx/queries/setting_queries.hpp
     ih/pqxx/queries/venue_queries.hpp
     ih/pqxx/result/detail/basic_row_parser.hpp
     ih/pqxx/result/datasource_parser.hpp
+    ih/pqxx/result/fix_session_parser.hpp
     ih/pqxx/result/listing_parser.hpp
     ih/pqxx/result/price_seed_parser.hpp
     ih/pqxx/result/setting_parser.hpp
@@ -58,6 +62,7 @@ add_static_library(
     include/data_layer/api/exceptions/exceptions.hpp
     include/data_layer/api/inspectors/column_mapping.hpp
     include/data_layer/api/inspectors/datasource.hpp
+    include/data_layer/api/inspectors/fix_session.hpp
     include/data_layer/api/inspectors/listing.hpp
     include/data_layer/api/inspectors/market_phase.hpp
     include/data_layer/api/inspectors/price_seed.hpp
@@ -65,6 +70,7 @@ add_static_library(
     include/data_layer/api/inspectors/venue.hpp
     include/data_layer/api/models/column_mapping.hpp
     include/data_layer/api/models/datasource.hpp
+    include/data_layer/api/models/fix_session.hpp
     include/data_layer/api/models/listing.hpp
     include/data_layer/api/models/market_phase.hpp
     include/data_layer/api/models/patch_field.hpp
@@ -85,6 +91,7 @@ add_static_library(
     src/api/exceptions/exceptions.cpp
     src/api/models/column_mapping.cpp
     src/api/models/datasource.cpp
+    src/api/models/fix_session.cpp
     src/api/models/listing.cpp
     src/api/models/market_phase.cpp
     src/api/models/price_seed.cpp
@@ -97,11 +104,13 @@ add_static_library(
     src/pqxx/common/column_resolver.cpp
     src/pqxx/common/enumeration_resolver.cpp
     src/pqxx/dao/datasource_dao.cpp
+    src/pqxx/dao/fix_session_dao.cpp
     src/pqxx/dao/listing_dao.cpp
     src/pqxx/dao/price_seed_dao.cpp
     src/pqxx/dao/setting_dao.cpp
     src/pqxx/dao/venue_dao.cpp
     src/pqxx/database/connector.cpp
+    src/pqxx/result/detail/basic_row_parser.cpp
     src/pqxx/context.cpp
     src/api/data_access_layer.cpp
   PUBLIC_INCLUDE_DIRECTORIES
@@ -112,9 +121,10 @@ add_static_library(
   PUBLIC_DEPENDENCIES
     tl::expected
     simulator::cfg
-    PRIVATE_DEPENDENCIES
-    libpqxx::libpqxx
     simulator::core
+  PRIVATE_DEPENDENCIES
+    libpqxx::libpqxx
+    date::date
     simulator::log)
 
 #------------------------------------------------------------------------------#

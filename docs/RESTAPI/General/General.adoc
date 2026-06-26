@@ -250,20 +250,12 @@ _Example_
 ==== Date/Time
 All time stamps sent to or returned from Market Simulators must be expressed in UTC.
 
-Time stamps with second granularity are expressed using the format: yyyy-MM-ddTHH:mm:ss
+Time stamps are expressed using the format: YYYY-MM-DD HH:mm:SS.ssssss
 
 _Example_
 
 ----
-2015-09-08T15:32:09
-----
-
-Time stamps with milli-second granularity are expressed using the format: yyyy-MM-ddTHH:mm:ss.SSS
-
-_Example_
-
-----
-2015-09-08T15:32:09.119
+2015-09-08 15:32:09.119456
 ----
 
 [[general-randomorder]]
@@ -803,6 +795,7 @@ For instance, the file content indicated below contains the state of the venue â
                                 "BeginString": "FIXT.1.1",
                                 "SenderCompID": "SENDER",
                                 "TargetCompID": "TARGET",
+                                "SessionQualifier": null,
                                 "SenderSubID": null
                             }
                         },

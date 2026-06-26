@@ -15,6 +15,9 @@ class EventProcessor {
   auto operator=(const EventProcessor&) -> EventProcessor& = default;
   auto operator=(EventProcessor&&) noexcept -> EventProcessor& = default;
 
+  virtual auto process_session_connection(
+      const FIX::SessionID& fix_session) const -> void = 0;
+
   virtual auto process_session_disconnection(
       const FIX::SessionID& fix_session) const -> void = 0;
 };

@@ -2,6 +2,7 @@
 
 #include "api/models/column_mapping.hpp"
 #include "api/models/datasource.hpp"
+#include "api/models/fix_session.hpp"
 #include "api/models/market_phase.hpp"
 #include "api/models/price_seed.hpp"
 #include "api/models/venue.hpp"
@@ -96,6 +97,29 @@ TEST_F(DataLayerDatasourceResolver, ResolvesTableName) {
 
 TEST_F(DataLayerDatasourceResolver, ResolvesMaxDepthLevels) {
   EXPECT_EQ(resolver(Column::MaxDepthLevels), "max_depth_levels");
+}
+
+struct DataLayerFixSessionResolver : public ::testing::Test {
+  using Column = FixSession::Attribute;
+
+  const ColumnResolver resolver{};
+};
+
+TEST_F(DataLayerFixSessionResolver, ResolvesUndefined) {
+  EXPECT_THROW(resolver(data_layer::test::invalid_enum_value<Column>()),
+               ColumnNameEncodingError);
+}
+
+TEST_F(DataLayerFixSessionResolver, ResolvesVenueId) {
+  EXPECT_EQ(resolver(Column::VenueId), "venue_id");
+}
+
+TEST_F(DataLayerFixSessionResolver, ResolvesSessionId) {
+  EXPECT_EQ(resolver(Column::SessionId), "session_id");
+}
+
+TEST_F(DataLayerFixSessionResolver, ResolvesLastConnectedTime) {
+  EXPECT_EQ(resolver(Column::LastConnectedTime), "last_connected_time");
 }
 
 struct DataLayerListingResolver : public ::testing::Test {

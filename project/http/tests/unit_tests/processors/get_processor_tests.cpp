@@ -3,13 +3,13 @@
 
 #include "core/common/session_settings.hpp"
 #include "ih/endpoint.hpp"
-#include "ih/marshalling/json/session_settings.hpp"
 #include "ih/processors/get_processor.hpp"
 #include "ih/router.hpp"
 #include "middleware/channels/generator_admin_channel.hpp"
 #include "middleware/routing/generator_admin_channel.hpp"
 #include "mocks/config_provider.hpp"
 #include "mocks/delete_processor.hpp"
+#include "mocks/fix_session_controller.hpp"
 #include "mocks/generator_admin_receiver.hpp"
 #include "mocks/post_processor.hpp"
 #include "mocks/put_processor.hpp"
@@ -37,6 +37,8 @@ class HttpGetProcessor : public ::testing::Test {
     venue_accessor = std::make_shared<NiceMock<http::mock::VenueAccessor>>();
     redirector = std::make_shared<mock::RedirectionProcessor>();
     config_provider = std::make_shared<NiceMock<http::mock::ConfigProvider>>();
+    fix_session_controller =
+        std::make_shared<NiceMock<http::mock::FixSessionController>>();
 
     ON_CALL(*config_provider, venue_id).WillByDefault(ReturnRef(VenueName));
     ON_CALL(*config_provider, venue_start_time)
@@ -52,7 +54,8 @@ class HttpGetProcessor : public ::testing::Test {
                                                        nullptr,
                                                        nullptr,
                                                        nullptr,
-                                                       config_provider);
+                                                       config_provider,
+                                                       fix_session_controller);
 
     router = std::make_unique<Router>(get_processor,
                                       std::move(post_processor),
@@ -72,6 +75,8 @@ class HttpGetProcessor : public ::testing::Test {
   std::shared_ptr<NiceMock<http::mock::VenueAccessor>> venue_accessor;
   std::shared_ptr<mock::RedirectionProcessor> redirector;
   std::shared_ptr<NiceMock<http::mock::ConfigProvider>> config_provider;
+  std::shared_ptr<NiceMock<http::mock::FixSessionController>>
+      fix_session_controller;
   std::shared_ptr<GetProcessorImpl> get_processor;
   std::unique_ptr<Router> router;
 

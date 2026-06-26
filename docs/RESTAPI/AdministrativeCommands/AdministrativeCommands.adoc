@@ -17,9 +17,10 @@ _Response Properties_
 
 | id | Text | Venue short name
 | name | Text | Venue full name
-| startTime | Text | Time when the instance started
+| startTime | DateTime | Time when the instance started
 | version | Text | Version of MktSimulator
 | sessionSettings | Array | QuickFIX session settings configured for this venue instance, as parsed by the venue
+| sessions | Array | QuickFIX session details for this venue instance, as parsed by the venue
 | statusCode | Integer | HTTP code received in response to venue status request
 |===
 
@@ -30,8 +31,26 @@ _Session Settings Sub-List_
 | Path | Type | Description
 
 | section | Text | Section name (e.g. `DEFAULT` or `SESSION`)
-| id | Text | Session identifier in the format `+{BeginString}:{SenderCompID}->{TargetCompID}+` — only present for `SESSION` sections
+| id | Text | Session identifier in the format `+{BeginString}:{SenderCompID}->{TargetCompID}:{SessionQualifier}+` — only present for `SESSION` sections.
+`+:{SessionQualifier}+` is only added if SessionQualifier is configured.
 | settings | Object | Key-value pairs of settings for the section; `SESSION` sections contain only session-specific settings, excluding common `DEFAULT` settings
+
+|===
+
+_Sessions Sub-List_
+
+[1,1,1]
+|===
+| Path | Type | Description
+
+| id | Text | Session identifier in the format `+{BeginString}:{SenderCompID}->{TargetCompID}:{SessionQualifier}+`.
+`+:{SessionQualifier}+` is only added if SessionQualifier is configured.
+| host | Text | The IP address and port (same as SocketAcceptPort defined in the QuickFIX configuration).
+I.e., `"172.18.0.5:9001"`.
+| lastConnectedTime | DateTime | Time when the FIX Logon (35=A) message was received last time
+| connected | Boolean a| Indicates whether a client is currently connected to the session:
+* `true` - a client is connected to the session;
+* `false` - no client is connected to the session.
 
 |===
 
@@ -73,7 +92,7 @@ Content-Length: XXX
 {
   "id": "LSE",
   "name": "LondonStockExchange",
-  "startTime": "2026-Mar-19 16:54:48.874227",
+  "startTime": "2026-03-19 16:54:48.874227",
   "version": "unversioned.1773921825_8f0c76bf(2026-03-19 12:03:45 +0000)",
   "sessionSettings": [
     {
@@ -123,6 +142,20 @@ Content-Length: XXX
       }
     }
   ],
+  "sessions": [
+    {
+      "id": "FIXT.1.1:MktSimulator->QuodGateway",
+      "host": "172.18.0.5:9001",
+      "lastConnectedTime": "2026-06-19 11:21:45.320996",
+      "connected": true
+    },
+    {
+      "id": "FIXT.1.1:MktSimulator->QuodFeedhandler",
+      "host": "172.18.0.5:9001",
+      "lastConnectedTime": null,
+      "connected": false
+    }
+  ],
   "statusCode": 200
 }
 ----
@@ -147,7 +180,7 @@ Content-Length: XXX
 {
   "id": "LSE",
   "name": "LondonStockExchange",
-  "startTime": "2026-Mar-19 16:54:48.874227",
+  "startTime": "2026-03-19 16:54:48.874227",
   "version": "unversioned.1773921825_8f0c76bf(2026-03-19 12:03:45 +0000)",
   "sessionSettings": [
     {
@@ -195,6 +228,20 @@ Content-Length: XXX
         "TARGETCOMPID": "QuodGateway",
         "TIMESTAMPPRECISION": "5"
       }
+    }
+  ],
+  "sessions": [
+    {
+      "id": "FIXT.1.1:MktSimulator->QuodGateway",
+      "host": "172.18.0.5:9001",
+      "lastConnectedTime": "2026-06-19 11:21:45.320996",
+      "connected": true
+    },
+    {
+      "id": "FIXT.1.1:MktSimulator->QuodFeedhandler",
+      "host": "172.18.0.5:9001",
+      "lastConnectedTime": null,
+      "connected": false
     }
   ],
   "statusCode": 200
@@ -233,7 +280,7 @@ Content-Length: XXX
     {
       "id": "LSE",
       "name": "LondonStockExchange",
-      "startTime": "2026-Mar-19 16:54:48.874227",
+      "startTime": "2026-03-19 16:54:48.874227",
       "version": "unversioned.1773921825_8f0c76bf(2026-03-19 12:03:45 +0000)",
       "sessionSettings": [
         {
@@ -283,12 +330,26 @@ Content-Length: XXX
           }
         }
       ],
+      "sessions": [
+        {
+          "id": "FIXT.1.1:MktSimulator->QuodGateway",
+          "host": "172.18.0.5:9001",
+          "lastConnectedTime": "2026-06-19 11:21:45.320996",
+          "connected": true
+        },
+        {
+          "id": "FIXT.1.1:MktSimulator->QuodFeedhandler",
+          "host": "172.18.0.5:9001",
+          "lastConnectedTime": null,
+          "connected": false
+        }
+      ],
       "statusCode": 200
     },
     {
       "id": "XETRA",
       "name": "XETRA",
-      "startTime": "2026-Mar-19 15:01:58.096831",
+      "startTime": "2026-03-19 15:01:58.096831",
       "version": "unversioned.1773921825_8f0c76bf(2026-03-19 12:03:45 +0000)",
       "sessionSettings": [
         {
@@ -336,6 +397,20 @@ Content-Length: XXX
             "TARGETCOMPID": "QuodGateway",
             "TIMESTAMPPRECISION": "5"
           }
+        }
+      ],
+      "sessions": [
+        {
+          "id": "FIXT.1.1:MktSimulator->QuodGateway",
+          "host": "172.18.0.6:9051",
+          "lastConnectedTime": "2026-06-19 11:22:55.159867",
+          "connected": true
+        },
+        {
+          "id": "FIXT.1.1:MktSimulator->QuodFeedhandler",
+          "host": "172.18.0.6:9051",
+          "lastConnectedTime": null,
+          "connected": false
         }
       ],
       "statusCode": 200

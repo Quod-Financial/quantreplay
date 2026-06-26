@@ -66,6 +66,26 @@ TEST_F(TradingSystemJsonSession, ReadsFixSessionWithClientSubIdFromJson) {
             protocol::fix::ClientSubId{"client"});
 }
 
+TEST_F(TradingSystemJsonSession, ReadsFixSessionWithSessionQualifierFromJson) {
+  rapidjson::Value session_json_value{rapidjson::Type::kObjectType};
+  session_json_value.AddMember("BeginString", "begin", doc.GetAllocator());
+  session_json_value.AddMember("SenderCompID", "sender", doc.GetAllocator());
+  session_json_value.AddMember("TargetCompID", "target", doc.GetAllocator());
+  session_json_value.AddMember(
+      "SessionQualifier", "qualifier", doc.GetAllocator());
+
+  value.SetObject();
+  value.AddMember("Type", "Fix", doc.GetAllocator());
+  value.AddMember("FixSession", session_json_value.Move(), doc.GetAllocator());
+
+  market_state::Session session;
+  ASSERT_TRUE(read(value, session).has_value());
+
+  ASSERT_NE(session.fix_session, std::nullopt);
+  ASSERT_EQ(session.fix_session->session_qualifier,
+            protocol::fix::SessionQualifier{"qualifier"});
+}
+
 TEST_F(TradingSystemJsonSession, ReadsGeneratorSessionFromJson) {
   value.SetObject();
   value.AddMember("Type", "Generator", doc.GetAllocator());
@@ -114,6 +134,7 @@ TEST_F(TradingSystemJsonSession, WritesFixSessionWithoutClientSubIdToJson) {
   ASSERT_THAT(fix_session_value, HasString("BeginString", "begin"));
   ASSERT_THAT(fix_session_value, HasString("SenderCompID", "sender"));
   ASSERT_THAT(fix_session_value, HasString("TargetCompID", "target"));
+  ASSERT_THAT(fix_session_value, HasNull("SessionQualifier"));
   ASSERT_THAT(fix_session_value, HasNull("SenderSubID"));
 }
 
@@ -137,6 +158,22 @@ TEST_F(TradingSystemJsonSession, WritesFixSessionWithClientSubIdToJson) {
   ASSERT_THAT(fix_session_value, HasString("SenderCompID", "sender"));
   ASSERT_THAT(fix_session_value, HasString("TargetCompID", "target"));
   ASSERT_THAT(fix_session_value, HasString("SenderSubID", "client"));
+}
+
+TEST_F(TradingSystemJsonSession, WritesFixSessionWithSessionQualifierToJson) {
+  using namespace simulator::trading_system::test;
+
+  protocol::fix::Session fix_session{protocol::fix::BeginString{"begin"},
+                                     protocol::fix::SenderCompId{"sender"},
+                                     protocol::fix::TargetCompId{"target"}};
+  fix_session.session_qualifier = protocol::fix::SessionQualifier{"qualifier"};
+  const market_state::Session session{market_state::SessionType::Fix,
+                                      fix_session};
+
+  ASSERT_TRUE(write(value, doc.GetAllocator(), session).has_value());
+
+  ASSERT_TRUE(value["FixSession"].IsObject());
+  ASSERT_THAT(value["FixSession"], HasString("SessionQualifier", "qualifier"));
 }
 
 TEST_F(TradingSystemJsonSession, WritesGeneratorSessionToJson) {

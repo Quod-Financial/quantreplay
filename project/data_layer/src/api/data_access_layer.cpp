@@ -69,6 +69,59 @@ auto update_one_datasource(const database::Context& context,
   return Datasource{std::move(command.result())};
 }
 
+auto insert_fix_session(const database::Context& context,
+                        FixSession::Patch initial_patch) -> FixSession {
+  using Command = data_layer::command::Insert<FixSession>;
+  auto command = Command::create(std::move(initial_patch));
+  FixSessionCommandHandler<Command>::handle(command, context);
+
+  return FixSession{std::move(command.result())};
+}
+
+auto select_one_fix_session(const database::Context& context,
+                            FixSession::Predicate predicate) -> FixSession {
+  using Command = data_layer::command::SelectOne<FixSession>;
+  auto command = Command::create(std::move(predicate));
+  FixSessionCommandHandler<Command>::handle(command, context);
+
+  return FixSession{std::move(command.result())};
+}
+
+auto select_all_fix_sessions(const database::Context& context,
+                             std::optional<FixSession::Predicate> predicate)
+    -> std::vector<FixSession> {
+  using Command = data_layer::command::SelectAll<FixSession>;
+  auto command = Command::create(std::move(predicate));
+  FixSessionCommandHandler<Command>::handle(command, context);
+
+  return std::vector<FixSession>{std::move(command.result())};
+}
+
+auto update_one_fix_session(const database::Context& context,
+                            FixSession::Patch update,
+                            FixSession::Predicate predicate) -> FixSession {
+  using Command = data_layer::command::UpdateOne<FixSession>;
+  auto command = Command::create(std::move(update), std::move(predicate));
+  FixSessionCommandHandler<Command>::handle(command, context);
+
+  return FixSession{std::move(command.result())};
+}
+
+auto delete_one_fix_session(const database::Context& context,
+                            FixSession::Predicate predicate) -> void {
+  using Command = data_layer::command::DeleteOne<FixSession>;
+  auto command = Command::create(std::move(predicate));
+  FixSessionCommandHandler<Command>::handle(command, context);
+}
+
+auto delete_all_fix_session(const database::Context& context,
+                            std::optional<FixSession::Predicate> predicate)
+    -> void {
+  using Command = data_layer::command::DeleteAll<FixSession>;
+  auto command = Command::create(std::move(predicate));
+  FixSessionCommandHandler<Command>::handle(command, context);
+}
+
 auto insert_listing(const database::Context& context,
                     Listing::Patch initial_patch) -> Listing {
   using Command = data_layer::command::Insert<Listing>;

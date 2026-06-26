@@ -20,6 +20,7 @@
 #include "protocol/app/order_placement_request.hpp"
 #include "protocol/app/security_status.hpp"
 #include "protocol/app/security_status_request.hpp"
+#include "protocol/app/session_connected_event.hpp"
 #include "protocol/app/session_terminated_event.hpp"
 
 namespace simulator::protocol {
@@ -81,6 +82,9 @@ SecurityStatus::SecurityStatus(Session protocol_session) noexcept
 
 SecurityStatusRequest::SecurityStatusRequest(Session protocol_session) noexcept
     : session(std::move(protocol_session)) {}
+
+SessionConnectedEvent::SessionConnectedEvent(Session connected_session) noexcept
+    : session{std::move(connected_session)} {}
 
 SessionTerminatedEvent::SessionTerminatedEvent(
     Session terminated_session) noexcept
@@ -589,6 +593,13 @@ auto fmt::formatter<simulator::protocol::OrderPlacementRequest>::format(
                    message.instrument,
                    name_of(message.parties),
                    format_collection(message.parties));
+}
+
+auto fmt::formatter<simulator::protocol::SessionConnectedEvent>::format(
+    const formattable& event, format_context& context) const
+    -> decltype(context.out()) {
+  return format_to(
+      context.out(), "SessionConnectedEvent={{ {} }}", event.session);
 }
 
 auto fmt::formatter<simulator::protocol::SessionTerminatedEvent>::format(

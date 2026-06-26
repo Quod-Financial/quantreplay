@@ -3,10 +3,16 @@
 
 #include <pistache/endpoint.h>
 
+#include <memory>
+
 #include "data_layer/api/database/context.hpp"
 #include "http/http.hpp"
+#include "protocol/app/session_connected_event.hpp"
+#include "protocol/app/session_terminated_event.hpp"
 
 namespace simulator::http {
+
+class FixSessionController;
 
 struct Server::Implementation {
  public:
@@ -19,6 +25,10 @@ struct Server::Implementation {
 
   auto terminate() -> void;
 
+  auto react_on(const protocol::SessionConnectedEvent& event) -> void;
+
+  auto react_on(const protocol::SessionTerminatedEvent& event) -> void;
+
  private:
   static auto create_endpoint(std::uint16_t accept_port)
       -> std::unique_ptr<Pistache::Http::Endpoint>;
@@ -30,6 +40,7 @@ struct Server::Implementation {
       const std::vector<core::FixSessionSettings>& session_settings) -> void;
 
   std::unique_ptr<Pistache::Http::Endpoint> endpoint_;
+  std::shared_ptr<FixSessionController> fix_session_controller_;
 };
 
 }  // namespace simulator::http

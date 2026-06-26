@@ -8,6 +8,7 @@ namespace table {
 
 constexpr std::string_view ColumnMapping{"column_mapping"};
 constexpr std::string_view Datasource{"data_source"};
+constexpr std::string_view FixSession{"fix_session"};
 constexpr std::string_view Listing{"listing"};
 constexpr std::string_view MarketPhase{"market_phase"};
 constexpr std::string_view PriceSeed{"price_seed"};
@@ -41,6 +42,14 @@ constexpr std::string_view TableName{"table_name"};
 constexpr std::string_view MaxDepthLevels{"max_depth_levels"};
 
 }  // namespace datasource_column
+
+namespace fix_session_column {
+
+constexpr std::string_view VenueId{"venue_id"};
+constexpr std::string_view SessionId{"session_id"};
+constexpr std::string_view LastConnectedTime{"last_connected_time"};
+
+}  // namespace fix_session_column
 
 namespace listing_column {
 
