@@ -45,8 +45,7 @@ auto to_fix_session_settings(const FIX::SessionSettings& session_settings)
   default_session.heading = fix_default_session.getName();
   for (auto it = fix_default_session.begin(); it != fix_default_session.end();
        ++it) {
-    default_session.settings.emplace_back(
-        core::FixSetting{it->first, it->second});
+    default_session.settings.emplace(it->first, it->second);
   }
   result.emplace_back(std::move(default_session));
 
@@ -63,7 +62,7 @@ auto to_fix_session_settings(const FIX::SessionSettings& session_settings)
     for (auto it = fix_session.begin(); it != fix_session.end(); ++it) {
       if (!fix_default_session.has(it->first) ||
           fix_default_session.getString(it->first) != it->second) {
-        session.settings.emplace_back(core::FixSetting{it->first, it->second});
+        session.settings.emplace(it->first, it->second);
       }
     }
     result.emplace_back(std::move(session));

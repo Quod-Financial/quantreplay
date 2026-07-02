@@ -1,16 +1,24 @@
 #include "ih/processors/get_processor.hpp"
 
 #include <fmt/format.h>
+#include <httplib.h>
 #include <pistache/http_defs.h>
 #include <pistache/router.h>
 
 #include <cassert>
+#include <filesystem>
+#include <memory>
 #include <optional>
 #include <regex>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "ih/endpoint.hpp"
+#include "ih/headers/content_disposition_attachment.hpp"
 #include "ih/marshalling/json/venue.hpp"
+#include "ih/utils/compression.hpp"
+#include "ih/utils/path.hpp"
 #include "ih/utils/response_formatters.hpp"
 #include "log/logging.hpp"
 #include "middleware/routing/generator_admin_channel.hpp"
@@ -55,6 +63,59 @@ auto GetProcessorImpl::get_venues(const Pistache::Rest::Request& request,
 
   auto [code, body] = venue_controller_->select_all_venues();
   respond(request, response, code, body);
+}
+
+auto GetProcessorImpl::get_data_dictionaries(
+    const Pistache::Rest::Request& request,
+    Pistache::Http::ResponseWriter response) -> void {
+  const auto venue_id = httplib::detail::decode_url(
+      request.param(":venueId").as<std::string>(), false);
+  const auto session_id = httplib::detail::decode_url(
+      request.param(":sessionId").as<std::string>(), false);
+  log::info("requested data dictionaries for venue '{}' session '{}'",
+            venue_id,
+            session_id);
+
+  if (venue_id != config_provider_->venue_id()) {
+    const auto redirect_response = redirect(request, venue_id);
+    relay_data_dictionaries(response, redirect_response, venue_id, session_id);
+    return;
+  }
+
+  const auto dictionaries = collect_session_dictionaries(
+      config_provider_->session_settings(), session_id);
+  if (!dictionaries.has_value()) {
+    respond(request,
+            response,
+            Pistache::Http::Code::Not_Found,
+            format_result_response(
+                "Can not resolve a single session by a given session ID"));
+    return;
+  }
+
+  try {
+    const auto archive =
+        compress_files_to_zip(build_zip_entries(dictionaries.value()));
+
+    response.headers().add(std::make_shared<ContentDispositionAttachment>(
+        make_dictionaries_filename(venue_id, session_id)));
+    response.send(
+        Pistache::Http::Code::Ok,
+        archive,
+        Pistache::Http::Mime::MediaType::fromString("application/zip"));
+  } catch (const std::exception& exception) {
+    log::err(
+        "failed to build data dictionaries archive for venue '{}' session "
+        "'{}': {}",
+        venue_id,
+        session_id,
+        exception.what());
+    respond(
+        request,
+        response,
+        Pistache::Http::Code::Internal_Server_Error,
+        format_result_response("Failed to build data dictionaries archive"));
+  }
 }
 
 auto GetProcessorImpl::get_listing(const Pistache::Rest::Request& request,
@@ -280,6 +341,26 @@ auto GetProcessorImpl::respond(const Pistache::Rest::Request& request,
              static_cast<int>(code));
 
   response.send(code, body);
+}
+
+auto GetProcessorImpl::relay_data_dictionaries(
+    Pistache::Http::ResponseWriter& response,
+    const redirect::Result& result,
+    const std::string& venue_id,
+    const std::string& session_id) -> void {
+  const auto code = result.http_code();
+
+  if (code != Pistache::Http::Code::Ok) {
+    response.send(code, result.body_content());
+    return;
+  }
+
+  // redirection does not transfer HTTP headers
+  response.headers().add(std::make_shared<ContentDispositionAttachment>(
+      make_dictionaries_filename(venue_id, session_id)));
+  response.send(code,
+                result.body_content(),
+                Pistache::Http::Mime::MediaType::fromString("application/zip"));
 }
 
 auto GetProcessorImpl::redirect(const Pistache::Rest::Request& request,

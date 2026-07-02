@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <memory>
+#include <vector>
 
 #include "core/common/session_settings.hpp"
 #include "data_layer/api/database/context.hpp"

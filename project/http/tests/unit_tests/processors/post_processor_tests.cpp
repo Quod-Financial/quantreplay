@@ -13,6 +13,7 @@
 #include "mocks/delete_processor.hpp"
 #include "mocks/generator_admin_receiver.hpp"
 #include "mocks/get_processor.hpp"
+#include "mocks/head_processor.hpp"
 #include "mocks/put_processor.hpp"
 #include "mocks/redirection_processor.hpp"
 #include "mocks/trading_controller.hpp"
@@ -52,6 +53,7 @@ class HttpPostProcessor : public ::testing::Test {
                                                          VenueName);
 
     router = std::make_unique<Router>(std::move(get_processor),
+                                      std::make_shared<mock::HeadProcessor>(),
                                       post_processor,
                                       std::move(put_processor),
                                       std::move(delete_processor));
@@ -245,8 +247,7 @@ TEST_F(HttpPostProcessorStartOrderGenSeed, ParsesSeedFromBodyForCurrentVenue) {
       .Times(1)
       .WillOnce(SaveArg<0>(&captured));
 
-  send_start_request(endpoint::GenStart + "/" + VenueName,
-                     R"({"seed":"123"})");
+  send_start_request(endpoint::GenStart + "/" + VenueName, R"({"seed":"123"})");
 
   EXPECT_THAT(captured.seed, Optional(Eq(std::string{"123"})));
 }
@@ -307,8 +308,7 @@ TEST_F(HttpPostProcessorStartOrderGenSeed, SeedIsEmptyWhenSeedIsJsonNull) {
       .Times(1)
       .WillOnce(SaveArg<0>(&captured));
 
-  send_start_request(endpoint::GenStart + "/" + VenueName,
-                     R"({"seed":null})");
+  send_start_request(endpoint::GenStart + "/" + VenueName, R"({"seed":null})");
 
   EXPECT_EQ(captured.seed, std::nullopt);
 }

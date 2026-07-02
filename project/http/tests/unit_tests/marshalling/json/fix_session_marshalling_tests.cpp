@@ -41,7 +41,7 @@ TEST_F(SessionSettingsMarshaller, MarshallsDefaultSection) {
   const std::vector<core::FixSessionSettings> input{
       {.heading = "DEFAULT",
        .id = std::nullopt,
-       .settings = {{.key = "CONNECTIONTYPE", .value = "acceptor"}}}};
+       .settings = {{"CONNECTIONTYPE", "acceptor"}}}};
 
   // clang-format off
   constexpr std::string_view expected_json{R"({"sessionSettings":)"
@@ -60,7 +60,7 @@ TEST_F(SessionSettingsMarshaller, MarshallsSessionWithId) {
   const std::vector<core::FixSessionSettings> input{
       {.heading = "SESSION",
        .id = "FIXT.1.1:Sim->Client",
-       .settings = {{.key = "CONNECTIONTYPE", .value = "acceptor"}}}};
+       .settings = {{"CONNECTIONTYPE", "acceptor"}}}};
 
   // clang-format off
   constexpr std::string_view expected_json{R"({"sessionSettings":)"
@@ -80,7 +80,7 @@ TEST_F(SessionSettingsMarshaller, MarshallsSessionWithoutIdOmitsIdField) {
   const std::vector<core::FixSessionSettings> input{
       {.heading = "SESSION",
        .id = std::nullopt,
-       .settings = {{.key = "CONNECTIONTYPE", .value = "acceptor"}}}};
+       .settings = {{"CONNECTIONTYPE", "acceptor"}}}};
 
   // clang-format off
   constexpr std::string_view expected_json{R"({"sessionSettings":)"
@@ -116,10 +116,10 @@ TEST_F(SessionSettingsMarshaller, MarshallsMultipleSections) {
   const std::vector<core::FixSessionSettings> input{
       {.heading = "DEFAULT",
        .id = std::nullopt,
-       .settings = {{.key = "CONNECTIONTYPE", .value = "acceptor"}}},
+       .settings = {{"CONNECTIONTYPE", "acceptor"}}},
       {.heading = "SESSION",
        .id = "FIXT.1.1:Sim->Client",
-       .settings = {{.key = "BEGINSTRING", .value = "FIXT.1.1"}}}};
+       .settings = {{"BEGINSTRING", "FIXT.1.1"}}}};
 
   // clang-format off
   constexpr std::string_view expected_json{R"({"sessionSettings":)"
@@ -143,8 +143,8 @@ TEST_F(SessionSettingsMarshaller, MarshallsMultipleSettingsInSection) {
   const std::vector<core::FixSessionSettings> input{
       {.heading = "DEFAULT",
        .id = std::nullopt,
-       .settings = {{.key = "CONNECTIONTYPE", .value = "acceptor"},
-                    {.key = "SOCKETACCEPTPORT", .value = "5001"}}}};
+       .settings = {{"CONNECTIONTYPE", "acceptor"},
+                    {"SOCKETACCEPTPORT", "5001"}}}};
 
   // clang-format off
   constexpr std::string_view expected_json{R"({"sessionSettings":)"

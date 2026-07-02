@@ -42,6 +42,14 @@ class HttpRequestRedirector : public testing::Test {
                         std::nullopt);
   }
 
+  static auto make_head_request(Destination destination, std::string endpoint)
+      -> Request {
+    return make_request(std::move(destination),
+                        Pistache::Http::Method::Head,
+                        std::move(endpoint),
+                        std::nullopt);
+  }
+
   static auto make_post_request(Destination destination,
                                 std::string endpoint,
                                 std::optional<std::string> body = std::nullopt)
@@ -123,7 +131,8 @@ TEST_F(HttpRequestRedirector,
   EXPECT_FALSE(response.has_value());
 }
 
-TEST_F(HttpRequestRedirector, RedirectsSuccessfullyIfEndpointDoesNotSupportMethod) {
+TEST_F(HttpRequestRedirector,
+       RedirectsSuccessfullyIfEndpointDoesNotSupportMethod) {
   const auto request =
       make_get_request(make_destination(server_port()), "/test/post/request");
 
@@ -139,6 +148,19 @@ TEST_F(HttpRequestRedirector, RedirectsMethodGet) {
 
   const auto request =
       make_get_request(make_destination(server_port()), "/test/get/request");
+
+  auto [response, status] = redirect(request);
+  ASSERT_EQ(status, RedirectStatus::Success);
+
+  ASSERT_TRUE(response.has_value());
+  ASSERT_EQ(response->http_code(), Pistache::Http::Code::Ok);
+}
+
+TEST_F(HttpRequestRedirector, RedirectsMethodHead) {
+  server_responder().set_response_data(Pistache::Http::Code::Ok);
+
+  const auto request =
+      make_head_request(make_destination(server_port()), "/test/head/request");
 
   auto [response, status] = redirect(request);
   ASSERT_EQ(status, RedirectStatus::Success);

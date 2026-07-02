@@ -28,6 +28,7 @@ function(run_conan)
       gtest/1.13.0
       benchmark/1.8.3
       libpqxx/7.7.5
+      libzip/1.11.1
       pistache/0.0.5
       quickfix/1.15.1
       rapidjson/cci.20230929
@@ -57,6 +58,7 @@ function(run_conan)
   find_package(fmt REQUIRED)
   find_package(httplib REQUIRED)
   find_package(libpqxx REQUIRED)
+  find_package(libzip REQUIRED)
   find_package(quickfix REQUIRED)
   find_package(spdlog REQUIRED)
   find_package(tinyxml2 REQUIRED)

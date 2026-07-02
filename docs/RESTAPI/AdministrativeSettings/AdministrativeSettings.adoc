@@ -366,6 +366,94 @@ Content-Length: XXX
 ----
 
 
+[[adminsets-venues-data-dictionaries]]
+==== Download Session Data Dictionaries
+Download a ZIP archive of all QuickFIX data dictionary files associated with a single
+configured session of a venue.
+
+The `sessionId` - session identifier in the format: `+{BeginString}:{SenderCompID}->{TargetCompID}:{SessionQualifier}+`.
+`+:{SessionQualifier}+` is only added if SessionQualifier is configured.
+
+The archive gathers a unique list of every data dictionary referenced by the
+session, taken from the following settings:
+
+* `DataDictionary`
+* `TransportDataDictionary`
+* `AppDataDictionary` (including granular `AppDataDictionary.<BeginString>` overrides)
+
+These settings are resolved from both the session and the `DEFAULT` sections of
+the QuickFIX configuration. Files are stored under a directory structure rooted
+at the common base of all referenced paths.
+
+A `HEAD` request to the same resource applies the same resolution logic but
+returns no body — only the status code — so a client can determine whether any
+files are available before initiating the download.
+
+_Resource URI_
+
+----
+GET  /api/venues/{venueId}/sessions/{sessionId}/dataDictionaries
+----
+
+_Example_: Request the data dictionaries of session `+FIX.4.4:MDSERVER->MDCLIENT+` on venue `LSE`
+
+[,http]
+----
+GET /api/venues/LSE/sessions/FIX.4.4%3AMDSERVER-%3EMDCLIENT/dataDictionaries HTTP/1.1
+Host: localhost
+----
+
+_Example_: Positive reply
+
+[,http]
+----
+HTTP/1.1 200 OK
+Content-Type: application/zip
+Content-Disposition: attachment; filename="LSE_FIX44-MDSERVER--MDCLIENT_Dictionaries.zip"
+Content-Length: XXX
+
+<binary ZIP archive>
+----
+
+_Example_: The session cannot be resolved on the venue
+
+[,http]
+----
+HTTP/1.1 404 Not Found
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "Can not resolve a single session by a given session ID"
+}
+----
+
+_Example_: The destination venue cannot be resolved
+
+[,http]
+----
+HTTP/1.1 502 Bad Gateway
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "Could not resolve destination instance with LSE identifier"
+}
+----
+
+_Example_: The destination venue is known but not running
+
+[,http]
+----
+HTTP/1.1 502 Bad Gateway
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "Could not access an instance with LSE identifier"
+}
+----
+
 [[adminsets-venues-add]]
 ==== Add Venue
 Add new market simulator venue entity.

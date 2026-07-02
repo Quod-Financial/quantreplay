@@ -118,12 +118,12 @@ TEST_F(FormatCurrentVenueStatus,
   const std::vector<core::FixSessionSettings> session_settings{
       {.heading = "DEFAULT",
        .id = std::nullopt,
-       .settings = {{.key = "CONNECTIONTYPE", .value = "acceptor"}}},
+       .settings = {{"CONNECTIONTYPE", "acceptor"}}},
       {.heading = "SESSION",
        .id = "FIXT.1.1:MktSimulator->QuodGateway",
-       .settings = {{.key = "BEGINSTRING", .value = "FIXT.1.1"},
-                    {.key = "SENDERCOMPID", .value = "MktSimulator"},
-                    {.key = "TARGETCOMPID", .value = "QuodGateway"}}}};
+       .settings = {{"BEGINSTRING", "FIXT.1.1"},
+                    {"SENDERCOMPID", "MktSimulator"},
+                    {"TARGETCOMPID", "QuodGateway"}}}};
 
   ON_CALL(config_provider, session_settings)
       .WillByDefault(ReturnRef(session_settings));

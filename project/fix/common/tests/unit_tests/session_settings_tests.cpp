@@ -15,14 +15,6 @@ namespace {
 
 using namespace testing;
 
-MATCHER_P2(IsFixSetting,
-           key,
-           value,
-           "is FixSetting with key=" + std::string(key) +
-               " value=" + std::string(value)) {
-  return arg.key == key && arg.value == value;
-}
-
 struct FixSettings : public Test {
   std::filesystem::path config_path = get_test_file_path();
 
@@ -169,7 +161,7 @@ TEST_F(ToCoreFixSessionSettingsConverter, ParsesDefaultSettings) {
 
   ASSERT_THAT(result, SizeIs(2));
   EXPECT_THAT(result[0].settings,
-              UnorderedElementsAre(IsFixSetting("CONNECTIONTYPE", "acceptor")));
+              UnorderedElementsAre(Pair("CONNECTIONTYPE", "acceptor")));
 }
 
 TEST_F(ToCoreFixSessionSettingsConverter, SetsSessionHeadingForSessionSetting) {
@@ -212,11 +204,10 @@ TEST_F(ToCoreFixSessionSettingsConverter, ParsesSessionSettings) {
       "TargetCompID=QuodGateway");
 
   ASSERT_THAT(result, SizeIs(2));
-  EXPECT_THAT(
-      result[1].settings,
-      UnorderedElementsAre(IsFixSetting("BEGINSTRING", "FIXT.1.1"),
-                           IsFixSetting("SENDERCOMPID", "MktSimulator"),
-                           IsFixSetting("TARGETCOMPID", "QuodGateway")));
+  EXPECT_THAT(result[1].settings,
+              UnorderedElementsAre(Pair("BEGINSTRING", "FIXT.1.1"),
+                                   Pair("SENDERCOMPID", "MktSimulator"),
+                                   Pair("TARGETCOMPID", "QuodGateway")));
 }
 
 TEST_F(ToCoreFixSessionSettingsConverter,
@@ -231,9 +222,7 @@ TEST_F(ToCoreFixSessionSettingsConverter,
       "TargetCompID=QuodGateway");
 
   ASSERT_THAT(result, SizeIs(2));
-  EXPECT_THAT(
-      result[1].settings,
-      Not(Contains(Field(&core::FixSetting::key, Eq("CONNECTIONTYPE")))));
+  EXPECT_THAT(result[1].settings, Not(Contains(Key("CONNECTIONTYPE"))));
 }
 
 TEST_F(ToCoreFixSessionSettingsConverter,
@@ -250,7 +239,7 @@ TEST_F(ToCoreFixSessionSettingsConverter,
 
   ASSERT_THAT(result, SizeIs(2));
   EXPECT_THAT(result[1].settings,
-              Contains(IsFixSetting("CONNECTIONTYPE", "initiator")));
+              Contains(Pair("CONNECTIONTYPE", "initiator")));
 }
 
 }  // namespace

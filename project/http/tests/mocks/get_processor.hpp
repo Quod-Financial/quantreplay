@@ -22,6 +22,12 @@ class GetProcessor : public http::GetProcessor {
               (override));
 
   MOCK_METHOD(void,
+              get_data_dictionaries,
+              (const Pistache::Rest::Request& request,
+               Pistache::Http::ResponseWriter response),
+              (override));
+
+  MOCK_METHOD(void,
               get_listing,
               (const Pistache::Rest::Request& request,
                Pistache::Http::ResponseWriter response),

@@ -48,10 +48,9 @@ auto resolve_session_id(const protocol::Session& session)
 [[nodiscard]]
 auto find_accept_port(const core::FixSessionSettings& settings)
     -> std::optional<std::string> {
-  for (const auto& [key, value] : settings.settings) {
-    if (key == SocketAcceptPortKey) {
-      return value;
-    }
+  if (const auto it = settings.settings.find(std::string{SocketAcceptPortKey});
+      it != settings.settings.end()) {
+    return it->second;
   }
   return std::nullopt;
 }

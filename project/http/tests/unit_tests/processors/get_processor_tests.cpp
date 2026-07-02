@@ -1,3 +1,4 @@
+#include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -11,6 +12,7 @@
 #include "mocks/delete_processor.hpp"
 #include "mocks/fix_session_controller.hpp"
 #include "mocks/generator_admin_receiver.hpp"
+#include "mocks/head_processor.hpp"
 #include "mocks/post_processor.hpp"
 #include "mocks/put_processor.hpp"
 #include "mocks/redirection_processor.hpp"
@@ -58,6 +60,7 @@ class HttpGetProcessor : public ::testing::Test {
                                                        fix_session_controller);
 
     router = std::make_unique<Router>(get_processor,
+                                      std::make_shared<mock::HeadProcessor>(),
                                       std::move(post_processor),
                                       std::move(put_processor),
                                       std::move(delete_processor));
@@ -236,6 +239,72 @@ TEST_F(HttpGetProcessorGetOrderGenStatus, RedirectsWhenVenueIsDifferent) {
 
   const auto request = util::make_request(
       MethodName, endpoint::GenStatus + "/" + OtherVenueName);
+  auto response_writer = util::make_response_writer(*router);
+  router->onRequest(request, std::move(response_writer.writer));
+}
+
+class HttpGetProcessorGetDataDictionaries : public HttpGetProcessor {
+ protected:
+  static auto make_data_dictionaries_path(std::string_view venue,
+                                          std::string_view session)
+      -> std::string {
+    return fmt::format(
+        "{}/{}/sessions/{}/dataDictionaries", endpoint::Venues, venue, session);
+  }
+
+  static constexpr std::string SessionId{"session_1"};
+
+  std::vector<core::FixSessionSettings> sessions_with_match{
+      core::FixSessionSettings{
+          .heading = "SESSION",
+          .id = SessionId,
+          .settings = {{"DATADICTIONARY", "nonexistent_dictionary.xml"}}}};
+};
+
+TEST_F(HttpGetProcessorGetDataDictionaries,
+       RedirectsRequestIfVenueIsNotCurrent) {
+  EXPECT_CALL(*redirector, redirect_to_venue(Eq(OtherVenueName), _, _, _))
+      .Times(1)
+      .WillOnce(Return(redirect::Result(Pistache::Http::Code::Ok)));
+
+  const auto request = util::make_request(
+      MethodName, make_data_dictionaries_path(OtherVenueName, SessionId));
+  auto response_writer = util::make_response_writer(*router);
+  router->onRequest(request, std::move(response_writer.writer));
+}
+
+TEST_F(HttpGetProcessorGetDataDictionaries,
+       DoesNotRedirectRequestIfVenueIsCurrent) {
+  EXPECT_CALL(*config_provider, session_settings)
+      .WillRepeatedly(ReturnRef(session_settings));
+  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
+
+  const auto request = util::make_request(
+      MethodName, make_data_dictionaries_path(VenueName, SessionId));
+  auto response_writer = util::make_response_writer(*router);
+  router->onRequest(request, std::move(response_writer.writer));
+}
+
+TEST_F(HttpGetProcessorGetDataDictionaries,
+       DecodesUrlEncodedVenueIdBeforeRedirect) {
+  EXPECT_CALL(*redirector, redirect_to_venue(Eq(OtherVenueName), _, _, _))
+      .Times(1)
+      .WillOnce(Return(redirect::Result(Pistache::Http::Code::Ok)));
+
+  const auto request = util::make_request(
+      MethodName, make_data_dictionaries_path("other%5Fvenue", SessionId));
+  auto response_writer = util::make_response_writer(*router);
+  router->onRequest(request, std::move(response_writer.writer));
+}
+
+TEST_F(HttpGetProcessorGetDataDictionaries,
+       HandlesResolvableSessionForCurrentVenueWithoutPropagatingErrors) {
+  EXPECT_CALL(*config_provider, session_settings)
+      .WillRepeatedly(ReturnRef(sessions_with_match));
+  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
+
+  const auto request = util::make_request(
+      MethodName, make_data_dictionaries_path(VenueName, SessionId));
   auto response_writer = util::make_response_writer(*router);
   router->onRequest(request, std::move(response_writer.writer));
 }

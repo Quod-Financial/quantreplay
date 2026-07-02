@@ -216,6 +216,9 @@ auto Server::Implementation::setup_handler(
                                          venue_controller,
                                          config_provider,
                                          fix_session_controller_);
+  auto head_processor =
+      std::make_shared<HeadProcessorImpl>(redirector, config_provider);
+
   auto post_processor =
       std::make_shared<PostProcessorImpl>(redirector,
                                           datasource_controller,
@@ -237,6 +240,7 @@ auto Server::Implementation::setup_handler(
       std::make_shared<DeleteProcessorImpl>(price_seed_controller);
 
   endpoint_->setHandler(std::make_shared<Router>(std::move(get_processor),
+                                                 std::move(head_processor),
                                                  std::move(post_processor),
                                                  std::move(put_processor),
                                                  std::move(delete_processor)));

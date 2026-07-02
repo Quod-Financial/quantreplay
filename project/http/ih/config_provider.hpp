@@ -1,7 +1,12 @@
 #ifndef SIMULATOR_HTTP_IH_CONFIG_PROVIDER_HPP_
 #define SIMULATOR_HTTP_IH_CONFIG_PROVIDER_HPP_
 
+#include <filesystem>
+#include <optional>
 #include <string>
+#include <string_view>
+#include <unordered_set>
+#include <vector>
 
 #include "core/common/session_settings.hpp"
 #include "core/tools/time.hpp"
@@ -53,6 +58,12 @@ class ConfigProviderImpl : public ConfigProvider {
  private:
   RuntimeConfiguration runtime_configuration_;
 };
+
+[[nodiscard]]
+auto collect_session_dictionaries(
+    const std::vector<core::FixSessionSettings>& sessions,
+    std::string_view session_id)
+    -> std::optional<std::unordered_set<std::filesystem::path>>;
 
 }  // namespace simulator::http
 

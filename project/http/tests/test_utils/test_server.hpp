@@ -65,6 +65,11 @@ class Router : public Pistache::Http::Handler, public Responder {
         "/test/get/request",
         Pistache::Rest::Routes::bind(&Router::respond, this));
 
+    Pistache::Rest::Routes::Head(
+        router_,
+        "/test/head/request",
+        Pistache::Rest::Routes::bind(&Router::respond, this));
+
     Pistache::Rest::Routes::Post(
         router_,
         "/test/post/request",
@@ -102,8 +107,8 @@ class Server {
     endpoint_.serveThreaded();
   }
 
-  Server(Server const&) = delete;
-  Server operator=(Server const&) = delete;
+  Server(const Server&) = delete;
+  Server operator=(const Server&) = delete;
 
   Server(Server&&) noexcept = delete;
   Server operator=(Server&&) noexcept = delete;

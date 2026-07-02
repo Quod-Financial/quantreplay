@@ -31,6 +31,10 @@ class GetProcessor {
   virtual auto get_venues(const Pistache::Rest::Request& request,
                           Pistache::Http::ResponseWriter response) -> void = 0;
 
+  virtual auto get_data_dictionaries(const Pistache::Rest::Request& request,
+                                     Pistache::Http::ResponseWriter response)
+      -> void = 0;
+
   virtual auto get_listing(const Pistache::Rest::Request& request,
                            Pistache::Http::ResponseWriter response) -> void = 0;
 
@@ -90,6 +94,10 @@ class GetProcessorImpl : public GetProcessor {
   auto get_venues(const Pistache::Rest::Request& request,
                   Pistache::Http::ResponseWriter response) -> void override;
 
+  auto get_data_dictionaries(const Pistache::Rest::Request& request,
+                             Pistache::Http::ResponseWriter response)
+      -> void override;
+
   auto get_listing(const Pistache::Rest::Request& request,
                    Pistache::Http::ResponseWriter response) -> void override;
 
@@ -138,6 +146,11 @@ class GetProcessorImpl : public GetProcessor {
                       Pistache::Http::ResponseWriter& response,
                       Pistache::Http::Code code,
                       const std::string& body) -> void;
+
+  static auto relay_data_dictionaries(Pistache::Http::ResponseWriter& response,
+                                      const redirect::Result& result,
+                                      const std::string& venue_id,
+                                      const std::string& session_id) -> void;
 
   auto redirect(const Pistache::Rest::Request& request,
                 const std::string& instance_id) const -> redirect::Result;

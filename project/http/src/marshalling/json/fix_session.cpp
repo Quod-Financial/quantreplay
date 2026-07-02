@@ -27,12 +27,12 @@ auto marshal_session_settings(
     }
 
     rapidjson::Value settings_value{rapidjson::kObjectType};
-    for (const auto& setting : session.settings) {
+    for (const auto& [key, value] : session.settings) {
       rapidjson::Value setting_key;
-      setting_key.SetString(setting.key.c_str(), allocator);
+      setting_key.SetString(key.c_str(), allocator);
 
       rapidjson::Value setting_value;
-      setting_value.SetString(setting.value.c_str(), allocator);
+      setting_value.SetString(value.c_str(), allocator);
 
       settings_value.AddMember(
           setting_key.Move(), setting_value.Move(), allocator);

@@ -47,8 +47,7 @@ struct HttpFixSessionController : Test {
     return core::FixSessionSettings{
         .heading = "DEFAULT",
         .id = std::nullopt,
-        .settings = {
-            {.key = "SOCKETACCEPTPORT", .value = std::move(accept_port)}}};
+        .settings = {{"SOCKETACCEPTPORT", std::move(accept_port)}}};
   }
 
   static auto make_config_session_without_port(std::string id)
@@ -62,8 +61,7 @@ struct HttpFixSessionController : Test {
     return core::FixSessionSettings{
         .heading = "SESSION",
         .id = std::move(id),
-        .settings = {
-            {.key = "SOCKETACCEPTPORT", .value = std::move(accept_port)}}};
+        .settings = {{"SOCKETACCEPTPORT", std::move(accept_port)}}};
   }
 
   auto make_db_session(std::string session_id,

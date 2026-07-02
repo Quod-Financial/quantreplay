@@ -4,6 +4,7 @@
 #include <quickfix/SessionSettings.h>
 
 #include <filesystem>
+#include <vector>
 
 #include "core/common/session_settings.hpp"
 
