@@ -23,10 +23,13 @@ add_target_tests(
     unit_tests/common/validation/conclusion_tests.cpp
     unit_tests/common/validation/validation_tests.cpp
     unit_tests/dispatching/event_dispatcher_tests.cpp
+    unit_tests/implementation_tests.cpp
     unit_tests/market_data/actions/market_data_recover_tests.cpp
     unit_tests/market_data/validation/checkers_tests.cpp
     unit_tests/market_data/validation/errors_tests.cpp
     unit_tests/market_data/validation/market_data_validator_tests.cpp
+    unit_tests/market_data/algorithms_tests.cpp
+    unit_tests/market_data/cache_manager_tests.cpp
     unit_tests/market_data/depth_cache_tests.cpp
     unit_tests/market_data/depth_node_comparator_tests.cpp
     unit_tests/market_data/depth_node_tests.cpp
@@ -37,20 +40,29 @@ add_target_tests(
     unit_tests/market_data/incremental_depth_update_tests.cpp
     unit_tests/market_data/instrument_info_cache_tests.cpp
     unit_tests/market_data/instrument_px_tests.cpp
+    unit_tests/market_data/market_data_facade_tests.cpp
     unit_tests/market_data/streaming_settings_tests.cpp
     unit_tests/market_data/trade_cache_tests.cpp
     unit_tests/orders/actions/all_orders_elimination_tests.cpp
+    unit_tests/orders/actions/auction_placement_tests.cpp
+    unit_tests/orders/actions/auction_uncross_tests.cpp
     unit_tests/orders/actions/cancellation_tests.cpp
     unit_tests/orders/actions/closed_phase_elimination_tests.cpp
     unit_tests/orders/actions/limit_order_recover_tests.cpp
     unit_tests/orders/actions/on_disconnect_elimination_tests.cpp
+    unit_tests/orders/actions/market_amendment_tests.cpp
+    unit_tests/orders/actions/order_actions_tests.cpp
     unit_tests/orders/actions/regular_placement_tests.cpp
     unit_tests/orders/actions/system_elimination_tests.cpp
+    unit_tests/orders/order_system_facade_tests.cpp
+    unit_tests/orders/phase_handler_tests.cpp
     unit_tests/orders/book/better_order_comparator_tests.cpp
     unit_tests/orders/book/limit_order_tests.cpp
     unit_tests/orders/book/market_order_tests.cpp
     unit_tests/orders/book/order_algorithms_tests.cpp
     unit_tests/orders/book/order_book_tests.cpp
+    unit_tests/orders/matchers/auction_price_calculator_tests.cpp
+    unit_tests/orders/matchers/no_cross_matcher_tests.cpp
     unit_tests/orders/matchers/regular_order_matcher_tests.cpp
     unit_tests/orders/replies/cancellation_reply_builders_tests.cpp
     unit_tests/orders/replies/client_reject_reporter_tests.cpp

@@ -30,6 +30,7 @@ add_target_tests(
     unit_tests/models/venue_tests.cpp
     unit_tests/pqxx/common/column_resolver_tests.cpp
     unit_tests/pqxx/common/enumeration_resolver_tests.cpp
+    unit_tests/pqxx/database/connection_abort_timer_tests.cpp
     unit_tests/pqxx/database/connector_tests.cpp
     unit_tests/pqxx/database/transaction_tests.cpp
     unit_tests/pqxx/queries/detail/delete_query_builder_tests.cpp

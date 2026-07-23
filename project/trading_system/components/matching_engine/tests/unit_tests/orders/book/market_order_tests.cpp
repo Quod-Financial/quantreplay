@@ -1,5 +1,8 @@
 #include <gmock/gmock.h>
 
+#include <stdexcept>
+
+#include "core/tools/time.hpp"
 #include "ih/orders/book/market_order.hpp"
 #include "tools/order_builder.hpp"
 
@@ -149,6 +152,67 @@ TEST_F(MarketOrderEntry, SetsWeightedAveragePriceAcrossMultipleFills) {
   order.execute(ExecutedQuantity{6}, ExecutionPrice{15.0});
 
   ASSERT_THAT(order.average_price(), Optional(Eq(AveragePrice{13.0})));
+}
+
+TEST_F(MarketOrderEntry, KeepsArrivalTime) {
+  const OrderTime arrival{core::sys_us{core::sys_days{2025y / 1 / 25} + 13h +
+                                       14min + 1s + 123456us}};
+  const auto order = builder.with_order_time(arrival).build_market_order();
+
+  ASSERT_THAT(order.time(), Eq(arrival));
+}
+
+struct MarketOrderAmendment : public Test {
+  static constexpr OrderTime Arrival{
+      core::sys_us{core::sys_days{2025y / 1 / 25} + 13h + 14min + 1s}};
+
+  OrderBuilder builder;
+
+  auto make_order(OrderQuantity quantity) -> MarketOrder {
+    return builder.with_order_quantity(quantity)
+        .with_order_time(Arrival)
+        .build_market_order();
+  }
+};
+
+TEST_F(MarketOrderAmendment, UpdatesTotalQuantity) {
+  auto order = make_order(OrderQuantity{10});
+
+  order.amend(MarketOrder::Update{.quantity = OrderQuantity{20}});
+
+  ASSERT_THAT(order.total_quantity(), Eq(OrderQuantity{20}));
+}
+
+TEST_F(MarketOrderAmendment, SetsModifiedStatus) {
+  auto order = make_order(OrderQuantity{10});
+
+  order.amend(MarketOrder::Update{.quantity = OrderQuantity{20}});
+
+  ASSERT_THAT(order.status(), Eq(OrderStatus::Option::Modified));
+}
+
+TEST_F(MarketOrderAmendment, ResetsArrivalTimeWhenQuantityIncreases) {
+  auto order = make_order(OrderQuantity{10});
+
+  order.amend(MarketOrder::Update{.quantity = OrderQuantity{20}});
+
+  ASSERT_THAT(order.time(), Ne(Arrival));
+}
+
+TEST_F(MarketOrderAmendment, KeepsArrivalTimeWhenQuantityDecreases) {
+  auto order = make_order(OrderQuantity{10});
+
+  order.amend(MarketOrder::Update{.quantity = OrderQuantity{5}});
+
+  ASSERT_THAT(order.time(), Eq(Arrival));
+}
+
+TEST_F(MarketOrderAmendment, ThrowsWhenQuantityNotAboveExecutedQuantity) {
+  auto order = make_order(OrderQuantity{10});
+  order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
+
+  ASSERT_THROW(order.amend(MarketOrder::Update{.quantity = OrderQuantity{5}}),
+               std::logic_error);
 }
 
 // NOLINTEND(*-magic-numbers)

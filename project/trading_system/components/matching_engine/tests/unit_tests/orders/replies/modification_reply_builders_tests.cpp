@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "ih/orders/book/order_updates.hpp"
 #include "ih/orders/replies/modification_reply_builders.hpp"
 #include "tools/order_builder.hpp"
 
@@ -220,6 +221,50 @@ TEST_F(ModificationConfirmationBuilder, SetsOrigClientOrderId) {
               Optional(Eq(OrigClientOrderId{"ORIG-123"})));
 }
 
+TEST_F(ModificationConfirmationBuilder, SetsMarketOrderType) {
+  const auto order = order_builder.build_market_order();
+
+  const auto confirmation = builder.for_order(order).build();
+
+  ASSERT_THAT(confirmation.order_type, Optional(Eq(OrderType::Option::Market)));
+}
+
+TEST_F(ModificationConfirmationBuilder, DoesNotSetOrderPriceForMarketOrder) {
+  const auto order =
+      order_builder.with_order_price(OrderPrice{123}).build_market_order();
+
+  const auto confirmation = builder.for_order(order).build();
+
+  ASSERT_THAT(confirmation.order_price, Eq(std::nullopt));
+}
+
+TEST_F(ModificationConfirmationBuilder, SetsMarketOrderId) {
+  const auto order =
+      order_builder.with_order_id(OrderId{123}).build_market_order();
+
+  const auto confirmation = builder.for_order(order).build();
+
+  ASSERT_THAT(confirmation.venue_order_id, Optional(Eq(VenueOrderId{"123"})));
+}
+
+TEST_F(ModificationConfirmationBuilder, SetsMarketOrderSide) {
+  const auto order =
+      order_builder.with_side(Side::Option::Sell).build_market_order();
+
+  const auto confirmation = builder.for_order(order).build();
+
+  ASSERT_THAT(confirmation.side, Optional(Eq(Side::Option::Sell)));
+}
+
+TEST_F(ModificationConfirmationBuilder, PrepareFactoryBuildsForMarketOrder) {
+  const auto order = order_builder.build_market_order();
+
+  const auto confirmation =
+      prepare_modification_confirmation(order, std::nullopt).build();
+
+  ASSERT_THAT(confirmation.order_type, Optional(Eq(OrderType::Option::Market)));
+}
+
 struct ModificationRejectBuilder : public Test {
   protocol::Session test_session{protocol::generator::Session{}};
   protocol::OrderModificationRequest request{test_session};
@@ -293,6 +338,42 @@ TEST_F(ModificationRejectBuilder, SetsClientOrderId) {
 TEST_F(ModificationRejectBuilder, SetsOrigClientOrderId) {
   const auto reject =
       builder.with_orig_client_order_id(OrigClientOrderId{"ORIG-123"}).build();
+
+  ASSERT_THAT(reject.orig_client_order_id,
+              Optional(Eq(OrigClientOrderId{"ORIG-123"})));
+}
+
+struct MarketUpdateModificationReject : public Test {
+  static auto market_update() -> MarketUpdate {
+    return MarketUpdate{protocol::Session{protocol::generator::Session{}},
+                        Side::Option::Buy,
+                        MarketOrder::Update{.quantity = OrderQuantity{100}}};
+  }
+};
+
+TEST_F(MarketUpdateModificationReject, SetsVenueOrderIdFromOrderId) {
+  auto update = market_update();
+  update.order_id = OrderId{123};
+
+  const auto reject = prepare_modification_reject(update).build();
+
+  ASSERT_THAT(reject.venue_order_id, Optional(Eq(VenueOrderId{"123"})));
+}
+
+TEST_F(MarketUpdateModificationReject, SetsClientOrderId) {
+  auto update = market_update();
+  update.client_order_id = ClientOrderId{"CL-123"};
+
+  const auto reject = prepare_modification_reject(update).build();
+
+  ASSERT_THAT(reject.client_order_id, Optional(Eq(ClientOrderId{"CL-123"})));
+}
+
+TEST_F(MarketUpdateModificationReject, SetsOrigClientOrderId) {
+  auto update = market_update();
+  update.orig_client_order_id = OrigClientOrderId{"ORIG-123"};
+
+  const auto reject = prepare_modification_reject(update).build();
 
   ASSERT_THAT(reject.orig_client_order_id,
               Optional(Eq(OrigClientOrderId{"ORIG-123"})));

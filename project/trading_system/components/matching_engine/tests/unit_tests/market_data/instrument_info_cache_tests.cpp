@@ -22,6 +22,20 @@ struct InstrumentInfoCache : Test {
         OrderBookNotification{std::forward<decltype(events)>(events)}...};
   }
 
+  static auto make_auction_cross(const TradingPhase::Option phase,
+                                 const Price price,
+                                 const Quantity quantity) {
+    return AuctionPricesUpdate{.auction_phase = TradingPhase{phase},
+                               .clearing_price = price,
+                               .clearing_quantity = quantity};
+  }
+
+  static auto make_auction_no_cross(const TradingPhase::Option phase) {
+    return AuctionPricesUpdate{.auction_phase = TradingPhase{phase},
+                               .clearing_price = std::nullopt,
+                               .clearing_quantity = std::nullopt};
+  }
+
   constexpr static auto NoAction = std::nullopt;
 
   StreamingSettings settings;
@@ -34,6 +48,31 @@ struct InstrumentInfoCache : Test {
     return AllOf(Field(&MarketDataEntry::price, Eq(price)),
                  Field(&MarketDataEntry::action, Eq(action)),
                  Field(&MarketDataEntry::type, Eq(type)));
+  }
+
+  static auto ClearingEntryHas(const Price price,
+                               const Quantity quantity,
+                               const std::optional<MarketEntryAction> action) {
+    return AllOf(
+        Field(&MarketDataEntry::price, Eq(price)),
+        Field(&MarketDataEntry::quantity, Optional(Eq(quantity))),
+        Field(&MarketDataEntry::action, Eq(action)),
+        Field(&MarketDataEntry::type,
+              Eq(MdEntryType{MdEntryType::Option::AuctionClearingPrice})));
+  }
+
+  static auto make_early(const Price price, const Quantity quantity) {
+    return EarlyPriceUpdate{.early_price = price, .early_quantity = quantity};
+  }
+
+  static auto EarlyEntryHas(const Price price,
+                            const Quantity quantity,
+                            const std::optional<MarketEntryAction> action) {
+    return AllOf(Field(&MarketDataEntry::price, Eq(price)),
+                 Field(&MarketDataEntry::quantity, Optional(Eq(quantity))),
+                 Field(&MarketDataEntry::action, Eq(action)),
+                 Field(&MarketDataEntry::type,
+                       Eq(MdEntryType{MdEntryType::Option::EarlyPrice})));
   }
 };
 
@@ -218,39 +257,36 @@ TEST_F(InstrumentInfoCache, DoesNotAffectMidPriceWhenNotUpdated) {
   ASSERT_THAT(entries, IsEmpty());
 }
 
-TEST_F(InstrumentInfoCache, ReportsLowPriceWhenInitiallyCachedInFullUpdate) {
+TEST_F(InstrumentInfoCache, ReportsCachedLowPriceInInitial) {
   cache.update(make_update(make_trade(Price(50))));
   cache.update(make_update(make_trade(Price(100))));
-  settings.enable_data_type_streaming(MdEntryType::Option::LowPrice)
-      .enable_full_update_streaming();
+  settings.enable_data_type_streaming(MdEntryType::Option::LowPrice);
 
-  cache.compose_update(settings, entries);
+  cache.compose_initial(settings, entries);
 
   ASSERT_THAT(entries,
               ElementsAre(EntryHas(
                   Price(50.0), NoAction, MdEntryType::Option::LowPrice)));
 }
 
-TEST_F(InstrumentInfoCache, ReportsHighPriceWhenInitiallyCachedInFullUpdate) {
+TEST_F(InstrumentInfoCache, ReportsCachedHighPriceInInitial) {
   cache.update(make_update(make_trade(Price(50))));
   cache.update(make_update(make_trade(Price(100))));
-  settings.enable_data_type_streaming(MdEntryType::Option::HighPrice)
-      .enable_full_update_streaming();
+  settings.enable_data_type_streaming(MdEntryType::Option::HighPrice);
 
-  cache.compose_update(settings, entries);
+  cache.compose_initial(settings, entries);
 
   ASSERT_THAT(entries,
               ElementsAre(EntryHas(
                   Price(100.0), NoAction, MdEntryType::Option::HighPrice)));
 }
 
-TEST_F(InstrumentInfoCache, ReportsMidPriceWhenInitiallyCachedInFullUpdate) {
+TEST_F(InstrumentInfoCache, ReportsCachedMidPriceInInitial) {
   cache.update(make_update(make_trade(Price(50))));
   cache.update(make_update(make_trade(Price(100))));
-  settings.enable_data_type_streaming(MdEntryType::Option::MidPrice)
-      .enable_full_update_streaming();
+  settings.enable_data_type_streaming(MdEntryType::Option::MidPrice);
 
-  cache.compose_update(settings, entries);
+  cache.compose_initial(settings, entries);
 
   ASSERT_THAT(entries,
               ElementsAre(EntryHas(
@@ -557,6 +593,515 @@ TEST_F(InstrumentInfoCache,
   cache.compose_update(settings, entries);
 
   ASSERT_TRUE(entries.empty());
+}
+
+TEST_F(InstrumentInfoCache, PublishesOpeningPriceWhenSetAndRequested) {
+  cache.update(make_update(InstrumentInfoRecover{std::make_optional(
+      market_state::InstrumentInfo{.opening_price = Price{110}})}));
+  settings.enable_data_type_streaming(MdEntryType::Option::OpeningPrice);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries,
+              ElementsAre(EntryHas(
+                  Price{110}, NoAction, MdEntryType::Option::OpeningPrice)));
+}
+
+TEST_F(InstrumentInfoCache, OmitsOpeningPriceWhenNotRequested) {
+  cache.update(make_update(InstrumentInfoRecover{std::make_optional(
+      market_state::InstrumentInfo{.opening_price = Price{110}})}));
+  settings.enable_data_type_streaming(MdEntryType::Option::LowPrice);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries, IsEmpty());
+}
+
+TEST_F(InstrumentInfoCache, OmitsOpeningPriceWhenUnset) {
+  cache.update(make_update(InstrumentInfoRecover{std::make_optional(
+      market_state::InstrumentInfo{.closing_price = Price{120}})}));
+  settings.enable_data_type_streaming(MdEntryType::Option::OpeningPrice);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries, IsEmpty());
+}
+
+TEST_F(InstrumentInfoCache, PublishesClosingPriceWhenSetAndRequested) {
+  cache.update(make_update(InstrumentInfoRecover{std::make_optional(
+      market_state::InstrumentInfo{.closing_price = Price{120}})}));
+  settings.enable_data_type_streaming(MdEntryType::Option::ClosingPrice);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries,
+              ElementsAre(EntryHas(
+                  Price{120}, NoAction, MdEntryType::Option::ClosingPrice)));
+}
+
+TEST_F(InstrumentInfoCache, PublishesPreviousClosingPriceWhenSetAndRequested) {
+  cache.update(make_update(InstrumentInfoRecover{std::make_optional(
+      market_state::InstrumentInfo{.previous_closing_price = Price{95}})}));
+  settings.enable_data_type_streaming(
+      MdEntryType::Option::PreviousClosingPrice);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(EntryHas(
+          Price{95}, NoAction, MdEntryType::Option::PreviousClosingPrice)));
+}
+
+TEST_F(InstrumentInfoCache,
+       PublishesAuctionClearingPriceAndQuantityWhenSetAndRequested) {
+  cache.update(make_update(
+      InstrumentInfoRecover{std::make_optional(market_state::InstrumentInfo{
+          .auction_clearing_price = Price{130},
+          .auction_clearing_quantity = Quantity{500}})}));
+  settings.enable_data_type_streaming(
+      MdEntryType::Option::AuctionClearingPrice);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(ClearingEntryHas(Price{130}, Quantity{500}, NoAction)));
+}
+
+TEST_F(InstrumentInfoCache, ReportsOpeningPriceAsNewInComposeUpdate) {
+  cache.update(make_update(InstrumentInfoRecover{std::make_optional(
+      market_state::InstrumentInfo{.opening_price = Price{110}})}));
+  settings.enable_data_type_streaming(MdEntryType::Option::OpeningPrice);
+
+  cache.compose_update(settings, entries);
+
+  ASSERT_THAT(entries,
+              ElementsAre(EntryHas(Price{110},
+                                   MarketEntryAction::Option::New,
+                                   MdEntryType::Option::OpeningPrice)));
+}
+
+TEST_F(InstrumentInfoCache,
+       ReportsAuctionClearingPriceAndQuantityAsNewInComposeUpdate) {
+  cache.update(make_update(
+      InstrumentInfoRecover{std::make_optional(market_state::InstrumentInfo{
+          .auction_clearing_price = Price{130},
+          .auction_clearing_quantity = Quantity{500}})}));
+  settings.enable_data_type_streaming(
+      MdEntryType::Option::AuctionClearingPrice);
+
+  cache.compose_update(settings, entries);
+
+  ASSERT_THAT(entries,
+              ElementsAre(ClearingEntryHas(
+                  Price{130}, Quantity{500}, MarketEntryAction::Option::New)));
+}
+
+TEST_F(InstrumentInfoCache,
+       ReportsAuctionClearingPriceAndQuantityAsChangeInComposeUpdate) {
+  cache.update(make_update(
+      InstrumentInfoRecover{std::make_optional(market_state::InstrumentInfo{
+          .auction_clearing_price = Price{130},
+          .auction_clearing_quantity = Quantity{500}})}));
+  cache.update(make_update(
+      InstrumentInfoRecover{std::make_optional(market_state::InstrumentInfo{
+          .auction_clearing_price = Price{140},
+          .auction_clearing_quantity = Quantity{600}})}));
+  settings.enable_data_type_streaming(
+      MdEntryType::Option::AuctionClearingPrice);
+
+  cache.compose_update(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(ClearingEntryHas(
+          Price{140}, Quantity{600}, MarketEntryAction::Option::Change)));
+}
+
+TEST_F(InstrumentInfoCache, StoresStateOpeningPriceEvenWithoutLowAndHighPrice) {
+  cache.update(make_update(InstrumentInfoRecover{std::make_optional(
+      market_state::InstrumentInfo{.opening_price = Price{110}})}));
+
+  std::optional<market_state::InstrumentInfo> info;
+  cache.store_state(info);
+
+  ASSERT_THAT(info,
+              Optional(AllOf(Field(&market_state::InstrumentInfo::opening_price,
+                                   Optional(Eq(Price{110}))),
+                             Field(&market_state::InstrumentInfo::low_price,
+                                   Eq(std::nullopt)))));
+}
+
+TEST_F(InstrumentInfoCache, StoresStateAuctionClearingPriceAndQuantity) {
+  cache.update(make_update(
+      InstrumentInfoRecover{std::make_optional(market_state::InstrumentInfo{
+          .auction_clearing_price = Price{130},
+          .auction_clearing_quantity = Quantity{500}})}));
+
+  std::optional<market_state::InstrumentInfo> info;
+  cache.store_state(info);
+
+  ASSERT_THAT(
+      info,
+      Optional(
+          AllOf(Field(&market_state::InstrumentInfo::auction_clearing_price,
+                      Optional(Eq(Price{130}))),
+                Field(&market_state::InstrumentInfo::auction_clearing_quantity,
+                      Optional(Eq(Quantity{500}))))));
+}
+
+TEST_F(InstrumentInfoCache, MarksDeletedOpeningPriceOnNulloptRecover) {
+  cache.update(make_update(InstrumentInfoRecover{std::make_optional(
+      market_state::InstrumentInfo{.opening_price = Price{110}})}));
+  cache.update(make_update(InstrumentInfoRecover{.info = std::nullopt}));
+  settings.enable_data_type_streaming(MdEntryType::Option::OpeningPrice);
+
+  cache.compose_update(settings, entries);
+
+  ASSERT_THAT(entries,
+              ElementsAre(EntryHas(Price{110},
+                                   MarketEntryAction::Option::Delete,
+                                   MdEntryType::Option::OpeningPrice)));
+}
+
+TEST_F(InstrumentInfoCache,
+       MarksDeletedAuctionClearingPriceAndQuantityOnNulloptRecover) {
+  cache.update(make_update(
+      InstrumentInfoRecover{std::make_optional(market_state::InstrumentInfo{
+          .auction_clearing_price = Price{130},
+          .auction_clearing_quantity = Quantity{500}})}));
+  cache.update(make_update(InstrumentInfoRecover{.info = std::nullopt}));
+  settings.enable_data_type_streaming(
+      MdEntryType::Option::AuctionClearingPrice);
+
+  cache.compose_update(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(ClearingEntryHas(
+          Price{130}, Quantity{500}, MarketEntryAction::Option::Delete)));
+}
+
+TEST_F(InstrumentInfoCache, OpeningAuctionCrossSetsOpeningPrice) {
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::OpeningAuction, Price{110}, Quantity{500})));
+  settings.enable_data_type_streaming(MdEntryType::Option::OpeningPrice);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries,
+              ElementsAre(EntryHas(
+                  Price{110}, NoAction, MdEntryType::Option::OpeningPrice)));
+}
+
+TEST_F(InstrumentInfoCache, OpeningAuctionCrossSetsAuctionClearingPrice) {
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::OpeningAuction, Price{110}, Quantity{500})));
+  settings.enable_data_type_streaming(
+      MdEntryType::Option::AuctionClearingPrice);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(ClearingEntryHas(Price{110}, Quantity{500}, NoAction)));
+}
+
+TEST_F(InstrumentInfoCache,
+       OpeningAuctionCrossResetsSessionHighLowToClearingPrice) {
+  cache.update(make_update(
+      make_trade(Price(90)),
+      make_trade(Price(200)),
+      make_auction_cross(
+          TradingPhase::Option::OpeningAuction, Price{110}, Quantity{500})));
+  settings.enable_data_type_streaming(MdEntryType::Option::LowPrice)
+      .enable_data_type_streaming(MdEntryType::Option::HighPrice)
+      .enable_data_type_streaming(MdEntryType::Option::MidPrice);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(
+          EntryHas(Price{110}, NoAction, MdEntryType::Option::LowPrice),
+          EntryHas(Price{110}, NoAction, MdEntryType::Option::HighPrice),
+          EntryHas(Price{110}, NoAction, MdEntryType::Option::MidPrice)));
+}
+
+TEST_F(InstrumentInfoCache, ClosingAuctionCrossSetsClosingPrice) {
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::ClosingAuction, Price{120}, Quantity{300})));
+  settings.enable_data_type_streaming(MdEntryType::Option::ClosingPrice);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries,
+              ElementsAre(EntryHas(
+                  Price{120}, NoAction, MdEntryType::Option::ClosingPrice)));
+}
+
+TEST_F(InstrumentInfoCache,
+       ClosingAuctionCrossCarriesOldClosingPriceIntoPreviousClosingPrice) {
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::ClosingAuction, Price{120}, Quantity{300})));
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::ClosingAuction, Price{125}, Quantity{350})));
+  settings.enable_data_type_streaming(MdEntryType::Option::ClosingPrice)
+      .enable_data_type_streaming(MdEntryType::Option::PreviousClosingPrice);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(
+          EntryHas(Price{125}, NoAction, MdEntryType::Option::ClosingPrice),
+          EntryHas(Price{120},
+                   NoAction,
+                   MdEntryType::Option::PreviousClosingPrice)));
+}
+
+TEST_F(InstrumentInfoCache,
+       ClosingAuctionCrossLeavesPreviousClosingUnsetWhenNoPriorClosingPrice) {
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::ClosingAuction, Price{120}, Quantity{300})));
+  settings.enable_data_type_streaming(
+      MdEntryType::Option::PreviousClosingPrice);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries, IsEmpty());
+}
+
+TEST_F(InstrumentInfoCache, IntradayAuctionCrossSetsAuctionClearingPriceOnly) {
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::IntradayAuction, Price{130}, Quantity{600})));
+  settings.enable_data_type_streaming(MdEntryType::Option::OpeningPrice)
+      .enable_data_type_streaming(MdEntryType::Option::ClosingPrice)
+      .enable_data_type_streaming(MdEntryType::Option::AuctionClearingPrice);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(ClearingEntryHas(Price{130}, Quantity{600}, NoAction)));
+}
+
+TEST_F(InstrumentInfoCache, OpeningAuctionNoCrossClearsOpeningPrice) {
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::OpeningAuction, Price{110}, Quantity{500})));
+  cache.update(
+      make_update(make_auction_no_cross(TradingPhase::Option::OpeningAuction)));
+  settings.enable_data_type_streaming(MdEntryType::Option::OpeningPrice);
+
+  cache.compose_update(settings, entries);
+
+  ASSERT_THAT(entries,
+              ElementsAre(EntryHas(Price{110},
+                                   MarketEntryAction::Option::Delete,
+                                   MdEntryType::Option::OpeningPrice)));
+}
+
+TEST_F(InstrumentInfoCache,
+       OpeningAuctionNoCrossLeavesSessionHighLowUntouched) {
+  cache.update(make_update(make_trade(Price(90)), make_trade(Price(200))));
+  cache.update(
+      make_update(make_auction_no_cross(TradingPhase::Option::OpeningAuction)));
+  settings.enable_data_type_streaming(MdEntryType::Option::LowPrice)
+      .enable_data_type_streaming(MdEntryType::Option::HighPrice);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(
+          EntryHas(Price{90}, NoAction, MdEntryType::Option::LowPrice),
+          EntryHas(Price{200}, NoAction, MdEntryType::Option::HighPrice)));
+}
+
+TEST_F(InstrumentInfoCache, OpeningAuctionNoCrossClearsAuctionClearingPrice) {
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::IntradayAuction, Price{130}, Quantity{600})));
+  cache.update(
+      make_update(make_auction_no_cross(TradingPhase::Option::OpeningAuction)));
+  settings.enable_data_type_streaming(
+      MdEntryType::Option::AuctionClearingPrice);
+
+  cache.compose_update(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(ClearingEntryHas(
+          Price{130}, Quantity{600}, MarketEntryAction::Option::Delete)));
+}
+
+TEST_F(InstrumentInfoCache,
+       ClosingAuctionNoCrossClearsClosingPriceAndCarriesItIntoPreviousClosing) {
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::ClosingAuction, Price{120}, Quantity{300})));
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::ClosingAuction, Price{125}, Quantity{350})));
+  cache.update(
+      make_update(make_auction_no_cross(TradingPhase::Option::ClosingAuction)));
+  settings.enable_data_type_streaming(MdEntryType::Option::ClosingPrice)
+      .enable_data_type_streaming(MdEntryType::Option::PreviousClosingPrice);
+
+  cache.compose_update(settings, entries);
+
+  ASSERT_THAT(entries,
+              ElementsAre(EntryHas(Price{125},
+                                   MarketEntryAction::Option::Delete,
+                                   MdEntryType::Option::ClosingPrice),
+                          EntryHas(Price{125},
+                                   MarketEntryAction::Option::Change,
+                                   MdEntryType::Option::PreviousClosingPrice)));
+}
+
+TEST_F(InstrumentInfoCache, IntradayAuctionNoCrossClearsAuctionClearingPrice) {
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::IntradayAuction, Price{130}, Quantity{600})));
+  cache.update(make_update(
+      make_auction_no_cross(TradingPhase::Option::IntradayAuction)));
+  settings.enable_data_type_streaming(
+      MdEntryType::Option::AuctionClearingPrice);
+
+  cache.compose_update(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(ClearingEntryHas(
+          Price{130}, Quantity{600}, MarketEntryAction::Option::Delete)));
+}
+
+TEST_F(InstrumentInfoCache, PublishesEarlyPriceAndQuantityWhenRequested) {
+  cache.update(make_update(make_early(Price{105}, Quantity{100})));
+  settings.enable_data_type_streaming(MdEntryType::Option::EarlyPrice);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries,
+              ElementsAre(EarlyEntryHas(Price{105}, Quantity{100}, NoAction)));
+}
+
+TEST_F(InstrumentInfoCache, OmitsEarlyPriceWhenNotRequested) {
+  cache.update(make_update(make_early(Price{105}, Quantity{100})));
+  settings.enable_data_type_streaming(MdEntryType::Option::LowPrice);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries, IsEmpty());
+}
+
+TEST_F(InstrumentInfoCache, OmitsEarlyPriceWhenUnset) {
+  settings.enable_data_type_streaming(MdEntryType::Option::EarlyPrice);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries, IsEmpty());
+}
+
+TEST_F(InstrumentInfoCache, ReportsEarlyPriceAsNewInComposeUpdate) {
+  cache.update(make_update(make_early(Price{105}, Quantity{100})));
+  settings.enable_data_type_streaming(MdEntryType::Option::EarlyPrice);
+
+  cache.compose_update(settings, entries);
+
+  ASSERT_THAT(entries,
+              ElementsAre(EarlyEntryHas(
+                  Price{105}, Quantity{100}, MarketEntryAction::Option::New)));
+}
+
+TEST_F(InstrumentInfoCache, ReportsEarlyPriceAsChangeInComposeUpdate) {
+  cache.update(make_update(make_early(Price{105}, Quantity{100})));
+  cache.update(make_update(make_early(Price{110}, Quantity{120})));
+  settings.enable_data_type_streaming(MdEntryType::Option::EarlyPrice);
+
+  cache.compose_update(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(EarlyEntryHas(
+          Price{110}, Quantity{120}, MarketEntryAction::Option::Change)));
+}
+
+TEST_F(InstrumentInfoCache,
+       RepublishesUnchangedEarlyPriceAsChangeInComposeUpdate) {
+  cache.update(make_update(make_early(Price{105}, Quantity{100})));
+  cache.update(make_update(make_early(Price{105}, Quantity{100})));
+  settings.enable_data_type_streaming(MdEntryType::Option::EarlyPrice);
+
+  cache.compose_update(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(EarlyEntryHas(
+          Price{105}, Quantity{100}, MarketEntryAction::Option::Change)));
+}
+
+TEST_F(InstrumentInfoCache, ClearsEarlyPriceOnEmptyUpdate) {
+  cache.update(make_update(make_early(Price{105}, Quantity{100})));
+  cache.update(make_update(EarlyPriceUpdate{}));
+  settings.enable_data_type_streaming(MdEntryType::Option::EarlyPrice);
+
+  cache.compose_update(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(EarlyEntryHas(
+          Price{105}, Quantity{100}, MarketEntryAction::Option::Delete)));
+}
+
+TEST_F(InstrumentInfoCache, DoesNotStoreEarlyPriceBecauseItIsTransient) {
+  cache.update(make_update(make_early(Price{105}, Quantity{100})));
+
+  std::optional<market_state::InstrumentInfo> info;
+  cache.store_state(info);
+
+  ASSERT_EQ(info, std::nullopt);
+}
+
+TEST_F(InstrumentInfoCache, HasNoUpdateWhenNothingChanged) {
+  settings.enable_data_type_streaming(MdEntryType::Option::LowPrice);
+
+  EXPECT_FALSE(cache.has_update(settings));
+}
+
+TEST_F(InstrumentInfoCache, HasNoUpdateWhenOnlyUnrequestedPricesChanged) {
+  cache.update(make_update(make_trade(Price{50})));
+  settings.enable_data_type_streaming(MdEntryType::Option::OpeningPrice);
+
+  EXPECT_FALSE(cache.has_update(settings));
+}
+
+TEST_F(InstrumentInfoCache, HasNoUpdateWhenBatchLeftPricesUnchanged) {
+  cache.update(make_update(make_trade(Price{50})));
+  cache.update(make_update(make_trade(Price{50})));
+  settings.enable_data_type_streaming(MdEntryType::Option::LowPrice);
+
+  EXPECT_FALSE(cache.has_update(settings));
+}
+
+TEST_F(InstrumentInfoCache, HasUpdateWhenRequestedPriceChanged) {
+  cache.update(make_update(make_trade(Price{50})));
+  settings.enable_data_type_streaming(MdEntryType::Option::LowPrice);
+
+  EXPECT_TRUE(cache.has_update(settings));
+}
+
+TEST_F(InstrumentInfoCache, HasUpdateWhenRequestedPriceCleared) {
+  cache.update(make_update(make_early(Price{105}, Quantity{100})));
+  cache.update(make_update(EarlyPriceUpdate{}));
+  settings.enable_data_type_streaming(MdEntryType::Option::EarlyPrice);
+
+  EXPECT_TRUE(cache.has_update(settings));
+}
+
+TEST_F(InstrumentInfoCache, HasUpdateOnRepeatedEarlyPriceRepublication) {
+  cache.update(make_update(make_early(Price{105}, Quantity{100})));
+  cache.update(make_update(make_early(Price{105}, Quantity{100})));
+  settings.enable_data_type_streaming(MdEntryType::Option::EarlyPrice);
+
+  EXPECT_TRUE(cache.has_update(settings));
 }
 
 }  // namespace

@@ -3,6 +3,8 @@
 
 #include <fmt/base.h>
 
+#include <optional>
+
 #include "common/attributes.hpp"
 #include "common/instrument_state.hpp"
 #include "common/trade.hpp"
@@ -16,6 +18,7 @@ struct OrderAdded {
   Quantity order_quantity;
   OrderId order_id;
   Side order_side;
+  OrderType order_type;
 };
 
 struct OrderReduced {
@@ -42,6 +45,24 @@ struct InstrumentInfoRecover {
   std::optional<market_state::InstrumentInfo> info;
 };
 
+struct AuctionPricesUpdate {
+  // Default-constructed value is a no-op; the producer always sets the phase.
+  TradingPhase auction_phase{TradingPhase::Option::Open};
+  std::optional<Price> clearing_price;
+  std::optional<Quantity> clearing_quantity;
+
+  [[nodiscard]]
+  auto operator==(const AuctionPricesUpdate&) const -> bool = default;
+};
+
+struct EarlyPriceUpdate {
+  std::optional<Price> early_price;
+  std::optional<Quantity> early_quantity;
+
+  [[nodiscard]]
+  auto operator==(const EarlyPriceUpdate&) const -> bool = default;
+};
+
 }  // namespace simulator::trading_system::matching_engine
 
 template <>
@@ -53,11 +74,12 @@ struct fmt::formatter<simulator::trading_system::matching_engine::OrderAdded>
       -> format_context::iterator {
     return format_to(
         ctx.out(),
-        R"({{ "OrderAdded": {{ "order_id": {}, "order_price": {}, "order_quantity": {}, "order_side": "{}", "order_owner": {} }} }})",
+        R"({{ "OrderAdded": {{ "order_id": {}, "order_price": {}, "order_quantity": {}, "order_side": "{}", "order_type": "{}", "order_owner": {} }} }})",
         event.order_id,
         event.order_price,
         event.order_quantity,
         event.order_side,
+        event.order_type,
         event.order_owner);
   }
 };
@@ -122,6 +144,41 @@ struct fmt::formatter<
     return format_to(ctx.out(),
                      R"({{ "InstrumentInfoRecover": {{ "info": {} }} }})",
                      event.info);
+  }
+};
+
+template <>
+struct fmt::formatter<
+    simulator::trading_system::matching_engine::AuctionPricesUpdate>
+    : formatter<std::string_view> {
+  using formattable =
+      simulator::trading_system::matching_engine::AuctionPricesUpdate;
+
+  auto format(const formattable& event, format_context& ctx) const
+      -> format_context::iterator {
+    return format_to(
+        ctx.out(),
+        R"({{ "AuctionPricesUpdate": {{ "auction_phase": "{}", "clearing_price": {}, "clearing_quantity": {} }} }})",
+        event.auction_phase,
+        event.clearing_price,
+        event.clearing_quantity);
+  }
+};
+
+template <>
+struct fmt::formatter<
+    simulator::trading_system::matching_engine::EarlyPriceUpdate>
+    : formatter<std::string_view> {
+  using formattable =
+      simulator::trading_system::matching_engine::EarlyPriceUpdate;
+
+  auto format(const formattable& event, format_context& ctx) const
+      -> format_context::iterator {
+    return format_to(
+        ctx.out(),
+        R"({{ "EarlyPriceUpdate": {{ "early_price": {}, "early_quantity": {} }} }})",
+        event.early_price,
+        event.early_quantity);
   }
 };
 

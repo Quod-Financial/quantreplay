@@ -1,6 +1,7 @@
 #ifndef SIMULATOR_DATA_LAYER_IH_PQXX_DATABASE_TRANSACTION_HPP_
 #define SIMULATOR_DATA_LAYER_IH_PQXX_DATABASE_TRANSACTION_HPP_
 
+#include <chrono>
 #include <functional>
 #include <pqxx/connection>
 #include <pqxx/result>
@@ -9,6 +10,7 @@
 #include <utility>
 
 #include "api/exceptions/exceptions.hpp"
+#include "ih/pqxx/database/connection_abort_timer.hpp"
 #include "log/logging.hpp"
 
 namespace simulator::data_layer::internal_pqxx {
@@ -33,6 +35,11 @@ class TransactionHandler {
   auto exec(std::string_view query) {
     const auto trx_executor = [&] { return impl().exec(pqxx::zview(query)); };
     return handle_errors(trx_executor);
+  }
+
+  auto commit() {
+    const auto trx_committer = [&] { return impl().commit(); };
+    return handle_errors(trx_committer);
   }
 
  private:
@@ -113,14 +120,26 @@ class Transaction {
  public:
   using Handler = TransactionHandler<DbmsTransaction>;
 
-  explicit Transaction(pqxx::connection& connection)
-      : transaction_(connection), handler_(transaction_) {}
+  explicit Transaction(
+      pqxx::connection& connection,
+      std::chrono::milliseconds timeout = DefaultOperationTimeout) try
+      : abort_timer_(timeout, make_socket_abort_action(connection.sock())),
+        transaction_(connection),
+        handler_(transaction_) {
+  } catch (const pqxx::broken_connection& broken_connection) {
+    // BEGIN runs in the init list, bypassing handle_errors, so translate here.
+    log::warn(
+        "failed to begin a database transaction, connection is broken: `{}'",
+        broken_connection.what());
+    throw data_layer::ConnectionFailure(broken_connection.what());
+  }
 
   auto handler() noexcept -> Handler { return handler_; }
 
-  auto commit() -> void { transaction_.commit(); }
+  auto commit() -> void { handler_.commit(); }
 
  private:
+  ConnectionAbortTimer abort_timer_;
   DbmsTransaction transaction_;
   Handler handler_;
 };

@@ -503,7 +503,14 @@ INSTANTIATE_TEST_SUITE_P(FixValues, FromFixMdEntryTypeConversion,
     std::make_tuple(FIX::MDEntryType_TRADE, MdEntryType::Option::Trade),
     std::make_tuple(FIX::MDEntryType_TRADING_SESSION_LOW_PRICE, MdEntryType::Option::LowPrice),
     std::make_tuple(FIX::MDEntryType_MID_PRICE, MdEntryType::Option::MidPrice),
-    std::make_tuple(FIX::MDEntryType_TRADING_SESSION_HIGH_PRICE, MdEntryType::Option::HighPrice)
+    std::make_tuple(FIX::MDEntryType_TRADING_SESSION_HIGH_PRICE, MdEntryType::Option::HighPrice),
+    std::make_tuple(FIX::MDEntryType_OPENING_PRICE, MdEntryType::Option::OpeningPrice),
+    std::make_tuple(FIX::MDEntryType_CLOSING_PRICE, MdEntryType::Option::ClosingPrice),
+    std::make_tuple(FIX::MDEntryType_AUCTION_CLEARING_PRICE, MdEntryType::Option::AuctionClearingPrice),
+    std::make_tuple(FIX::MDEntryType_EARLY_PRICES, MdEntryType::Option::EarlyPrice),
+    std::make_tuple(FIX::MDEntryType_PREVIOUS_CLOSING_PRICE, MdEntryType::Option::PreviousClosingPrice),
+    std::make_tuple(FIX::MDEntryType_MARKET_BID, MdEntryType::Option::MarketBid),
+    std::make_tuple(FIX::MDEntryType_MARKET_OFFER, MdEntryType::Option::MarketOffer)
   ));
 // clang-format on
 

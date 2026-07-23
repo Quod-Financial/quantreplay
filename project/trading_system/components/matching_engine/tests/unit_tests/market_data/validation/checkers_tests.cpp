@@ -48,6 +48,11 @@ TEST_F(LowPriceRespectsTickChecker,
   ASSERT_EQ(LowPriceRespectsTick{tick}(instrument_info), std::nullopt);
 }
 
+TEST_F(LowPriceRespectsTickChecker, ReturnsNulloptWhenLowPriceIsNotSet) {
+  constexpr auto tick = std::make_optional(PriceTick{3});
+  ASSERT_EQ(LowPriceRespectsTick{tick}(instrument_info), std::nullopt);
+}
+
 struct HighPriceRespectsTickChecker : public ::testing::Test {
   market_state::InstrumentInfo instrument_info;
 };
@@ -88,6 +93,11 @@ TEST_F(HighPriceRespectsTickChecker,
   ASSERT_EQ(HighPriceRespectsTick{tick}(instrument_info), std::nullopt);
 }
 
+TEST_F(HighPriceRespectsTickChecker, ReturnsNulloptWhenHighPriceIsNotSet) {
+  constexpr auto tick = std::make_optional(PriceTick{3});
+  ASSERT_EQ(HighPriceRespectsTick{tick}(instrument_info), std::nullopt);
+}
+
 struct LowPriceIsLessThanOrEqualToHighPriceChecker : public ::testing::Test {
   market_state::InstrumentInfo instrument_info;
 };
@@ -115,6 +125,26 @@ TEST_F(
   instrument_info.high_price = Price{20};
   ASSERT_EQ(LowPriceIsLessThanOrEqualToHighPrice{}(instrument_info),
             ValidationError::LowPriceIsLessThanOrEqualToHighPriceViolated);
+}
+
+TEST_F(LowPriceIsLessThanOrEqualToHighPriceChecker,
+       ReturnsNullWhenLowPriceIsNotSet) {
+  instrument_info.high_price = Price{20};
+  ASSERT_EQ(LowPriceIsLessThanOrEqualToHighPrice{}(instrument_info),
+            std::nullopt);
+}
+
+TEST_F(LowPriceIsLessThanOrEqualToHighPriceChecker,
+       ReturnsNullWhenHighPriceIsNotSet) {
+  instrument_info.low_price = Price{20};
+  ASSERT_EQ(LowPriceIsLessThanOrEqualToHighPrice{}(instrument_info),
+            std::nullopt);
+}
+
+TEST_F(LowPriceIsLessThanOrEqualToHighPriceChecker,
+       ReturnsNullWhenNeitherPriceIsSet) {
+  ASSERT_EQ(LowPriceIsLessThanOrEqualToHighPrice{}(instrument_info),
+            std::nullopt);
 }
 
 struct TradePriceRespectsTickChecker : public ::testing::Test {

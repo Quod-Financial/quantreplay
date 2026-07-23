@@ -10,7 +10,7 @@ namespace simulator::trading_system::matching_engine {
 class OrderEventHandlerMock : public OrderEventHandler {
  public:
   MOCK_METHOD(void, handle, (const event::Tick& tick), (override));
-  MOCK_METHOD(void,
+  MOCK_METHOD(PhaseTransitionOutcome,
               handle,
               (const event::PhaseTransition& phase_transition),
               (override));

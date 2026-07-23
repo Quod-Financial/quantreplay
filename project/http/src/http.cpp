@@ -8,6 +8,7 @@
 
 #include "core/version.hpp"
 #include "data_layer/api/data_access_layer.hpp"
+#include "data_layer/api/exceptions/exceptions.hpp"
 #include "ih/config_provider.hpp"
 #include "ih/controllers/fix_session_controller.hpp"
 #include "ih/data_bridge/fix_session_accessor.hpp"
@@ -57,6 +58,9 @@ namespace {
         retrieve_configured_http_port(data_layer::select_simulated_venue(db));
     return std::make_unique<Server::Implementation>(
         server_port, std::move(db), std::move(callbacks), session_settings);
+  } catch (const data_layer::ConnectionFailure&) {
+    // preserve the type for retry
+    throw;
   } catch (const std::exception& exception) {
     log::err("failed to create http server, an error occurred: {}",
              exception.what());

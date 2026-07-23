@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "data_layer/api/data_access_layer.hpp"
+#include "data_layer/api/exceptions/exceptions.hpp"
 #include "ih/generator.hpp"
 #include "log/logging.hpp"
 
@@ -18,6 +19,9 @@ namespace {
   try {
     return std::make_unique<Generator::Implementation>(
         data_layer::select_simulated_venue(db), db);
+  } catch (const data_layer::ConnectionFailure&) {
+    // preserve the type for retry
+    throw;
   } catch (const std::exception& exception) {
     log::err("failed to create generator implementation, an error occurred: {}",
              exception.what());

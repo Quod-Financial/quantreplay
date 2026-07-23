@@ -14,6 +14,8 @@ class MarketDataPublisher {
   auto operator=(MarketDataPublisher&&) -> MarketDataPublisher& = default;
 
   virtual auto publish() -> void = 0;
+
+  virtual auto publish_uncrossing() -> void = 0;
 };
 
 }  // namespace simulator::trading_system::matching_engine

@@ -189,6 +189,92 @@ TEST_F(DepthSheetTest, OfferSheetKeepsLevelsSotedByOfferPriceCriteria) {
                           Property(&DepthLevel::price, Eq(Price(200)))));
 }
 
+TEST_F(DepthSheetTest,
+       AggregatesMarketOrdersIntoSingleNodeAheadOfPricedLevels) {
+  sheet = DepthSheet::create_bid_sheet(idgen);
+  sheet.apply(NewOrderAdded::init()
+                  .with_order_id(OrderId(1))
+                  .with_order_price(NoPrice)
+                  .with_order_quantity(Quantity(10))
+                  .create());
+  sheet.apply(NewOrderAdded::init()
+                  .with_order_id(OrderId(3))
+                  .with_order_price(NoPrice)
+                  .with_order_quantity(Quantity(20))
+                  .create());
+
+  ASSERT_THAT(
+      wrap(sheet.view()),
+      ElementsAre(
+          AllOf(Property(&DepthLevel::price, Eq(NoPrice)),
+                Property(&DepthLevel::type, Eq(MdEntryType::Option::MarketBid)),
+                Property(&DepthLevel::quantity, Eq(Quantity(30))))));
+}
+
+TEST_F(DepthSheetTest,
+       AggregatesMarketOrdersOnBidSheetAheadOfPricedLevels) {
+  sheet = DepthSheet::create_bid_sheet(idgen);
+  sheet.apply(NewOrderAdded::init()
+                  .with_order_id(OrderId(1))
+                  .with_order_side(Side::Option::Buy)
+                  .with_order_price(NoPrice)
+                  .with_order_quantity(Quantity(10))
+                  .create());
+  sheet.apply(NewOrderAdded::init()
+                  .with_order_id(OrderId(2))
+                  .with_order_side(Side::Option::Buy)
+                  .with_order_price(Price(100))
+                  .with_order_quantity(Quantity(5))
+                  .create());
+  sheet.apply(NewOrderAdded::init()
+                  .with_order_id(OrderId(3))
+                  .with_order_side(Side::Option::Buy)
+                  .with_order_price(NoPrice)
+                  .with_order_quantity(Quantity(20))
+                  .create());
+
+  ASSERT_THAT(
+      wrap(sheet.view()),
+      ElementsAre(
+          AllOf(Property(&DepthLevel::price, Eq(NoPrice)),
+                Property(&DepthLevel::type, Eq(MdEntryType::Option::MarketBid)),
+                Property(&DepthLevel::quantity, Eq(Quantity(30)))),
+          AllOf(Property(&DepthLevel::price, Eq(Price(100))),
+                Property(&DepthLevel::type, Eq(MdEntryType::Option::Bid)))));
+}
+
+TEST_F(DepthSheetTest, AggregatesMarketOrdersOnOfferSheetAheadOfPricedLevels) {
+  sheet = DepthSheet::create_offer_sheet(idgen);
+  sheet.apply(NewOrderAdded::init()
+                  .with_order_id(OrderId(1))
+                  .with_order_side(Side::Option::Sell)
+                  .with_order_price(NoPrice)
+                  .with_order_quantity(Quantity(10))
+                  .create());
+  sheet.apply(NewOrderAdded::init()
+                  .with_order_id(OrderId(2))
+                  .with_order_side(Side::Option::Sell)
+                  .with_order_price(Price(100))
+                  .with_order_quantity(Quantity(5))
+                  .create());
+  sheet.apply(NewOrderAdded::init()
+                  .with_order_id(OrderId(3))
+                  .with_order_side(Side::Option::Sell)
+                  .with_order_price(NoPrice)
+                  .with_order_quantity(Quantity(20))
+                  .create());
+
+  ASSERT_THAT(
+      wrap(sheet.view()),
+      ElementsAre(
+          AllOf(
+              Property(&DepthLevel::price, Eq(NoPrice)),
+              Property(&DepthLevel::type, Eq(MdEntryType::Option::MarketOffer)),
+              Property(&DepthLevel::quantity, Eq(Quantity(30)))),
+          AllOf(Property(&DepthLevel::price, Eq(Price(100))),
+                Property(&DepthLevel::type, Eq(MdEntryType::Option::Offer)))));
+}
+
 // NOLINTEND(*magic-number*)
 
 }  // namespace simulator::trading_system::matching_engine::mdata::test

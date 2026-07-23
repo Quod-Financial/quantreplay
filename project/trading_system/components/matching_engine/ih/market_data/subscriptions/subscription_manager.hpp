@@ -2,7 +2,9 @@
 #define SIMULATOR_MATCHING_ENGINE_IH_MARKET_DATA_SUBSCRIPTIONS_SUBSCRIPTION_MANAGER_HPP_
 
 #include <memory>
+#include <vector>
 
+#include "common/trade.hpp"
 #include "ih/common/abstractions/event_listener.hpp"
 #include "ih/common/events/event_reporter.hpp"
 #include "ih/market_data/cache/market_data_provider.hpp"
@@ -33,6 +35,10 @@ class SubscriptionManager : EventReporter {
   auto unsubscribe(const protocol::Session& client_session) -> void;
 
   auto publish() -> void;
+
+  auto publish_uncrossing(const std::vector<Trade>& crosses) -> void;
+
+  auto publish_snapshot() -> void;
 
  private:
   auto validate(const protocol::MarketDataRequest& request) -> bool;

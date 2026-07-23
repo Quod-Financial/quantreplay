@@ -1,5 +1,7 @@
 #include "ih/market_data/cache/cache_manager.hpp"
 
+#include <variant>
+
 #include "matching_engine/configuration.hpp"
 
 namespace simulator::trading_system::matching_engine::mdata {
@@ -49,6 +51,35 @@ auto CacheManager::compose_update(const StreamingSettings& settings) const
   return update;
 }
 
+auto CacheManager::has_update(const StreamingSettings& settings) const -> bool {
+  return trade_cache_.has_update(settings) ||
+         instrument_info_cache_.has_update(settings) ||
+         depth_cache_.has_update(settings);
+}
+
+auto CacheManager::compose_full_update(const StreamingSettings& settings) const
+    -> std::vector<MarketDataEntry> {
+  std::vector<MarketDataEntry> update;
+  trade_cache_.compose_update(settings, update);
+  instrument_info_cache_.compose_initial(settings, update);
+  depth_cache_.compose_initial(settings, update);
+  return update;
+}
+
+auto CacheManager::compose_book(const StreamingSettings& settings) const
+    -> std::vector<MarketDataEntry> {
+  std::vector<MarketDataEntry> book;
+  instrument_info_cache_.compose_initial(settings, book);
+  depth_cache_.compose_initial(settings, book);
+  return book;
+}
+
+auto CacheManager::compose_trade(const StreamingSettings& settings,
+                                 const Trade& trade) const
+    -> std::optional<MarketDataEntry> {
+  return trade_cache_.compose_trade(settings, trade);
+}
+
 auto CacheManager::capture(protocol::InstrumentState& state) const -> void {
   depth_cache_.capture(state);
 }
@@ -73,6 +104,16 @@ auto CacheManager::apply_pending_changes() -> void {
 
 auto CacheManager::was_updated() const -> bool {
   return !pending_notifications_.empty();
+}
+
+auto CacheManager::pending_trades() const -> std::vector<Trade> {
+  std::vector<Trade> trades;
+  for (const auto& notification : pending_notifications_) {
+    if (const auto* trade = std::get_if<Trade>(&notification.value)) {
+      trades.push_back(*trade);
+    }
+  }
+  return trades;
 }
 
 }  // namespace simulator::trading_system::matching_engine::mdata

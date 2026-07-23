@@ -240,7 +240,14 @@ enum class MdEntryType : std::uint8_t {
   Trade,
   LowPrice,
   MidPrice,
-  HighPrice
+  HighPrice,
+  OpeningPrice,
+  ClosingPrice,
+  AuctionClearingPrice,
+  EarlyPrice,
+  PreviousClosingPrice,
+  MarketBid,
+  MarketOffer
 };
 
 enum class MdSubscriptionRequestType : std::uint8_t {

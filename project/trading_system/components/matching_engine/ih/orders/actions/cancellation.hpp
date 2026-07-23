@@ -29,6 +29,9 @@ class Cancellation : private EventReporter {
  private:
   auto cancel_order(const OrderCancel& cancel, OrderPage& page) -> void;
 
+  template <typename Order>
+  auto try_cancel(const OrderCancel& cancel, OrderPage& page) -> bool;
+
   OrderBook& order_book_;
   std::optional<PriceTick> price_tick_;
 };

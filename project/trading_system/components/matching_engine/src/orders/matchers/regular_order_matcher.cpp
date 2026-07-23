@@ -279,11 +279,7 @@ auto RegularOrderMatcher::make_price_criteria(const LimitOrder& aggressor)
 
 auto RegularOrderMatcher::remove_filled_orders(LimitOrdersContainer& side)
     -> void {
-  constexpr auto non_filled_order = [](const LimitOrder& order) {
-    return !order.executed();
-  };
-
-  side.erase(side.begin(), find_limit_order(side, non_filled_order));
+  erase_filled_limit_orders(side);
 }
 
 template <typename TakerOrderType>

@@ -35,6 +35,7 @@ add_static_library(
     ih/pqxx/dao/price_seed_dao.hpp
     ih/pqxx/dao/setting_dao.hpp
     ih/pqxx/dao/venue_dao.hpp
+    ih/pqxx/database/connection_abort_timer.hpp
     ih/pqxx/database/connector.hpp
     ih/pqxx/database/transaction.hpp
     ih/pqxx/database/value_sanitizer.hpp
@@ -109,6 +110,7 @@ add_static_library(
     src/pqxx/dao/price_seed_dao.cpp
     src/pqxx/dao/setting_dao.cpp
     src/pqxx/dao/venue_dao.cpp
+    src/pqxx/database/connection_abort_timer.cpp
     src/pqxx/database/connector.cpp
     src/pqxx/result/detail/basic_row_parser.cpp
     src/pqxx/context.cpp

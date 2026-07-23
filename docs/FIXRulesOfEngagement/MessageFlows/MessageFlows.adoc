@@ -16,8 +16,10 @@ Depending on *SubscriptionRequestType* value, the market simulator:
 * cancels an existing subscription and stops market data streaming for cancelled subscription;
 * responds with an actual state of requested market data in the form of a snapshot.
 
-Each market data request can be associated with only one listing. 
+Each market data request can be associated with only one listing.
 Market data updates are sent for each visible market data change.
+A change is visible to a subscription only if it affects at least one of the entry types requested in the subscription;
+a change affecting only entry types that were not requested produces no message, in either streaming format.
 
 The format of a market data being streamed can be configured by a client in the *MDUpdateType* tag in the *MarketDataRequest* with 
 *SubscriptionRequestType=Subscribe*, which allows to:
@@ -72,6 +74,24 @@ Unknown Symbol (0) | ‘listing identification attributes set is malformed’
 | – | ‘no subscription found for the request id’
 
 |===
+
+[[message-flows-mkt-data-auction]]
+==== Market Data During an Auction
+During an auction's call sub-phase, market data is published on every order action, exactly as during normal trading. The book reported to clients combines the orders already resting at the start of the phase with the orders placed during the call. Resting market orders are reported as Market Bid (269=b) and Market Offer (269=c) depth entries that carry no MDEntryPx and are ranked ahead of all priced levels; these entries are received only by clients that requested the 269=b/c entry types — a plain Bid (0) / Offer (1) subscription does not include them. Snapshots taken during an auction also carry the last known Opening Price (269=4), Closing Price (269=5), Previous Closing Price (269=e) and Auction Clearing Price (269=Q, with its volume); each of these entries is included only if the corresponding entry type was requested, and any value that has never been determined is simply omitted.
+
+While the order book is crossed (a bid priced at or above an offer), the simulator additionally publishes an indicative auction price (MDEntryPx) and volume (MDEntrySize) as an Early Price (269=P) entry on a fixed 30-second interval. This entry is sent only to clients that subscribed to it, is recalculated on each interval, and is discarded when the uncrossing begins. A snapshot request returns the last published indicative value immediately, without waiting for the next interval.
+
+When the uncrossing sub-phase begins, each individual cross is reported as it occurs:
+
+* a client subscribed to full snapshots (MarketDataSnapshotFullRefresh, 35=W) receives, for every cross, a snapshot of the order book _as it stood immediately before the uncrossing started_ together with that cross's trade (Last Trade, 269=2);
+* a client subscribed to incremental updates (MarketDataIncrementalRefresh, 35=X) receives only the trade for each cross, with no bids or offers;
+* a client not subscribed to trades receives nothing for the individual crosses.
+
+Once all crosses are complete, the simulator publishes a single fresh full snapshot of the resulting order book to every subscription, regardless of its update type. An auction in which nothing crosses produces no per-cross messages but still publishes this closing snapshot.
+
+This closing snapshot reflects the auction's outcome. The clearing price and volume are recorded as the Auction Clearing Price (269=Q). An opening auction additionally sets the Opening Price (269=4) and resets the session high and low prices (269=7 and 269=8) to it, tracking them from there on. A closing auction always carries the last known Closing Price into the Previous Closing Price (269=e), then sets the new Closing Price (269=5) if it crossed. If an auction does not cross, no clearing price can be calculated: the Auction Clearing Price (269=Q), together with the Opening Price (269=4) or the (already carried) Closing Price (269=5) for that auction type, is cleared and omitted from updates until a price can next be determined. The session high and low prices are left untouched.
+
+The auction clearing price is a simplified mid-point of the best bid and best offer rounded to the price tick; as a consequence a few limit orders priced through the clearing price may remain in the book after the uncrossing.
 
 [[message-flows-trd-msg]]
 === Trading Messages
@@ -132,6 +152,10 @@ It means that in the message SecurityStatus (35=f), the tags are:
 
 * TradingSessionSubID is “(Continuous) Trading” - 625=3
 * SecurityTradingStatus is “Trading halt” - 326=2 | – | ‘request cannot be processed during halted trading status’
+
+| An ImmediateOrCancel or FillOrKill limit order is submitted during an auction call sub-phase | Reported for orders with TimeInForce=ImmediateOrCancel or TimeInForce=FillOrKill while an auction is in its call sub-phase (SecurityTradingStatus 326=3 with an auction TradingSessionSubID 625=2/4/6) | ‘immediate-or-cancel and fill-or-kill orders are not accepted during an auction’
+
+| Any new order is submitted during an auction uncrossing sub-phase | Reported while an auction is uncrossing (SecurityTradingStatus 326=2 with an auction TradingSessionSubID 625=2/4/6) | ‘orders are not allowed during the uncrossing phase’
 
 |===
 
@@ -245,6 +269,10 @@ It means that in the message SecurityStatus (35=f),the tags are:
 * TradingSessionSubID is “(Continuous) Trading” - 625=3
 * SecurityTradingStatus is “Trading halt” - 326=2 | – | ‘request cannot be processed during halted trading status'
 
+| OrderCancelReplaceRequest targets a market order (OrdType=Market) outside an auction call sub-phase | Market orders rest in the book only during an auction call, and only then can they be amended (their quantity); at any other time an amendment of a market order is rejected | ‘unknown order type’
+
+| Any amend is submitted during an auction uncrossing sub-phase | Reported while an auction is uncrossing (SecurityTradingStatus 326=2 with an auction TradingSessionSubID 625=2/4/6) | ‘orders are not allowed during the uncrossing phase’
+
 |===
 
 [[message-flows-trd-msg-odr-cl-req]]
@@ -284,6 +312,8 @@ a| The venue is in the Open halted phase and OrderCancelRequest is not allowed o
 * SecurityTradingStatus is “Trading halt” - 326=2
 | – | ‘request cannot be processed during halted trading status'
 
+| Any cancel is submitted during an auction uncrossing sub-phase | Order cancels are rejected while an auction is uncrossing, even when the halt settings would otherwise allow cancels (SecurityTradingStatus 326=2 with an auction TradingSessionSubID 625=2/4/6) | ‘orders are not allowed during the uncrossing phase’
+
 |===
 
 [[message-flows-trd-phase]]
@@ -299,7 +329,9 @@ The general trading phase/status reporting message flow is described in a diagra
 
 image::14MktDataStsReport.png[width = 600, height=300]
 
-A client may also issue a current trading phase/status information only, without the creation of a subscription and further updates streaming. 
+During an auction the phase is reported in two steps: a SecurityStatus carrying SecurityTradingStatus (326) = 3 (Resume) and the auction's TradingSessionSubID (625 = 2 opening, 4 closing, 6 intraday) when the call sub-phase begins, then a SecurityStatus carrying SecurityTradingStatus (326) = 2 (Trading Halt) with the same TradingSessionSubID when the uncrossing sub-phase begins. The phase scheduled to follow the auction is reported afterwards.
+
+A client may also issue a current trading phase/status information only, without the creation of a subscription and further updates streaming.
 In this case, a client shall send a *SecurityStatusRequest* message with *SubscriptionRequestType=Snapshot*. 
 The simulator replies with the *SecurityStatus* message only, as shown in the diagram below: 
 

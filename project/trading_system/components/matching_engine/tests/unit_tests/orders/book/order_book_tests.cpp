@@ -1,10 +1,13 @@
 #include <gmock/gmock.h>
 
+#include <chrono>
 #include <stdexcept>
 #include <vector>
 
 #include "core/domain/attributes.hpp"
+#include "core/tools/time.hpp"
 #include "ih/orders/book/limit_order.hpp"
+#include "ih/orders/book/market_order.hpp"
 #include "ih/orders/book/order_book.hpp"
 #include "tools/order_builder.hpp"
 
@@ -148,6 +151,101 @@ TEST_F(LimitOrdersContainer, ReportsErrorOnErasingRangeByInvalidIterators) {
                std::invalid_argument);
 }
 
+struct MarketOrdersContainer : public Test {
+ public:
+  matching_engine::MarketOrdersContainer container;
+
+  auto add_order(OrderId order_id, OrderTime arrival_time) {
+    return container.emplace(order_builder_.with_order_id(order_id)
+                                 .with_order_time(arrival_time)
+                                 .build_market_order());
+  }
+
+  static auto arrival(int seconds_since_epoch) -> OrderTime {
+    return OrderTime{core::sys_us{std::chrono::seconds{seconds_since_epoch}}};
+  }
+
+ private:
+  OrderBuilder order_builder_;
+};
+
+TEST_F(MarketOrdersContainer, IsEmptyAfterCreation) {
+  ASSERT_THAT(container, IsEmpty());
+}
+
+TEST_F(MarketOrdersContainer, EmplacesOrder) {
+  const auto iter = add_order(OrderId{42}, arrival(1));
+
+  ASSERT_THAT(container, Not(IsEmpty()));
+  ASSERT_THAT(iter, Eq(container.begin()));
+  ASSERT_THAT(iter->id(), OrderId{42});
+}
+
+TEST_F(MarketOrdersContainer, ErasesOrder) {
+  const auto iter = add_order(OrderId{42}, arrival(1));
+  ASSERT_THAT(container, Not(IsEmpty()));
+
+  container.erase(iter);
+
+  ASSERT_THAT(container, IsEmpty());
+}
+
+TEST_F(MarketOrdersContainer, ReportsErrorOnErasingOrderByInvalidIterator) {
+  add_order(OrderId{42}, arrival(1));
+
+  ASSERT_THROW(container.erase(container.end()), std::invalid_argument);
+}
+
+TEST_F(MarketOrdersContainer, KeepsOrdersSortedByArrivalTimeOldestFirst) {
+  add_order(OrderId{3}, arrival(300));
+  add_order(OrderId{1}, arrival(100));
+  add_order(OrderId{2}, arrival(200));
+
+  ASSERT_THAT(container,
+              ElementsAre(Property(&MarketOrder::id, Eq(OrderId{1})),
+                          Property(&MarketOrder::id, Eq(OrderId{2})),
+                          Property(&MarketOrder::id, Eq(OrderId{3}))));
+}
+
+TEST_F(MarketOrdersContainer, KeepsEquallyTimedOrdersInArrivalOrder) {
+  add_order(OrderId{1}, arrival(100));
+  add_order(OrderId{2}, arrival(200));
+  add_order(OrderId{3}, arrival(100));
+  add_order(OrderId{4}, arrival(200));
+
+  ASSERT_THAT(container,
+              ElementsAre(Property(&MarketOrder::id, Eq(OrderId{1})),
+                          Property(&MarketOrder::id, Eq(OrderId{3})),
+                          Property(&MarketOrder::id, Eq(OrderId{2})),
+                          Property(&MarketOrder::id, Eq(OrderId{4}))));
+}
+
+TEST_F(MarketOrdersContainer, ErasesRangeOfOrders) {
+  add_order(OrderId{1}, arrival(100));
+  add_order(OrderId{2}, arrival(200));
+  add_order(OrderId{3}, arrival(300));
+  ASSERT_THAT(container, SizeIs(3));
+
+  container.erase(container.begin(), container.end());
+
+  ASSERT_THAT(container, IsEmpty());
+}
+
+TEST_F(MarketOrdersContainer, ReportsErrorOnErasingRangeByInvalidIterators) {
+  add_order(OrderId{1}, arrival(100));
+  add_order(OrderId{2}, arrival(200));
+  add_order(OrderId{3}, arrival(300));
+
+  EXPECT_THROW(container.erase(std::prev(container.begin()), container.end()),
+               std::invalid_argument);
+
+  EXPECT_THROW(container.erase(container.begin(), std::next(container.end())),
+               std::invalid_argument);
+
+  EXPECT_THROW(container.erase(container.end(), container.begin()),
+               std::invalid_argument);
+}
+
 struct OrderBook : public Test {
   matching_engine::OrderBook book;
 };
@@ -161,7 +259,7 @@ TEST_F(OrderBook, TakesSellPage) {
 }
 
 TEST_F(OrderBook, ReportsErrorOnTakingPageForInvalidSide) {
-  ASSERT_THROW(book.take_page(static_cast<Side::Option>(0xFF)),
+  ASSERT_THROW((void)book.take_page(static_cast<Side::Option>(0xFF)),
                std::invalid_argument);
 }
 

@@ -1,6 +1,10 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_MARKET_DATA_CACHE_MARKET_DATA_PROVIDER_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_MARKET_DATA_CACHE_MARKET_DATA_PROVIDER_HPP_
 
+#include <optional>
+#include <vector>
+
+#include "common/trade.hpp"
 #include "core/domain/market_data_entry.hpp"
 #include "ih/market_data/streaming_settings.hpp"
 
@@ -24,6 +28,19 @@ class MarketDataProvider {
 
   virtual auto compose_update(const StreamingSettings& settings) const
       -> std::vector<MarketDataEntry> = 0;
+
+  [[nodiscard]]
+  virtual auto has_update(const StreamingSettings& settings) const -> bool = 0;
+
+  virtual auto compose_full_update(const StreamingSettings& settings) const
+      -> std::vector<MarketDataEntry> = 0;
+
+  virtual auto compose_book(const StreamingSettings& settings) const
+      -> std::vector<MarketDataEntry> = 0;
+
+  virtual auto compose_trade(const StreamingSettings& settings,
+                             const Trade& trade) const
+      -> std::optional<MarketDataEntry> = 0;
 };
 
 }  // namespace simulator::trading_system::matching_engine::mdata

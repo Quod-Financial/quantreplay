@@ -20,6 +20,8 @@ class MarketDataFacade : public MarketDataRequestProcessor,
 
   auto publish() -> void override;
 
+  auto publish_uncrossing() -> void override;
+
   auto process(const protocol::MarketDataRequest& request) -> void override;
 
   auto capture(protocol::InstrumentState& state) -> void override;

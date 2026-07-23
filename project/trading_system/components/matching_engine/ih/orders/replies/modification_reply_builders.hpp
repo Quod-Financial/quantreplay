@@ -5,6 +5,7 @@
 
 #include "common/attributes.hpp"
 #include "ih/orders/book/limit_order.hpp"
+#include "ih/orders/book/market_order.hpp"
 #include "ih/orders/book/order_updates.hpp"
 #include "protocol/app/order_modification_confirmation.hpp"
 #include "protocol/app/order_modification_reject.hpp"
@@ -23,6 +24,8 @@ class ModificationConfirmationBuilder {
 
   auto for_order(const LimitOrder& order) -> ModificationConfirmationBuilder&;
 
+  auto for_order(const MarketOrder& order) -> ModificationConfirmationBuilder&;
+
   auto with_execution_id(ExecutionId identifier)
       -> ModificationConfirmationBuilder&;
 
@@ -36,6 +39,11 @@ class ModificationConfirmationBuilder {
 
 [[nodiscard]]
 auto prepare_modification_confirmation(const LimitOrder& order,
+                                       std::optional<PriceTick> price_tick)
+    -> ModificationConfirmationBuilder;
+
+[[nodiscard]]
+auto prepare_modification_confirmation(const MarketOrder& order,
                                        std::optional<PriceTick> price_tick)
     -> ModificationConfirmationBuilder;
 
@@ -73,6 +81,10 @@ auto prepare_modification_reject(
 
 [[nodiscard]]
 auto prepare_modification_reject(const LimitUpdate& update)
+    -> ModificationRejectBuilder;
+
+[[nodiscard]]
+auto prepare_modification_reject(const MarketUpdate& update)
     -> ModificationRejectBuilder;
 
 }  // namespace simulator::trading_system::matching_engine

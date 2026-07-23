@@ -3,13 +3,15 @@
 
 #include <gsl/pointers>
 #include <memory>
+#include <optional>
 #include <string_view>
 
 #include "common/instrument.hpp"
+#include "core/tools/time.hpp"
 #include "ih/common/abstractions/event_listener.hpp"
 #include "ih/common/abstractions/order_event_handler.hpp"
 #include "ih/common/abstractions/order_request_processor.hpp"
-#include "ih/orders/actions/order_action_handler.hpp"
+#include "ih/orders/actions/order_actions.hpp"
 #include "ih/orders/book/order_book.hpp"
 #include "ih/orders/phase_handler.hpp"
 #include "ih/orders/replies/reject_notifier.hpp"
@@ -49,7 +51,8 @@ class OrderSystemFacade : public OrderRequestProcessor,
 
   auto handle(const event::Tick& tick) -> void override;
 
-  auto handle(const event::PhaseTransition& phase_transition) -> void override;
+  auto handle(const event::PhaseTransition& phase_transition)
+      -> PhaseTransitionOutcome override;
 
   auto handle_disconnection(const protocol::Session& session) -> void override;
 
@@ -71,15 +74,15 @@ class OrderSystemFacade : public OrderRequestProcessor,
   template <typename RequestType>
   auto reject_on_halt(const RequestType& request) -> bool;
 
-  OrderSystemFacade(
-      EventListener& event_listener,
-      const Instrument& instrument,
-      Configuration configuration,
-      std::unique_ptr<order::OrderIdGenerator> order_id_generator,
-      std::unique_ptr<order::Validator> validator,
-      std::unique_ptr<order::RejectNotifier> reject_notifier,
-      std::unique_ptr<OrderBook> depr_order_book,
-      std::unique_ptr<OrderActionHandler> depr_order_action_handler);
+  auto publish_early_price(const event::Tick& tick) -> void;
+
+  OrderSystemFacade(EventListener& event_listener,
+                    const Instrument& instrument,
+                    Configuration configuration,
+                    std::unique_ptr<order::OrderIdGenerator> order_id_generator,
+                    std::unique_ptr<order::Validator> validator,
+                    std::unique_ptr<order::RejectNotifier> reject_notifier,
+                    std::unique_ptr<OrderBook> depr_order_book);
 
   Configuration configuration_;
   order::PhaseHandler phase_handler_;
@@ -91,8 +94,9 @@ class OrderSystemFacade : public OrderRequestProcessor,
   std::unique_ptr<order::RejectNotifier> reject_notifier_;
 
   std::unique_ptr<OrderBook> depr_order_book_;
-  std::unique_ptr<OrderActionHandler> depr_order_action_handler_;
   gsl::not_null<EventListener*> event_listener_;
+
+  std::optional<core::sys_us> early_baseline_;
 };
 
 }  // namespace simulator::trading_system::matching_engine

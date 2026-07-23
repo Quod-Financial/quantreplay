@@ -155,6 +155,105 @@ TYPED_TEST(InstrumentPx, DoesNotUpdateActionIfDeleted) {
   ASSERT_EQ(this->instrument_px_.action(), MarketEntryAction::Option::Delete);
 }
 
+// Auction-clearing (269=Q) and early (269=P) prices carry a quantity
+// alongside the price, instantiated with HasQuantity = true.
+class AuctionClearingInstrumentPx : public Test {
+ public:
+  mdata::InstrumentPx<MdEntryType::Option::AuctionClearingPrice, true>
+      instrument_px_;
+};
+
+TEST_F(AuctionClearingInstrumentPx, DoesNotHoldQuantityByDefault) {
+  ASSERT_THAT(instrument_px_.quantity(), Eq(std::nullopt));
+}
+
+TEST_F(AuctionClearingInstrumentPx, UpdatesWithNewPriceAndQuantity) {
+  ASSERT_TRUE(instrument_px_.update(Price{100.}, Quantity{10.}));
+
+  EXPECT_THAT(instrument_px_.price(), Eq(Price{100.}));
+  EXPECT_THAT(instrument_px_.quantity(), Optional(Eq(Quantity{10.})));
+  EXPECT_THAT(instrument_px_.action(), Eq(MarketEntryAction::Option::New));
+}
+
+TEST_F(AuctionClearingInstrumentPx, HoldsPriceWithoutQuantity) {
+  instrument_px_.update(Price{100.}, std::nullopt);
+
+  EXPECT_THAT(instrument_px_.price(), Eq(Price{100.}));
+  EXPECT_THAT(instrument_px_.quantity(), Eq(std::nullopt));
+}
+
+TEST_F(AuctionClearingInstrumentPx,
+       UpdateReturnsFalseWithSamePriceAndQuantity) {
+  instrument_px_.update(Price{100.}, Quantity{10.});
+  ASSERT_FALSE(instrument_px_.update(Price{100.}, Quantity{10.}));
+}
+
+TEST_F(AuctionClearingInstrumentPx, UpdateReturnsTrueWhenOnlyQuantityChanges) {
+  instrument_px_.update(Price{100.}, Quantity{10.});
+  ASSERT_TRUE(instrument_px_.update(Price{100.}, Quantity{20.}));
+}
+
+TEST_F(AuctionClearingInstrumentPx, ChangesActionWhenOnlyQuantityChanges) {
+  instrument_px_.update(Price{100.}, Quantity{10.});
+  instrument_px_.update(Price{100.}, Quantity{20.});
+
+  EXPECT_THAT(instrument_px_.price(), Eq(Price{100.}));
+  EXPECT_THAT(instrument_px_.quantity(), Optional(Eq(Quantity{20.})));
+  EXPECT_THAT(instrument_px_.action(), Eq(MarketEntryAction::Option::Change));
+}
+
+TEST_F(AuctionClearingInstrumentPx, DoesNotUpdateWithNullPrice) {
+  ASSERT_FALSE(instrument_px_.update(std::optional<Price>{}, Quantity{10.}));
+
+  EXPECT_THAT(instrument_px_.price(), Eq(std::nullopt));
+  EXPECT_THAT(instrument_px_.quantity(), Eq(std::nullopt));
+}
+
+TEST_F(AuctionClearingInstrumentPx, ForceUpdateReportsFirstValueAsNew) {
+  instrument_px_.force_update(Price{100.}, Quantity{10.});
+
+  EXPECT_THAT(instrument_px_.price(), Eq(Price{100.}));
+  EXPECT_THAT(instrument_px_.quantity(), Optional(Eq(Quantity{10.})));
+  EXPECT_THAT(instrument_px_.action(), Eq(MarketEntryAction::Option::New));
+}
+
+TEST_F(AuctionClearingInstrumentPx, ForceUpdateReportsUnchangedValueAsChange) {
+  instrument_px_.update(Price{100.}, Quantity{10.});
+
+  instrument_px_.force_update(Price{100.}, Quantity{10.});
+
+  EXPECT_THAT(instrument_px_.price(), Eq(Price{100.}));
+  EXPECT_THAT(instrument_px_.quantity(), Optional(Eq(Quantity{10.})));
+  EXPECT_THAT(instrument_px_.action(), Eq(MarketEntryAction::Option::Change));
+}
+
+TEST_F(AuctionClearingInstrumentPx, ForceUpdateAppliesDifferentValueAsChange) {
+  instrument_px_.update(Price{100.}, Quantity{10.});
+
+  instrument_px_.force_update(Price{200.}, Quantity{20.});
+
+  EXPECT_THAT(instrument_px_.price(), Eq(Price{200.}));
+  EXPECT_THAT(instrument_px_.quantity(), Optional(Eq(Quantity{20.})));
+  EXPECT_THAT(instrument_px_.action(), Eq(MarketEntryAction::Option::Change));
+}
+
+TEST_F(AuctionClearingInstrumentPx, MarkDeletedPreservesPriceAndQuantity) {
+  instrument_px_.update(Price{100.}, Quantity{10.});
+  instrument_px_.mark_deleted();
+
+  EXPECT_THAT(instrument_px_.price(), Eq(Price{100.}));
+  EXPECT_THAT(instrument_px_.quantity(), Optional(Eq(Quantity{10.})));
+}
+
+TEST_F(AuctionClearingInstrumentPx, DoesNotUpdatePriceAndQuantityIfDeleted) {
+  instrument_px_.update(Price{100.}, Quantity{10.});
+  instrument_px_.mark_deleted();
+  ASSERT_FALSE(instrument_px_.update(Price{200.}, Quantity{20.}));
+
+  EXPECT_THAT(instrument_px_.price(), Eq(Price{100.}));
+  EXPECT_THAT(instrument_px_.quantity(), Optional(Eq(Quantity{10.})));
+}
+
 // NOLINTEND(*magic-numbers*,*non-private-members*)
 
 }  // namespace

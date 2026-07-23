@@ -33,17 +33,31 @@ class DepthNodeComparator {
       -> bool = 0;
 };
 
+// A price-less (market) order is the most aggressive participant on its side of
+// the book, so a nullopt price is treated as the best price by both comparators
+// and therefore ranks ahead of every priced level.
+//
+// These comparators are consumed only as a std::upper_bound partition predicate
+// in DepthSheet::apply, never as a strict-weak-ordering for sort/set, so
+// compare(nullopt, nullopt) == true is intentional: it makes all market orders
+// on a side aggregate into a single null-priced depth node.
 class BidComparator final : public DepthNodeComparator {
   auto compare(const std::optional<Price> lhs,
                const std::optional<Price> rhs) const -> bool override {
-    return lhs.has_value() ? lhs >= rhs : rhs.has_value();
+    if (!lhs.has_value()) {
+      return true;
+    }
+    return rhs.has_value() ? lhs >= rhs : false;
   }
 };
 
 class OfferComparator final : public DepthNodeComparator {
   auto compare(const std::optional<Price> lhs,
                const std::optional<Price> rhs) const -> bool override {
-    return rhs.has_value() ? lhs <= rhs : lhs.has_value();
+    if (!lhs.has_value()) {
+      return true;
+    }
+    return rhs.has_value() ? lhs <= rhs : false;
   }
 };
 

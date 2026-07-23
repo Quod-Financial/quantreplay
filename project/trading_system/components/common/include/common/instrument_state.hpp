@@ -3,6 +3,8 @@
 
 #include <fmt/format.h>
 
+#include <optional>
+
 #include "common/attributes.hpp"
 #include "common/trade.hpp"
 #include "core/domain/attributes.hpp"
@@ -44,8 +46,13 @@ struct LimitOrder {
 };
 
 struct InstrumentInfo {
-  Price low_price{0.};
-  Price high_price{0.};
+  std::optional<Price> low_price{};
+  std::optional<Price> high_price{};
+  std::optional<Price> opening_price{};
+  std::optional<Price> closing_price{};
+  std::optional<Price> auction_clearing_price{};
+  std::optional<Quantity> auction_clearing_quantity{};
+  std::optional<Price> previous_closing_price{};
 
   [[nodiscard]]
   auto operator==(const InstrumentInfo&) const -> bool = default;

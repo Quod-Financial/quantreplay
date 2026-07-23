@@ -2,6 +2,7 @@
 
 #include "core/tools/overload.hpp"
 #include "ih/orders/book/order_metadata.hpp"
+#include "log/logging.hpp"
 
 namespace simulator::trading_system::matching_engine {
 
@@ -46,6 +47,16 @@ auto store(OrderPage& page,
     market_state::LimitOrder order_state;
     store(orders, order_state);
     orders_state.push_back(std::move(order_state));
+  }
+
+  if (const auto resting_market_orders = page.market_orders().size();
+      resting_market_orders > 0) {
+    // Resting market orders are not part of the persisted book state;
+    // recovering an in-progress auction is intentionally unsupported.
+    log::warn(
+        "skipping {} resting market order(s) while persisting the order book "
+        "state, in-auction state recovery is not supported",
+        resting_market_orders);
   }
 }
 

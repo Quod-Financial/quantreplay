@@ -1,6 +1,7 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_MARKET_DATA_SUBSCRIPTIONS_SUBSCRIPTION_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_MARKET_DATA_SUBSCRIPTIONS_SUBSCRIPTION_HPP_
 
+#include "common/trade.hpp"
 #include "core/domain/attributes.hpp"
 #include "core/domain/instrument_descriptor.hpp"
 #include "ih/common/events/event_reporter.hpp"
@@ -27,6 +28,9 @@ class Subscription final : private EventReporter {
   auto send_snapshot(const MarketDataProvider& provider) -> void;
 
   auto send_update(const MarketDataProvider& provider) -> void;
+
+  auto send_uncrossing_cross(const MarketDataProvider& provider,
+                             const Trade& trade) -> void;
 
  private:
   auto send_full_update(const MarketDataProvider& provider) -> void;

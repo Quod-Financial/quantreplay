@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "common/instrument.hpp"
+#include "data_layer/api/exceptions/exceptions.hpp"
 #include "ih/instruments_cache.hpp"
 #include "instruments/cache.hpp"
 #include "instruments/lookup_error.hpp"
@@ -71,6 +72,9 @@ auto Cache::load_instruments(const SourceType& source) -> void {
       cache.add_instrument(std::move(instrument));
     });
     return;
+  } catch (const data_layer::ConnectionFailure&) {
+    // preserve the type for retry
+    throw;
   } catch (const std::exception& exception) {
     log::err("an error occurred while loading instruments into cache: {}",
              exception.what());

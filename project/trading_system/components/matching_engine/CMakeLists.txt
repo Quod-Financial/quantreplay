@@ -49,12 +49,14 @@ add_static_library(
     ih/market_data/validation/validator.hpp
     ih/market_data/market_data_facade.hpp
     ih/market_data/streaming_settings.hpp
+    ih/orders/actions/auction_placement.hpp
+    ih/orders/actions/auction_uncross.hpp
     ih/orders/actions/cancellation.hpp
     ih/orders/actions/elimination.hpp
     ih/orders/actions/limit_order_recover.hpp
-    ih/orders/actions/order_action_handler.hpp
+    ih/orders/actions/market_amendment.hpp
+    ih/orders/actions/order_actions.hpp
     ih/orders/actions/regular_amendment.hpp
-    ih/orders/actions/regular_order_action_processor.hpp
     ih/orders/actions/regular_placement.hpp
     ih/orders/book/limit_order.hpp
     ih/orders/book/market_order.hpp
@@ -62,6 +64,8 @@ add_static_library(
     ih/orders/book/order_book.hpp
     ih/orders/book/order_metadata.hpp
     ih/orders/book/order_updates.hpp
+    ih/orders/matchers/auction_price_calculator.hpp
+    ih/orders/matchers/no_cross_matcher.hpp
     ih/orders/matchers/order_matcher.hpp
     ih/orders/matchers/regular_order_matcher.hpp
     ih/orders/replies/cancellation_reply_builders.hpp
@@ -107,14 +111,18 @@ add_static_library(
     src/market_data/validation/checkers.cpp
     src/market_data/validation/market_data_validator.cpp
     src/market_data/market_data_facade.cpp
+    src/orders/actions/auction_placement.cpp
+    src/orders/actions/auction_uncross.cpp
     src/orders/actions/cancellation.cpp
     src/orders/actions/elimination.cpp
     src/orders/actions/limit_order_recover.cpp
+    src/orders/actions/market_amendment.cpp
+    src/orders/actions/order_actions.cpp
     src/orders/actions/regular_amendment.cpp
-    src/orders/actions/regular_order_action_processor.cpp
     src/orders/actions/regular_placement.cpp
     src/orders/book/order_book.cpp
     src/orders/book/orders.cpp
+    src/orders/matchers/auction_price_calculator.cpp
     src/orders/matchers/regular_order_matcher.cpp
     src/orders/replies/client_reject_reporter.cpp
     src/orders/replies/reply_builders.cpp

@@ -132,17 +132,6 @@ TEST_F(TradeCache, ReportsOnlyLastTradeInInitial) {
   ASSERT_THAT(entries, ElementsAre(EntryHas(Price{400.}, Quantity{1000.})));
 }
 
-TEST_F(TradeCache, ReportsAllTradesInFullUpdate) {
-  cache.update(make_update(make_test_trade(Price{50.}, Quantity{150.}),
-                           make_test_trade(Price{100.}, Quantity{200.}),
-                           make_test_trade(Price{400.}, Quantity{1000.})));
-  settings.enable_full_update_streaming();
-
-  cache.compose_update(settings, entries);
-
-  ASSERT_THAT(entries, SizeIs(3));
-}
-
 TEST_F(TradeCache, DoesNotReportTradeVolumeInUpdateWhenDisabled) {
   cache.update(make_update(NewTrade()));
   cache.configure({.report_trade_volume = false,
@@ -268,6 +257,29 @@ TEST_F(TradeCache, RecoversTradeFromLastTradeRecoverIfItIsPresent) {
   cache.compose_update(settings, entries);
 
   ASSERT_THAT(entries, ElementsAre(EntryHas(Price{100.}, Quantity{200.})));
+}
+
+TEST_F(TradeCache, HasNoUpdateWhenNoTradesCached) {
+  EXPECT_FALSE(cache.has_update(settings));
+}
+
+TEST_F(TradeCache, HasNoUpdateWhenTradeStreamingNotRequested) {
+  cache.update(make_update(make_test_trade(Price{50.}, Quantity{150.})));
+
+  EXPECT_FALSE(cache.has_update(StreamingSettings{}));
+}
+
+TEST_F(TradeCache, HasNoUpdateWhenLastBatchContainedNoTrades) {
+  cache.update(make_update(make_test_trade(Price{50.}, Quantity{150.})));
+  cache.update({});
+
+  EXPECT_FALSE(cache.has_update(settings));
+}
+
+TEST_F(TradeCache, HasUpdateWhenBatchTradesCached) {
+  cache.update(make_update(make_test_trade(Price{50.}, Quantity{150.})));
+
+  EXPECT_TRUE(cache.has_update(settings));
 }
 
 }  // namespace

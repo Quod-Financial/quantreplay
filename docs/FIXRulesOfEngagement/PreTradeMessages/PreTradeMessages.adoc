@@ -58,15 +58,20 @@ This is a list of all the types of Market Data Entries that the firm requesting 
 * 0 - Bid
 * 1 - Offer
 * 2 - Trade
+* 4 - Opening Price
+* 5 - Closing Price
 * 7 - Trading Session High Price
 * 8 - Trading Session Low Price
 * H - Mid Price
-* b - Market bid
-* c - MarketOffer
-* Q - Auction Clearing Price
-* P - Early Prices
+* b - Market Bid
+* c - Market Offer
+* e - Previous Closing Price
+* Q - Auction Clearing Price (price, with its volume in MDEntrySize)
+* P - Early Prices (price, with its volume in MDEntrySize)
 
-| => Component | <<common-components-parties>> | N | 
+Market Bid (269=b) and Market Offer (269=c) entries are not included in a Bid (0) / Offer (1) subscription — they are received only when requested as their own entry types.
+
+| => Component | <<common-components-parties>> | N |
 
 | Component | <<common-components-std-trailer>> | Y | 
 |===
@@ -115,13 +120,16 @@ Conditionally required if this message is in response to a MarketDataRequest(35=
 * 0 - Bid
 * 1 - Offer
 * 2 - Trade
+* 4 - Opening Price
+* 5 - Closing Price
 * 7 - Trading Session High Price
 * 8 - Trading Session Low Price
 * H - Mid Price
 * b - Market Bid
 * c - Market Offer
-* Q - Auction Clearing Price
-* P - Early Price
+* e - Previous Closing Price
+* Q - Auction Clearing Price (price, with its volume in MDEntrySize)
+* P - Early Price (price, with its volume in MDEntrySize; see <<message-flows-mkt-data-auction>>)
 
 | => 270 | MDEntryPx | C | Price of the Market Data Entry.
 
@@ -156,7 +164,7 @@ Usage is determined by market or counterparties.
 
 * 2 - Opening Auction for PreOpen
 * 3 - Continuous Trading
-* 4 - Closing Auction for PreClosed
+* 4 - Closing Auction for PreClose
 * 5 - Post-Trading
 * 6 - Intraday Auction
 * 9 - Unscheduled Intraday Auction
@@ -171,7 +179,7 @@ Required when MDEntryType=Trade.
 
 Required when MDEntryType=Trade.
 
-| => 277 | TradeCondition | a| Side of the imbalance.
+| => 277 | TradeCondition | a| Side of the imbalance. _These imbalance entries are reserved for a future release and are not currently emitted by the simulator._
 
 * P = Imbalance more buyers
 * Q = Imbalance more sellers
@@ -207,13 +215,16 @@ The timestamp component is a Unix Timestamp (Sec) that is generated when the sim
 * 0 - Bid
 * 1 - Offer
 * 2 - Trade
+* 4 - Opening Price
+* 5 - Closing Price
 * 7 - Trading Session High Price
 * 8 - Trading Session Low Price
 * H - Mid Price
 * b - Market Bid
 * c - Market Offer
-* Q - Auction Clearing Price
-* P - Early Price
+* e - Previous Closing Price
+* Q - Auction Clearing Price (price, with its volume in MDEntrySize)
+* P - Early Price (price, with its volume in MDEntrySize; see <<message-flows-mkt-data-auction>>)
 
 | => 270 | MDEntryPx | C | Price of the Market Data Entry. MDEntryPx=Indicative Price.
 
@@ -225,7 +236,7 @@ The timestamp component is a Unix Timestamp (Sec) that is generated when the sim
 
 | => 273 | MDEntryTime | C | The time the trade happened. Required when MDEntryType=Trade.
 
-| => 277 | TradeCondition | a| Side of the imbalance.
+| => 277 | TradeCondition | a| Side of the imbalance. _These imbalance entries are reserved for a future release and are not currently emitted by the simulator._
 
 * P = Imbalance more buyers
 * Q = Imbalance more sellers
@@ -245,7 +256,7 @@ Required when MDEntryType=Trade
 
 * 2 - Opening Auction for PreOpen
 * 3 - Continuous Trading
-* 4 - Closing Auction for PreClosed
+* 4 - Closing Auction for PreClose
 * 5 - Post-Trading
 * 6 - Intraday Auction
 * 9 - Unscheduled Intraday Auction

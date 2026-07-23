@@ -91,14 +91,16 @@ PhaseHandler::PhaseHandler(EventListener& event_listener)
 
 PhaseHandler::~PhaseHandler() = default;
 
-auto PhaseHandler::handle(event::PhaseTransition transition) -> void {
+auto PhaseHandler::handle(event::PhaseTransition transition) -> bool {
   const MarketPhase market_phase{transition.phase.phase(),
                                  transition.phase.status()};
-  if (current_state_ != market_phase) {
-    current_state_ = market_phase;
-    subscriptions_->for_each(
-        [this](const Subscription& subscription) { publish(subscription); });
+  if (current_state_ == market_phase) {
+    return false;
   }
+  current_state_ = market_phase;
+  subscriptions_->for_each(
+      [this](const Subscription& subscription) { publish(subscription); });
+  return true;
 }
 
 auto PhaseHandler::process(const protocol::SecurityStatusRequest& request)

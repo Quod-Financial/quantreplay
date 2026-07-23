@@ -71,6 +71,10 @@ constexpr char SecurityType_INDEX[] = "INDEX";
 constexpr char SecurityType_CONTRACT_FOR_DIFFERENCE[] = "CFD";
 constexpr char SecurityType_NON_DELIVERABLE_SWAP[] = "FXNDS";
 
+constexpr char MDEntryType_PREVIOUS_CLOSING_PRICE = 'e';
+constexpr char MDEntryType_MARKET_BID = 'b';
+constexpr char MDEntryType_MARKET_OFFER = 'c';
+
 }  // namespace FIX
 
 #endif  // SIMULATOR_FIX_COMMON_FIX_CUSTOM_VALUES_HPP_

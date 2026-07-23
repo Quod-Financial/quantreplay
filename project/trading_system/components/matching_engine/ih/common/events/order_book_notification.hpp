@@ -18,7 +18,9 @@ struct OrderBookNotification {
                              OrderRemoved,
                              Trade,
                              LastTradeRecover,
-                             InstrumentInfoRecover>;
+                             InstrumentInfoRecover,
+                             AuctionPricesUpdate,
+                             EarlyPriceUpdate>;
 
   template <typename NotificationType>
     requires std::constructible_from<Value, NotificationType>

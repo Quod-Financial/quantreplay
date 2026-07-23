@@ -312,6 +312,27 @@ auto ModificationConfirmationBuilder::for_order(const LimitOrder& order)
   return *this;
 }
 
+auto ModificationConfirmationBuilder::for_order(const MarketOrder& order)
+    -> ModificationConfirmationBuilder& {
+  message_.instrument = order.instrument();
+  message_.parties = order.attributes().order_parties();
+  message_.venue_order_id = order::to_venue_order_id(order.id());
+  message_.client_order_id = order.client_order_id();
+  message_.order_quantity = order.total_quantity();
+  message_.leaving_quantity = order.leaves_quantity();
+  message_.cum_executed_quantity = order.cum_executed_quantity();
+  message_.average_price =
+      rounded_average_price(order.average_price(), price_tick_);
+  message_.order_status = order.status();
+  message_.side = order.side();
+  message_.time_in_force = order.time_in_force();
+  message_.short_sale_exempt_reason = order.short_sale_exemption_reason();
+  message_.expire_time = order.expire_time();
+  message_.expire_date = order.expire_date();
+  message_.order_type = OrderType::Option::Market;
+  return *this;
+}
+
 auto ModificationConfirmationBuilder::with_execution_id(ExecutionId identifier)
     -> ModificationConfirmationBuilder& {
   message_.execution_id = std::move(identifier);
@@ -326,6 +347,14 @@ auto ModificationConfirmationBuilder::with_orig_client_order_id(
 }
 
 auto prepare_modification_confirmation(const LimitOrder& order,
+                                       std::optional<PriceTick> price_tick)
+    -> ModificationConfirmationBuilder {
+  ModificationConfirmationBuilder builder{order.client_session(), price_tick};
+  builder.for_order(order);
+  return builder;
+}
+
+auto prepare_modification_confirmation(const MarketOrder& order,
                                        std::optional<PriceTick> price_tick)
     -> ModificationConfirmationBuilder {
   ModificationConfirmationBuilder builder{order.client_session(), price_tick};
@@ -393,6 +422,15 @@ auto prepare_modification_reject(
 }
 
 auto prepare_modification_reject(const LimitUpdate& update)
+    -> ModificationRejectBuilder {
+  ModificationRejectBuilder builder{update.client_session};
+  builder.with_order_id(update.order_id)
+      .with_client_order_id(update.client_order_id)
+      .with_orig_client_order_id(update.orig_client_order_id);
+  return builder;
+}
+
+auto prepare_modification_reject(const MarketUpdate& update)
     -> ModificationRejectBuilder {
   ModificationRejectBuilder builder{update.client_session};
   builder.with_order_id(update.order_id)

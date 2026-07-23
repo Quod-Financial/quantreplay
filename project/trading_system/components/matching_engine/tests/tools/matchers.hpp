@@ -50,6 +50,14 @@ MATCHER_P4(IsOrderCancellationConfirmation,
       result_listener);
 }
 
+MATCHER(IsClientNotificationFlush, "") {
+  using namespace ::testing;
+  return ExplainMatchResult(
+      Field(&Event::value, VariantWith<ClientNotificationFlush>(_)),
+      arg,
+      result_listener);
+}
+
 }  // namespace simulator::trading_system::matching_engine
 
 #endif  // SIMULATOR_MATCHING_ENGINE_TESTS_TOOLS_MATCHERS_HPP_

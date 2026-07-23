@@ -11,7 +11,10 @@ Changes to phase occur across the entire venue.
 In any case, the phase will always be reported by listing. 
 This means if a phase change happens across the venue, a separate SecurityStatus message is sent for every listing on that venue 
 (but, of course, only for the client-subscribed listings).
-If there are any application-layer problems handling the SecurityStatusRequest, the simulator responds with a BusinessMessageReject (35=j) message, 
+
+Auction phases are reported through the same workflow. When an auction's call sub-phase begins, the simulator reports SecurityTradingStatus (326) = 3 (Resume) together with the TradingSessionSubID (625) of the auction variant — 2 for an opening auction (PreOpen), 4 for a closing auction (PreClose) or 6 for an intraday auction (Auction). When the auction's uncrossing sub-phase begins, it reports SecurityTradingStatus (326) = 2 (Trading Halt) with the same TradingSessionSubID. The phase scheduled to follow the auction is then reported as usual.
+
+If there are any application-layer problems handling the SecurityStatusRequest, the simulator responds with a BusinessMessageReject (35=j) message,
 indicating the rejection details in Text and BusinessRejectReason tags, and considers the request invalid and terminated.
 
 [[phase-reporting-msg-sec-sts-req]]
@@ -64,17 +67,22 @@ For FX instruments, identifies the currency used for quantity.
 
 Required when SecurityIDSource = ISIN in the Instrument component.
 
-| 336 | TradingSessionID | N | Trading session identifier
+| 336 | TradingSessionID | N a| Trading session identifier.
 
-| 625 | TradingSessionSubID | N a| Sub-identifier for a trading phase within a trading session.
+* 1 - Day
 
+| 625 | TradingSessionSubID | N a| Sub-identifier for the active trading phase within a trading session.
+
+* 2 - Opening Auction (PreOpen phase)
 * 3 - Open
+* 4 - Closing Auction (PreClose phase)
+* 6 - Intraday Auction (Auction phase)
 * 10 - Closed
 
 | 326 | SecurityTradingStatus | N a| Trading status.
 
-* 2 - Trading Halt
-* 3 - Resume
+* 2 - Trading Halt - reported at the start of an auction's uncrossing sub-phase, while the active phase is halted, and during the Closed phase
+* 3 - Resume - reported at the start of an auction's call sub-phase, and during normal Open trading
  
 | Component | <<common-components-std-trailer>> | Y | 
 |===

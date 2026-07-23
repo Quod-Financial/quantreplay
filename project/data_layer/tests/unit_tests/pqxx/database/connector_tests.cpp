@@ -32,7 +32,9 @@ class DataLayer_Pqxx_Connector : public ::testing::Test {
   }
 
   static auto expected_connection_string() -> std::string {
-    return "postgresql://user:password@host:5432/database";
+    return "postgresql://user:password@host:5432/database"
+           "?connect_timeout=5&keepalives=1&keepalives_idle=10"
+           "&keepalives_interval=5&keepalives_count=3&tcp_user_timeout=15000";
   }
 };
 

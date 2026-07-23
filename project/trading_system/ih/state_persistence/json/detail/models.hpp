@@ -59,8 +59,13 @@ struct LimitOrder {
 };
 
 struct InstrumentInfo {
-  double low_price;
-  double high_price;
+  std::optional<double> low_price;
+  std::optional<double> high_price;
+  std::optional<double> opening_price;
+  std::optional<double> closing_price;
+  std::optional<double> auction_clearing_price;
+  std::optional<double> auction_clearing_quantity;
+  std::optional<double> previous_closing_price;
 };
 
 struct InstrumentSpecification {

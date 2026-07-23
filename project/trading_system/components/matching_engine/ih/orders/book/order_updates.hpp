@@ -5,6 +5,7 @@
 
 #include "common/attributes.hpp"
 #include "ih/orders/book/limit_order.hpp"
+#include "ih/orders/book/market_order.hpp"
 #include "protocol/types/session.hpp"
 
 namespace simulator::trading_system::matching_engine {
@@ -14,6 +15,17 @@ struct LimitUpdate {
 
   protocol::Session client_session;
   LimitOrder::Update order_diff;
+  std::optional<ClientOrderId> client_order_id;
+  std::optional<OrigClientOrderId> orig_client_order_id;
+  std::optional<OrderId> order_id;
+  Side order_side;
+};
+
+struct MarketUpdate {
+  MarketUpdate(protocol::Session session, Side side, MarketOrder::Update diff);
+
+  protocol::Session client_session;
+  MarketOrder::Update order_diff;
   std::optional<ClientOrderId> client_order_id;
   std::optional<OrigClientOrderId> orig_client_order_id;
   std::optional<OrderId> order_id;

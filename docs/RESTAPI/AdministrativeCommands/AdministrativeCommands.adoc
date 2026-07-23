@@ -704,6 +704,8 @@ _Response Properties_
 ==== Halt/Resume Market Phase
 Halt or resume current market phase for a single market simulator venue instance.
 
+Halt and resume requests are rejected while an auction phase is active (see <<general-mktphs-auction,Auction Phase>>); both return a 409 Conflict, as shown in the auction examples below.
+
 _Request Properties_
 
 [cols="25,15,60"]
@@ -756,7 +758,7 @@ Content-Type: application/json;charset=UTF-8
 Content-Length: XXX
 
 {
-    "result" : "Market successfully halted"
+    "result" : "The market was successfully halted."
 }
 ----
 
@@ -821,7 +823,7 @@ Content-Type: application/json;charset=UTF-8
 Content-Length: XXX
 
 {
-    "result" : "Market successfully halted"
+    "result" : "The market was successfully halted."
 }
 ----
 
@@ -864,6 +866,19 @@ Content-Length: XXX
 }
 ----
 
+_Example_: Reply if an auction is in progress
+
+[,http]
+----
+HTTP/1.1 409 Conflict
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "Cannot halt the market while an auction is in progress."
+}
+----
+
 _Example_: Resume market for the current venue
 
 [,http]
@@ -896,6 +911,19 @@ Content-Length: XXX
 
 {
     "result" : "There is no halt request to terminate."
+}
+----
+
+_Example_: Reply if an auction is in progress
+
+[,http]
+----
+HTTP/1.1 409 Conflict
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "Cannot resume the market while an auction is in progress."
 }
 ----
 

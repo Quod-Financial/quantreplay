@@ -8,7 +8,7 @@ namespace simulator::trading_system::matching_engine::mdata {
 DepthNode::DepthNode(MarketEntryId identifier, const OrderAdded& initial)
     : record_(std::move(identifier),
               initial.order_price,
-              to_entry_type(initial.order_side)) {
+              to_entry_type(initial.order_side, initial.order_type)) {
   apply(initial);
 }
 

@@ -440,11 +440,35 @@ auto read(const rapidjson::Value& json_value,
   auto result =
       read(json_value, "TradingSessionLowPrice", model.low_price)
           .and_then(read_field(
-              json_value, "TradingSessionHighPrice", model.high_price));
+              json_value, "TradingSessionHighPrice", model.high_price))
+          .and_then(read_field(json_value, "OpeningPrice", model.opening_price))
+          .and_then(read_field(json_value, "ClosingPrice", model.closing_price))
+          .and_then(read_field(
+              json_value, "AuctionClearingPrice", model.auction_clearing_price))
+          .and_then(read_field(json_value,
+                               "AuctionClearingQuantity",
+                               model.auction_clearing_quantity))
+          .and_then(read_field(json_value,
+                               "PreviousClosingPrice",
+                               model.previous_closing_price));
 
   if (result) {
-    dest.low_price = Price{model.low_price};
-    dest.high_price = Price{model.high_price};
+    const auto to_price =
+        [](const std::optional<double>& value) -> std::optional<Price> {
+      return value.has_value() ? std::make_optional<Price>(*value)
+                               : std::nullopt;
+    };
+
+    dest.low_price = to_price(model.low_price);
+    dest.high_price = to_price(model.high_price);
+    dest.opening_price = to_price(model.opening_price);
+    dest.closing_price = to_price(model.closing_price);
+    dest.auction_clearing_price = to_price(model.auction_clearing_price);
+    dest.auction_clearing_quantity =
+        model.auction_clearing_quantity.has_value()
+            ? std::make_optional<Quantity>(*model.auction_clearing_quantity)
+            : std::nullopt;
+    dest.previous_closing_price = to_price(model.previous_closing_price);
   }
 
   return result;

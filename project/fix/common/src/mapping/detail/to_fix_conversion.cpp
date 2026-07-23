@@ -337,7 +337,14 @@ auto make_md_entry_type_association()
       {MdEntryType::Trade, FIX::MDEntryType_TRADE},
       {MdEntryType::LowPrice, FIX::MDEntryType_TRADING_SESSION_LOW_PRICE},
       {MdEntryType::MidPrice, FIX::MDEntryType_MID_PRICE},
-      {MdEntryType::HighPrice, FIX::MDEntryType_TRADING_SESSION_HIGH_PRICE}};
+      {MdEntryType::HighPrice, FIX::MDEntryType_TRADING_SESSION_HIGH_PRICE},
+      {MdEntryType::OpeningPrice, FIX::MDEntryType_OPENING_PRICE},
+      {MdEntryType::ClosingPrice, FIX::MDEntryType_CLOSING_PRICE},
+      {MdEntryType::AuctionClearingPrice, FIX::MDEntryType_AUCTION_CLEARING_PRICE},
+      {MdEntryType::EarlyPrice, FIX::MDEntryType_EARLY_PRICES},
+      {MdEntryType::PreviousClosingPrice, FIX::MDEntryType_PREVIOUS_CLOSING_PRICE},
+      {MdEntryType::MarketBid, FIX::MDEntryType_MARKET_BID},
+      {MdEntryType::MarketOffer, FIX::MDEntryType_MARKET_OFFER}};
   // clang-format on
 }
 

@@ -118,6 +118,21 @@ auto SubscriptionManager::publish() -> void {
   });
 }
 
+auto SubscriptionManager::publish_uncrossing(const std::vector<Trade>& crosses)
+    -> void {
+  index_->for_each([&](Subscription& subscription) {
+    for (const Trade& cross : crosses) {
+      subscription.send_uncrossing_cross(data_provider_, cross);
+    }
+  });
+}
+
+auto SubscriptionManager::publish_snapshot() -> void {
+  index_->for_each([this](Subscription& subscription) {
+    subscription.send_snapshot(data_provider_);
+  });
+}
+
 auto SubscriptionManager::validate(const protocol::MarketDataRequest& request)
     -> bool {
   if (!request.request_id.has_value()) {

@@ -70,8 +70,16 @@ auto fmt::formatter<simulator::trading_system::market_state::LimitOrder>::
 auto fmt::formatter<simulator::trading_system::market_state::InstrumentInfo>::
     format(const formattable& info, format_context& ctx) const
     -> format_context::iterator {
-  return format_to(ctx.out(),
-                   R"({{ "low_price": {}, "high_price": {} }})",
-                   info.low_price,
-                   info.high_price);
+  // clang-format off
+  return format_to(
+      ctx.out(),
+      R"({{ "low_price": {}, "high_price": {}, "opening_price": {}, "closing_price": {}, "auction_clearing_price": {}, "auction_clearing_quantity": {}, "previous_closing_price": {} }})",
+      info.low_price,
+      info.high_price,
+      info.opening_price,
+      info.closing_price,
+      info.auction_clearing_price,
+      info.auction_clearing_quantity,
+      info.previous_closing_price);
+  // clang-format on
 }

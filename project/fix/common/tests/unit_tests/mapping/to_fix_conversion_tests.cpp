@@ -108,7 +108,8 @@ TEST(ToFixUtcTimeOnlyConversion, ConvertsSystemMicrosecondsToFixSeconds) {
   // 2024-05-28 10:31:58.999999 GMT
   constexpr auto timestamp = core::sys_microseconds{1716892318999999us};
 
-  const auto fix_field = convert_to_fix<FIX::TestUtcTimeOnlyField>(timestamp, TimestampPrecision::Seconds);
+  const auto fix_field = convert_to_fix<FIX::TestUtcTimeOnlyField>(
+      timestamp, TimestampPrecision::Seconds);
 
   ASSERT_EQ(fix_field.getString(), "10:31:58");
 }
@@ -119,7 +120,8 @@ TEST(ToFixUtcTimeOnlyConversion, ConvertsSystemMicrosecondsToFixMilliseconds) {
   // 2024-05-28 10:31:58.123999 GMT
   constexpr auto timestamp = core::sys_microseconds{1716892318123999us};
 
-  const auto fix_field = convert_to_fix<FIX::TestUtcTimeOnlyField>(timestamp, TimestampPrecision::Milliseconds);
+  const auto fix_field = convert_to_fix<FIX::TestUtcTimeOnlyField>(
+      timestamp, TimestampPrecision::Milliseconds);
 
   ASSERT_EQ(fix_field.getString(), "10:31:58.123");
 }
@@ -130,7 +132,8 @@ TEST(ToFixUtcTimeOnlyConversion, ConvertsSystemMicrosecondsToFixMicroseconds) {
   // 2024-05-28 10:31:58.123456 GMT
   constexpr auto timestamp = core::sys_microseconds{1716892318123456us};
 
-  const auto fix_field = convert_to_fix<FIX::TestUtcTimeOnlyField>(timestamp, TimestampPrecision::Microseconds);
+  const auto fix_field = convert_to_fix<FIX::TestUtcTimeOnlyField>(
+      timestamp, TimestampPrecision::Microseconds);
 
   ASSERT_EQ(fix_field.getString(), "10:31:58.123456");
 }
@@ -141,7 +144,8 @@ TEST(ToFixUtcTimeStampConversion, ConvertsSystemMicrosecondsToFixSeconds) {
   // 2024-05-28 10:31:58.999999 GMT
   constexpr auto timestamp = core::sys_microseconds{1716892318999999us};
 
-  const auto fix_field = convert_to_fix<FIX::TestUtcTimeStampField>(timestamp, TimestampPrecision::Seconds);
+  const auto fix_field = convert_to_fix<FIX::TestUtcTimeStampField>(
+      timestamp, TimestampPrecision::Seconds);
 
   ASSERT_EQ(fix_field.getString(), "20240528-10:31:58");
 }
@@ -152,7 +156,8 @@ TEST(ToFixUtcTimeStampConversion, ConvertsSystemMicrosecondsToFixMilliseconds) {
   // 2024-05-28 10:31:58.123999 GMT
   constexpr auto timestamp = core::sys_microseconds{1716892318123999us};
 
-  const auto fix_field = convert_to_fix<FIX::TestUtcTimeStampField>(timestamp, TimestampPrecision::Milliseconds);
+  const auto fix_field = convert_to_fix<FIX::TestUtcTimeStampField>(
+      timestamp, TimestampPrecision::Milliseconds);
 
   ASSERT_EQ(fix_field.getString(), "20240528-10:31:58.123");
 }
@@ -163,7 +168,8 @@ TEST(ToFixUtcTimeStampConversion, ConvertsSystemMicrosecondsToFixMicroseconds) {
   // 2024-05-28 10:31:58.123456 GMT
   constexpr auto timestamp = core::sys_microseconds{1716892318123456us};
 
-  const auto fix_field = convert_to_fix<FIX::TestUtcTimeStampField>(timestamp, TimestampPrecision::Microseconds);
+  const auto fix_field = convert_to_fix<FIX::TestUtcTimeStampField>(
+      timestamp, TimestampPrecision::Microseconds);
 
   ASSERT_EQ(fix_field.getString(), "20240528-10:31:58.123456");
 }
@@ -639,7 +645,14 @@ INSTANTIATE_TEST_SUITE_P(InternalEnum, ToFixMdEntryTypeConversion,
     std::make_tuple(MdEntryType::Option::Trade, FIX::MDEntryType_TRADE),
     std::make_tuple(MdEntryType::Option::LowPrice, FIX::MDEntryType_TRADING_SESSION_LOW_PRICE),
     std::make_tuple(MdEntryType::Option::MidPrice, FIX::MDEntryType_MID_PRICE),
-    std::make_tuple(MdEntryType::Option::HighPrice, FIX::MDEntryType_TRADING_SESSION_HIGH_PRICE)
+    std::make_tuple(MdEntryType::Option::HighPrice, FIX::MDEntryType_TRADING_SESSION_HIGH_PRICE),
+    std::make_tuple(MdEntryType::Option::OpeningPrice, FIX::MDEntryType_OPENING_PRICE),
+    std::make_tuple(MdEntryType::Option::ClosingPrice, FIX::MDEntryType_CLOSING_PRICE),
+    std::make_tuple(MdEntryType::Option::AuctionClearingPrice, FIX::MDEntryType_AUCTION_CLEARING_PRICE),
+    std::make_tuple(MdEntryType::Option::EarlyPrice, FIX::MDEntryType_EARLY_PRICES),
+    std::make_tuple(MdEntryType::Option::PreviousClosingPrice, 'e'),
+    std::make_tuple(MdEntryType::Option::MarketBid, 'b'),
+    std::make_tuple(MdEntryType::Option::MarketOffer, 'c')
   ));
 // clang-format on
 

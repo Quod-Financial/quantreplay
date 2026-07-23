@@ -17,7 +17,8 @@ struct HaltPhaseReply {
     Halted,
     AlreadyHaltedByRequest,
     NoActivePhase,
-    UnableToHalt
+    UnableToHalt,
+    AuctionInProgress
   };
 
   std::optional<Result> result;
@@ -26,7 +27,11 @@ struct HaltPhaseReply {
 struct ResumePhaseRequest {};
 
 struct ResumePhaseReply {
-  enum class Result : std::uint8_t { Resumed, NoRequestedHalt };
+  enum class Result : std::uint8_t {
+    Resumed,
+    NoRequestedHalt,
+    AuctionInProgress
+  };
 
   std::optional<Result> result;
 };

@@ -43,6 +43,11 @@ TEST_F(EventDispatcher, RaizesExceptionOnBadClientNotificationListener) {
                std::invalid_argument);
 }
 
+TEST_F(EventDispatcher, RaizesExceptionOnBadClientNotificationFlushListener) {
+  ASSERT_THROW(dispatcher.on_client_notification_flush(nullptr),
+               std::invalid_argument);
+}
+
 TEST_F(EventDispatcher, RaizesExceptionOnBadOrderBookNotificationListener) {
   ASSERT_THROW(dispatcher.on_order_book_notification(nullptr),
                std::invalid_argument);
@@ -50,6 +55,10 @@ TEST_F(EventDispatcher, RaizesExceptionOnBadOrderBookNotificationListener) {
 
 TEST_F(EventDispatcher, IgnoresClientNotificationWhenNoListenerIsSet) {
   ASSERT_NO_THROW(emit(make_client_notification()));
+}
+
+TEST_F(EventDispatcher, IgnoresClientNotificationFlushWhenNoListenerIsSet) {
+  ASSERT_NO_THROW(emit(ClientNotificationFlush{}));
 }
 
 TEST_F(EventDispatcher, IgnoresOrderBookNotificationWhenNoListenerIsSet) {
@@ -63,6 +72,15 @@ TEST_F(EventDispatcher, DispatchesClientNotification) {
   EXPECT_CALL(listener, Call).Times(1);
 
   emit(make_client_notification());
+}
+
+TEST_F(EventDispatcher, DispatchesClientNotificationFlush) {
+  MockFunction<void()> listener;
+  dispatcher.on_client_notification_flush(listener.AsStdFunction());
+
+  EXPECT_CALL(listener, Call).Times(1);
+
+  emit(ClientNotificationFlush{});
 }
 
 TEST_F(EventDispatcher, DispatchesOrderBookNotification) {

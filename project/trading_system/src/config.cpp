@@ -75,7 +75,7 @@ auto PhaseEntryReader::operator()(const data_layer::MarketPhase& record)
   }
 
   const auto end_range =
-      std::chrono::seconds(std::abs(record.end_time_range().value_or(0)));
+      std::chrono::minutes(std::abs(record.end_time_range().value_or(0)));
 
   const auto allow_cancels = record.allow_cancels().value_or(false);
 

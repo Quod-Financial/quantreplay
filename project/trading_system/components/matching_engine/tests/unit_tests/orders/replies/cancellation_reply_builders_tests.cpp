@@ -419,6 +419,24 @@ TEST_F(CancellationConfirmationBuilder, SetsOrigClientOrderId) {
               Optional(Eq(OrigClientOrderId{"ORIG-123"})));
 }
 
+TEST_F(CancellationConfirmationBuilder, DoesNotSetOrderPriceForMarketOrder) {
+  const auto order =
+      order_builder.with_order_price(OrderPrice{123}).build_market_order();
+
+  const auto confirmation = builder.for_order(order).build();
+
+  ASSERT_THAT(confirmation.order_price, Eq(std::nullopt));
+}
+
+TEST_F(CancellationConfirmationBuilder, PrepareFactoryBuildsForMarketOrder) {
+  const auto order = order_builder.build_market_order();
+
+  const auto confirmation =
+      prepare_cancellation_confirmation(order, std::nullopt).build();
+
+  ASSERT_THAT(confirmation.order_type, Optional(Eq(OrderType::Option::Market)));
+}
+
 struct CancellationRejectBuilder : public Test {
   const protocol::Session test_session{protocol::generator::Session{}};
   protocol::OrderCancellationRequest request{test_session};

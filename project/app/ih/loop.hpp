@@ -8,6 +8,8 @@ struct Loop {
 
   static auto suspend_main_thread() -> State;
 
+  [[nodiscard]] static auto termination_requested() -> bool;
+
   static auto terminate() -> void;
 
   static auto reset_app_state() -> void;

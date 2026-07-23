@@ -27,15 +27,42 @@ class PhaseHandler : EventReporter {
 
   ~PhaseHandler() override;
 
+  [[nodiscard]]
   auto in_closed_phase() const -> bool {
     return current_state_.trading_phase() == TradingPhase::Option::Closed;
   }
 
+  [[nodiscard]]
   auto in_halt_phase() const -> bool {
     return current_state_.trading_status() == TradingStatus::Option::Halt;
   }
 
-  auto handle(event::PhaseTransition transition) -> void;
+  [[nodiscard]]
+  auto in_auction_phase() const -> bool {
+    const auto phase = current_state_.trading_phase();
+    return phase == TradingPhase::Option::OpeningAuction ||
+           phase == TradingPhase::Option::IntradayAuction ||
+           phase == TradingPhase::Option::ClosingAuction;
+  }
+
+  [[nodiscard]]
+  auto in_auction_call() const -> bool {
+    return in_auction_phase() &&
+           current_state_.trading_status() == TradingStatus::Option::Resume;
+  }
+
+  [[nodiscard]]
+  auto in_auction_uncross() const -> bool {
+    return in_auction_phase() &&
+           current_state_.trading_status() == TradingStatus::Option::Halt;
+  }
+
+  [[nodiscard]]
+  auto current_phase() const -> MarketPhase {
+    return current_state_;
+  }
+
+  auto handle(event::PhaseTransition transition) -> bool;
 
   auto process(const protocol::SecurityStatusRequest& request) -> void;
 

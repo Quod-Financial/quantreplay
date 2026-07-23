@@ -18,8 +18,16 @@ auto find_target_limit_order(OrderPage& page, const LimitUpdate& update)
     -> LimitOrdersContainer::iterator;
 
 [[nodiscard]]
+auto find_target_market_order(OrderPage& page, const MarketUpdate& update)
+    -> MarketOrdersContainer::iterator;
+
+[[nodiscard]]
 auto find_target_limit_order(OrderPage& page, const OrderCancel& cancel)
     -> LimitOrdersContainer::iterator;
+
+[[nodiscard]]
+auto find_target_market_order(OrderPage& page, const OrderCancel& cancel)
+    -> MarketOrdersContainer::iterator;
 
 }  // namespace simulator::trading_system::matching_engine
 

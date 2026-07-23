@@ -42,6 +42,12 @@ struct ClientNotification {
   Value value;
 };
 
+// Requests immediate delivery of every client notification cached so far
+struct ClientNotificationFlush {
+  [[nodiscard]]
+  auto operator==(const ClientNotificationFlush&) const -> bool = default;
+};
+
 }  // namespace simulator::trading_system::matching_engine
 
 #endif  // SIMULATOR_MATCHING_ENGINE_IH_COMMON_EVENTS_CLIENT_NOTIFICATION_HPP_

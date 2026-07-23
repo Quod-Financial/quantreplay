@@ -1,10 +1,17 @@
 #include "ih/orders/order_system_facade.hpp"
 
+#include <chrono>
+#include <optional>
 #include <variant>
 
 #include "core/tools/overload.hpp"
+#include "ih/common/data/market_data_updates.hpp"
+#include "ih/common/events/client_notification.hpp"
+#include "ih/common/events/event.hpp"
+#include "ih/orders/actions/auction_uncross.hpp"
 #include "ih/orders/actions/elimination.hpp"
-#include "ih/orders/actions/regular_order_action_processor.hpp"
+#include "ih/orders/actions/order_actions.hpp"
+#include "ih/orders/matchers/auction_price_calculator.hpp"
 #include "ih/orders/replies/client_reject_reporter.hpp"
 #include "ih/orders/requests/interpretation.hpp"
 #include "ih/orders/tools/order_book_state_converter.hpp"
@@ -36,8 +43,7 @@ OrderSystemFacade::OrderSystemFacade(
     std::unique_ptr<order::OrderIdGenerator> order_id_generator,
     std::unique_ptr<order::Validator> validator,
     std::unique_ptr<order::RejectNotifier> reject_notifier,
-    std::unique_ptr<OrderBook> depr_order_book,
-    std::unique_ptr<OrderActionHandler> depr_order_action_handler)
+    std::unique_ptr<OrderBook> depr_order_book)
     : configuration_(configuration),
       phase_handler_(event_listener),
       halt_not_closed_phase_setting_{},
@@ -46,7 +52,6 @@ OrderSystemFacade::OrderSystemFacade(
       validator_(std::move(validator)),
       reject_notifier_(std::move(reject_notifier)),
       depr_order_book_(std::move(depr_order_book)),
-      depr_order_action_handler_(std::move(depr_order_action_handler)),
       event_listener_(&event_listener) {}
 
 auto OrderSystemFacade::process(const protocol::OrderPlacementRequest& request)
@@ -56,12 +61,23 @@ auto OrderSystemFacade::process(const protocol::OrderPlacementRequest& request)
   }
 
   PlacementInterpreter interpreter(std::invoke(*order_id_generator_));
+  const auto mode = phase_handler_.in_auction_call()
+                        ? OrderActionMode::AuctionCall
+                        : OrderActionMode::Regular;
   const auto dispatcher = core::overload(
       [&](LimitOrder order) {
-        depr_order_action_handler_->place_limit_order(std::move(order));
+        place_limit_order(*event_listener_,
+                          *depr_order_book_,
+                          configuration_.order_price_tick,
+                          std::move(order),
+                          mode);
       },
       [&](MarketOrder order) {
-        depr_order_action_handler_->place_market_order(std::move(order));
+        place_market_order(*event_listener_,
+                           *depr_order_book_,
+                           configuration_.order_price_tick,
+                           std::move(order),
+                           mode);
       },
       [&](OrderRequestError error) {
         reject_notifier_->notify_rejected(request, describe(error));
@@ -77,15 +93,28 @@ auto OrderSystemFacade::process(
   }
 
   ModificationInterpreter interpreter;
+  const auto in_auction_call = phase_handler_.in_auction_call();
+  const auto mode =
+      in_auction_call ? OrderActionMode::AuctionCall : OrderActionMode::Regular;
   const auto dispatcher = core::overload(
       [&](LimitUpdate update) {
-        depr_order_action_handler_->amend_limit_order(std::move(update));
+        amend_limit_order(*event_listener_,
+                          *depr_order_book_,
+                          configuration_.order_price_tick,
+                          std::move(update),
+                          mode);
+      },
+      [&](MarketUpdate update) {
+        amend_market_order(*event_listener_,
+                           *depr_order_book_,
+                           configuration_.order_price_tick,
+                           std::move(update));
       },
       [&](OrderRequestError error) {
         reject_notifier_->notify_rejected(request, describe(error));
       });
 
-  std::visit(dispatcher, interpreter.interpret(request));
+  std::visit(dispatcher, interpreter.interpret(request, in_auction_call));
 }
 
 auto OrderSystemFacade::process(
@@ -97,7 +126,10 @@ auto OrderSystemFacade::process(
   CancellationInterpreter interpreter;
   const auto dispatcher = core::overload(
       [&](const OrderCancel& cancel) {
-        depr_order_action_handler_->cancel_order(cancel);
+        cancel_order(*event_listener_,
+                     *depr_order_book_,
+                     configuration_.order_price_tick,
+                     cancel);
       },
       [&](OrderRequestError error) {
         reject_notifier_->notify_rejected(request, describe(error));
@@ -134,7 +166,7 @@ auto OrderSystemFacade::recover_page(
       continue;
     }
 
-    depr_order_action_handler_->recover_order(std::move(order));
+    recover_order(*event_listener_, *depr_order_book_, std::move(order));
   }
 }
 
@@ -143,6 +175,12 @@ auto OrderSystemFacade::validate(const RequestType& request) -> bool {
   if (phase_handler_.in_closed_phase()) {
     reject_notifier_->notify_rejected(
         request, "request cannot be processed during closed phase");
+    return false;
+  }
+
+  if (phase_handler_.in_auction_uncross()) {
+    reject_notifier_->notify_rejected(
+        request, "orders are not allowed during the uncrossing phase");
     return false;
   }
 
@@ -208,11 +246,40 @@ auto OrderSystemFacade::handle(const event::Tick& tick) -> void {
   order::SystemElimination eliminator(
       *event_listener_, tick, configuration_.order_price_tick);
   eliminator(*depr_order_book_);
+
+  publish_early_price(tick);
+}
+
+auto OrderSystemFacade::publish_early_price(const event::Tick& tick) -> void {
+  if (!phase_handler_.in_auction_call()) {
+    early_baseline_.reset();
+    return;
+  }
+
+  if (!early_baseline_.has_value()) {
+    early_baseline_ = tick.sys_tick_time;
+    return;
+  }
+
+  constexpr auto interval = std::chrono::seconds{30};
+  if (tick.sys_tick_time - *early_baseline_ < interval) {
+    return;
+  }
+  early_baseline_ = tick.sys_tick_time;
+
+  const std::optional<AuctionResult> early =
+      AuctionPriceCalculator{configuration_.order_price_tick}.compute(
+          *depr_order_book_);
+
+  if (early.has_value()) {
+    event_listener_->on(Event(OrderBookNotification{EarlyPriceUpdate{
+        .early_price = early->price, .early_quantity = early->quantity}}));
+  }
 }
 
 auto OrderSystemFacade::handle(const event::PhaseTransition& phase_transition)
-    -> void {
-  phase_handler_.handle(phase_transition);
+    -> PhaseTransitionOutcome {
+  const bool phase_changed = phase_handler_.handle(phase_transition);
   halt_not_closed_phase_setting_ = phase_transition.phase.settings().value_or(
       Phase::Settings{.allow_cancels = false});
 
@@ -221,7 +288,32 @@ auto OrderSystemFacade::handle(const event::PhaseTransition& phase_transition)
                                              phase_transition.tz_time_point,
                                              configuration_.order_price_tick);
     eliminator(*depr_order_book_);
+  } else if (phase_changed && phase_handler_.in_auction_uncross()) {
+    event_listener_->on(Event(ClientNotificationFlush{}));
+
+    event_listener_->on(Event(OrderBookNotification{EarlyPriceUpdate{}}));
+    early_baseline_.reset();
+
+    order::AuctionUncross uncross(*event_listener_,
+                                  phase_handler_.current_phase(),
+                                  configuration_.order_price_tick);
+    const std::optional<AuctionResult> result = uncross(*depr_order_book_);
+
+    // Emit after the uncross: the cache applies notifications in arrival order,
+    // so the PreOpen high/low reset lands after the cross trades.
+    AuctionPricesUpdate prices{
+        .auction_phase = phase_handler_.current_phase().trading_phase(),
+        .clearing_price = std::nullopt,
+        .clearing_quantity = std::nullopt};
+    if (result.has_value()) {
+      prices.clearing_price = result->price;
+      prices.clearing_quantity = result->quantity;
+    }
+    event_listener_->on(Event(OrderBookNotification{std::move(prices)}));
+    return PhaseTransitionOutcome::AuctionUncross;
   }
+
+  return PhaseTransitionOutcome::Regular;
 }
 
 auto OrderSystemFacade::handle_disconnection(const protocol::Session& session)
@@ -248,9 +340,6 @@ auto OrderSystemFacade::setup(const Instrument& instrument,
       listener, *order_id_generator);
 
   auto depr_order_book = std::make_unique<OrderBook>();
-  auto depr_order_action_handler =
-      std::make_unique<RegularOrderActionProcessor>(
-          listener, *depr_order_book, configuration.order_price_tick);
 
   return {listener,
           instrument,
@@ -258,8 +347,7 @@ auto OrderSystemFacade::setup(const Instrument& instrument,
           std::move(order_id_generator),
           std::move(validator),
           std::move(reject_notifier),
-          std::move(depr_order_book),
-          std::move(depr_order_action_handler)};
+          std::move(depr_order_book)};
 }
 
 }  // namespace simulator::trading_system::matching_engine

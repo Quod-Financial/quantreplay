@@ -25,6 +25,12 @@ class OrderAlgorithm : public Test {
                                     .build_limit_order());
   }
 
+  auto add_market_order(OrderId order_id) -> void {
+    page.market_orders().emplace(order_builder_.with_order_id(order_id)
+                                     .with_side(TestSide)
+                                     .build_market_order());
+  }
+
  private:
   OrderBuilder order_builder_;
 };
@@ -87,6 +93,66 @@ TEST_F(OrderAlgorithm, FindUniqueLimitOrderWhichIsAmbiguous) {
       page, [](const auto& order) { return order.id() == OrderId{2}; });
 
   ASSERT_THAT(iter, Eq(limit_orders_end(page)));
+}
+
+TEST_F(OrderAlgorithm, GetMarketOrdersEndIterator) {
+  ASSERT_THAT(market_orders_end(page), Eq(page.market_orders().end()));
+}
+
+TEST_F(OrderAlgorithm, FindMarketOrderWhichExists) {
+  add_market_order(OrderId{1});
+  add_market_order(OrderId{2});
+  add_market_order(OrderId{3});
+
+  const auto iter = find_market_order(
+      page, [](const auto& order) { return order.id() == OrderId{2}; });
+
+  ASSERT_THAT(iter, Eq(std::next(page.market_orders().begin())));
+}
+
+TEST_F(OrderAlgorithm, FindMarketOrderWhichDoesNotExist) {
+  add_market_order(OrderId{1});
+  add_market_order(OrderId{2});
+  add_market_order(OrderId{3});
+
+  const auto iter = find_market_order(
+      page, [](const auto& order) { return order.id() == OrderId{4}; });
+
+  ASSERT_THAT(iter, Eq(market_orders_end(page)));
+}
+
+TEST_F(OrderAlgorithm, FindUniqueMarketOrderWhichExists) {
+  add_market_order(OrderId{1});
+  add_market_order(OrderId{2});
+  add_market_order(OrderId{3});
+
+  const auto iter = find_unique_market_order(
+      page, [](const auto& order) { return order.id() == OrderId{2}; });
+
+  ASSERT_THAT(iter, Eq(std::next(page.market_orders().begin())));
+}
+
+TEST_F(OrderAlgorithm, FindUniqueMarketOrderWhichDoesNotExist) {
+  add_market_order(OrderId{1});
+  add_market_order(OrderId{2});
+  add_market_order(OrderId{3});
+
+  const auto iter = find_unique_market_order(
+      page, [](const auto& order) { return order.id() == OrderId{4}; });
+
+  ASSERT_THAT(iter, Eq(market_orders_end(page)));
+}
+
+TEST_F(OrderAlgorithm, FindUniqueMarketOrderWhichIsAmbiguous) {
+  add_market_order(OrderId{1});
+  add_market_order(OrderId{2});
+  add_market_order(OrderId{2});
+  add_market_order(OrderId{3});
+
+  const auto iter = find_unique_market_order(
+      page, [](const auto& order) { return order.id() == OrderId{2}; });
+
+  ASSERT_THAT(iter, Eq(market_orders_end(page)));
 }
 
 // NOLINTEND(*magic-numbers*,*non-private-member*)

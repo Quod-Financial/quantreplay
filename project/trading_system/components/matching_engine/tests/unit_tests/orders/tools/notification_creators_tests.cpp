@@ -100,6 +100,26 @@ TEST_F(OrderBookNotificationOrderAddedCreation, SetsOrderSideFromLimitOrder) {
   ASSERT_EQ(order_added.order_side, Side::Option::Sell);
 }
 
+TEST_F(OrderBookNotificationOrderAddedCreation,
+       SetsLimitOrderTypeForLimitOrder) {
+  const auto order = builder.build_limit_order();
+
+  const auto notification = make_making_order_added_to_book_notification(order);
+  const auto& order_added = std::get<OrderAdded>(notification.value);
+
+  ASSERT_EQ(order_added.order_type, OrderType::Option::Limit);
+}
+
+TEST_F(OrderBookNotificationOrderAddedCreation,
+       SetsMarketOrderTypeForMarketOrder) {
+  const auto order = builder.build_market_order();
+
+  const auto notification = make_making_order_added_to_book_notification(order);
+  const auto& order_added = std::get<OrderAdded>(notification.value);
+
+  ASSERT_EQ(order_added.order_type, OrderType::Option::Market);
+}
+
 struct OrderBookNotificationOrderRemovedCreation : public Test {
   OrderBuilder builder;
 };
@@ -624,6 +644,222 @@ TEST_F(OrderBookNotificationTradeFromMarketLimitOrdersCreation,
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_EQ(trade.market_phase, MarketPhase::open());
+}
+
+struct OrderBookNotificationMarketOrderAddedCreation : public Test {
+  OrderBuilder builder;
+};
+
+TEST_F(OrderBookNotificationMarketOrderAddedCreation,
+       SetsOrderAddedToOrderBookNotification) {
+  const auto order = builder.build_market_order();
+
+  const auto notification = make_making_order_added_to_book_notification(order);
+
+  ASSERT_THAT(notification.value, VariantWith<OrderAdded>(_));
+}
+
+TEST_F(OrderBookNotificationMarketOrderAddedCreation,
+       SetsOrderPriceEmptyForMarketOrder) {
+  const auto order = builder.build_market_order();
+
+  const auto notification = make_making_order_added_to_book_notification(order);
+  const auto& order_added = std::get<OrderAdded>(notification.value);
+
+  ASSERT_EQ(order_added.order_price, std::nullopt);
+}
+
+TEST_F(OrderBookNotificationMarketOrderAddedCreation,
+       SetsOrderQuantityFromLeavesQuantityOfMarketOrder) {
+  auto order =
+      builder.with_order_quantity(OrderQuantity{10.5}).build_market_order();
+  order.execute(ExecutedQuantity{7.4}, ExecutionPrice{10.0});
+
+  const auto notification = make_making_order_added_to_book_notification(order);
+  const auto& order_added = std::get<OrderAdded>(notification.value);
+
+  ASSERT_EQ(order_added.order_quantity, Quantity{3.1});
+}
+
+TEST_F(OrderBookNotificationMarketOrderAddedCreation,
+       SetsOrderIdFromMarketOrder) {
+  const auto order = builder.with_order_id(OrderId{123}).build_market_order();
+
+  const auto notification = make_making_order_added_to_book_notification(order);
+  const auto& order_added = std::get<OrderAdded>(notification.value);
+
+  ASSERT_EQ(order_added.order_id, OrderId{123});
+}
+
+TEST_F(OrderBookNotificationMarketOrderAddedCreation,
+       SetsOrderSideFromMarketOrder) {
+  const auto order = builder.with_side(Side::Option::Sell).build_market_order();
+
+  const auto notification = make_making_order_added_to_book_notification(order);
+  const auto& order_added = std::get<OrderAdded>(notification.value);
+
+  ASSERT_EQ(order_added.order_side, Side::Option::Sell);
+}
+
+struct OrderBookNotificationMarketOrderRemovedCreation : public Test {
+  OrderBuilder builder;
+};
+
+TEST_F(OrderBookNotificationMarketOrderRemovedCreation,
+       SetsOrderRemovedToOrderBookNotification) {
+  const auto order = builder.build_market_order();
+
+  const auto notification =
+      make_making_order_removed_from_book_notification(order);
+
+  ASSERT_THAT(notification.value, VariantWith<OrderRemoved>(_));
+}
+
+TEST_F(OrderBookNotificationMarketOrderRemovedCreation,
+       SetsOrderPriceEmptyForMarketOrder) {
+  const auto order = builder.build_market_order();
+
+  const auto notification =
+      make_making_order_removed_from_book_notification(order);
+  const auto& order_removed = std::get<OrderRemoved>(notification.value);
+
+  ASSERT_EQ(order_removed.order_price, std::nullopt);
+}
+
+TEST_F(OrderBookNotificationMarketOrderRemovedCreation,
+       SetsOrderIdFromMarketOrder) {
+  const auto order = builder.with_order_id(OrderId{123}).build_market_order();
+
+  const auto notification =
+      make_making_order_removed_from_book_notification(order);
+  const auto& order_removed = std::get<OrderRemoved>(notification.value);
+
+  ASSERT_EQ(order_removed.order_id, OrderId{123});
+}
+
+TEST_F(OrderBookNotificationMarketOrderRemovedCreation,
+       SetsOrderSideFromMarketOrder) {
+  const auto order = builder.with_side(Side::Option::Sell).build_market_order();
+
+  const auto notification =
+      make_making_order_removed_from_book_notification(order);
+  const auto& order_removed = std::get<OrderRemoved>(notification.value);
+
+  ASSERT_EQ(order_removed.order_side, Side::Option::Sell);
+}
+
+struct OrderBookNotificationAuctionTradeCreation : public Test {
+  const Party buyer_party{PartyId{"Buyer"},
+                          PartyIdSource::Option::BIC,
+                          PartyRole::Option::ExecutingFirm};
+  const Party seller_party{PartyId{"Seller"},
+                           PartyIdSource::Option::FDID,
+                           PartyRole::Option::ExecutingFirm};
+  const MarketPhase auction_phase{TradingPhase::Option::OpeningAuction,
+                                  TradingStatus::Option::Halt};
+
+  OrderBuilder builder;
+};
+
+TEST_F(OrderBookNotificationAuctionTradeCreation,
+       SetsTradeToOrderBookNotification) {
+  const auto buy = builder.with_side(Side::Option::Buy).build_limit_order();
+  const auto sell = builder.with_side(Side::Option::Sell).build_limit_order();
+
+  const auto notification = make_auction_trade_notification(
+      buy, sell, ExecutionPrice{100}, ExecutedQuantity{50}, auction_phase);
+
+  ASSERT_THAT(notification.value, VariantWith<Trade>(_));
+}
+
+TEST_F(OrderBookNotificationAuctionTradeCreation, SetsBuyerFromBuyOrderOwner) {
+  const auto buy = builder.with_order_parties({buyer_party})
+                       .with_side(Side::Option::Buy)
+                       .build_limit_order();
+  const auto sell = builder.with_order_parties({seller_party})
+                        .with_side(Side::Option::Sell)
+                        .build_limit_order();
+
+  const auto notification = make_auction_trade_notification(
+      buy, sell, ExecutionPrice{100}, ExecutedQuantity{50}, auction_phase);
+
+  const auto& trade = std::get<Trade>(notification.value);
+  ASSERT_EQ(trade.buyer->value(), buyer_party.party_id().value());
+}
+
+TEST_F(OrderBookNotificationAuctionTradeCreation,
+       SetsSellerFromSellOrderOwner) {
+  const auto buy = builder.with_order_parties({buyer_party})
+                       .with_side(Side::Option::Buy)
+                       .build_limit_order();
+  const auto sell = builder.with_order_parties({seller_party})
+                        .with_side(Side::Option::Sell)
+                        .build_limit_order();
+
+  const auto notification = make_auction_trade_notification(
+      buy, sell, ExecutionPrice{100}, ExecutedQuantity{50}, auction_phase);
+
+  const auto& trade = std::get<Trade>(notification.value);
+  ASSERT_EQ(trade.seller->value(), seller_party.party_id().value());
+}
+
+TEST_F(OrderBookNotificationAuctionTradeCreation, SetsNoAggressorSide) {
+  const auto buy = builder.with_side(Side::Option::Buy).build_limit_order();
+  const auto sell = builder.with_side(Side::Option::Sell).build_limit_order();
+
+  const auto notification = make_auction_trade_notification(
+      buy, sell, ExecutionPrice{100}, ExecutedQuantity{50}, auction_phase);
+
+  const auto& trade = std::get<Trade>(notification.value);
+  ASSERT_FALSE(trade.aggressor_side.has_value());
+}
+
+TEST_F(OrderBookNotificationAuctionTradeCreation, SetsMarketPhaseFromArgument) {
+  const auto buy = builder.with_side(Side::Option::Buy).build_limit_order();
+  const auto sell = builder.with_side(Side::Option::Sell).build_limit_order();
+  const MarketPhase closing_auction{TradingPhase::Option::ClosingAuction,
+                                    TradingStatus::Option::Halt};
+
+  const auto notification = make_auction_trade_notification(
+      buy, sell, ExecutionPrice{100}, ExecutedQuantity{50}, closing_auction);
+
+  const auto& trade = std::get<Trade>(notification.value);
+  ASSERT_EQ(trade.market_phase, closing_auction);
+}
+
+TEST_F(OrderBookNotificationAuctionTradeCreation,
+       SetsNoBuyerWhenBuyOrderHasNoOwner) {
+  const auto buyer_contra_firm = Party{PartyId{"Buyer"},
+                                       PartyIdSource::Option::BIC,
+                                       PartyRole::Option::ContraFirm};
+  const auto buy = builder.with_order_parties({buyer_contra_firm})
+                       .with_side(Side::Option::Buy)
+                       .build_limit_order();
+  const auto sell = builder.with_order_parties({seller_party})
+                        .with_side(Side::Option::Sell)
+                        .build_limit_order();
+
+  const auto notification = make_auction_trade_notification(
+      buy, sell, ExecutionPrice{100}, ExecutedQuantity{50}, auction_phase);
+
+  const auto& trade = std::get<Trade>(notification.value);
+  ASSERT_FALSE(trade.buyer.has_value());
+}
+
+TEST_F(OrderBookNotificationAuctionTradeCreation,
+       SupportsMarketAndLimitOrders) {
+  const auto buy = builder.with_order_parties({buyer_party})
+                       .with_side(Side::Option::Buy)
+                       .build_market_order();
+  const auto sell = builder.with_order_parties({seller_party})
+                        .with_side(Side::Option::Sell)
+                        .build_limit_order();
+
+  const auto notification = make_auction_trade_notification(
+      buy, sell, ExecutionPrice{100}, ExecutedQuantity{50}, auction_phase);
+
+  const auto& trade = std::get<Trade>(notification.value);
+  ASSERT_EQ(trade.buyer->value(), buyer_party.party_id().value());
 }
 
 // NOLINTEND(*non-private-members*,*magic-numbers*)

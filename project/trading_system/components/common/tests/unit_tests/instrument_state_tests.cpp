@@ -36,11 +36,20 @@ TEST(TradingSystemCommonSessionFmt, FormatsGeneratedToString) {
             R"({ "type": "Generator", "fix_session": none })");
 }
 
-TEST(TradingSystemMarketStateInstrumentInfoFmt, FormatsToString) {
-  const InstrumentInfo instrument_info{.low_price = Price{100.1},
-                                       .high_price = Price{300.3}};
-  ASSERT_EQ(fmt::to_string(instrument_info),
-            R"({ "low_price": 100.1, "high_price": 300.3 })");
+TEST(TradingSystemMarketStateInstrumentInfoFmt, FormatsAllValuesToString) {
+  const InstrumentInfo instrument_info{
+      .low_price = Price{100.1},
+      .high_price = Price{300.3},
+      .opening_price = Price{110.5},
+      .closing_price = Price{120.6},
+      .auction_clearing_price = Price{130.7},
+      .auction_clearing_quantity = Quantity{500.5},
+      .previous_closing_price = Price{95.4}};
+  // clang-format off
+  ASSERT_EQ(
+      fmt::to_string(instrument_info),
+      R"({ "low_price": 100.1, "high_price": 300.3, "opening_price": 110.5, "closing_price": 120.6, "auction_clearing_price": 130.7, "auction_clearing_quantity": 500.5, "previous_closing_price": 95.4 })");
+  // clang-format on
 }
 
 struct TradingSystemCommonLimitOrderFmt : public ::testing::Test {

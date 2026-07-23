@@ -189,16 +189,19 @@ For reference: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 
 *	Open
 *	Closed
-*	PreOpen
-*	PreClose
-*	Auction
-*	TradeAtLast
+*	PreOpen - opening auction
+*	PreClose - closing auction
+*	Auction - intraday auction
+*	Halted
+
+The three auction phase types (PreOpen, PreClose, Auction) behave identically and differ only in the trading-session values reported over the FIX interface; see <<general-mktphs-auction,Auction Phase>>.
 
 | startTime	| Text	| The time a phase should begin set in corresponding venue timezone, specified to the granularity of minutes
 | endTime	| Text	| The time a phase should end set in corresponding venue timezone, specified to the granularity of minutes
-| endTimeRange	| Integer	| Time range to choose a random actual end time from the specified endTime for the phase (this setting is only used during an Auction phase). 
-The value indicates the range after and before that a random end time will be chosen. 
+| endTimeRange	| Integer	| Time range, in minutes, to choose a random actual end time from the specified endTime for the phase (this setting is only used by the auction phase types: PreOpen, PreClose, Auction).
+The value indicates the range after and before that a random end time will be chosen.
 For example, a value of 5 indicates that a random end time will be chosen between 5 minutes before and 5 minutes after the specified endTime.
+The range is never considered before the phase's startTime; see <<general-mktphs-auction,Auction Phase>>.
 | allowCancels	| Boolean	| Whether or not to allow cancel of orders (this setting is only used during a Halt phase).
 |=== 
 

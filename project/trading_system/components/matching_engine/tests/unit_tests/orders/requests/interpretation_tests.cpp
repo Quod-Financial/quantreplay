@@ -578,6 +578,7 @@ struct ModificationInterpretation : public Test {
   const protocol::Session session{protocol::generator::Session{}};
   protocol::OrderModificationRequest raw_request{session};
   protocol::OrderModificationRequest limit_request{session};
+  protocol::OrderModificationRequest market_request{session};
 
   ModificationInterpreter interpreter;
 
@@ -589,6 +590,12 @@ struct ModificationInterpretation : public Test {
     limit_request.order_price = OrderPrice{100.0};
     limit_request.order_quantity = OrderQuantity{100};
     limit_request.venue_order_id = VenueOrderId{"4221"};
+
+    // Minimal set of required fields for a market order update (no price)
+    market_request.order_type = OrderType::Option::Market;
+    market_request.side = Side::Option::Buy;
+    market_request.order_quantity = OrderQuantity{100};
+    market_request.venue_order_id = VenueOrderId{"4221"};
   }
 };
 
@@ -635,16 +642,113 @@ TEST_F(ModificationInterpretation, ReportsOrderIdInterpretationError) {
       VariantWith<OrderRequestError>(Eq(OrderRequestError::OrderIdInvalid)));
 }
 
-TEST_F(ModificationInterpretation, ReportsInvalidOrderTypeForMarketUpdate) {
-  raw_request.order_type = OrderType::Option::Market;
-  raw_request.side = Side::Option::Buy;
-  raw_request.order_quantity = OrderQuantity{100};
-
-  const auto error = interpreter.interpret(raw_request);
+TEST_F(ModificationInterpretation,
+       ReportsInvalidOrderTypeForMarketUpdateWhenAmendmentNotAllowed) {
+  const auto error =
+      interpreter.interpret(market_request, /*allow_market_amendment=*/false);
 
   ASSERT_THAT(
       error,
       VariantWith<OrderRequestError>(Eq(OrderRequestError::OrderTypeInvalid)));
+}
+
+TEST_F(ModificationInterpretation, InterpretsMarketUpdateWhenAmendmentAllowed) {
+  const auto update =
+      interpreter.interpret(market_request, /*allow_market_amendment=*/true);
+
+  ASSERT_THAT(update, VariantWith<MarketUpdate>(_));
+}
+
+TEST_F(ModificationInterpretation, ReportsQuantityMissingForMarketUpdate) {
+  market_request.order_quantity = std::nullopt;
+
+  const auto error =
+      interpreter.interpret(market_request, /*allow_market_amendment=*/true);
+
+  ASSERT_THAT(
+      error,
+      VariantWith<OrderRequestError>(Eq(OrderRequestError::QuantityMissing)));
+}
+
+TEST_F(ModificationInterpretation, SetsOrderSideForMarketUpdate) {
+  market_request.side = Side::Option::Sell;
+
+  const auto update =
+      interpreter.interpret(market_request, /*allow_market_amendment=*/true);
+
+  ASSERT_THAT(update, VariantWith<MarketUpdate>(_));
+  ASSERT_THAT(std::get<MarketUpdate>(update).order_side,
+              Eq(Side::Option::Sell));
+}
+
+TEST_F(ModificationInterpretation, SetsOrderQuantityForMarketUpdate) {
+  market_request.order_quantity = OrderQuantity{50};
+
+  const auto update =
+      interpreter.interpret(market_request, /*allow_market_amendment=*/true);
+
+  ASSERT_THAT(update, VariantWith<MarketUpdate>(_));
+  ASSERT_THAT(std::get<MarketUpdate>(update).order_diff.quantity,
+              Eq(OrderQuantity{50}));
+}
+
+TEST_F(ModificationInterpretation, SetsOrderIdForMarketUpdate) {
+  market_request.venue_order_id = VenueOrderId{"777"};
+
+  const auto update =
+      interpreter.interpret(market_request, /*allow_market_amendment=*/true);
+
+  ASSERT_THAT(update, VariantWith<MarketUpdate>(_));
+  ASSERT_THAT(std::get<MarketUpdate>(update).order_id,
+              Optional(Eq(OrderId{777})));
+}
+
+TEST_F(ModificationInterpretation, ForcesIocTimeInForceForMarketUpdate) {
+  market_request.time_in_force = TimeInForce::Option::Day;
+
+  const auto update =
+      interpreter.interpret(market_request, /*allow_market_amendment=*/true);
+
+  ASSERT_THAT(update, VariantWith<MarketUpdate>(_));
+  ASSERT_THAT(
+      std::get<MarketUpdate>(update).order_diff.attributes.time_in_force(),
+      Eq(TimeInForce::Option::ImmediateOrCancel));
+}
+
+TEST_F(ModificationInterpretation,
+       ReportsSideInterpretationErrorForMarketUpdate) {
+  market_request.side = static_cast<Side::Option>(0xFF);
+
+  const auto error =
+      interpreter.interpret(market_request, /*allow_market_amendment=*/true);
+
+  ASSERT_THAT(
+      error,
+      VariantWith<OrderRequestError>(Eq(OrderRequestError::SideInvalid)));
+}
+
+TEST_F(ModificationInterpretation,
+       ReportsOrderIdInterpretationErrorForMarketUpdate) {
+  market_request.venue_order_id = VenueOrderId{"4221-INVALID"};
+
+  const auto error =
+      interpreter.interpret(market_request, /*allow_market_amendment=*/true);
+
+  ASSERT_THAT(
+      error,
+      VariantWith<OrderRequestError>(Eq(OrderRequestError::OrderIdInvalid)));
+}
+
+TEST_F(ModificationInterpretation,
+       ReportsTimeInForceInterpretationErrorForMarketUpdate) {
+  market_request.time_in_force = static_cast<TimeInForce::Option>(0xFF);
+
+  const auto error =
+      interpreter.interpret(market_request, /*allow_market_amendment=*/true);
+
+  ASSERT_THAT(error,
+              VariantWith<OrderRequestError>(
+                  Eq(OrderRequestError::TimeInForceInvalid)));
 }
 
 TEST_F(ModificationInterpretation, ReportsPriceMissingForLimitUpdate) {
