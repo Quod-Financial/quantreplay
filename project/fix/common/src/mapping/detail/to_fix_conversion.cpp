@@ -344,7 +344,8 @@ auto make_md_entry_type_association()
       {MdEntryType::EarlyPrice, FIX::MDEntryType_EARLY_PRICES},
       {MdEntryType::PreviousClosingPrice, FIX::MDEntryType_PREVIOUS_CLOSING_PRICE},
       {MdEntryType::MarketBid, FIX::MDEntryType_MARKET_BID},
-      {MdEntryType::MarketOffer, FIX::MDEntryType_MARKET_OFFER}};
+      {MdEntryType::MarketOffer, FIX::MDEntryType_MARKET_OFFER},
+      {MdEntryType::TradeVolume, FIX::MDEntryType_TRADE_VOLUME}};
   // clang-format on
 }
 

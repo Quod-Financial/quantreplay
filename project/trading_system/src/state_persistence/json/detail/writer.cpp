@@ -415,6 +415,7 @@ auto write(rapidjson::Value& json_value,
   model.auction_clearing_price = to_double(source.auction_clearing_price);
   model.auction_clearing_quantity = to_double(source.auction_clearing_quantity);
   model.previous_closing_price = to_double(source.previous_closing_price);
+  model.trade_volume = to_double(source.trade_volume);
 
   json_value.SetObject();
   return write(json_value, allocator, "TradingSessionLowPrice", model.low_price)
@@ -439,7 +440,9 @@ auto write(rapidjson::Value& json_value,
       .and_then(write_field(json_value,
                             allocator,
                             "PreviousClosingPrice",
-                            model.previous_closing_price));
+                            model.previous_closing_price))
+      .and_then(write_field(
+          json_value, allocator, "TradeVolume", model.trade_volume));
 }
 
 auto write(rapidjson::Value& json_value,

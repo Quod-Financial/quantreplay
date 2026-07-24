@@ -47,7 +47,8 @@ TEST(TradingSystemMarketStateInstrumentInfoFmt, FormatsAllValuesToString) {
       .closing_price_time = core::sys_us{1696190400654321us},
       .auction_clearing_price = Price{130.7},
       .auction_clearing_quantity = Quantity{500.5},
-      .previous_closing_price = Price{95.4}};
+      .previous_closing_price = Price{95.4},
+      .trade_volume = Quantity{700.7}};
   ASSERT_EQ(fmt::to_string(instrument_info),
             "{ \"low_price\": 100.1, \"high_price\": 300.3, "
             "\"opening_price\": 110.5, "
@@ -56,7 +57,8 @@ TEST(TradingSystemMarketStateInstrumentInfoFmt, FormatsAllValuesToString) {
             "\"closing_price_time\": 2023-10-01 20:00:00.654321, "
             "\"auction_clearing_price\": 130.7, "
             "\"auction_clearing_quantity\": 500.5, "
-            "\"previous_closing_price\": 95.4 }");
+            "\"previous_closing_price\": 95.4, "
+            "\"trade_volume\": 700.7 }");
 }
 
 struct TradingSystemCommonLimitOrderFmt : public ::testing::Test {
@@ -121,7 +123,8 @@ TEST_F(TradingSystemCommonLimitOrderFmt, FormatsToString) {
       "}, \"client_session\": { \"type\": \"Fix\", \"fix_session\": { "
       "BeginString=\"FIX.4.2\", SenderCompID=\"sender\", "
       "TargetCompID=\"target\", SessionQualifier=none, ClientSubID=none } }, "
-      "\"client_order_id\": \"ClientOrderId\", \"order_parties\": [ { PartyIdentifier={ "
+      "\"client_order_id\": \"ClientOrderId\", \"order_parties\": [ { "
+      "PartyIdentifier={ "
       "PartyID=\"PartyId\", PartyIDSource=BIC }, PartyRole=ExecutingFirm } ], "
       "\"expire_time\": 2023-Oct-01 12:00:00.123456, \"expire_date\": "
       "2023-Oct-01, \"short_sale_exemption_reason\": -1, "

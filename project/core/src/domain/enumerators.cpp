@@ -286,7 +286,8 @@ json::EnumConverter<MdEntryType> json::EnumConverter<MdEntryType>::instance_{
      {enumerators::MdEntryType::EarlyPrice, "EarlyPrice"},
      {enumerators::MdEntryType::PreviousClosingPrice, "PreviousClosingPrice"},
      {enumerators::MdEntryType::MarketBid, "MarketBid"},
-     {enumerators::MdEntryType::MarketOffer, "MarketOffer"}}};
+     {enumerators::MdEntryType::MarketOffer, "MarketOffer"},
+     {enumerators::MdEntryType::TradeVolume, "TradeVolume"}}};
 
 template <>
 json::EnumConverter<MdSubscriptionRequestType>

@@ -630,7 +630,8 @@ INSTANTIATE_TEST_SUITE_P(
            std::make_pair(MdEntryType::Option::EarlyPrice, "EarlyPrice"),
            std::make_pair(MdEntryType::Option::PreviousClosingPrice, "PreviousClosingPrice"),
            std::make_pair(MdEntryType::Option::MarketBid, "MarketBid"),
-           std::make_pair(MdEntryType::Option::MarketOffer, "MarketOffer")));
+           std::make_pair(MdEntryType::Option::MarketOffer, "MarketOffer"),
+           std::make_pair(MdEntryType::Option::TradeVolume, "TradeVolume")));
 // clang-format on
 
 struct CoreMdSubscriptionRequestTypeFormatting

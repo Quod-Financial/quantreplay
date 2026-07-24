@@ -12,6 +12,14 @@
 
 namespace simulator::trading_system::matching_engine {
 
+struct TradeResult {
+  Price price;
+  Quantity quantity;
+
+  [[nodiscard]]
+  auto operator==(const TradeResult&) const -> bool = default;
+};
+
 struct OrderAdded {
   std::optional<PartyId> order_owner;
   std::optional<Price> order_price;
@@ -48,16 +56,14 @@ struct InstrumentInfoRecover {
 struct AuctionPricesUpdate {
   // Default-constructed value is a no-op; the producer always sets the phase.
   TradingPhase auction_phase{TradingPhase::Option::Open};
-  std::optional<Price> clearing_price;
-  std::optional<Quantity> clearing_quantity;
+  std::optional<TradeResult> clearing_value;
 
   [[nodiscard]]
   auto operator==(const AuctionPricesUpdate&) const -> bool = default;
 };
 
 struct EarlyPriceUpdate {
-  std::optional<Price> early_price;
-  std::optional<Quantity> early_quantity;
+  std::optional<TradeResult> early_value;
 
   [[nodiscard]]
   auto operator==(const EarlyPriceUpdate&) const -> bool = default;
@@ -68,6 +74,21 @@ struct TzDayPassed {
 };
 
 }  // namespace simulator::trading_system::matching_engine
+
+template <>
+struct fmt::formatter<simulator::trading_system::matching_engine::TradeResult>
+    : formatter<std::string_view> {
+  using formattable = simulator::trading_system::matching_engine::TradeResult;
+
+  auto format(const formattable& value, format_context& ctx) const
+      -> format_context::iterator {
+    return format_to(
+        ctx.out(),
+        R"({{ "TradeResult": {{ "price": {}, "quantity": {} }} }})",
+        value.price,
+        value.quantity);
+  }
+};
 
 template <>
 struct fmt::formatter<simulator::trading_system::matching_engine::OrderAdded>
@@ -162,10 +183,9 @@ struct fmt::formatter<
       -> format_context::iterator {
     return format_to(
         ctx.out(),
-        R"({{ "AuctionPricesUpdate": {{ "auction_phase": "{}", "clearing_price": {}, "clearing_quantity": {} }} }})",
+        R"({{ "AuctionPricesUpdate": {{ "auction_phase": "{}", "clearing_value": {} }} }})",
         event.auction_phase,
-        event.clearing_price,
-        event.clearing_quantity);
+        event.clearing_value);
   }
 };
 
@@ -178,11 +198,9 @@ struct fmt::formatter<
 
   auto format(const formattable& event, format_context& ctx) const
       -> format_context::iterator {
-    return format_to(
-        ctx.out(),
-        R"({{ "EarlyPriceUpdate": {{ "early_price": {}, "early_quantity": {} }} }})",
-        event.early_price,
-        event.early_quantity);
+    return format_to(ctx.out(),
+                     R"({{ "EarlyPriceUpdate": {{ "early_value": {} }} }})",
+                     event.early_value);
   }
 };
 

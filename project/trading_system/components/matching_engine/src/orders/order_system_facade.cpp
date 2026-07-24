@@ -276,7 +276,8 @@ auto OrderSystemFacade::publish_early_price(const event::Tick& tick) -> void {
 
   if (early.has_value()) {
     event_listener_->on(Event(OrderBookNotification{EarlyPriceUpdate{
-        .early_price = early->price, .early_quantity = early->quantity}}));
+        .early_value =
+            TradeResult{.price = early->price, .quantity = early->quantity}}}));
   }
 }
 
@@ -306,11 +307,10 @@ auto OrderSystemFacade::handle(const event::PhaseTransition& phase_transition)
     // so the PreOpen high/low reset lands after the cross trades.
     AuctionPricesUpdate prices{
         .auction_phase = phase_handler_.current_phase().trading_phase(),
-        .clearing_price = std::nullopt,
-        .clearing_quantity = std::nullopt};
+        .clearing_value = std::nullopt};
     if (result.has_value()) {
-      prices.clearing_price = result->price;
-      prices.clearing_quantity = result->quantity;
+      prices.clearing_value =
+          TradeResult{.price = result->price, .quantity = result->quantity};
     }
     event_listener_->on(Event(OrderBookNotification{std::move(prices)}));
     return PhaseTransitionOutcome::AuctionUncross;

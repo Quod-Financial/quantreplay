@@ -9,22 +9,31 @@
 #include "core/tools/time.hpp"
 #include "ih/common/events/order_book_notification.hpp"
 #include "ih/market_data/streaming_settings.hpp"
-#include "ih/market_data/tools/instrument_px.hpp"
+#include "ih/market_data/tools/md_entry_value.hpp"
 
 namespace simulator::trading_system::matching_engine::mdata {
 
 class InstrumentInfoCache {
+  struct PriceQuantity {
+    Price price;
+    Quantity quantity;
+
+    auto operator==(const PriceQuantity&) const -> bool = default;
+  };
+
   struct CachedData {
-    InstrumentPx<MdEntryType::Option::LowPrice> low_price;
-    InstrumentPx<MdEntryType::Option::MidPrice> mid_price;
-    InstrumentPx<MdEntryType::Option::HighPrice> high_price;
-    InstrumentPx<MdEntryType::Option::OpeningPrice> opening_price;
-    InstrumentPx<MdEntryType::Option::ClosingPrice> closing_price;
-    InstrumentPx<MdEntryType::Option::AuctionClearingPrice, true>
+    MdEntryValue<MdEntryType::Option::LowPrice, Price> low_price;
+    MdEntryValue<MdEntryType::Option::MidPrice, Price> mid_price;
+    MdEntryValue<MdEntryType::Option::HighPrice, Price> high_price;
+    MdEntryValue<MdEntryType::Option::OpeningPrice, Price> opening_price;
+    MdEntryValue<MdEntryType::Option::ClosingPrice, Price> closing_price;
+    MdEntryValue<MdEntryType::Option::AuctionClearingPrice, PriceQuantity>
         auction_clearing_price;
-    InstrumentPx<MdEntryType::Option::EarlyPrice, true> early_price;
-    InstrumentPx<MdEntryType::Option::PreviousClosingPrice>
+    MdEntryValue<MdEntryType::Option::EarlyPrice, PriceQuantity> early_price;
+    MdEntryValue<MdEntryType::Option::PreviousClosingPrice, Price>
         previous_closing_price;
+    MdEntryValue<MdEntryType::Option::TradeVolume, Quantity>
+        trade_volume;
     std::optional<core::sys_us> opening_price_time;
     std::optional<core::sys_us> closing_price_time;
   };
@@ -60,7 +69,7 @@ class InstrumentInfoCache {
 
   auto update_mid_price() -> void;
 
-  auto update_opening_high_low_price(const Trade& trade) -> void;
+  auto update_on_first_trade(const Trade& trade) -> bool;
 
   auto update_closing_price(const Trade& trade) -> void;
 
@@ -72,13 +81,15 @@ class InstrumentInfoCache {
 
   auto recalculate_mid_price() -> void;
 
+  auto add_to_trade_volume(Quantity quantity) -> void;
+
   auto apply_auction_prices(const AuctionPricesUpdate& prices) -> void;
 
   auto apply_early_price(const EarlyPriceUpdate& early) -> void;
 
   auto reset_session_high_low(Price opening_price) -> void;
 
-  auto mark_prices_deleted() -> void;
+  auto mark_deleted() -> void;
 
   auto compose(const StreamingSettings& settings,
                std::vector<MarketDataEntry>& destination,

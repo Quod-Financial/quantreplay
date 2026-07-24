@@ -70,6 +70,7 @@ class StreamingSettings {
     stream_auction_clearing_price_flag,
     stream_early_price_flag,
     stream_previous_closing_price_flag,
+    stream_trade_volume_flag,
     flags_count
   };
 
@@ -101,6 +102,8 @@ class StreamingSettings {
         return stream_market_bid_flag;
       case MdEntryType::Option::MarketOffer:
         return stream_market_offer_flag;
+      case MdEntryType::Option::TradeVolume:
+        return stream_trade_volume_flag;
     }
     return flags_count;
   }

@@ -40,7 +40,7 @@ add_static_library(
     ih/market_data/subscriptions/subscription.hpp
     ih/market_data/subscriptions/subscription_manager.hpp
     ih/market_data/tools/algorithms.hpp
-    ih/market_data/tools/instrument_px.hpp
+    ih/market_data/tools/md_entry_value.hpp
     ih/market_data/tools/market_entry_id_generator.hpp
     ih/market_data/tools/notification_creators.hpp
     ih/market_data/validation/checkers.hpp

@@ -1,7 +1,9 @@
 #include "ih/market_data/cache/instrument_info_cache.hpp"
 
 #include <cassert>
+#include <concepts>
 #include <optional>
+#include <type_traits>
 
 #include "common/trade.hpp"
 #include "core/tools/time.hpp"
@@ -12,20 +14,18 @@ namespace simulator::trading_system::matching_engine::mdata {
 namespace {
 
 constexpr auto low_price_changed(const auto& data, Price trade_price) -> bool {
-  const auto trade = static_cast<double>(trade_price);
-  const auto low = static_cast<std::optional<double>>(data.low_price);
-  return low.has_value() ? *low > trade : true;
+  const auto& low = data.low_price.value();
+  return low.has_value() ? *low > trade_price : true;
 }
 
 constexpr auto high_price_changed(const auto& data, Price trade_price) -> bool {
-  const auto trade = static_cast<double>(trade_price);
-  const auto high = static_cast<std::optional<double>>(data.high_price);
-  return high.has_value() ? *high < trade : true;
+  const auto& high = data.high_price.value();
+  return high.has_value() ? *high < trade_price : true;
 }
 
 constexpr auto get_mid_price(const auto& data) -> std::optional<Price> {
-  const auto low = static_cast<std::optional<double>>(data.low_price);
-  const auto high = static_cast<std::optional<double>>(data.high_price);
+  const auto& low = data.low_price.value();
+  const auto& high = data.high_price.value();
 
   if (!low.has_value() || !high.has_value()) {
     return std::nullopt;
@@ -34,7 +34,8 @@ constexpr auto get_mid_price(const auto& data) -> std::optional<Price> {
   // I'm not sure if it is valid.
   // This calculation migrated from an old implementation.
   // And it seems that the mid-price may not respect price tick restrictions.
-  return std::make_optional<Price>((*low + *high) / 2.);
+  return std::make_optional<Price>(
+      (static_cast<double>(*low) + static_cast<double>(*high)) / 2.);
 }
 
 auto assign(auto& actual, auto& last_update, auto value) -> void {
@@ -55,15 +56,16 @@ auto assign_with_time(auto& actual,
 }
 
 auto roll_closing_price(
-    InstrumentPx<MdEntryType::Option::PreviousClosingPrice>& previous_actual,
-    InstrumentPx<MdEntryType::Option::PreviousClosingPrice>&
+    MdEntryValue<MdEntryType::Option::PreviousClosingPrice, Price>&
+        previous_actual,
+    MdEntryValue<MdEntryType::Option::PreviousClosingPrice, Price>&
         previous_last_update,
-    InstrumentPx<MdEntryType::Option::ClosingPrice>& actual,
-    InstrumentPx<MdEntryType::Option::ClosingPrice>& last_update,
+    MdEntryValue<MdEntryType::Option::ClosingPrice, Price>& actual,
+    MdEntryValue<MdEntryType::Option::ClosingPrice, Price>& last_update,
     std::optional<Price> price,
     std::optional<core::sys_us>& update_time,
     std::optional<core::sys_us> time) -> void {
-  if (previous_actual.update(actual.price())) {
+  if (previous_actual.update(actual.value())) {
     previous_last_update = previous_actual;
   }
   if (actual.update(std::move(price))) {
@@ -73,23 +75,14 @@ auto roll_closing_price(
   update_time = time;
 }
 
-auto assign(auto& actual,
-            auto& last_update,
-            std::optional<Price> price,
-            std::optional<Quantity> quantity) -> void {
-  if (actual.update(price, quantity)) {
-    last_update = actual;
-  }
-}
-
-template <typename Px>
-auto clear_slot(Px& actual, Px& last_update) -> void {
+template <typename T>
+auto clear_slot(T& actual, T& last_update) -> void {
   last_update = actual;
   last_update.mark_deleted();
-  actual = Px{};
+  actual = T{};
 }
 
-auto for_each_px(const auto& data, const auto& visit) -> void {
+auto for_each_md_entry(const auto& data, const auto& visit) -> void {
   visit(data.low_price);
   visit(data.high_price);
   visit(data.mid_price);
@@ -98,11 +91,12 @@ auto for_each_px(const auto& data, const auto& visit) -> void {
   visit(data.auction_clearing_price);
   visit(data.early_price);
   visit(data.previous_closing_price);
+  visit(data.trade_volume);
 }
 
-template <typename Px>
-auto clear_slot(Px& actual,
-                Px& last_update,
+template <typename T>
+auto clear_slot(T& actual,
+                T& last_update,
                 std::optional<core::sys_us>& update_time) -> void {
   clear_slot(actual, last_update);
   update_time = core::get_current_system_time();
@@ -127,9 +121,10 @@ auto InstrumentInfoCache::compose_update(
 auto InstrumentInfoCache::has_update(const StreamingSettings& settings) const
     -> bool {
   bool reportable = false;
-  for_each_px(last_update_, [&](const auto& px) {
-    reportable = reportable || (px.price().has_value() &&
-                                settings.is_data_type_requested(px.type()));
+  for_each_md_entry(last_update_, [&](const auto& md_entry) {
+    reportable =
+        reportable || (md_entry.value().has_value() &&
+                       settings.is_data_type_requested(md_entry.type()));
   });
   return reportable;
 }
@@ -138,24 +133,31 @@ auto InstrumentInfoCache::compose(const StreamingSettings& settings,
                                   std::vector<MarketDataEntry>& destination,
                                   const CachedData& data,
                                   bool with_action) const -> void {
-  const auto emit = [&](const auto& px) {
-    const auto price = px.price();
-    if (!price || !settings.is_data_type_requested(px.type())) {
+  const auto emit = [&](const auto& md_entry_value) {
+    const auto& value = md_entry_value.value();
+    if (!value || !settings.is_data_type_requested(md_entry_value.type())) {
       return;
     }
     MarketDataEntry entry;
-    entry.price = price;
-    if constexpr (requires { px.quantity(); }) {
-      entry.quantity = px.quantity();
+    using ValueType = std::remove_cvref_t<decltype(*value)>;
+    if constexpr (std::same_as<ValueType, Price>) {
+      entry.price = *value;
+    } else if constexpr (std::same_as<ValueType, Quantity>) {
+      entry.quantity = *value;
+    } else if constexpr (std::same_as<ValueType, PriceQuantity>) {
+      entry.price = value->price;
+      entry.quantity = value->quantity;
+    } else {
+      static_assert(core::always_false_v<ValueType>, "unhandled ValueType");
     }
-    entry.type = px.type();
+    entry.type = md_entry_value.type();
     if (with_action) {
-      entry.action = px.action();
+      entry.action = md_entry_value.action();
     }
     destination.emplace_back(std::move(entry));
   };
 
-  for_each_px(data, emit);
+  for_each_md_entry(data, emit);
 }
 
 auto InstrumentInfoCache::update(
@@ -166,7 +168,10 @@ auto InstrumentInfoCache::update(
       update_low_price(trade->trade_price);
       update_high_price(trade->trade_price);
 
-      update_opening_high_low_price(*trade);
+      if (!update_on_first_trade(*trade) &&
+          trade->market_phase.trading_phase() == TradingPhase::Option::Open) {
+        add_to_trade_volume(trade->traded_quantity);
+      }
       update_closing_price(*trade);
 
       last_trade_ = *trade;
@@ -192,15 +197,26 @@ auto InstrumentInfoCache::update(
                          info->closing_price,
                          actual_data_.closing_price_time,
                          info->closing_price_time);
+
+        const auto& clearing_price = info->auction_clearing_price;
+        const auto& clearing_quantity = info->auction_clearing_quantity;
+        std::optional<PriceQuantity> clearing;
+        if (clearing_price && clearing_quantity) {
+          clearing = PriceQuantity{*clearing_price, *clearing_quantity};
+        }
         assign(actual_data_.auction_clearing_price,
                last_update_.auction_clearing_price,
-               info->auction_clearing_price,
-               info->auction_clearing_quantity);
+               clearing);
+
         assign(actual_data_.previous_closing_price,
                last_update_.previous_closing_price,
                info->previous_closing_price);
+
+        assign(actual_data_.trade_volume,
+               last_update_.trade_volume,
+               info->trade_volume);
       } else {
-        mark_prices_deleted();
+        mark_deleted();
       }
     }
     if (const auto* auction = std::get_if<AuctionPricesUpdate>(&update.value)) {
@@ -219,17 +235,20 @@ auto InstrumentInfoCache::store_state(
     std::optional<market_state::InstrumentInfo>& info) const -> void {
   // The mid-price is derived and intentionally not persisted; it is recomputed
   // from low/high on recovery.
+  const auto& clearing = actual_data_.auction_clearing_price.value();
   market_state::InstrumentInfo stored{
-      .low_price = actual_data_.low_price.price(),
-      .high_price = actual_data_.high_price.price(),
-      .opening_price = actual_data_.opening_price.price(),
+      .low_price = actual_data_.low_price.value(),
+      .high_price = actual_data_.high_price.value(),
+      .opening_price = actual_data_.opening_price.value(),
       .opening_price_time = actual_data_.opening_price_time,
-      .closing_price = actual_data_.closing_price.price(),
+      .closing_price = actual_data_.closing_price.value(),
       .closing_price_time = actual_data_.closing_price_time,
-      .auction_clearing_price = actual_data_.auction_clearing_price.price(),
+      .auction_clearing_price =
+          clearing ? std::make_optional(clearing->price) : std::nullopt,
       .auction_clearing_quantity =
-          actual_data_.auction_clearing_price.quantity(),
-      .previous_closing_price = actual_data_.previous_closing_price.price()};
+          clearing ? std::make_optional(clearing->quantity) : std::nullopt,
+      .previous_closing_price = actual_data_.previous_closing_price.value(),
+      .trade_volume = actual_data_.trade_volume.value()};
 
   if (stored != market_state::InstrumentInfo{}) {
     info = std::move(stored);
@@ -257,10 +276,9 @@ auto InstrumentInfoCache::update_mid_price() -> void {
   last_update_.mid_price = actual_data_.mid_price;
 }
 
-auto InstrumentInfoCache::update_opening_high_low_price(const Trade& trade)
-    -> void {
+auto InstrumentInfoCache::update_on_first_trade(const Trade& trade) -> bool {
   if (config_.opening_auction_scheduled) {
-    return;
+    return false;
   }
 
   const bool first_trade_today = [&]() -> bool {
@@ -271,14 +289,22 @@ auto InstrumentInfoCache::update_opening_high_low_price(const Trade& trade)
     return true;
   }();
 
-  if (first_trade_today) {
-    assign_with_time(actual_data_.opening_price,
-                     last_update_.opening_price,
-                     trade.trade_price,
-                     actual_data_.opening_price_time,
-                     trade.trade_time);
-    reset_session_high_low(trade.trade_price);
+  if (!first_trade_today) {
+    return false;
   }
+
+  assign_with_time(actual_data_.opening_price,
+                   last_update_.opening_price,
+                   trade.trade_price,
+                   actual_data_.opening_price_time,
+                   trade.trade_time);
+  if (trade.market_phase.trading_phase() == TradingPhase::Option::Open) {
+    assign(actual_data_.trade_volume,
+           last_update_.trade_volume,
+           trade.traded_quantity);
+  }
+  reset_session_high_low(trade.trade_price);
+  return true;
 }
 
 auto InstrumentInfoCache::update_closing_price(const Trade& trade) -> void {
@@ -366,16 +392,24 @@ auto InstrumentInfoCache::recalculate_mid_price() -> void {
   }
 }
 
+auto InstrumentInfoCache::add_to_trade_volume(Quantity qty) -> void {
+  const auto& current = actual_data_.trade_volume.value();
+  const double accumulated = (current ? current->value() : 0.0) + qty.value();
+  assign(actual_data_.trade_volume,
+         last_update_.trade_volume,
+         Quantity{accumulated});
+}
+
 auto InstrumentInfoCache::apply_auction_prices(
     const AuctionPricesUpdate& prices) -> void {
   using Phase = TradingPhase::Option;
-  const bool crossed = prices.clearing_price.has_value();
+  const bool crossed = prices.clearing_value.has_value();
 
   if (crossed) {
     assign(actual_data_.auction_clearing_price,
            last_update_.auction_clearing_price,
-           prices.clearing_price,
-           prices.clearing_quantity);
+           std::make_optional(PriceQuantity{prices.clearing_value->price,
+                                            prices.clearing_value->quantity}));
   } else {
     clear_slot(actual_data_.auction_clearing_price,
                last_update_.auction_clearing_price);
@@ -386,26 +420,31 @@ auto InstrumentInfoCache::apply_auction_prices(
       if (crossed) {
         assign_with_time(actual_data_.opening_price,
                          last_update_.opening_price,
-                         prices.clearing_price,
+                         std::make_optional(prices.clearing_value->price),
                          actual_data_.opening_price_time,
                          core::get_current_system_time());
-        reset_session_high_low(*prices.clearing_price);
+        assign(actual_data_.trade_volume,
+               last_update_.trade_volume,
+               prices.clearing_value->quantity);
+        reset_session_high_low(prices.clearing_value->price);
       } else {
         clear_slot(actual_data_.opening_price,
                    last_update_.opening_price,
                    actual_data_.opening_price_time);
+        clear_slot(actual_data_.trade_volume, last_update_.trade_volume);
       }
       break;
     case Phase::ClosingAuction:
       assign(actual_data_.previous_closing_price,
              last_update_.previous_closing_price,
-             actual_data_.closing_price.price());
+             actual_data_.closing_price.value());
       if (crossed) {
         assign_with_time(actual_data_.closing_price,
                          last_update_.closing_price,
-                         prices.clearing_price,
+                         std::make_optional(prices.clearing_value->price),
                          actual_data_.closing_price_time,
                          core::get_current_system_time());
+        add_to_trade_volume(prices.clearing_value->quantity);
       } else {
         clear_slot(actual_data_.closing_price,
                    last_update_.closing_price,
@@ -413,6 +452,9 @@ auto InstrumentInfoCache::apply_auction_prices(
       }
       break;
     case Phase::IntradayAuction:
+      if (crossed) {
+        add_to_trade_volume(prices.clearing_value->quantity);
+      }
       break;
     case Phase::Open:
     case Phase::Closed:
@@ -424,11 +466,11 @@ auto InstrumentInfoCache::apply_auction_prices(
 
 auto InstrumentInfoCache::apply_early_price(const EarlyPriceUpdate& early)
     -> void {
-  if (early.early_price.has_value()) {
+  if (early.early_value.has_value()) {
     // The 30-second indicative tick republishes 269=P even when the value is
     // unchanged, so the change dedup of assign() must not swallow repeats.
-    actual_data_.early_price.force_update(*early.early_price,
-                                          early.early_quantity);
+    actual_data_.early_price.force_update(
+        PriceQuantity{early.early_value->price, early.early_value->quantity});
     last_update_.early_price = actual_data_.early_price;
   } else {
     clear_slot(actual_data_.early_price, last_update_.early_price);
@@ -443,7 +485,7 @@ auto InstrumentInfoCache::reset_session_high_low(Price opening_price) -> void {
   }
 }
 
-auto InstrumentInfoCache::mark_prices_deleted() -> void {
+auto InstrumentInfoCache::mark_deleted() -> void {
   clear_slot(actual_data_.low_price, last_update_.low_price);
   clear_slot(actual_data_.high_price, last_update_.high_price);
   clear_slot(actual_data_.mid_price, last_update_.mid_price);
@@ -457,6 +499,7 @@ auto InstrumentInfoCache::mark_prices_deleted() -> void {
              last_update_.auction_clearing_price);
   clear_slot(actual_data_.previous_closing_price,
              last_update_.previous_closing_price);
+  clear_slot(actual_data_.trade_volume, last_update_.trade_volume);
 }
 
 }  // namespace simulator::trading_system::matching_engine::mdata

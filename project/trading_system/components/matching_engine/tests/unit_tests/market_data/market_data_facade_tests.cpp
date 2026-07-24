@@ -247,7 +247,7 @@ TEST_F(MatchingEngineMarketDataFacadeUncross,
 struct MatchingEngineMarketDataFacadePublish : MatchingEngineMarketDataFacade {
   auto push_early_price(Price price, Quantity quantity) -> void {
     facade.handle(OrderBookNotification{
-        EarlyPriceUpdate{.early_price = price, .early_quantity = quantity}});
+        EarlyPriceUpdate{TradeResult{std::move(price), std::move(quantity)}}});
   }
 
   auto push_market_bid(Quantity quantity) -> void {

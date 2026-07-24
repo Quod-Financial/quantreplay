@@ -210,9 +210,8 @@ struct MatchingEngineOrderSystemFacadeAuctionUncross
                                     TradingStatus::Option::Halt));
   }
 
-  auto place_limit(Side side,
-                   OrderPrice price,
-                   OrderQuantity quantity) -> void {
+  auto place_limit(Side side, OrderPrice price, OrderQuantity quantity)
+      -> void {
     auto request = make_message<protocol::OrderPlacementRequest>();
     request.order_type = OrderType::Option::Limit;
     request.side = side;
@@ -355,9 +354,8 @@ struct MatchingEngineOrderSystemFacadeEarlyPrice
         transition(TradingPhase::Option::Open, TradingStatus::Option::Resume));
   }
 
-  auto place_limit(Side side,
-                   OrderPrice price,
-                   OrderQuantity quantity) -> void {
+  auto place_limit(Side side, OrderPrice price, OrderQuantity quantity)
+      -> void {
     auto request = make_message<protocol::OrderPlacementRequest>();
     request.order_type = OrderType::Option::Limit;
     request.side = side;
@@ -396,19 +394,20 @@ struct MatchingEngineOrderSystemFacadeEarlyPrice
   }
 
   static auto PublishesEarly(Price price, Quantity quantity) {
-    return IsOrderBookNotification(VariantWith<EarlyPriceUpdate>(AllOf(
-        Field(&EarlyPriceUpdate::early_price, Optional(Eq(price))),
-        Field(&EarlyPriceUpdate::early_quantity, Optional(Eq(quantity))))));
+    return IsOrderBookNotification(VariantWith<EarlyPriceUpdate>(
+        Field(&EarlyPriceUpdate::early_value,
+              Optional(AllOf(Field(&TradeResult::price, Eq(price)),
+                             Field(&TradeResult::quantity, Eq(quantity)))))));
   }
 
   static auto PublishesAnyEarlyPrice() {
     return IsOrderBookNotification(VariantWith<EarlyPriceUpdate>(
-        Field(&EarlyPriceUpdate::early_price, Optional(_))));
+        Field(&EarlyPriceUpdate::early_value, Optional(_))));
   }
 
   static auto ClearsEarlyPrice() {
     return IsOrderBookNotification(VariantWith<EarlyPriceUpdate>(
-        Field(&EarlyPriceUpdate::early_price, Eq(std::nullopt))));
+        Field(&EarlyPriceUpdate::early_value, Eq(std::nullopt))));
   }
 
   static auto EmitsAnyEarlyUpdate() {

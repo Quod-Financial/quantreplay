@@ -34,6 +34,8 @@ TEST_F(StreamingSettings, DefaultSettings) {
       settings.is_data_type_requested(MdEntryType::Option::EarlyPrice));
   EXPECT_FALSE(settings.is_data_type_requested(
       MdEntryType::Option::PreviousClosingPrice));
+  EXPECT_FALSE(
+      settings.is_data_type_requested(MdEntryType::Option::TradeVolume));
   EXPECT_EQ(settings.excluded_orders_owner(), std::nullopt);
 }
 
@@ -52,7 +54,8 @@ TEST_F(StreamingSettings, EachRequestableDataTypeOwnsADistinctFlag) {
                                          Option::ClosingPrice,
                                          Option::AuctionClearingPrice,
                                          Option::EarlyPrice,
-                                         Option::PreviousClosingPrice};
+                                         Option::PreviousClosingPrice,
+                                         Option::TradeVolume};
 
   for (const auto enabled : requestable_types) {
     mdata::StreamingSettings subject;

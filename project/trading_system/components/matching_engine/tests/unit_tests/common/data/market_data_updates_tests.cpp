@@ -71,41 +71,54 @@ TEST(MatchingEngineInstrumentInfoRecoverFormatting, FmtFormatting) {
             "\"closing_price\": none, \"closing_price_time\": none, "
             "\"auction_clearing_price\": none, "
             "\"auction_clearing_quantity\": none, "
-            "\"previous_closing_price\": none } } }");
+            "\"previous_closing_price\": none, "
+            "\"trade_volume\": none } } }");
+}
+
+TEST(MatchingEngineTradeResultFormatting, FmtFormatting) {
+  const TradeResult event{.price = Price{130}, .quantity = Quantity{500}};
+
+  ASSERT_EQ(fmt::to_string(event),
+            R"({ "TradeResult": { "price": 130, "quantity": 500 } })");
 }
 
 TEST(MatchingEngineAuctionPricesUpdateFormatting, FmtFormatting) {
   const AuctionPricesUpdate event{
       .auction_phase = TradingPhase{TradingPhase::Option::OpeningAuction},
-      .clearing_price = Price{130},
-      .clearing_quantity = Quantity{500}};
+      .clearing_value =
+          TradeResult{.price = Price{130}, .quantity = Quantity{500}}};
 
-  // clang-format off
-  ASSERT_EQ(
-      fmt::to_string(event),
-      R"({ "AuctionPricesUpdate": { "auction_phase": "OpeningAuction", "clearing_price": 130, "clearing_quantity": 500 } })");
-  // clang-format on
+  ASSERT_EQ(fmt::to_string(event),
+            R"({ "AuctionPricesUpdate": { "auction_phase": "OpeningAuction", )"
+            R"("clearing_value": { "TradeResult": { "price": 130, )"
+            R"("quantity": 500 } } } })");
+}
+
+TEST(MatchingEngineAuctionPricesUpdateFormatting, FmtFormattingWhenNotCrossed) {
+  constexpr AuctionPricesUpdate event{
+      .auction_phase = TradingPhase{TradingPhase::Option::OpeningAuction},
+      .clearing_value = std::nullopt};
+
+  ASSERT_EQ(fmt::to_string(event),
+            R"({ "AuctionPricesUpdate": { "auction_phase": "OpeningAuction", )"
+            R"("clearing_value": none } })");
 }
 
 TEST(MatchingEngineEarlyPriceUpdateFormatting, FmtFormatting) {
-  const EarlyPriceUpdate event{.early_price = Price{105},
-                               .early_quantity = Quantity{100}};
+  const EarlyPriceUpdate event{
+      .early_value =
+          TradeResult{.price = Price{105}, .quantity = Quantity{100}}};
 
-  // clang-format off
-  ASSERT_EQ(
-      fmt::to_string(event),
-      R"({ "EarlyPriceUpdate": { "early_price": 105, "early_quantity": 100 } })");
-  // clang-format on
+  ASSERT_EQ(fmt::to_string(event),
+            R"({ "EarlyPriceUpdate": { "early_value": { "TradeResult": )"
+            R"({ "price": 105, "quantity": 100 } } } })");
 }
 
 TEST(MatchingEngineEarlyPriceUpdateFormatting, FmtFormattingWhenCleared) {
   const EarlyPriceUpdate event{};
 
-  // clang-format off
-  ASSERT_EQ(
-      fmt::to_string(event),
-      R"({ "EarlyPriceUpdate": { "early_price": none, "early_quantity": none } })");
-  // clang-format on
+  ASSERT_EQ(fmt::to_string(event),
+            R"({ "EarlyPriceUpdate": { "early_value": none } })");
 }
 
 TEST(MatchingEngineTzDayPassedFormatting, FmtFormatting) {

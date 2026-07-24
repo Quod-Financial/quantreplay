@@ -39,8 +39,8 @@ add_target_tests(
     unit_tests/market_data/full_depth_update_tests.cpp
     unit_tests/market_data/incremental_depth_update_tests.cpp
     unit_tests/market_data/instrument_info_cache_tests.cpp
-    unit_tests/market_data/instrument_px_tests.cpp
     unit_tests/market_data/market_data_facade_tests.cpp
+    unit_tests/market_data/md_entry_value_tests.cpp
     unit_tests/market_data/streaming_settings_tests.cpp
     unit_tests/market_data/trade_cache_tests.cpp
     unit_tests/orders/actions/all_orders_elimination_tests.cpp

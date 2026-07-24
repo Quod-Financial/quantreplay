@@ -42,16 +42,17 @@ struct InstrumentInfoCache : Test {
 
   static auto make_auction_cross(const TradingPhase::Option phase,
                                  const Price price,
-                                 const Quantity quantity) {
-    return AuctionPricesUpdate{.auction_phase = TradingPhase{phase},
-                               .clearing_price = price,
-                               .clearing_quantity = quantity};
+                                 const Quantity quantity)
+      -> AuctionPricesUpdate {
+    return AuctionPricesUpdate{
+        .auction_phase = TradingPhase{phase},
+        .clearing_value = TradeResult{.price = price, .quantity = quantity}};
   }
 
-  static auto make_auction_no_cross(const TradingPhase::Option phase) {
+  static auto make_auction_no_cross(const TradingPhase::Option phase)
+      -> AuctionPricesUpdate {
     return AuctionPricesUpdate{.auction_phase = TradingPhase{phase},
-                               .clearing_price = std::nullopt,
-                               .clearing_quantity = std::nullopt};
+                               .clearing_value = std::nullopt};
   }
 
   constexpr static auto NoAction = std::nullopt;
@@ -80,7 +81,8 @@ struct InstrumentInfoCache : Test {
   }
 
   static auto make_early(const Price price, const Quantity quantity) {
-    return EarlyPriceUpdate{.early_price = price, .early_quantity = quantity};
+    return EarlyPriceUpdate{
+        .early_value = TradeResult{.price = price, .quantity = quantity}};
   }
 
   static auto EarlyEntryHas(const Price price,
@@ -91,6 +93,14 @@ struct InstrumentInfoCache : Test {
                  Field(&MarketDataEntry::action, Eq(action)),
                  Field(&MarketDataEntry::type,
                        Eq(MdEntryType{MdEntryType::Option::EarlyPrice})));
+  }
+
+  static auto VolumeEntryHas(const Quantity quantity,
+                             const std::optional<MarketEntryAction> action) {
+    return AllOf(Field(&MarketDataEntry::quantity, Optional(Eq(quantity))),
+                 Field(&MarketDataEntry::action, Eq(action)),
+                 Field(&MarketDataEntry::type,
+                       Eq(MdEntryType{MdEntryType::Option::TradeVolume})));
   }
 };
 
@@ -769,6 +779,18 @@ TEST_F(InstrumentInfoCache, StoresStateAuctionClearingPriceAndQuantity) {
                       Optional(Eq(Quantity{500}))))));
 }
 
+TEST_F(InstrumentInfoCache, StoresStateTradeVolume) {
+  cache.update(make_update(InstrumentInfoRecover{std::make_optional(
+      market_state::InstrumentInfo{.trade_volume = Quantity{500}})}));
+
+  std::optional<market_state::InstrumentInfo> info;
+  cache.store_state(info);
+
+  ASSERT_THAT(info,
+              Optional(Field(&market_state::InstrumentInfo::trade_volume,
+                             Optional(Eq(Quantity{500})))));
+}
+
 TEST_F(InstrumentInfoCache, MarksDeletedOpeningPriceOnNulloptRecover) {
   cache.update(make_update(InstrumentInfoRecover{std::make_optional(
       market_state::InstrumentInfo{.opening_price = Price{110}})}));
@@ -799,6 +821,19 @@ TEST_F(InstrumentInfoCache,
       entries,
       ElementsAre(ClearingEntryHas(
           Price{130}, Quantity{500}, MarketEntryAction::Option::Delete)));
+}
+
+TEST_F(InstrumentInfoCache, MarksDeletedTradeVolumeOnNulloptRecover) {
+  cache.update(make_update(InstrumentInfoRecover{std::make_optional(
+      market_state::InstrumentInfo{.trade_volume = Quantity{500}})}));
+  cache.update(make_update(InstrumentInfoRecover{.info = std::nullopt}));
+  settings.enable_data_type_streaming(MdEntryType::Option::TradeVolume);
+
+  cache.compose_update(settings, entries);
+
+  ASSERT_THAT(entries,
+              ElementsAre(VolumeEntryHas(Quantity{500},
+                                         MarketEntryAction::Option::Delete)));
 }
 
 TEST_F(InstrumentInfoCache, OpeningAuctionCrossSetsOpeningPrice) {
@@ -1085,7 +1120,8 @@ TEST_F(InstrumentInfoCache, HasNoUpdateWhenNothingChanged) {
 }
 
 TEST_F(InstrumentInfoCache, HasNoUpdateWhenOnlyUnrequestedEarlyPriceChanged) {
-  cache.update(make_update(EarlyPriceUpdate{Price{50}, Quantity{100}}));
+  cache.update(
+      make_update(EarlyPriceUpdate{TradeResult{Price{50}, Quantity{100}}}));
   settings.enable_data_type_streaming(MdEntryType::Option::OpeningPrice);
 
   EXPECT_FALSE(cache.has_update(settings));
@@ -1520,6 +1556,172 @@ TEST_F(
           EntryHas(Price{150}, NoAction, MdEntryType::Option::ClosingPrice),
           EntryHas(
               Price{95}, NoAction, MdEntryType::Option::PreviousClosingPrice)));
+}
+
+struct InstrumentInfoCacheTradeVolume : InstrumentInfoCache {
+  InstrumentInfoCacheTradeVolume() {
+    settings.enable_data_type_streaming(MdEntryType::Option::TradeVolume);
+  }
+
+  static auto open_trade(const Quantity quantity) -> Trade {
+    return NewTrade()
+        .with_traded_quantity(quantity)
+        .with_market_phase(MarketPhase::open())
+        .create();
+  }
+
+  static auto open_trade_on(core::sys_us time, const Quantity quantity)
+      -> Trade {
+    return NewTrade()
+        .with_traded_quantity(quantity)
+        .with_trade_time(time)
+        .with_market_phase(MarketPhase::open())
+        .create();
+  }
+
+  static auto auction_trade_on(core::sys_us time,
+                               const Quantity quantity,
+                               const TradingPhase::Option phase) -> Trade {
+    return NewTrade()
+        .with_traded_quantity(quantity)
+        .with_trade_time(time)
+        .with_market_phase({phase, TradingStatus::Option::Halt})
+        .create();
+  }
+};
+
+TEST_F(InstrumentInfoCacheTradeVolume, DoesNotPublishTradeVolumeWhenNeverSet) {
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries, IsEmpty());
+}
+
+TEST_F(InstrumentInfoCacheTradeVolume, RecoversFromInstrumentInfoRecover) {
+  cache.update(make_update(InstrumentInfoRecover{std::make_optional(
+      market_state::InstrumentInfo{.trade_volume = Quantity{500}})}));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries, ElementsAre(VolumeEntryHas(Quantity{500}, NoAction)));
+}
+
+TEST_F(InstrumentInfoCacheTradeVolume,
+       ResetsToClearingQuantityWhenOpeningAuctionCrossed) {
+  cache.update(make_update(open_trade(Quantity{40})));
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::OpeningAuction, Price{110}, Quantity{500})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries, ElementsAre(VolumeEntryHas(Quantity{500}, NoAction)));
+}
+
+TEST_F(InstrumentInfoCacheTradeVolume, DeletesWhenOpeningAuctionNotCrossed) {
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::OpeningAuction, Price{110}, Quantity{500})));
+  cache.update(
+      make_update(make_auction_no_cross(TradingPhase::Option::OpeningAuction)));
+
+  cache.compose_update(settings, entries);
+
+  ASSERT_THAT(entries,
+              ElementsAre(VolumeEntryHas(Quantity{500},
+                                         MarketEntryAction::Option::Delete)));
+}
+
+TEST_F(InstrumentInfoCacheTradeVolume, AddsTradeQuantityOnOpenPhase) {
+  cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
+                   .opening_auction_scheduled = true});
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::OpeningAuction, Price{110}, Quantity{500})));
+  cache.update(make_update(open_trade(Quantity{40})));
+  cache.update(make_update(open_trade(Quantity{60})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries, ElementsAre(VolumeEntryHas(Quantity{600}, NoAction)));
+}
+
+TEST_F(InstrumentInfoCacheTradeVolume,
+       DoesNotAddTradeQuantityOnPreOpeningPhase) {
+  cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
+                   .opening_auction_scheduled = true});
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::OpeningAuction, Price{110}, Quantity{500})));
+  cache.update(
+      make_update(NewTrade()
+                      .with_market_phase({TradingPhase::Option::OpeningAuction,
+                                          TradingStatus::Option::Resume})
+                      .with_traded_quantity(Quantity{40})
+                      .create()));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries, ElementsAre(VolumeEntryHas(Quantity{500}, NoAction)));
+}
+
+TEST_F(InstrumentInfoCacheTradeVolume,
+       ResetsToFirstTradeQuantityAfterMidnightWhenOpeningAuctionNotConfigured) {
+  cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
+                   .opening_auction_scheduled = false});
+  cache.update(make_update(open_trade_on(yesterday(), Quantity{200})));
+  cache.update(make_update(open_trade_on(today(), Quantity{80})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries, ElementsAre(VolumeEntryHas(Quantity{80}, NoAction)));
+}
+
+TEST_F(InstrumentInfoCacheTradeVolume,
+       AddsClearingQuantityWhenIntradayAuctionCrossed) {
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::OpeningAuction, Price{110}, Quantity{500})));
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::IntradayAuction, Price{130}, Quantity{600})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries, ElementsAre(VolumeEntryHas(Quantity{1100}, NoAction)));
+}
+
+TEST_F(InstrumentInfoCacheTradeVolume,
+       AddsClearingQuantityWhenClosingAuctionCrossed) {
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::OpeningAuction, Price{110}, Quantity{500})));
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::ClosingAuction, Price{120}, Quantity{300})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries, ElementsAre(VolumeEntryHas(Quantity{800}, NoAction)));
+}
+
+TEST_F(InstrumentInfoCacheTradeVolume,
+       DoesNotDoubleCountFirstDailyTradeCrossedByIntradayAuction) {
+  cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
+                   .opening_auction_scheduled = false});
+  cache.update(make_update(auction_trade_on(
+      today(), Quantity{40}, TradingPhase::Option::IntradayAuction)));
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::IntradayAuction, Price{130}, Quantity{140})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries, ElementsAre(VolumeEntryHas(Quantity{140}, NoAction)));
+}
+
+TEST_F(InstrumentInfoCacheTradeVolume,
+       DoesNotDoubleCountFirstDailyTradeCrossedByClosingAuction) {
+  cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
+                   .opening_auction_scheduled = false});
+  cache.update(make_update(auction_trade_on(
+      today(), Quantity{40}, TradingPhase::Option::ClosingAuction)));
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::ClosingAuction, Price{120}, Quantity{140})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries, ElementsAre(VolumeEntryHas(Quantity{140}, NoAction)));
 }
 
 }  // namespace

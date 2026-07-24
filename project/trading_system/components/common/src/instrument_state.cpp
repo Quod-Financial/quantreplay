@@ -73,7 +73,11 @@ auto fmt::formatter<simulator::trading_system::market_state::InstrumentInfo>::
   // clang-format off
   return format_to(
       ctx.out(),
-      R"({{ "low_price": {}, "high_price": {}, "opening_price": {}, "opening_price_time": {}, "closing_price": {}, "closing_price_time": {}, "auction_clearing_price": {}, "auction_clearing_quantity": {}, "previous_closing_price": {} }})",
+      R"({{ "low_price": {}, "high_price": {}, )"
+      R"("opening_price": {}, "opening_price_time": {}, )"
+      R"("closing_price": {}, "closing_price_time": {}, )"
+      R"("auction_clearing_price": {}, "auction_clearing_quantity": {}, )"
+      R"("previous_closing_price": {}, "trade_volume": {} }})",
       info.low_price,
       info.high_price,
       info.opening_price,
@@ -82,6 +86,7 @@ auto fmt::formatter<simulator::trading_system::market_state::InstrumentInfo>::
       info.closing_price_time,
       info.auction_clearing_price,
       info.auction_clearing_quantity,
-      info.previous_closing_price);
+      info.previous_closing_price,
+      info.trade_volume);
   // clang-format on
 }

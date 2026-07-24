@@ -55,6 +55,7 @@ struct InstrumentInfo {
   std::optional<Price> auction_clearing_price{};
   std::optional<Quantity> auction_clearing_quantity{};
   std::optional<Price> previous_closing_price{};
+  std::optional<Quantity> trade_volume{};
 
   [[nodiscard]]
   auto operator==(const InstrumentInfo&) const -> bool = default;

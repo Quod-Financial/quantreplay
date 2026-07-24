@@ -510,7 +510,8 @@ INSTANTIATE_TEST_SUITE_P(FixValues, FromFixMdEntryTypeConversion,
     std::make_tuple(FIX::MDEntryType_EARLY_PRICES, MdEntryType::Option::EarlyPrice),
     std::make_tuple(FIX::MDEntryType_PREVIOUS_CLOSING_PRICE, MdEntryType::Option::PreviousClosingPrice),
     std::make_tuple(FIX::MDEntryType_MARKET_BID, MdEntryType::Option::MarketBid),
-    std::make_tuple(FIX::MDEntryType_MARKET_OFFER, MdEntryType::Option::MarketOffer)
+    std::make_tuple(FIX::MDEntryType_MARKET_OFFER, MdEntryType::Option::MarketOffer),
+    std::make_tuple(FIX::MDEntryType_TRADE_VOLUME, MdEntryType::Option::TradeVolume)
   ));
 // clang-format on
 

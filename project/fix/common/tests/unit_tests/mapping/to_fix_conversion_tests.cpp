@@ -652,7 +652,8 @@ INSTANTIATE_TEST_SUITE_P(InternalEnum, ToFixMdEntryTypeConversion,
     std::make_tuple(MdEntryType::Option::EarlyPrice, FIX::MDEntryType_EARLY_PRICES),
     std::make_tuple(MdEntryType::Option::PreviousClosingPrice, 'e'),
     std::make_tuple(MdEntryType::Option::MarketBid, 'b'),
-    std::make_tuple(MdEntryType::Option::MarketOffer, 'c')
+    std::make_tuple(MdEntryType::Option::MarketOffer, 'c'),
+    std::make_tuple(MdEntryType::Option::TradeVolume, FIX::MDEntryType_TRADE_VOLUME)
   ));
 // clang-format on
 

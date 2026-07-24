@@ -62,12 +62,13 @@ This is a list of all the types of Market Data Entries that the firm requesting 
 * 5 - Closing Price
 * 7 - Trading Session High Price
 * 8 - Trading Session Low Price
+* B - Trade Volume (quantity, with its volume MDEntrySize)
 * H - Mid Price
+* P - Early Prices (price, with its volume in MDEntrySize)
+* Q - Auction Clearing Price (price, with its volume in MDEntrySize)
 * b - Market Bid
 * c - Market Offer
 * e - Previous Closing Price
-* Q - Auction Clearing Price (price, with its volume in MDEntrySize)
-* P - Early Prices (price, with its volume in MDEntrySize)
 
 Market Bid (269=b) and Market Offer (269=c) entries are not included in a Bid (0) / Offer (1) subscription — they are received only when requested as their own entry types.
 
@@ -130,6 +131,7 @@ Conditionally required if this message is in response to a MarketDataRequest(35=
 * e - Previous Closing Price
 * Q - Auction Clearing Price (price, with its volume in MDEntrySize)
 * P - Early Price (price, with its volume in MDEntrySize; see <<message-flows-mkt-data-auction>>)
+* B - Trade Volume (daily traded volume in MDEntrySize, without a price; see <<message-flows-mkt-data-daily-reset>>)
 
 | => 270 | MDEntryPx | C | Price of the Market Data Entry.
 
@@ -225,6 +227,7 @@ The timestamp component is a Unix Timestamp (Sec) that is generated when the sim
 * e - Previous Closing Price
 * Q - Auction Clearing Price (price, with its volume in MDEntrySize)
 * P - Early Price (price, with its volume in MDEntrySize; see <<message-flows-mkt-data-auction>>)
+* B - Trade Volume (daily traded volume in MDEntrySize, without a price; see <<message-flows-mkt-data-daily-reset>>)
 
 | => 270 | MDEntryPx | C | Price of the Market Data Entry. MDEntryPx=Indicative Price.
 

@@ -247,7 +247,8 @@ enum class MdEntryType : std::uint8_t {
   EarlyPrice,
   PreviousClosingPrice,
   MarketBid,
-  MarketOffer
+  MarketOffer,
+  TradeVolume
 };
 
 enum class MdSubscriptionRequestType : std::uint8_t {
