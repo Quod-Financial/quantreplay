@@ -93,6 +93,15 @@ This closing snapshot reflects the auction's outcome. The clearing price and vol
 
 The auction clearing price is a simplified mid-point of the best bid and best offer rounded to the price tick; as a consequence a few limit orders priced through the clearing price may remain in the book after the uncrossing.
 
+[[message-flows-mkt-data-daily-reset]]
+==== Daily Session Price Reset Without Auction Phases
+
+The session-level L1 prices — Opening Price (269=4), Closing Price (269=5), Previous Closing Price (269=e) and the Trading Session Low (269=8), Trading Session High (269=7) and Mid Prices (269=H) — are normally reset by the opening and closing auctions, as described above. When a venue's phase schedule does not include the corresponding auction, the simulator instead resets these values to the day's trades so they still roll over once per day.
+
+When no opening auction (PreOpen) is scheduled, the Opening Price (269=4) is set from the price of the first trade that occurs after midnight in the venue's configured time zone, and the session high (269=7) and low (269=8) prices are reset to that opening price and tracked from there on.
+
+When no closing auction (PreClose) is scheduled, the Closing Price (269=5) is set to the price of the last trade before midnight in the venue's configured time zone. As with the closing auction, each rollover first carries the last known Closing Price into the Previous Closing Price (269 = e).
+
 [[message-flows-trd-msg]]
 === Trading Messages
 

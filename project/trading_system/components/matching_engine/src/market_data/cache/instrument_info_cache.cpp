@@ -4,6 +4,8 @@
 #include <optional>
 
 #include "common/trade.hpp"
+#include "core/tools/time.hpp"
+#include "ih/market_data/tools/algorithms.hpp"
 
 namespace simulator::trading_system::matching_engine::mdata {
 
@@ -41,6 +43,36 @@ auto assign(auto& actual, auto& last_update, auto value) -> void {
   }
 }
 
+auto assign_with_time(auto& actual,
+                      auto& last_update,
+                      std::optional<Price> price,
+                      std::optional<core::sys_us>& update_time,
+                      std::optional<core::sys_us> time) -> void {
+  if (actual.update(std::move(price))) {
+    last_update = actual;
+  }
+  update_time = time;
+}
+
+auto roll_closing_price(
+    InstrumentPx<MdEntryType::Option::PreviousClosingPrice>& previous_actual,
+    InstrumentPx<MdEntryType::Option::PreviousClosingPrice>&
+        previous_last_update,
+    InstrumentPx<MdEntryType::Option::ClosingPrice>& actual,
+    InstrumentPx<MdEntryType::Option::ClosingPrice>& last_update,
+    std::optional<Price> price,
+    std::optional<core::sys_us>& update_time,
+    std::optional<core::sys_us> time) -> void {
+  if (previous_actual.update(actual.price())) {
+    previous_last_update = previous_actual;
+  }
+  if (actual.update(std::move(price))) {
+    last_update = actual;
+  }
+
+  update_time = time;
+}
+
 auto assign(auto& actual,
             auto& last_update,
             std::optional<Price> price,
@@ -68,7 +100,17 @@ auto for_each_px(const auto& data, const auto& visit) -> void {
   visit(data.previous_closing_price);
 }
 
+template <typename Px>
+auto clear_slot(Px& actual,
+                Px& last_update,
+                std::optional<core::sys_us>& update_time) -> void {
+  clear_slot(actual, last_update);
+  update_time = core::get_current_system_time();
+}
+
 }  // namespace
+
+auto InstrumentInfoCache::configure(Config config) -> void { config_ = config; }
 
 auto InstrumentInfoCache::compose_initial(
     const StreamingSettings& settings,
@@ -123,6 +165,11 @@ auto InstrumentInfoCache::update(
     if (const auto* trade = std::get_if<Trade>(&update.value)) {
       update_low_price(trade->trade_price);
       update_high_price(trade->trade_price);
+
+      update_opening_high_low_price(*trade);
+      update_closing_price(*trade);
+
+      last_trade_ = *trade;
     }
     if (const auto* recover =
             std::get_if<InstrumentInfoRecover>(&update.value)) {
@@ -135,12 +182,16 @@ auto InstrumentInfoCache::update(
         if (low_recovered || high_recovered) {
           recalculate_mid_price();
         }
-        assign(actual_data_.opening_price,
-               last_update_.opening_price,
-               info->opening_price);
-        assign(actual_data_.closing_price,
-               last_update_.closing_price,
-               info->closing_price);
+        assign_with_time(actual_data_.opening_price,
+                         last_update_.opening_price,
+                         info->opening_price,
+                         actual_data_.opening_price_time,
+                         info->opening_price_time);
+        assign_with_time(actual_data_.closing_price,
+                         last_update_.closing_price,
+                         info->closing_price,
+                         actual_data_.closing_price_time,
+                         info->closing_price_time);
         assign(actual_data_.auction_clearing_price,
                last_update_.auction_clearing_price,
                info->auction_clearing_price,
@@ -158,6 +209,9 @@ auto InstrumentInfoCache::update(
     if (const auto* early = std::get_if<EarlyPriceUpdate>(&update.value)) {
       apply_early_price(*early);
     }
+    if (const auto* day_passed = std::get_if<TzDayPassed>(&update.value)) {
+      update_closing_price(*day_passed);
+    }
   }
 }
 
@@ -169,7 +223,9 @@ auto InstrumentInfoCache::store_state(
       .low_price = actual_data_.low_price.price(),
       .high_price = actual_data_.high_price.price(),
       .opening_price = actual_data_.opening_price.price(),
+      .opening_price_time = actual_data_.opening_price_time,
       .closing_price = actual_data_.closing_price.price(),
+      .closing_price_time = actual_data_.closing_price_time,
       .auction_clearing_price = actual_data_.auction_clearing_price.price(),
       .auction_clearing_quantity =
           actual_data_.auction_clearing_price.quantity(),
@@ -199,6 +255,93 @@ auto InstrumentInfoCache::update_high_price(Price trade_price) -> void {
 auto InstrumentInfoCache::update_mid_price() -> void {
   actual_data_.mid_price.update(get_mid_price(actual_data_));
   last_update_.mid_price = actual_data_.mid_price;
+}
+
+auto InstrumentInfoCache::update_opening_high_low_price(const Trade& trade)
+    -> void {
+  if (config_.opening_auction_scheduled) {
+    return;
+  }
+
+  const bool first_trade_today = [&]() -> bool {
+    if (actual_data_.opening_price_time.has_value()) {
+      return core::to_tz_date(*actual_data_.opening_price_time, config_.clock) <
+             core::to_tz_date(trade.trade_time, config_.clock);
+    }
+    return true;
+  }();
+
+  if (first_trade_today) {
+    assign_with_time(actual_data_.opening_price,
+                     last_update_.opening_price,
+                     trade.trade_price,
+                     actual_data_.opening_price_time,
+                     trade.trade_time);
+    reset_session_high_low(trade.trade_price);
+  }
+}
+
+auto InstrumentInfoCache::update_closing_price(const Trade& trade) -> void {
+  if (config_.closing_auction_scheduled) {
+    return;
+  }
+
+  if (!last_trade_.has_value()) {
+    return;
+  }
+
+  // New Trade comes after midnight but before TzDayPassed
+  const bool first_trade_today =
+      core::to_tz_date(last_trade_->trade_time, config_.clock) <
+      core::to_tz_date(trade.trade_time, config_.clock);
+
+  // TzDayPassed may have already applied the last trade to the closing price
+  const bool already_rolled_today =
+      actual_data_.closing_price_time.has_value() &&
+      core::to_tz_date(*actual_data_.closing_price_time, config_.clock) >=
+          core::to_tz_date(trade.trade_time, config_.clock);
+
+  if (first_trade_today && !already_rolled_today) {
+    roll_closing_price(actual_data_.previous_closing_price,
+                       last_update_.previous_closing_price,
+                       actual_data_.closing_price,
+                       last_update_.closing_price,
+                       last_trade_->trade_price,
+                       actual_data_.closing_price_time,
+                       trade.trade_time);
+  }
+}
+
+auto InstrumentInfoCache::update_closing_price(const TzDayPassed& day_passed)
+    -> void {
+  if (config_.closing_auction_scheduled) {
+    return;
+  }
+
+  if (!last_trade_.has_value()) {
+    return;
+  }
+
+  // TzDayPassed comes before the "Trade after midnight"
+  const bool trade_before_midnight =
+      core::to_tz_date(last_trade_->trade_time, config_.clock) <
+      core::to_tz_date(day_passed.sys_tick_time, config_.clock);
+
+  // The first trade after midnight may have already rolled the closing price
+  const bool already_rolled_today =
+      actual_data_.closing_price_time.has_value() &&
+      core::to_tz_date(*actual_data_.closing_price_time, config_.clock) >=
+          core::to_tz_date(day_passed.sys_tick_time, config_.clock);
+
+  if (trade_before_midnight && !already_rolled_today) {
+    roll_closing_price(actual_data_.previous_closing_price,
+                       last_update_.previous_closing_price,
+                       actual_data_.closing_price,
+                       last_update_.closing_price,
+                       last_trade_->trade_price,
+                       actual_data_.closing_price_time,
+                       day_passed.sys_tick_time);
+  }
 }
 
 auto InstrumentInfoCache::set_low_price(Price price) -> bool {
@@ -241,12 +384,16 @@ auto InstrumentInfoCache::apply_auction_prices(
   switch (prices.auction_phase) {
     case Phase::OpeningAuction:
       if (crossed) {
-        assign(actual_data_.opening_price,
-               last_update_.opening_price,
-               prices.clearing_price);
+        assign_with_time(actual_data_.opening_price,
+                         last_update_.opening_price,
+                         prices.clearing_price,
+                         actual_data_.opening_price_time,
+                         core::get_current_system_time());
         reset_session_high_low(*prices.clearing_price);
       } else {
-        clear_slot(actual_data_.opening_price, last_update_.opening_price);
+        clear_slot(actual_data_.opening_price,
+                   last_update_.opening_price,
+                   actual_data_.opening_price_time);
       }
       break;
     case Phase::ClosingAuction:
@@ -254,11 +401,15 @@ auto InstrumentInfoCache::apply_auction_prices(
              last_update_.previous_closing_price,
              actual_data_.closing_price.price());
       if (crossed) {
-        assign(actual_data_.closing_price,
-               last_update_.closing_price,
-               prices.clearing_price);
+        assign_with_time(actual_data_.closing_price,
+                         last_update_.closing_price,
+                         prices.clearing_price,
+                         actual_data_.closing_price_time,
+                         core::get_current_system_time());
       } else {
-        clear_slot(actual_data_.closing_price, last_update_.closing_price);
+        clear_slot(actual_data_.closing_price,
+                   last_update_.closing_price,
+                   actual_data_.closing_price_time);
       }
       break;
     case Phase::IntradayAuction:
@@ -296,8 +447,12 @@ auto InstrumentInfoCache::mark_prices_deleted() -> void {
   clear_slot(actual_data_.low_price, last_update_.low_price);
   clear_slot(actual_data_.high_price, last_update_.high_price);
   clear_slot(actual_data_.mid_price, last_update_.mid_price);
-  clear_slot(actual_data_.opening_price, last_update_.opening_price);
-  clear_slot(actual_data_.closing_price, last_update_.closing_price);
+  clear_slot(actual_data_.opening_price,
+             last_update_.opening_price,
+             actual_data_.opening_price_time);
+  clear_slot(actual_data_.closing_price,
+             last_update_.closing_price,
+             actual_data_.closing_price_time);
   clear_slot(actual_data_.auction_clearing_price,
              last_update_.auction_clearing_price);
   clear_slot(actual_data_.previous_closing_price,

@@ -44,6 +44,8 @@ class PhaseSchedule {
 
   auto phase_records() const -> std::vector<PhaseRecord>;
 
+  auto has_phase(TradingPhase phase) const -> bool;
+
  private:
   auto select_sched_phase(std::chrono::seconds sched_time) const
       -> ScheduledPhase;

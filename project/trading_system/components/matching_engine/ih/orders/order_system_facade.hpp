@@ -78,7 +78,7 @@ class OrderSystemFacade : public OrderRequestProcessor,
 
   OrderSystemFacade(EventListener& event_listener,
                     const Instrument& instrument,
-                    Configuration configuration,
+                    const Configuration& configuration,
                     std::unique_ptr<order::OrderIdGenerator> order_id_generator,
                     std::unique_ptr<order::Validator> validator,
                     std::unique_ptr<order::RejectNotifier> reject_notifier,

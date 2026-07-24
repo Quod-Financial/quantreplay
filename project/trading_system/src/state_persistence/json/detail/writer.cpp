@@ -409,7 +409,9 @@ auto write(rapidjson::Value& json_value,
   model.low_price = to_double(source.low_price);
   model.high_price = to_double(source.high_price);
   model.opening_price = to_double(source.opening_price);
+  model.opening_price_time = source.opening_price_time;
   model.closing_price = to_double(source.closing_price);
+  model.closing_price_time = source.closing_price_time;
   model.auction_clearing_price = to_double(source.auction_clearing_price);
   model.auction_clearing_quantity = to_double(source.auction_clearing_quantity);
   model.previous_closing_price = to_double(source.previous_closing_price);
@@ -421,7 +423,11 @@ auto write(rapidjson::Value& json_value,
       .and_then(write_field(
           json_value, allocator, "OpeningPrice", model.opening_price))
       .and_then(write_field(
+          json_value, allocator, "OpeningPriceTime", model.opening_price_time))
+      .and_then(write_field(
           json_value, allocator, "ClosingPrice", model.closing_price))
+      .and_then(write_field(
+          json_value, allocator, "ClosingPriceTime", model.closing_price_time))
       .and_then(write_field(json_value,
                             allocator,
                             "AuctionClearingPrice",

@@ -23,6 +23,15 @@ auto make_depth_cache_configuration(const Configuration& configuration) {
           configuration.support_market_data_orders_exclusion};
 }
 
+[[nodiscard]]
+auto make_instrument_info_cache_configuration(
+    const Configuration& configuration) {
+  return InstrumentInfoCache::Config{
+      .clock = configuration.clock,
+      .opening_auction_scheduled = configuration.opening_auction_scheduled,
+      .closing_auction_scheduled = configuration.closing_auction_scheduled};
+}
+
 }  // namespace
 
 CacheManager::CacheManager(const Configuration& configuration)
@@ -31,6 +40,8 @@ CacheManager::CacheManager(const Configuration& configuration)
       trade_cache_(*entry_id_generator_) {
   depth_cache_.configure(make_depth_cache_configuration(configuration));
   trade_cache_.configure(make_trade_cache_configuration(configuration));
+  instrument_info_cache_.configure(
+      make_instrument_info_cache_configuration(configuration));
 }
 
 auto CacheManager::compose_initial(const StreamingSettings& settings) const

@@ -24,8 +24,8 @@ auto select_current_phase_record(auto& candidates,
              : std::nullopt;
 }
 
-auto select_current_phase(auto& candidates,
-                          std::chrono::seconds sched_time) -> ScheduledPhase {
+auto select_current_phase(auto& candidates, std::chrono::seconds sched_time)
+    -> ScheduledPhase {
   auto is_trading_phase = [](const PhaseRecord& record) {
     return std::holds_alternative<TradingPhase>(record.phase);
   };
@@ -64,8 +64,8 @@ auto select_current_halt(auto& candidates, std::chrono::seconds sched_time)
       candidates, sched_time, is_trading_status_halt);
 }
 
-auto halts_phase(const Phase& selected_phase,
-                 const PhaseRecord& halt_record) -> Phase {
+auto halts_phase(const Phase& selected_phase, const PhaseRecord& halt_record)
+    -> Phase {
   const auto trading_phase = selected_phase.phase();
   if (trading_phase == TradingPhase::Option::Open) {
     return {selected_phase.phase(),
@@ -89,6 +89,14 @@ auto PhaseSchedule::add(PhaseRecord phase) -> void {
 
 auto PhaseSchedule::phase_records() const -> std::vector<PhaseRecord> {
   return phase_records_;
+}
+
+auto PhaseSchedule::has_phase(TradingPhase phase) const -> bool {
+  return std::ranges::any_of(
+      phase_records_, [phase](const ies::PhaseRecord& record) {
+        const auto* scheduled = std::get_if<TradingPhase>(&record.phase);
+        return scheduled != nullptr && *scheduled == phase;
+      });
 }
 
 auto PhaseSchedule::select_sched_phase(std::chrono::seconds sched_time) const

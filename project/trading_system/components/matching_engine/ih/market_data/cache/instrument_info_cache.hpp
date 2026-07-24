@@ -1,9 +1,12 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_MARKET_DATA_CACHE_INSTRUMENT_INFO_CACHE_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_MARKET_DATA_CACHE_INSTRUMENT_INFO_CACHE_HPP_
 
+#include <optional>
+
 #include "common/instrument_state.hpp"
 #include "core/domain/attributes.hpp"
 #include "core/domain/market_data_entry.hpp"
+#include "core/tools/time.hpp"
 #include "ih/common/events/order_book_notification.hpp"
 #include "ih/market_data/streaming_settings.hpp"
 #include "ih/market_data/tools/instrument_px.hpp"
@@ -22,9 +25,20 @@ class InstrumentInfoCache {
     InstrumentPx<MdEntryType::Option::EarlyPrice, true> early_price;
     InstrumentPx<MdEntryType::Option::PreviousClosingPrice>
         previous_closing_price;
+    std::optional<core::sys_us> opening_price_time;
+    std::optional<core::sys_us> closing_price_time;
   };
 
  public:
+  struct Config {
+    core::TzClock clock;
+
+    bool opening_auction_scheduled = false;
+    bool closing_auction_scheduled = false;
+  };
+
+  auto configure(Config config) -> void;
+
   auto compose_initial(const StreamingSettings& settings,
                        std::vector<MarketDataEntry>& destination) const -> void;
 
@@ -46,6 +60,12 @@ class InstrumentInfoCache {
 
   auto update_mid_price() -> void;
 
+  auto update_opening_high_low_price(const Trade& trade) -> void;
+
+  auto update_closing_price(const Trade& trade) -> void;
+
+  auto update_closing_price(const TzDayPassed& day_passed) -> void;
+
   auto set_low_price(Price price) -> bool;
 
   auto set_high_price(Price price) -> bool;
@@ -65,8 +85,13 @@ class InstrumentInfoCache {
                const CachedData& data,
                bool with_action) const -> void;
 
+  auto less_tz_date(core::sys_us lh, core::sys_us rh) const -> bool;
+
+  Config config_;
   CachedData actual_data_;
   CachedData last_update_;
+
+  std::optional<Trade> last_trade_;
 };
 
 }  // namespace simulator::trading_system::matching_engine::mdata

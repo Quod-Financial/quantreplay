@@ -34,6 +34,22 @@ TEST_F(PhaseScheduleTest, ReturnsPhaseRecords) {
                               .phase = TradingPhase::Option::OpeningAuction}));
 }
 
+TEST_F(PhaseScheduleTest, HasPhaseReturnsFalseWhenPhaseIsNotScheduled) {
+  schedule = {{.begin = 12h,
+               .end = 13h,
+               .phase = TradingPhase::Option::OpeningAuction}};
+
+  ASSERT_FALSE(schedule.has_phase(TradingPhase::Option::ClosingAuction));
+}
+
+TEST_F(PhaseScheduleTest, HasPhaseReturnsTrueWhenPhaseIsScheduled) {
+  schedule = {{.begin = 12h,
+               .end = 13h,
+               .phase = TradingPhase::Option::ClosingAuction}};
+
+  ASSERT_TRUE(schedule.has_phase(TradingPhase::Option::ClosingAuction));
+}
+
 TEST_F(PhaseScheduleTest, ReturnsOpenPhaseResumeStatusWhenNoPhasesAdded) {
   ASSERT_EQ(
       schedule.get_scheduled_phase(daytime(12h)).phase,

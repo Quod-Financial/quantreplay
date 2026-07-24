@@ -11,6 +11,7 @@
 #include "ih/orders/actions/auction_uncross.hpp"
 #include "ih/orders/actions/elimination.hpp"
 #include "ih/orders/actions/order_actions.hpp"
+#include "ih/orders/actions/time_reporter.hpp"
 #include "ih/orders/matchers/auction_price_calculator.hpp"
 #include "ih/orders/replies/client_reject_reporter.hpp"
 #include "ih/orders/requests/interpretation.hpp"
@@ -39,7 +40,7 @@ auto setup_client_request_validator(const Configuration& configuration)
 OrderSystemFacade::OrderSystemFacade(
     EventListener& event_listener,
     const Instrument& instrument,
-    Configuration configuration,
+    const Configuration& configuration,
     std::unique_ptr<order::OrderIdGenerator> order_id_generator,
     std::unique_ptr<order::Validator> validator,
     std::unique_ptr<order::RejectNotifier> reject_notifier,
@@ -248,6 +249,8 @@ auto OrderSystemFacade::handle(const event::Tick& tick) -> void {
   eliminator(*depr_order_book_);
 
   publish_early_price(tick);
+
+  order::TimeReporter{*event_listener_}(tick);
 }
 
 auto OrderSystemFacade::publish_early_price(const event::Tick& tick) -> void {

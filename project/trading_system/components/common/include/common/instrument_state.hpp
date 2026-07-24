@@ -49,7 +49,9 @@ struct InstrumentInfo {
   std::optional<Price> low_price{};
   std::optional<Price> high_price{};
   std::optional<Price> opening_price{};
+  std::optional<core::sys_us> opening_price_time{};
   std::optional<Price> closing_price{};
+  std::optional<core::sys_us> closing_price_time{};
   std::optional<Price> auction_clearing_price{};
   std::optional<Quantity> auction_clearing_quantity{};
   std::optional<Price> previous_closing_price{};

@@ -37,19 +37,26 @@ TEST(TradingSystemCommonSessionFmt, FormatsGeneratedToString) {
 }
 
 TEST(TradingSystemMarketStateInstrumentInfoFmt, FormatsAllValuesToString) {
+  using namespace std::chrono_literals;
   const InstrumentInfo instrument_info{
       .low_price = Price{100.1},
       .high_price = Price{300.3},
       .opening_price = Price{110.5},
+      .opening_price_time = core::sys_us{1696161600123456us},
       .closing_price = Price{120.6},
+      .closing_price_time = core::sys_us{1696190400654321us},
       .auction_clearing_price = Price{130.7},
       .auction_clearing_quantity = Quantity{500.5},
       .previous_closing_price = Price{95.4}};
-  // clang-format off
-  ASSERT_EQ(
-      fmt::to_string(instrument_info),
-      R"({ "low_price": 100.1, "high_price": 300.3, "opening_price": 110.5, "closing_price": 120.6, "auction_clearing_price": 130.7, "auction_clearing_quantity": 500.5, "previous_closing_price": 95.4 })");
-  // clang-format on
+  ASSERT_EQ(fmt::to_string(instrument_info),
+            "{ \"low_price\": 100.1, \"high_price\": 300.3, "
+            "\"opening_price\": 110.5, "
+            "\"opening_price_time\": 2023-10-01 12:00:00.123456, "
+            "\"closing_price\": 120.6, "
+            "\"closing_price_time\": 2023-10-01 20:00:00.654321, "
+            "\"auction_clearing_price\": 130.7, "
+            "\"auction_clearing_quantity\": 500.5, "
+            "\"previous_closing_price\": 95.4 }");
 }
 
 struct TradingSystemCommonLimitOrderFmt : public ::testing::Test {

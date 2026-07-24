@@ -124,6 +124,12 @@ template <typename Duration>
   return core::local_time<Duration>(time.time_since_epoch());
 }
 
+template <typename Duration>
+[[nodiscard]] auto to_tz_date(core::sys_time<Duration> time,
+                              const core::TzClock& clock) -> core::tz_days {
+  return core::to_date(core::as_tz_time(time, clock));
+}
+
 [[nodiscard]]
 inline auto get_current_system_time() noexcept -> core::sys_us {
   return core::to_time(std::chrono::system_clock::now());

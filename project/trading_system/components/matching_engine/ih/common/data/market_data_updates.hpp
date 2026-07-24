@@ -63,6 +63,10 @@ struct EarlyPriceUpdate {
   auto operator==(const EarlyPriceUpdate&) const -> bool = default;
 };
 
+struct TzDayPassed {
+  core::sys_us sys_tick_time;
+};
+
 }  // namespace simulator::trading_system::matching_engine
 
 template <>
@@ -179,6 +183,19 @@ struct fmt::formatter<
         R"({{ "EarlyPriceUpdate": {{ "early_price": {}, "early_quantity": {} }} }})",
         event.early_price,
         event.early_quantity);
+  }
+};
+
+template <>
+struct fmt::formatter<simulator::trading_system::matching_engine::TzDayPassed>
+    : formatter<std::string_view> {
+  using formattable = simulator::trading_system::matching_engine::TzDayPassed;
+
+  auto format(const formattable& event, format_context& ctx) const
+      -> format_context::iterator {
+    return format_to(ctx.out(),
+                     R"({{ "TzDayPassed": {{ "sys_tick_time": "{}" }} }})",
+                     event.sys_tick_time);
   }
 };
 

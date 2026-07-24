@@ -442,7 +442,11 @@ auto read(const rapidjson::Value& json_value,
           .and_then(read_field(
               json_value, "TradingSessionHighPrice", model.high_price))
           .and_then(read_field(json_value, "OpeningPrice", model.opening_price))
+          .and_then(read_field(
+              json_value, "OpeningPriceTime", model.opening_price_time))
           .and_then(read_field(json_value, "ClosingPrice", model.closing_price))
+          .and_then(read_field(
+              json_value, "ClosingPriceTime", model.closing_price_time))
           .and_then(read_field(
               json_value, "AuctionClearingPrice", model.auction_clearing_price))
           .and_then(read_field(json_value,
@@ -462,7 +466,9 @@ auto read(const rapidjson::Value& json_value,
     dest.low_price = to_price(model.low_price);
     dest.high_price = to_price(model.high_price);
     dest.opening_price = to_price(model.opening_price);
+    dest.opening_price_time = model.opening_price_time;
     dest.closing_price = to_price(model.closing_price);
+    dest.closing_price_time = model.closing_price_time;
     dest.auction_clearing_price = to_price(model.auction_clearing_price);
     dest.auction_clearing_quantity =
         model.auction_clearing_quantity.has_value()

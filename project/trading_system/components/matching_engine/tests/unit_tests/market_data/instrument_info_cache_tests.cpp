@@ -17,6 +17,24 @@ struct InstrumentInfoCache : Test {
     return NewTrade().with_trade_price(price).create();
   }
 
+  static auto yesterday() -> core::sys_us {
+    using namespace std::chrono_literals;
+    return core::sys_us{core::sys_days{2025y / 1 / 1} + 12h};
+  }
+
+  static auto today() -> core::sys_us {
+    using namespace std::chrono_literals;
+    return core::sys_us{core::sys_days{2025y / 1 / 2} + 12h};
+  }
+
+  static auto trade_on(core::sys_us time, Price price) -> Trade {
+    return NewTrade().with_trade_price(price).with_trade_time(time).create();
+  }
+
+  static auto tz_day_passed(core::sys_us time) -> TzDayPassed {
+    return TzDayPassed{.sys_tick_time = time};
+  }
+
   static auto make_update(auto&&... events) {
     return std::vector{
         OrderBookNotification{std::forward<decltype(events)>(events)}...};
@@ -1066,8 +1084,8 @@ TEST_F(InstrumentInfoCache, HasNoUpdateWhenNothingChanged) {
   EXPECT_FALSE(cache.has_update(settings));
 }
 
-TEST_F(InstrumentInfoCache, HasNoUpdateWhenOnlyUnrequestedPricesChanged) {
-  cache.update(make_update(make_trade(Price{50})));
+TEST_F(InstrumentInfoCache, HasNoUpdateWhenOnlyUnrequestedEarlyPriceChanged) {
+  cache.update(make_update(EarlyPriceUpdate{Price{50}, Quantity{100}}));
   settings.enable_data_type_streaming(MdEntryType::Option::OpeningPrice);
 
   EXPECT_FALSE(cache.has_update(settings));
@@ -1102,6 +1120,406 @@ TEST_F(InstrumentInfoCache, HasUpdateOnRepeatedEarlyPriceRepublication) {
   settings.enable_data_type_streaming(MdEntryType::Option::EarlyPrice);
 
   EXPECT_TRUE(cache.has_update(settings));
+}
+
+TEST_F(InstrumentInfoCache, OpeningAuctionCrossStoresOpeningPriceTime) {
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::OpeningAuction, Price{110}, Quantity{500})));
+
+  std::optional<market_state::InstrumentInfo> info;
+  cache.store_state(info);
+
+  ASSERT_THAT(info,
+              Optional(Field(&market_state::InstrumentInfo::opening_price_time,
+                             Ne(std::nullopt))));
+}
+
+TEST_F(InstrumentInfoCache, OpeningAuctionNoCrossStoresOpeningPriceTime) {
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::OpeningAuction, Price{110}, Quantity{500})));
+  cache.update(
+      make_update(make_auction_no_cross(TradingPhase::Option::OpeningAuction)));
+
+  std::optional<market_state::InstrumentInfo> info;
+  cache.store_state(info);
+
+  ASSERT_THAT(info,
+              Optional(Field(&market_state::InstrumentInfo::opening_price_time,
+                             Ne(std::nullopt))));
+}
+
+TEST_F(InstrumentInfoCache, RecoversOpeningPriceTime) {
+  using namespace std::chrono_literals;
+  constexpr auto opening_time =
+      core::sys_us{core::sys_days{2025y / 12 / 31} + 9h + 30min};
+  cache.update(make_update(
+      InstrumentInfoRecover{std::make_optional(market_state::InstrumentInfo{
+          .opening_price = Price{110}, .opening_price_time = opening_time})}));
+
+  std::optional<market_state::InstrumentInfo> info;
+  cache.store_state(info);
+
+  ASSERT_THAT(info,
+              Optional(Field(&market_state::InstrumentInfo::opening_price_time,
+                             Optional(Eq(opening_time)))));
+}
+
+TEST_F(InstrumentInfoCache, NulloptRecoverUpdatesOpeningPriceTime) {
+  using namespace std::chrono_literals;
+  constexpr auto opening_time =
+      core::sys_us{core::sys_days{2025y / 12 / 31} + 9h + 30min};
+  cache.update(make_update(
+      InstrumentInfoRecover{std::make_optional(market_state::InstrumentInfo{
+          .opening_price = Price{110}, .opening_price_time = opening_time})}));
+  cache.update(make_update(InstrumentInfoRecover{.info = std::nullopt}));
+
+  std::optional<market_state::InstrumentInfo> info;
+  cache.store_state(info);
+
+  ASSERT_THAT(info,
+              Optional(Field(&market_state::InstrumentInfo::opening_price_time,
+                             Gt(opening_time))));
+}
+
+TEST_F(InstrumentInfoCache, ClosingAuctionCrossStoresClosingPriceTime) {
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::ClosingAuction, Price{120}, Quantity{500})));
+
+  std::optional<market_state::InstrumentInfo> info;
+  cache.store_state(info);
+
+  ASSERT_THAT(info,
+              Optional(Field(&market_state::InstrumentInfo::closing_price_time,
+                             Ne(std::nullopt))));
+}
+
+TEST_F(InstrumentInfoCache, ClosingAuctionNoCrossStoresClosingPriceTime) {
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::ClosingAuction, Price{120}, Quantity{500})));
+  cache.update(
+      make_update(make_auction_no_cross(TradingPhase::Option::ClosingAuction)));
+
+  std::optional<market_state::InstrumentInfo> info;
+  cache.store_state(info);
+
+  ASSERT_THAT(info,
+              Optional(Field(&market_state::InstrumentInfo::closing_price_time,
+                             Ne(std::nullopt))));
+}
+
+TEST_F(InstrumentInfoCache, RecoversClosingPriceTime) {
+  using namespace std::chrono_literals;
+  constexpr auto closing_time =
+      core::sys_us{core::sys_days{2025y / 12 / 31} + 17h + 30min};
+  cache.update(make_update(
+      InstrumentInfoRecover{std::make_optional(market_state::InstrumentInfo{
+          .closing_price = Price{120}, .closing_price_time = closing_time})}));
+
+  std::optional<market_state::InstrumentInfo> info;
+  cache.store_state(info);
+
+  ASSERT_THAT(info,
+              Optional(Field(&market_state::InstrumentInfo::closing_price_time,
+                             Optional(Eq(closing_time)))));
+}
+
+TEST_F(InstrumentInfoCache, NulloptRecoverUpdatesClosingPriceTime) {
+  using namespace std::chrono_literals;
+  constexpr auto closing_time =
+      core::sys_us{core::sys_days{2025y / 12 / 31} + 17h + 30min};
+  cache.update(make_update(
+      InstrumentInfoRecover{std::make_optional(market_state::InstrumentInfo{
+          .closing_price = Price{120}, .closing_price_time = closing_time})}));
+  cache.update(make_update(InstrumentInfoRecover{.info = std::nullopt}));
+
+  std::optional<market_state::InstrumentInfo> info;
+  cache.store_state(info);
+
+  ASSERT_THAT(info,
+              Optional(Field(&market_state::InstrumentInfo::closing_price_time,
+                             Gt(closing_time))));
+}
+
+struct InstrumentInfoCacheOpeningPrice : InstrumentInfoCache {
+  InstrumentInfoCacheOpeningPrice() {
+    settings.enable_data_type_streaming(MdEntryType::Option::OpeningPrice);
+  }
+};
+
+TEST_F(InstrumentInfoCacheOpeningPrice, DoesNotUpdateWhenPreOpenScheduled) {
+  cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
+                   .opening_auction_scheduled = true});
+  cache.update(make_update(trade_on(today(), Price{200})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries, IsEmpty());
+}
+
+TEST_F(InstrumentInfoCacheOpeningPrice,
+       DoesNotUpdateWhenOpeningPriceTimeIsToday) {
+  cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
+                   .opening_auction_scheduled = false});
+  cache.update(make_update(
+      InstrumentInfoRecover{std::make_optional(market_state::InstrumentInfo{
+          .opening_price = Price{50}, .opening_price_time = today()})}));
+  cache.update(make_update(trade_on(today(), Price{110})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries,
+              ElementsAre(EntryHas(
+                  Price{50}, NoAction, MdEntryType::Option::OpeningPrice)));
+}
+
+TEST_F(InstrumentInfoCacheOpeningPrice,
+       UpdatesOnFirstTradeWhenOpeningPriceTimeNotSet) {
+  cache.update(make_update(trade_on(today(), Price{110})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries,
+              ElementsAre(EntryHas(
+                  Price{110}, NoAction, MdEntryType::Option::OpeningPrice)));
+}
+
+TEST_F(InstrumentInfoCacheOpeningPrice,
+       UpdatesWhenTradeIsFirstAfterMidnightAndOpeningPriceTimeIsYesterday) {
+  cache.update(make_update(
+      InstrumentInfoRecover{std::make_optional(market_state::InstrumentInfo{
+          .opening_price = Price{50}, .opening_price_time = yesterday()})}));
+  cache.update(make_update(trade_on(today(), Price{110})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries,
+              ElementsAre(EntryHas(
+                  Price{110}, NoAction, MdEntryType::Option::OpeningPrice)));
+}
+
+TEST_F(InstrumentInfoCacheOpeningPrice,
+       DoesNotUpdateOnSecondTradeAfterMidnight) {
+  cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
+                   .opening_auction_scheduled = false});
+  cache.update(make_update(trade_on(today(), Price{50})));
+  cache.update(make_update(trade_on(today(), Price{110})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries,
+              ElementsAre(EntryHas(
+                  Price{50}, NoAction, MdEntryType::Option::OpeningPrice)));
+}
+
+struct InstrumentInfoCacheLowMidHighPrice : InstrumentInfoCache {
+  InstrumentInfoCacheLowMidHighPrice() {
+    settings.enable_data_type_streaming(MdEntryType::Option::LowPrice);
+    settings.enable_data_type_streaming(MdEntryType::Option::MidPrice);
+    settings.enable_data_type_streaming(MdEntryType::Option::HighPrice);
+  }
+};
+
+TEST_F(InstrumentInfoCacheLowMidHighPrice,
+       DoesNotResetToTradePriceWhenPreOpenScheduled) {
+  cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
+                   .opening_auction_scheduled = true});
+  cache.update(make_update(
+      InstrumentInfoRecover{std::make_optional(market_state::InstrumentInfo{
+          .low_price = Price{10}, .high_price = Price{20}})}));
+  cache.update(make_update(trade_on(yesterday(), Price{100})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(
+          EntryHas(Price{10}, NoAction, MdEntryType::Option::LowPrice),
+          EntryHas(Price{100}, NoAction, MdEntryType::Option::HighPrice),
+          EntryHas(Price{55}, NoAction, MdEntryType::Option::MidPrice)));
+}
+
+TEST_F(InstrumentInfoCacheLowMidHighPrice,
+       DoesNotResetToTradePriceWhenOpeningPriceTimeIsToday) {
+  cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
+                   .opening_auction_scheduled = false});
+  cache.update(make_update(InstrumentInfoRecover{std::make_optional(
+      market_state::InstrumentInfo{.low_price = Price{10},
+                                   .high_price = Price{20},
+                                   .opening_price_time = today()})}));
+  cache.update(make_update(trade_on(today(), Price{100})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(
+          EntryHas(Price{10}, NoAction, MdEntryType::Option::LowPrice),
+          EntryHas(Price{100}, NoAction, MdEntryType::Option::HighPrice),
+          EntryHas(Price{55}, NoAction, MdEntryType::Option::MidPrice)));
+}
+
+TEST_F(InstrumentInfoCacheLowMidHighPrice,
+       ResetsToTradePriceWhenOpeningPriceTimeIsNotSet) {
+  cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
+                   .opening_auction_scheduled = false});
+  cache.update(make_update(
+      InstrumentInfoRecover{std::make_optional(market_state::InstrumentInfo{
+          .low_price = Price{10}, .high_price = Price{20}})}));
+  cache.update(make_update(trade_on(today(), Price{100})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(
+          EntryHas(Price{100}, NoAction, MdEntryType::Option::LowPrice),
+          EntryHas(Price{100}, NoAction, MdEntryType::Option::HighPrice),
+          EntryHas(Price{100}, NoAction, MdEntryType::Option::MidPrice)));
+}
+
+TEST_F(InstrumentInfoCacheLowMidHighPrice,
+       ResetsWhenTradeIsFirstAfterMidnightAndOpeningPriceTimeIsYesterday) {
+  cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
+                   .opening_auction_scheduled = false});
+  cache.update(make_update(InstrumentInfoRecover{std::make_optional(
+      market_state::InstrumentInfo{.low_price = Price{10},
+                                   .high_price = Price{20},
+                                   .opening_price_time = yesterday()})}));
+  cache.update(make_update(trade_on(today(), Price{100})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(
+          EntryHas(Price{100}, NoAction, MdEntryType::Option::LowPrice),
+          EntryHas(Price{100}, NoAction, MdEntryType::Option::HighPrice),
+          EntryHas(Price{100}, NoAction, MdEntryType::Option::MidPrice)));
+}
+
+TEST_F(InstrumentInfoCacheLowMidHighPrice,
+       DoesNotResetOnSecondTradeAfterMidnight) {
+  cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
+                   .opening_auction_scheduled = false});
+  cache.update(make_update(InstrumentInfoRecover{std::make_optional(
+      market_state::InstrumentInfo{.low_price = Price{10},
+                                   .high_price = Price{20},
+                                   .opening_price_time = yesterday()})}));
+  cache.update(make_update(trade_on(today(), Price{100})));
+  cache.update(make_update(trade_on(today(), Price{200})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(
+          EntryHas(Price{100}, NoAction, MdEntryType::Option::LowPrice),
+          EntryHas(Price{200}, NoAction, MdEntryType::Option::HighPrice),
+          EntryHas(Price{150}, NoAction, MdEntryType::Option::MidPrice)));
+}
+
+struct InstrumentInfoCacheClosingPrice : InstrumentInfoCache {
+  InstrumentInfoCacheClosingPrice() {
+    settings.enable_data_type_streaming(MdEntryType::Option::ClosingPrice);
+    settings.enable_data_type_streaming(
+        MdEntryType::Option::PreviousClosingPrice);
+  }
+};
+
+TEST_F(InstrumentInfoCacheClosingPrice, DoesNotUpdateWhenPreCloseScheduled) {
+  cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
+                   .closing_auction_scheduled = true});
+  cache.update(make_update(trade_on(yesterday(), Price{200})));
+  cache.update(make_update(trade_on(today(), Price{100})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries, IsEmpty());
+}
+
+TEST_F(InstrumentInfoCacheClosingPrice,
+       DoesNotUpdateWhenNoLastTradeBeforeMidnightWhenFirstTradeComes) {
+  cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
+                   .closing_auction_scheduled = false});
+  cache.update(make_update(trade_on(today(), Price{100})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries, IsEmpty());
+}
+
+TEST_F(
+    InstrumentInfoCacheClosingPrice,
+    UpdatesToLastTradeBeforeMidnightWhenItExistsAndFirstTradeAfterMidnightComes) {
+  cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
+                   .closing_auction_scheduled = false});
+  cache.update(make_update(InstrumentInfoRecover{std::make_optional(
+      market_state::InstrumentInfo{.closing_price = Price{95}})}));
+  cache.update(make_update(trade_on(yesterday(), Price{200})));
+  cache.update(make_update(trade_on(yesterday(), Price{150})));
+  cache.update(make_update(trade_on(today(), Price{100})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(
+          EntryHas(Price{150}, NoAction, MdEntryType::Option::ClosingPrice),
+          EntryHas(
+              Price{95}, NoAction, MdEntryType::Option::PreviousClosingPrice)));
+}
+
+TEST_F(InstrumentInfoCacheClosingPrice,
+       DoesNotUpdateWhenNoLastTradeBeforeMidnightWhenDayPasses) {
+  cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
+                   .closing_auction_scheduled = false});
+  cache.update(make_update(tz_day_passed(today())));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries, IsEmpty());
+}
+
+TEST_F(InstrumentInfoCacheClosingPrice,
+       UpdatesToLastTradeBeforeMidnightWhenItExistsAndDayPasses) {
+  cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
+                   .closing_auction_scheduled = false});
+  cache.update(make_update(InstrumentInfoRecover{std::make_optional(
+      market_state::InstrumentInfo{.closing_price = Price{95}})}));
+  cache.update(make_update(trade_on(yesterday(), Price{200})));
+  cache.update(make_update(trade_on(yesterday(), Price{150})));
+  cache.update(make_update(tz_day_passed(today())));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(
+          EntryHas(Price{150}, NoAction, MdEntryType::Option::ClosingPrice),
+          EntryHas(
+              Price{95}, NoAction, MdEntryType::Option::PreviousClosingPrice)));
+}
+
+TEST_F(
+    InstrumentInfoCacheClosingPrice,
+    DoesNotUpdatePreviousClosingPriceAgainWhenFirstTradeComesAfterDayPassed) {
+  cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
+                   .closing_auction_scheduled = false});
+  cache.update(make_update(InstrumentInfoRecover{std::make_optional(
+      market_state::InstrumentInfo{.closing_price = Price{95}})}));
+
+  cache.update(make_update(trade_on(yesterday(), Price{150})));
+  cache.update(make_update(tz_day_passed(today())));
+  cache.update(make_update(trade_on(today(), Price{100})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(
+          EntryHas(Price{150}, NoAction, MdEntryType::Option::ClosingPrice),
+          EntryHas(
+              Price{95}, NoAction, MdEntryType::Option::PreviousClosingPrice)));
 }
 
 }  // namespace

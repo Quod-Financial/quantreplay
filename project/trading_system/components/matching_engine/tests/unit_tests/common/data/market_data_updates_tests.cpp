@@ -64,11 +64,14 @@ TEST(MatchingEngineInstrumentInfoRecoverFormatting, FmtFormatting) {
       std::make_optional<market_state::InstrumentInfo>(Price{100.1},
                                                        Price{300.3})};
 
-  // clang-format off
-  ASSERT_EQ(
-      fmt::to_string(event),
-      R"({ "InstrumentInfoRecover": { "info": { "low_price": 100.1, "high_price": 300.3, "opening_price": none, "closing_price": none, "auction_clearing_price": none, "auction_clearing_quantity": none, "previous_closing_price": none } } })");
-  // clang-format on
+  ASSERT_EQ(fmt::to_string(event),
+            "{ \"InstrumentInfoRecover\": { \"info\": { "
+            "\"low_price\": 100.1, \"high_price\": 300.3, "
+            "\"opening_price\": none, \"opening_price_time\": none, "
+            "\"closing_price\": none, \"closing_price_time\": none, "
+            "\"auction_clearing_price\": none, "
+            "\"auction_clearing_quantity\": none, "
+            "\"previous_closing_price\": none } } }");
 }
 
 TEST(MatchingEngineAuctionPricesUpdateFormatting, FmtFormatting) {
@@ -86,7 +89,7 @@ TEST(MatchingEngineAuctionPricesUpdateFormatting, FmtFormatting) {
 
 TEST(MatchingEngineEarlyPriceUpdateFormatting, FmtFormatting) {
   const EarlyPriceUpdate event{.early_price = Price{105},
-                                    .early_quantity = Quantity{100}};
+                               .early_quantity = Quantity{100}};
 
   // clang-format off
   ASSERT_EQ(
@@ -103,6 +106,18 @@ TEST(MatchingEngineEarlyPriceUpdateFormatting, FmtFormattingWhenCleared) {
       fmt::to_string(event),
       R"({ "EarlyPriceUpdate": { "early_price": none, "early_quantity": none } })");
   // clang-format on
+}
+
+TEST(MatchingEngineTzDayPassedFormatting, FmtFormatting) {
+  using namespace std::chrono_literals;
+
+  constexpr TzDayPassed event{.sys_tick_time =
+                                  core::sys_us{core::sys_days{2025y / 12 / 31} +
+                                               13h + 30min + 59s + 123456us}};
+
+  ASSERT_EQ(
+      fmt::to_string(event),
+      R"({ "TzDayPassed": { "sys_tick_time": "2025-12-31 13:30:59.123456" } })");
 }
 
 }  // namespace

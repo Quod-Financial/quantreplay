@@ -54,6 +54,7 @@ add_target_tests(
     unit_tests/orders/actions/order_actions_tests.cpp
     unit_tests/orders/actions/regular_placement_tests.cpp
     unit_tests/orders/actions/system_elimination_tests.cpp
+    unit_tests/orders/actions/time_reporter_tests.cpp
     unit_tests/orders/order_system_facade_tests.cpp
     unit_tests/orders/phase_handler_tests.cpp
     unit_tests/orders/book/better_order_comparator_tests.cpp
