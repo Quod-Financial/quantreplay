@@ -155,6 +155,45 @@ TEST_F(OrderAlgorithm, FindUniqueMarketOrderWhichIsAmbiguous) {
   ASSERT_THAT(iter, Eq(market_orders_end(page)));
 }
 
+TEST(OrderAlgorithmClearingPriceCrossing, BuyOrderPricedAboveClearingPrice) {
+  ASSERT_TRUE(limit_crosses_clearing_price(
+      OrderPrice{101}, Price{100}, Side::Option::Buy));
+}
+
+TEST(OrderAlgorithmClearingPriceCrossing, BuyOrderPricedAtClearingPrice) {
+  ASSERT_TRUE(limit_crosses_clearing_price(
+      OrderPrice{100}, Price{100}, Side::Option::Buy));
+}
+
+TEST(OrderAlgorithmClearingPriceCrossing, BuyOrderPricedBelowClearingPrice) {
+  ASSERT_FALSE(limit_crosses_clearing_price(
+      OrderPrice{99}, Price{100}, Side::Option::Buy));
+}
+
+struct OrderAlgorithmSellClearingPriceCrossing
+    : public TestWithParam<Side::Option> {};
+
+TEST_P(OrderAlgorithmSellClearingPriceCrossing, OrderPricedBelowClearingPrice) {
+  ASSERT_TRUE(
+      limit_crosses_clearing_price(OrderPrice{99}, Price{100}, GetParam()));
+}
+
+TEST_P(OrderAlgorithmSellClearingPriceCrossing, OrderPricedAtClearingPrice) {
+  ASSERT_TRUE(
+      limit_crosses_clearing_price(OrderPrice{100}, Price{100}, GetParam()));
+}
+
+TEST_P(OrderAlgorithmSellClearingPriceCrossing, OrderPricedAboveClearingPrice) {
+  ASSERT_FALSE(
+      limit_crosses_clearing_price(OrderPrice{101}, Price{100}, GetParam()));
+}
+
+INSTANTIATE_TEST_SUITE_P(SellSides,
+                         OrderAlgorithmSellClearingPriceCrossing,
+                         Values(Side::Option::Sell,
+                                Side::Option::SellShort,
+                                Side::Option::SellShortExempt));
+
 // NOLINTEND(*magic-numbers*,*non-private-member*)
 
 }  // namespace

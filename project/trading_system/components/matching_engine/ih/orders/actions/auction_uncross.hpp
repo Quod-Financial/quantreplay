@@ -19,7 +19,9 @@ class AuctionUncross : EventReporter {
                  MarketPhase auction_phase,
                  std::optional<PriceTick> price_tick);
 
-  auto operator()(OrderBook& book) const -> std::optional<AuctionResult>;
+  auto operator()(OrderBook& book,
+                  const std::optional<AuctionResult>& auction_result) const
+      -> void;
 
  private:
   auto cross_book(OrderBook& book, const AuctionResult& result) const -> void;

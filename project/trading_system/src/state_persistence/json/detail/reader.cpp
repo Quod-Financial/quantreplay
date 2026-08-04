@@ -454,7 +454,10 @@ auto read(const rapidjson::Value& json_value,
                                model.auction_clearing_quantity))
           .and_then(read_field(
               json_value, "PreviousClosingPrice", model.previous_closing_price))
-          .and_then(read_field(json_value, "TradeVolume", model.trade_volume));
+          .and_then(read_field(json_value, "TradeVolume", model.trade_volume))
+          .and_then(read_field(json_value,
+                               "LastOpenPhaseTradedPrice",
+                               model.last_open_phase_traded_price));
 
   if (result) {
     const auto to_price =
@@ -478,6 +481,8 @@ auto read(const rapidjson::Value& json_value,
     dest.trade_volume = model.trade_volume.has_value()
                             ? std::make_optional<Quantity>(*model.trade_volume)
                             : std::nullopt;
+    dest.last_open_phase_traded_price =
+        to_price(model.last_open_phase_traded_price);
   }
 
   return result;

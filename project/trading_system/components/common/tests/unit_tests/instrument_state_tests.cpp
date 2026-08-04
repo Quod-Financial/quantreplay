@@ -48,7 +48,8 @@ TEST(TradingSystemMarketStateInstrumentInfoFmt, FormatsAllValuesToString) {
       .auction_clearing_price = Price{130.7},
       .auction_clearing_quantity = Quantity{500.5},
       .previous_closing_price = Price{95.4},
-      .trade_volume = Quantity{700.7}};
+      .trade_volume = Quantity{700.7},
+      .last_open_phase_traded_price = Price{118.2}};
   ASSERT_EQ(fmt::to_string(instrument_info),
             "{ \"low_price\": 100.1, \"high_price\": 300.3, "
             "\"opening_price\": 110.5, "
@@ -58,7 +59,8 @@ TEST(TradingSystemMarketStateInstrumentInfoFmt, FormatsAllValuesToString) {
             "\"auction_clearing_price\": 130.7, "
             "\"auction_clearing_quantity\": 500.5, "
             "\"previous_closing_price\": 95.4, "
-            "\"trade_volume\": 700.7 }");
+            "\"trade_volume\": 700.7, "
+            "\"last_open_phase_traded_price\": 118.2 }");
 }
 
 struct TradingSystemCommonLimitOrderFmt : public ::testing::Test {

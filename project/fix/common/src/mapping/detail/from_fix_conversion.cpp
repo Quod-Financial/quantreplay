@@ -277,17 +277,19 @@ auto make_md_entry_type_association()
       {FIX::MDEntryType_BID, MdEntryType::Option::Bid},
       {FIX::MDEntryType_OFFER, MdEntryType::Option::Offer},
       {FIX::MDEntryType_TRADE, MdEntryType::Option::Trade},
-      {FIX::MDEntryType_TRADING_SESSION_LOW_PRICE, MdEntryType::Option::LowPrice},
-      {FIX::MDEntryType_MID_PRICE, MdEntryType::Option::MidPrice},
-      {FIX::MDEntryType_TRADING_SESSION_HIGH_PRICE, MdEntryType::Option::HighPrice},
       {FIX::MDEntryType_OPENING_PRICE, MdEntryType::Option::OpeningPrice},
       {FIX::MDEntryType_CLOSING_PRICE, MdEntryType::Option::ClosingPrice},
-      {FIX::MDEntryType_AUCTION_CLEARING_PRICE, MdEntryType::Option::AuctionClearingPrice},
+      {FIX::MDEntryType_SETTLEMENT_PRICE, MdEntryType::Option::SettlementPrice},
+      {FIX::MDEntryType_TRADING_SESSION_HIGH_PRICE, MdEntryType::Option::HighPrice},
+      {FIX::MDEntryType_TRADING_SESSION_LOW_PRICE, MdEntryType::Option::LowPrice},
+      {FIX::MDEntryType_IMBALANCE, MdEntryType::Option::Imbalance},
+      {FIX::MDEntryType_TRADE_VOLUME, MdEntryType::Option::TradeVolume},
+      {FIX::MDEntryType_MID_PRICE, MdEntryType::Option::MidPrice},
       {FIX::MDEntryType_EARLY_PRICES, MdEntryType::Option::EarlyPrice},
-      {FIX::MDEntryType_PREVIOUS_CLOSING_PRICE, MdEntryType::Option::PreviousClosingPrice},
+      {FIX::MDEntryType_AUCTION_CLEARING_PRICE, MdEntryType::Option::AuctionClearingPrice},
       {FIX::MDEntryType_MARKET_BID, MdEntryType::Option::MarketBid},
       {FIX::MDEntryType_MARKET_OFFER, MdEntryType::Option::MarketOffer},
-      {FIX::MDEntryType_TRADE_VOLUME, MdEntryType::Option::TradeVolume}};
+      {FIX::MDEntryType_PREVIOUS_CLOSING_PRICE, MdEntryType::Option::PreviousClosingPrice}};
   // clang-format on
 }
 

@@ -178,6 +178,12 @@ struct MdSubscriptionRequestType {
                                    .plural = "MDSubscriptionRequestTypes"};
 };
 
+struct TradeCondition {
+  using value_type = core::enumerators::TradeCondition;
+  constexpr static core::Name name{.singular = "TradeCondition",
+                                   .plural = "TradeConditions"};
+};
+
 struct TradingPhase {
   using value_type = core::enumerators::TradingPhase;
   constexpr static core::Name name{.singular = "TradingPhase",
@@ -272,6 +278,7 @@ SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, SecurityType);
 SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, Side);
 SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, TimeInForce);
 SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, MdEntryType);
+SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, TradeCondition);
 SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, MdSubscriptionRequestType);
 SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, MdRejectReason);
 SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, MarketEntryAction);

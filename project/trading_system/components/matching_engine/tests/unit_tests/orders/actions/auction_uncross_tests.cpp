@@ -8,6 +8,7 @@
 #include "core/domain/party.hpp"
 #include "ih/orders/actions/auction_uncross.hpp"
 #include "ih/orders/book/order_book.hpp"
+#include "ih/orders/matchers/auction_price_calculator.hpp"
 #include "tests/mocks/event_listener_mock.hpp"
 #include "tools/matchers.hpp"
 #include "tools/order_builder.hpp"
@@ -71,21 +72,24 @@ struct MatchingEngineAuctionUncross : public Test {
         make_limit(Side::Option::Sell, price, quantity, std::move(parties)));
   }
 
-  auto add_buy_market(OrderQuantity quantity,
-                      std::vector<Party> parties = {}) -> void {
+  auto add_buy_market(OrderQuantity quantity, std::vector<Party> parties = {})
+      -> void {
     order_book.buy_page().market_orders().emplace(
         make_market(Side::Option::Buy, quantity, std::move(parties)));
   }
 
-  auto add_sell_market(OrderQuantity quantity,
-                       std::vector<Party> parties = {}) -> void {
+  auto add_sell_market(OrderQuantity quantity, std::vector<Party> parties = {})
+      -> void {
     order_book.sell_page().market_orders().emplace(
         make_market(Side::Option::Sell, quantity, std::move(parties)));
   }
 
   auto uncross() -> std::optional<AuctionResult> {
-    return AuctionUncross{
-        event_listener, auction_phase(), std::nullopt}(order_book);
+    const auto result =
+        AuctionPriceCalculator{order_book, std::nullopt}.auction_result();
+    AuctionUncross{event_listener, auction_phase(), std::nullopt}(order_book,
+                                                                  result);
+    return result;
   }
 
   NiceMock<EventListenerMock> event_listener;
@@ -127,7 +131,7 @@ TEST_F(MatchingEngineAuctionUncross,
 
   EXPECT_CALL(event_listener,
               on(IsOrderBookNotification(VariantWith<Trade>(
-                  AllOf(Field(&Trade::trade_price, Eq(Price{105})),
+                  AllOf(Field(&Trade::trade_price, Eq(Price{100})),
                         Field(&Trade::traded_quantity, Eq(Quantity{100})),
                         Field(&Trade::buyer, Eq(BuyerId{"Buyer"})),
                         Field(&Trade::seller, Eq(SellerId{"Seller"})),
@@ -138,7 +142,7 @@ TEST_F(MatchingEngineAuctionUncross,
 
   EXPECT_THAT(
       result,
-      Optional(AllOf(Field(&AuctionResult::price, Eq(Price{105})),
+      Optional(AllOf(Field(&AuctionResult::price, Eq(Price{100})),
                      Field(&AuctionResult::quantity, Eq(Quantity{100})))));
   EXPECT_THAT(order_book.buy_page().limit_orders(), IsEmpty());
   EXPECT_THAT(order_book.sell_page().limit_orders(), IsEmpty());
@@ -151,7 +155,7 @@ TEST_F(MatchingEngineAuctionUncross,
 
   EXPECT_CALL(event_listener,
               on(IsClientNotification(
-                  IsExecutionReport(Price{105},
+                  IsExecutionReport(Price{100},
                                     Quantity{100},
                                     Side::Option::Buy,
                                     ExecutionType::Option::OrderTraded,
@@ -159,7 +163,7 @@ TEST_F(MatchingEngineAuctionUncross,
       .Times(1);
   EXPECT_CALL(event_listener,
               on(IsClientNotification(
-                  IsExecutionReport(Price{105},
+                  IsExecutionReport(Price{100},
                                     Quantity{100},
                                     Side::Option::Sell,
                                     ExecutionType::Option::OrderTraded,
@@ -206,14 +210,14 @@ TEST_F(MatchingEngineAuctionUncross, CrossesMarketOrdersAgainstEachOther) {
 
   EXPECT_CALL(event_listener,
               on(IsOrderBookNotification(VariantWith<Trade>(
-                  AllOf(Field(&Trade::trade_price, Eq(Price{105})),
+                  AllOf(Field(&Trade::trade_price, Eq(Price{100})),
                         Field(&Trade::traded_quantity, Eq(Quantity{30})),
                         Field(&Trade::buyer, Eq(BuyerId{"MarketBuyer"})),
                         Field(&Trade::seller, Eq(SellerId{"MarketSeller"})))))))
       .Times(1);
   EXPECT_CALL(event_listener,
               on(IsOrderBookNotification(VariantWith<Trade>(
-                  AllOf(Field(&Trade::trade_price, Eq(Price{105})),
+                  AllOf(Field(&Trade::trade_price, Eq(Price{100})),
                         Field(&Trade::traded_quantity, Eq(Quantity{100})),
                         Field(&Trade::buyer, Eq(BuyerId{"LimitBuyer"})),
                         Field(&Trade::seller, Eq(SellerId{"LimitSeller"})))))))
@@ -235,7 +239,7 @@ TEST_F(MatchingEngineAuctionUncross,
 
   EXPECT_CALL(event_listener,
               on(IsOrderBookNotification(VariantWith<Trade>(
-                  AllOf(Field(&Trade::trade_price, Eq(Price{105})),
+                  AllOf(Field(&Trade::trade_price, Eq(Price{110})),
                         Field(&Trade::traded_quantity, Eq(Quantity{100})),
                         Field(&Trade::buyer, Eq(BuyerId{"MarketBuyer"})),
                         Field(&Trade::seller, Eq(SellerId{"Seller"})))))))
@@ -319,15 +323,18 @@ TEST_F(MatchingEngineAuctionUncross, StampsTradeWithConfiguredAuctionPhase) {
   add_buy_limit(OrderPrice{110}, OrderQuantity{100});
   add_sell_limit(OrderPrice{100}, OrderQuantity{100});
 
-  const MarketPhase closing_auction{TradingPhase::Option::ClosingAuction,
-                                    TradingStatus::Option::Halt};
+  constexpr MarketPhase closing_auction{TradingPhase::Option::ClosingAuction,
+                                        TradingStatus::Option::Halt};
 
   EXPECT_CALL(event_listener,
               on(IsOrderBookNotification(VariantWith<Trade>(
                   Field(&Trade::market_phase, Eq(closing_auction))))))
       .Times(1);
 
-  AuctionUncross{event_listener, closing_auction, std::nullopt}(order_book);
+  const auto result =
+      AuctionPriceCalculator{order_book, std::nullopt}.auction_result();
+  AuctionUncross{event_listener, closing_auction, std::nullopt}(order_book,
+                                                                result);
 }
 
 // NOLINTEND(*magic-numbers*,*non-private-member*)

@@ -39,25 +39,34 @@ Cancellation::Cancellation(EventListener& event_listener,
       order_book_{order_book},
       price_tick_{price_tick} {}
 
-auto Cancellation::operator()(const OrderCancel& cancel) -> void {
+auto Cancellation::operator()(const OrderCancel& cancel) -> OrderBookUpdates {
   log::debug("running order cancellation operation");
 
   const Side side = cancel.order_side;
-  cancel_order(cancel, order_book_.take_page(side));
+  return cancel_order(cancel, order_book_.take_page(side));
 }
 
 template <typename Order>
-auto Cancellation::try_cancel(const OrderCancel& cancel,
-                              OrderPage& page) -> bool {
+auto Cancellation::try_cancel(const OrderCancel& cancel, OrderPage& page)
+    -> std::optional<OrderBookUpdate> {
   auto& orders = page_orders<Order>(page);
 
   const auto order_it = find_target<Order>(page, cancel);
   if (order_it == orders.end()) {
-    return false;
+    return std::nullopt;
   }
 
   Order order = *order_it;
   orders.erase(order_it);
+
+  std::optional<OrderPrice> price;
+  if constexpr (std::is_same_v<Order, LimitOrder>) {
+    price = order.price();
+  }
+  const OrderBookUpdate removal{.side = order.side(),
+                                .action = OrderBookUpdate::Action::Remove,
+                                .price = price,
+                                .quantity = order.leaves_quantity()};
 
   emit(order::make_making_order_removed_from_book_notification(order));
   order.cancel();
@@ -68,21 +77,23 @@ auto Cancellation::try_cancel(const OrderCancel& cancel,
           .with_client_order_id(cancel.client_order_id)
           .with_orig_client_order_id(cancel.orig_client_order_id)
           .build()));
-  return true;
+
+  return removal;
 }
 
-auto Cancellation::cancel_order(const OrderCancel& cancel,
-                                OrderPage& page) -> void {
-  if (try_cancel<LimitOrder>(cancel, page)) {
-    return;
+auto Cancellation::cancel_order(const OrderCancel& cancel, OrderPage& page)
+    -> OrderBookUpdates {
+  if (const auto removal = try_cancel<LimitOrder>(cancel, page)) {
+    return {*removal};
   }
-  if (try_cancel<MarketOrder>(cancel, page)) {
-    return;
+  if (const auto removal = try_cancel<MarketOrder>(cancel, page)) {
+    return {*removal};
   }
 
   emit(ClientNotification(prepare_cancellation_reject(cancel)
                               .with_reason(RejectText{"order not found"})
                               .build()));
+  return {};
 }
 
 }  // namespace simulator::trading_system::matching_engine

@@ -357,6 +357,19 @@ TEST_F(MatchingEngineMarketDataFacadePublish,
   EXPECT_THAT(updates(), IsEmpty());
 }
 
+struct MatchingEngineMarketDataFacadeReferencePrice
+    : MatchingEngineMarketDataFacade {};
+
+TEST_F(MatchingEngineMarketDataFacadeReferencePrice,
+       ProvidesAuctionReferencePriceBackedByOwnCache) {
+  push_cross(Price{100});
+  publish();
+
+  EXPECT_EQ(
+      facade.auction_reference_price_provider().last_open_phase_traded_price(),
+      Price{100});
+}
+
 // NOLINTEND(*magic-numbers*,*non-private-member*)
 
 }  // namespace

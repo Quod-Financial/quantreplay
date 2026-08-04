@@ -8,6 +8,7 @@ add_static_library(
   HEADERS
     ih/commands/client_notification_cache.hpp
     ih/commands/commands.hpp
+    ih/common/abstractions/auction_reference_price_provider.hpp
     ih/common/abstractions/event_listener.hpp
     ih/common/abstractions/market_data_request_processor.hpp
     ih/common/abstractions/market_data_publisher.hpp
@@ -49,9 +50,11 @@ add_static_library(
     ih/market_data/validation/validator.hpp
     ih/market_data/market_data_facade.hpp
     ih/market_data/streaming_settings.hpp
+    ih/orders/actions/auction_indicative_reporter.hpp
     ih/orders/actions/auction_placement.hpp
     ih/orders/actions/auction_uncross.hpp
     ih/orders/actions/cancellation.hpp
+    ih/orders/actions/early_price_reporter.hpp
     ih/orders/actions/elimination.hpp
     ih/orders/actions/limit_order_recover.hpp
     ih/orders/actions/market_amendment.hpp
@@ -63,6 +66,7 @@ add_static_library(
     ih/orders/book/market_order.hpp
     ih/orders/book/order_algorithms.hpp
     ih/orders/book/order_book.hpp
+    ih/orders/book/order_book_update.hpp
     ih/orders/book/order_metadata.hpp
     ih/orders/book/order_updates.hpp
     ih/orders/matchers/auction_price_calculator.hpp
@@ -112,9 +116,11 @@ add_static_library(
     src/market_data/validation/checkers.cpp
     src/market_data/validation/market_data_validator.cpp
     src/market_data/market_data_facade.cpp
+    src/orders/actions/auction_indicative_reporter.cpp
     src/orders/actions/auction_placement.cpp
     src/orders/actions/auction_uncross.cpp
     src/orders/actions/cancellation.cpp
+    src/orders/actions/early_price_reporter.cpp
     src/orders/actions/elimination.cpp
     src/orders/actions/limit_order_recover.cpp
     src/orders/actions/market_amendment.cpp

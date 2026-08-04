@@ -1,6 +1,7 @@
 #include <gmock/gmock.h>
 
 #include "ih/orders/actions/regular_placement.hpp"
+#include "ih/orders/book/order_book_update.hpp"
 #include "tests/mocks/event_listener_mock.hpp"
 #include "tests/mocks/regular_matcher_mock.hpp"
 #include "tools/matchers.hpp"
@@ -69,6 +70,14 @@ TEST_F(MatchingEngineRegularPlacementLimitOrderImmediateOrCancel,
 }
 
 TEST_F(MatchingEngineRegularPlacementLimitOrderImmediateOrCancel,
+       ReturnsNoUpdatesWhenNoFacingOrders) {
+  EXPECT_CALL(matcher, has_facing_orders(A<const LimitOrder&>()))
+      .WillOnce(Return(false));
+
+  ASSERT_THAT(regular_placement(ioc_limit_order()), IsEmpty());
+}
+
+TEST_F(MatchingEngineRegularPlacementLimitOrderImmediateOrCancel,
        EmitsPlacementConfirmationWhenHasFacingOrders) {
   auto order = ioc_limit_order();
 
@@ -95,6 +104,14 @@ TEST_F(MatchingEngineRegularPlacementLimitOrderImmediateOrCancel,
   EXPECT_CALL(matcher, match(A<LimitOrder&>()));
 
   regular_placement(std::move(order));
+}
+
+TEST_F(MatchingEngineRegularPlacementLimitOrderImmediateOrCancel,
+       ReturnsNoUpdatesWhenFacingOrderExists) {
+  EXPECT_CALL(matcher, has_facing_orders(A<const LimitOrder&>()))
+      .WillOnce(Return(true));
+
+  ASSERT_THAT(regular_placement(ioc_limit_order()), IsEmpty());
 }
 
 struct MatchingEngineRegularPlacementLimitOrderFillOrKill
@@ -130,6 +147,14 @@ TEST_F(MatchingEngineRegularPlacementLimitOrderFillOrKill,
 }
 
 TEST_F(MatchingEngineRegularPlacementLimitOrderFillOrKill,
+       ReturnsNoUpdatesWhenNoFacingOrders) {
+  EXPECT_CALL(matcher, has_facing_orders(A<const LimitOrder&>()))
+      .WillOnce(Return(false));
+
+  ASSERT_THAT(regular_placement(fok_limit_order()), IsEmpty());
+}
+
+TEST_F(MatchingEngineRegularPlacementLimitOrderFillOrKill,
        EmitsCancellationConfirmationWhenOrderCannotBeFullyTraded) {
   const auto order = fok_limit_order();
 
@@ -149,6 +174,16 @@ TEST_F(MatchingEngineRegularPlacementLimitOrderFillOrKill,
               CancellationText{"not enough liquidity to fill FoK order"}))));
 
   regular_placement(std::move(order));
+}
+
+TEST_F(MatchingEngineRegularPlacementLimitOrderFillOrKill,
+       ReturnsNoUpdatesWhenOrderCannotBeFullyTraded) {
+  EXPECT_CALL(matcher, has_facing_orders(A<const LimitOrder&>()))
+      .WillOnce(Return(true));
+  EXPECT_CALL(matcher, can_fully_trade(A<const LimitOrder&>()))
+      .WillOnce(Return(false));
+
+  ASSERT_THAT(regular_placement(fok_limit_order()), IsEmpty());
 }
 
 TEST_F(MatchingEngineRegularPlacementLimitOrderFillOrKill,
@@ -182,6 +217,16 @@ TEST_F(MatchingEngineRegularPlacementLimitOrderFillOrKill,
   EXPECT_CALL(matcher, match(A<LimitOrder&>()));
 
   regular_placement(std::move(order));
+}
+
+TEST_F(MatchingEngineRegularPlacementLimitOrderFillOrKill,
+       ReturnsNoUpdatesWhenOrderCanBeFullyTraded) {
+  EXPECT_CALL(matcher, has_facing_orders(A<const LimitOrder&>()))
+      .WillOnce(Return(true));
+  EXPECT_CALL(matcher, can_fully_trade(A<const LimitOrder&>()))
+      .WillOnce(Return(true));
+
+  ASSERT_THAT(regular_placement(fok_limit_order()), IsEmpty());
 }
 
 struct MatchingEngineRegularPlacementLimitOrder
@@ -262,6 +307,18 @@ TEST_F(MatchingEngineRegularPlacementLimitOrder,
 }
 
 TEST_F(MatchingEngineRegularPlacementLimitOrder,
+       ReturnsNoUpdatesWhenOrderIsExecuted) {
+  auto order = limit_order();
+
+  EXPECT_CALL(matcher, match(A<LimitOrder&>())).WillOnce([](LimitOrder& ord) {
+    ord.execute(ExecutedQuantity{ord.leaves_quantity().value()},
+                ExecutionPrice{ord.price().value()});
+  });
+
+  ASSERT_THAT(regular_placement(std::move(order)), IsEmpty());
+}
+
+TEST_F(MatchingEngineRegularPlacementLimitOrder,
        AddsOrderToBookWhenOrderIsNotExecuted) {
   auto order = limit_order();
 
@@ -291,6 +348,20 @@ TEST_F(MatchingEngineRegularPlacementLimitOrder,
                   Field(&OrderAdded::order_id, Eq(order_id))))));
 
   regular_placement(std::move(order));
+}
+
+TEST_F(MatchingEngineRegularPlacementLimitOrder,
+       ReturnsAddUpdateForRestingOrderWhenOrderIsNotExecuted) {
+  const auto order = limit_order();
+
+  EXPECT_CALL(matcher, match(A<LimitOrder&>()));
+
+  ASSERT_THAT(
+      regular_placement(order),
+      ElementsAre(OrderBookUpdate{.side = order.side(),
+                                  .action = OrderBookUpdate::Action::Add,
+                                  .price = order.price(),
+                                  .quantity = order.leaves_quantity()}));
 }
 
 struct MatchingEngineRegularPlacementMarketOrder
@@ -325,6 +396,14 @@ TEST_F(MatchingEngineRegularPlacementMarketOrder,
 }
 
 TEST_F(MatchingEngineRegularPlacementMarketOrder,
+       ReturnsNoUpdatesWhenNoFacingOrders) {
+  EXPECT_CALL(matcher, has_facing_orders(A<const MarketOrder&>()))
+      .WillOnce(Return(false));
+
+  ASSERT_THAT(regular_placement(market_order()), IsEmpty());
+}
+
+TEST_F(MatchingEngineRegularPlacementMarketOrder,
        EmitsPlacementConfirmationWhenHasFacingOrders) {
   auto order = market_order();
 
@@ -351,6 +430,14 @@ TEST_F(MatchingEngineRegularPlacementMarketOrder,
   EXPECT_CALL(matcher, match(A<MarketOrder&>()));
 
   regular_placement(std::move(order));
+}
+
+TEST_F(MatchingEngineRegularPlacementMarketOrder,
+       ReturnsNoUpdatesWhenFacingOrderExists) {
+  EXPECT_CALL(matcher, has_facing_orders(A<const MarketOrder&>()))
+      .WillOnce(Return(true));
+
+  ASSERT_THAT(regular_placement(market_order()), IsEmpty());
 }
 
 }  // namespace

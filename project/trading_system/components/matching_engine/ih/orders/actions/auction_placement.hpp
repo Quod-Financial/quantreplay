@@ -6,6 +6,7 @@
 #include "ih/orders/book/limit_order.hpp"
 #include "ih/orders/book/market_order.hpp"
 #include "ih/orders/book/order_book.hpp"
+#include "ih/orders/book/order_book_update.hpp"
 
 namespace simulator::trading_system::matching_engine {
 
@@ -20,9 +21,9 @@ class AuctionPlacement : private EventReporter {
   auto operator=(const AuctionPlacement&) -> AuctionPlacement& = delete;
   auto operator=(AuctionPlacement&&) -> AuctionPlacement& = delete;
 
-  auto operator()(LimitOrder order) -> void;
+  auto operator()(LimitOrder order) -> OrderBookUpdates;
 
-  auto operator()(MarketOrder order) -> void;
+  auto operator()(MarketOrder order) -> OrderBookUpdates;
 
  private:
   OrderBook& order_book_;

@@ -2,6 +2,7 @@
 
 #include "ih/orders/actions/market_amendment.hpp"
 #include "ih/orders/book/order_book.hpp"
+#include "ih/orders/book/order_book_update.hpp"
 #include "ih/orders/book/order_updates.hpp"
 #include "ih/orders/replies/modification_reply_builders.hpp"
 #include "tests/mocks/event_listener_mock.hpp"
@@ -26,8 +27,8 @@ struct MatchingEngineMarketAmendment : public Test {
 
   auto rest_market_order(OrderId order_id,
                          OrderQuantity quantity,
-                         CumExecutedQuantity executed = CumExecutedQuantity{
-                             0}) -> void {
+                         CumExecutedQuantity executed = CumExecutedQuantity{0})
+      -> void {
     auto order = OrderBuilder{}
                      .with_order_id(order_id)
                      .with_side(Side::Option::Buy)
@@ -41,8 +42,8 @@ struct MatchingEngineMarketAmendment : public Test {
     order_book.take_page(Side::Option::Buy).market_orders().emplace(order);
   }
 
-  static auto amend_to(OrderId order_id,
-                       OrderQuantity quantity) -> MarketUpdate {
+  static auto amend_to(OrderId order_id, OrderQuantity quantity)
+      -> MarketUpdate {
     OrderAttributes attributes;
     attributes.set_time_in_force(TimeInForce::Option::ImmediateOrCancel);
     MarketUpdate update{
@@ -92,6 +93,22 @@ TEST_F(MatchingEngineMarketAmendment, EmitsOrderRemovedAndAddedWithoutPrice) {
   amendment(amend_to(OrderId{42}, OrderQuantity{20}));
 }
 
+TEST_F(MatchingEngineMarketAmendment,
+       ReturnsRemoveAndAddUpdatesForAmendedQuantity) {
+  rest_market_order(OrderId{42}, OrderQuantity{10});
+
+  ASSERT_THAT(
+      amendment(amend_to(OrderId{42}, OrderQuantity{20})),
+      ElementsAre(OrderBookUpdate{.side = Side::Option::Buy,
+                                  .action = OrderBookUpdate::Action::Remove,
+                                  .price = std::nullopt,
+                                  .quantity = LeavesQuantity{10}},
+                  OrderBookUpdate{.side = Side::Option::Buy,
+                                  .action = OrderBookUpdate::Action::Add,
+                                  .price = std::nullopt,
+                                  .quantity = LeavesQuantity{20}}));
+}
+
 TEST_F(MatchingEngineMarketAmendment, DoesNotCrossWhenAmending) {
   rest_market_order(OrderId{42}, OrderQuantity{10});
 
@@ -112,6 +129,10 @@ TEST_F(MatchingEngineMarketAmendment, RejectsAmendmentWhenOrderNotFound) {
   amendment(amend_to(OrderId{99}, OrderQuantity{5}));
 }
 
+TEST_F(MatchingEngineMarketAmendment, ReturnsNoUpdatesWhenOrderNotFound) {
+  ASSERT_THAT(amendment(amend_to(OrderId{99}, OrderQuantity{5})), IsEmpty());
+}
+
 TEST_F(MatchingEngineMarketAmendment, RejectsAmendmentWithInvalidQuantity) {
   rest_market_order(OrderId{42}, OrderQuantity{10}, CumExecutedQuantity{5});
 
@@ -122,6 +143,12 @@ TEST_F(MatchingEngineMarketAmendment, RejectsAmendmentWithInvalidQuantity) {
                 Optional(Eq(RejectText{"invalid quantity"})))))));
 
   amendment(amend_to(OrderId{42}, OrderQuantity{5}));
+}
+
+TEST_F(MatchingEngineMarketAmendment, ReturnsNoUpdatesWithInvalidQuantity) {
+  rest_market_order(OrderId{42}, OrderQuantity{10}, CumExecutedQuantity{5});
+
+  ASSERT_THAT(amendment(amend_to(OrderId{42}, OrderQuantity{5})), IsEmpty());
 }
 
 TEST_F(MatchingEngineMarketAmendment, RejectsAmendmentWhenTimeInForceChanged) {
@@ -143,6 +170,20 @@ TEST_F(MatchingEngineMarketAmendment, RejectsAmendmentWhenTimeInForceChanged) {
               Optional(Eq(RejectText{"time in force can not be changed"})))))));
 
   amendment(std::move(update));
+}
+
+TEST_F(MatchingEngineMarketAmendment, ReturnsNoUpdatesWhenTimeInForceChanged) {
+  rest_market_order(OrderId{42}, OrderQuantity{10});
+
+  OrderAttributes attributes;
+  attributes.set_time_in_force(TimeInForce::Option::Day);
+  MarketUpdate update{protocol::Session{protocol::generator::Session{}},
+                      Side::Option::Buy,
+                      MarketOrder::Update{.quantity = OrderQuantity{5},
+                                          .attributes = std::move(attributes)}};
+  update.order_id = OrderId{42};
+
+  ASSERT_THAT(amendment(std::move(update)), IsEmpty());
 }
 
 // NOLINTEND(*magic-numbers*)

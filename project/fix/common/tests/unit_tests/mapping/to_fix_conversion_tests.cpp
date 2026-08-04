@@ -643,17 +643,45 @@ INSTANTIATE_TEST_SUITE_P(InternalEnum, ToFixMdEntryTypeConversion,
     std::make_tuple(MdEntryType::Option::Bid, FIX::MDEntryType_BID),
     std::make_tuple(MdEntryType::Option::Offer, FIX::MDEntryType_OFFER),
     std::make_tuple(MdEntryType::Option::Trade, FIX::MDEntryType_TRADE),
-    std::make_tuple(MdEntryType::Option::LowPrice, FIX::MDEntryType_TRADING_SESSION_LOW_PRICE),
-    std::make_tuple(MdEntryType::Option::MidPrice, FIX::MDEntryType_MID_PRICE),
-    std::make_tuple(MdEntryType::Option::HighPrice, FIX::MDEntryType_TRADING_SESSION_HIGH_PRICE),
     std::make_tuple(MdEntryType::Option::OpeningPrice, FIX::MDEntryType_OPENING_PRICE),
     std::make_tuple(MdEntryType::Option::ClosingPrice, FIX::MDEntryType_CLOSING_PRICE),
-    std::make_tuple(MdEntryType::Option::AuctionClearingPrice, FIX::MDEntryType_AUCTION_CLEARING_PRICE),
+    std::make_tuple(MdEntryType::Option::SettlementPrice, FIX::MDEntryType_SETTLEMENT_PRICE),
+    std::make_tuple(MdEntryType::Option::HighPrice, FIX::MDEntryType_TRADING_SESSION_HIGH_PRICE),
+    std::make_tuple(MdEntryType::Option::LowPrice, FIX::MDEntryType_TRADING_SESSION_LOW_PRICE),
+    std::make_tuple(MdEntryType::Option::Imbalance, FIX::MDEntryType_IMBALANCE),
+    std::make_tuple(MdEntryType::Option::TradeVolume, FIX::MDEntryType_TRADE_VOLUME),
+    std::make_tuple(MdEntryType::Option::MidPrice, FIX::MDEntryType_MID_PRICE),
     std::make_tuple(MdEntryType::Option::EarlyPrice, FIX::MDEntryType_EARLY_PRICES),
-    std::make_tuple(MdEntryType::Option::PreviousClosingPrice, 'e'),
-    std::make_tuple(MdEntryType::Option::MarketBid, 'b'),
-    std::make_tuple(MdEntryType::Option::MarketOffer, 'c'),
-    std::make_tuple(MdEntryType::Option::TradeVolume, FIX::MDEntryType_TRADE_VOLUME)
+    std::make_tuple(MdEntryType::Option::AuctionClearingPrice, FIX::MDEntryType_AUCTION_CLEARING_PRICE),
+    std::make_tuple(MdEntryType::Option::MarketBid, FIX::MDEntryType_MARKET_BID),
+    std::make_tuple(MdEntryType::Option::MarketOffer, FIX::MDEntryType_MARKET_OFFER),
+    std::make_tuple(MdEntryType::Option::PreviousClosingPrice, FIX::MDEntryType_PREVIOUS_CLOSING_PRICE)
+  ));
+// clang-format on
+
+/*----------------------------------------------------------------------------*/
+
+struct ToFixTradeConditionConversion
+    : public TestWithParam<std::tuple<TradeCondition, std::string>> {};
+
+TEST_P(ToFixTradeConditionConversion, ConvertsToFixValue) {
+  const auto [internal_value, expected_fix_value] = GetParam();
+
+  ASSERT_EQ(convert_to_fix<FIX::TradeCondition>(internal_value),
+            expected_fix_value);
+}
+
+TEST_F(ToFixTradeConditionConversion, ReportsErrorOnUnknownValueConversion) {
+  ASSERT_THROW(convert_to_fix<FIX::TradeCondition>(
+                   static_cast<TradeCondition::Option>(0xFF)),
+               std::invalid_argument);
+}
+
+// clang-format off
+INSTANTIATE_TEST_SUITE_P(InternalEnum, ToFixTradeConditionConversion,
+  Values(
+    std::make_tuple(TradeCondition::Option::ImbalanceMoreBuyers, FIX::TradeCondition_IMBALANCE_MORE_BUYERS),
+    std::make_tuple(TradeCondition::Option::ImbalanceMoreSellers, FIX::TradeCondition_IMBALANCE_MORE_SELLERS)
   ));
 // clang-format on
 

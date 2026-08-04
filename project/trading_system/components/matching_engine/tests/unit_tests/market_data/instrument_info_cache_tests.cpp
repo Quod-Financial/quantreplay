@@ -17,6 +17,14 @@ struct InstrumentInfoCache : Test {
     return NewTrade().with_trade_price(price).create();
   }
 
+  static auto trade_in_phase(const TradingPhase::Option phase,
+                             const Price price) -> Trade {
+    return NewTrade()
+        .with_trade_price(price)
+        .with_market_phase({phase, TradingStatus::Option::Halt})
+        .create();
+  }
+
   static auto yesterday() -> core::sys_us {
     using namespace std::chrono_literals;
     return core::sys_us{core::sys_days{2025y / 1 / 1} + 12h};
@@ -43,16 +51,16 @@ struct InstrumentInfoCache : Test {
   static auto make_auction_cross(const TradingPhase::Option phase,
                                  const Price price,
                                  const Quantity quantity)
-      -> AuctionPricesUpdate {
-    return AuctionPricesUpdate{
+      -> AuctionFinalPriceUpdate {
+    return AuctionFinalPriceUpdate{
         .auction_phase = TradingPhase{phase},
         .clearing_value = TradeResult{.price = price, .quantity = quantity}};
   }
 
   static auto make_auction_no_cross(const TradingPhase::Option phase)
-      -> AuctionPricesUpdate {
-    return AuctionPricesUpdate{.auction_phase = TradingPhase{phase},
-                               .clearing_value = std::nullopt};
+      -> AuctionFinalPriceUpdate {
+    return AuctionFinalPriceUpdate{.auction_phase = TradingPhase{phase},
+                                   .clearing_value = std::nullopt};
   }
 
   constexpr static auto NoAction = std::nullopt;
@@ -101,6 +109,52 @@ struct InstrumentInfoCache : Test {
                  Field(&MarketDataEntry::action, Eq(action)),
                  Field(&MarketDataEntry::type,
                        Eq(MdEntryType{MdEntryType::Option::TradeVolume})));
+  }
+
+  static auto make_indicative_cross(const TradingPhase::Option phase,
+                                    const Price price,
+                                    const Quantity volume,
+                                    const Quantity size,
+                                    const TradeCondition side)
+      -> AuctionIndicativeUpdate {
+    return AuctionIndicativeUpdate{
+        .auction_phase = TradingPhase{phase},
+        .price_qty =
+            AuctionIndicativeUpdate::IndicativePriceQuantity{
+                .price = price, .quantity = volume},
+        .imbalance =
+            AuctionIndicativeUpdate::Imbalance{.size = size, .side = side}};
+  }
+
+  static auto make_indicative_no_cross(const TradingPhase::Option phase)
+      -> AuctionIndicativeUpdate {
+    return AuctionIndicativeUpdate{
+        .auction_phase = TradingPhase{phase},
+        .price_qty =
+            AuctionIndicativeUpdate::IndicativePriceQuantity{
+                .price = std::nullopt, .quantity = Quantity{0}},
+        .imbalance = std::nullopt};
+  }
+
+  static auto PriceQuantityEntryHas(
+      const std::optional<Price> price,
+      const std::optional<Quantity> quantity,
+      const std::optional<MarketEntryAction> action,
+      const MdEntryType type) {
+    return AllOf(Field(&MarketDataEntry::price, Eq(price)),
+                 Field(&MarketDataEntry::quantity, Eq(quantity)),
+                 Field(&MarketDataEntry::action, Eq(action)),
+                 Field(&MarketDataEntry::type, Eq(type)));
+  }
+
+  static auto ImbalanceEntryHas(const Quantity size,
+                                const TradeCondition side,
+                                const std::optional<MarketEntryAction> action) {
+    return AllOf(Field(&MarketDataEntry::quantity, Optional(Eq(size))),
+                 Field(&MarketDataEntry::trade_condition, Optional(Eq(side))),
+                 Field(&MarketDataEntry::action, Eq(action)),
+                 Field(&MarketDataEntry::type,
+                       Eq(MdEntryType{MdEntryType::Option::Imbalance})));
   }
 };
 
@@ -1722,6 +1776,372 @@ TEST_F(InstrumentInfoCacheTradeVolume,
   cache.compose_initial(settings, entries);
 
   ASSERT_THAT(entries, ElementsAre(VolumeEntryHas(Quantity{140}, NoAction)));
+}
+
+TEST_F(InstrumentInfoCache, TracksLastOpenPhaseTradedPrice) {
+  cache.update(make_update(make_trade(Price{100})));
+
+  ASSERT_EQ(cache.last_open_phase_traded_price(), Price{100});
+}
+
+TEST_F(InstrumentInfoCache,
+       KeepsLastOpenPhaseTradedPriceWhenLaterAuctionTradeArrives) {
+  cache.update(make_update(make_trade(Price{100})));
+  cache.update(make_update(
+      trade_in_phase(TradingPhase::Option::IntradayAuction, Price{200})));
+
+  ASSERT_EQ(cache.last_open_phase_traded_price(), Price{100});
+}
+
+TEST_F(InstrumentInfoCache,
+       DoesNotTrackNonOpenPhaseTradeAsLastOpenPhaseTradedPrice) {
+  cache.update(make_update(
+      trade_in_phase(TradingPhase::Option::PostTrading, Price{200})));
+
+  ASSERT_EQ(cache.last_open_phase_traded_price(), std::nullopt);
+}
+
+TEST_F(InstrumentInfoCache, StoresLastOpenPhaseTradedPrice) {
+  cache.update(make_update(make_trade(Price{100})));
+
+  std::optional<market_state::InstrumentInfo> info;
+  cache.store_state(info);
+
+  ASSERT_THAT(info,
+              Optional(Field(
+                  &market_state::InstrumentInfo::last_open_phase_traded_price,
+                  Optional(Price{100}))));
+}
+
+TEST_F(InstrumentInfoCache, RecoversLastOpenPhaseTradedPrice) {
+  cache.update(make_update(
+      InstrumentInfoRecover{.info = market_state::InstrumentInfo{
+                                .last_open_phase_traded_price = Price{100}}}));
+
+  ASSERT_EQ(cache.last_open_phase_traded_price(), Price{100});
+}
+
+TEST_F(InstrumentInfoCache, ReturnesClosingPrice) {
+  cache.update(make_update(InstrumentInfoRecover{
+      .info = market_state::InstrumentInfo{.closing_price = Price{120}}}));
+
+  ASSERT_EQ(cache.closing_price(), Price{120});
+}
+
+TEST_F(InstrumentInfoCache,
+       ComposesIndicativeOpeningPriceAndImbalanceWhenCrossed) {
+  cache.update(make_update(
+      make_indicative_cross(TradingPhase::Option::OpeningAuction,
+                            Price{60.07},
+                            Quantity{300},
+                            Quantity{300},
+                            TradeCondition::Option::ImbalanceMoreBuyers)));
+  settings.enable_data_type_streaming(MdEntryType::Option::OpeningPrice)
+      .enable_data_type_streaming(MdEntryType::Option::Imbalance);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries,
+              UnorderedElementsAre(
+                  PriceQuantityEntryHas(Price{60.07},
+                                        Quantity{300},
+                                        NoAction,
+                                        MdEntryType::Option::OpeningPrice),
+                  ImbalanceEntryHas(Quantity{300},
+                                    TradeCondition::Option::ImbalanceMoreBuyers,
+                                    NoAction)));
+}
+
+TEST_F(InstrumentInfoCache,
+       ComposesIndicativeSettlementPriceAndImbalanceWhenCrossed) {
+  cache.update(make_update(
+      make_indicative_cross(TradingPhase::Option::IntradayAuction,
+                            Price{60.08},
+                            Quantity{1300},
+                            Quantity{0},
+                            TradeCondition::Option::ImbalanceMoreBuyers)));
+  settings.enable_data_type_streaming(MdEntryType::Option::SettlementPrice)
+      .enable_data_type_streaming(MdEntryType::Option::Imbalance);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(PriceQuantityEntryHas(Price{60.08},
+                                        Quantity{1300},
+                                        NoAction,
+                                        MdEntryType::Option::SettlementPrice),
+                  ImbalanceEntryHas(Quantity{0},
+                                    TradeCondition::Option::ImbalanceMoreBuyers,
+                                    NoAction)));
+}
+
+TEST_F(InstrumentInfoCache,
+       ComposesIndicativeClosingPriceAndImbalanceWhenCrossed) {
+  cache.update(make_update(
+      make_indicative_cross(TradingPhase::Option::ClosingAuction,
+                            Price{60.08},
+                            Quantity{1300},
+                            Quantity{0},
+                            TradeCondition::Option::ImbalanceMoreBuyers)));
+  settings.enable_data_type_streaming(MdEntryType::Option::ClosingPrice)
+      .enable_data_type_streaming(MdEntryType::Option::Imbalance);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(PriceQuantityEntryHas(Price{60.08},
+                                        Quantity{1300},
+                                        NoAction,
+                                        MdEntryType::Option::ClosingPrice),
+                  ImbalanceEntryHas(Quantity{0},
+                                    TradeCondition::Option::ImbalanceMoreBuyers,
+                                    NoAction)));
+}
+
+TEST_F(InstrumentInfoCache,
+       IndicativeOpeningPriceReplacesPersistedOpeningPriceDuringCall) {
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::OpeningAuction, Price{100}, Quantity{10})));
+  cache.update(make_update(
+      make_indicative_cross(TradingPhase::Option::OpeningAuction,
+                            Price{105},
+                            Quantity{20},
+                            Quantity{5},
+                            TradeCondition::Option::ImbalanceMoreBuyers)));
+  settings.enable_data_type_streaming(MdEntryType::Option::OpeningPrice);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(PriceQuantityEntryHas(Price{105},
+                                        Quantity{20},
+                                        NoAction,
+                                        MdEntryType::Option::OpeningPrice)));
+}
+
+TEST_F(InstrumentInfoCache, DeletesImbalanceWhenAuctionCallEnds) {
+  cache.update(make_update(
+      make_indicative_cross(TradingPhase::Option::OpeningAuction,
+                            Price{60.07},
+                            Quantity{300},
+                            Quantity{300},
+                            TradeCondition::Option::ImbalanceMoreBuyers)));
+  cache.update(make_update(AuctionIndicativeUpdate{}));
+  settings.enable_data_type_streaming(MdEntryType::Option::Imbalance);
+
+  cache.compose_update(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(ImbalanceEntryHas(Quantity{300},
+                                    TradeCondition::Option::ImbalanceMoreBuyers,
+                                    MarketEntryAction::Option::Delete)));
+}
+
+TEST_F(InstrumentInfoCache, DeletesSettlementPriceWhenAuctionCallEnds) {
+  cache.update(make_update(
+      make_indicative_cross(TradingPhase::Option::IntradayAuction,
+                            Price{60.08},
+                            Quantity{1300},
+                            Quantity{0},
+                            TradeCondition::Option::ImbalanceMoreBuyers)));
+  cache.update(make_update(AuctionIndicativeUpdate{}));
+  settings.enable_data_type_streaming(MdEntryType::Option::SettlementPrice);
+
+  cache.compose_update(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(PriceQuantityEntryHas(Price{60.08},
+                                        Quantity{1300},
+                                        MarketEntryAction::Option::Delete,
+                                        MdEntryType::Option::SettlementPrice)));
+}
+
+TEST_F(InstrumentInfoCache, ChangesIndicativeToFinalOpeningPriceAtUncross) {
+  cache.update(make_update(
+      make_indicative_cross(TradingPhase::Option::OpeningAuction,
+                            Price{60.07},
+                            Quantity{300},
+                            Quantity{300},
+                            TradeCondition::Option::ImbalanceMoreBuyers)));
+  cache.update(make_update(
+      AuctionIndicativeUpdate{},
+      make_auction_cross(
+          TradingPhase::Option::OpeningAuction, Price{30.07}, Quantity{200})));
+  settings.enable_data_type_streaming(MdEntryType::Option::OpeningPrice);
+
+  cache.compose_update(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(PriceQuantityEntryHas(Price{30.07},
+                                        std::nullopt,
+                                        MarketEntryAction::Option::Change,
+                                        MdEntryType::Option::OpeningPrice)));
+}
+
+TEST_F(InstrumentInfoCache, DeletesOpeningPriceWhenAuctionEndsUncrossed) {
+  cache.update(make_update(
+      make_indicative_no_cross(TradingPhase::Option::OpeningAuction)));
+  cache.update(
+      make_update(AuctionIndicativeUpdate{},
+                  make_auction_no_cross(TradingPhase::Option::OpeningAuction)));
+  settings.enable_data_type_streaming(MdEntryType::Option::OpeningPrice);
+
+  cache.compose_update(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(PriceQuantityEntryHas(std::nullopt,
+                                        Quantity{0},
+                                        MarketEntryAction::Option::Delete,
+                                        MdEntryType::Option::OpeningPrice)));
+}
+
+TEST_F(InstrumentInfoCache, ComposesOpeningPriceChangedDuringAuctionCall) {
+  cache.update(make_update(
+      make_indicative_cross(TradingPhase::Option::OpeningAuction,
+                            Price{60.07},
+                            Quantity{300},
+                            Quantity{300},
+                            TradeCondition::Option::ImbalanceMoreBuyers)));
+  cache.update(make_update(InstrumentInfoRecover{
+      .info = market_state::InstrumentInfo{.opening_price = Price{100}}}));
+  settings.enable_data_type_streaming(MdEntryType::Option::OpeningPrice);
+
+  cache.compose_update(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(PriceQuantityEntryHas(Price{100},
+                                        std::nullopt,
+                                        MarketEntryAction::Option::Change,
+                                        MdEntryType::Option::OpeningPrice)));
+}
+
+TEST_F(InstrumentInfoCache, ComposesRecoveredOpeningPriceWithoutQuantity) {
+  cache.update(make_update(InstrumentInfoRecover{
+      .info = market_state::InstrumentInfo{.opening_price = Price{100}}}));
+  settings.enable_data_type_streaming(MdEntryType::Option::OpeningPrice);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(PriceQuantityEntryHas(Price{100},
+                                        std::nullopt,
+                                        NoAction,
+                                        MdEntryType::Option::OpeningPrice)));
+}
+
+TEST_F(InstrumentInfoCache,
+       StoresSettledOpeningPriceWhilePublishingIndicative) {
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::OpeningAuction, Price{100}, Quantity{10})));
+  cache.update(make_update(
+      make_indicative_cross(TradingPhase::Option::OpeningAuction,
+                            Price{105},
+                            Quantity{20},
+                            Quantity{5},
+                            TradeCondition::Option::ImbalanceMoreBuyers)));
+
+  std::optional<market_state::InstrumentInfo> info;
+  cache.store_state(info);
+
+  ASSERT_THAT(info,
+              Optional(Field(&market_state::InstrumentInfo::opening_price,
+                             Price{100})));
+}
+
+TEST_F(InstrumentInfoCache, KeepsOpeningPriceTimeWhilePublishingIndicative) {
+  cache.update(make_update(InstrumentInfoRecover{
+      .info = market_state::InstrumentInfo{
+          .opening_price = Price{100}, .opening_price_time = yesterday()}}));
+  cache.update(make_update(
+      make_indicative_cross(TradingPhase::Option::OpeningAuction,
+                            Price{105},
+                            Quantity{20},
+                            Quantity{5},
+                            TradeCondition::Option::ImbalanceMoreBuyers)));
+
+  std::optional<market_state::InstrumentInfo> info;
+  cache.store_state(info);
+
+  ASSERT_THAT(info,
+              Optional(Field(&market_state::InstrumentInfo::opening_price_time,
+                             yesterday())));
+}
+
+TEST_F(InstrumentInfoCache,
+       ReturnsSettledClosingPriceWhilePublishingIndicative) {
+  cache.update(make_update(InstrumentInfoRecover{
+      .info = market_state::InstrumentInfo{.closing_price = Price{120}}}));
+  cache.update(make_update(
+      make_indicative_cross(TradingPhase::Option::ClosingAuction,
+                            Price{130},
+                            Quantity{20},
+                            Quantity{5},
+                            TradeCondition::Option::ImbalanceMoreBuyers)));
+
+  ASSERT_EQ(cache.closing_price(), Price{120});
+}
+
+TEST_F(InstrumentInfoCache, RollsSettledClosingPriceIntoPreviousClosingPrice) {
+  cache.update(make_update(InstrumentInfoRecover{
+      .info = market_state::InstrumentInfo{.closing_price = Price{120}}}));
+  cache.update(make_update(
+      make_indicative_cross(TradingPhase::Option::ClosingAuction,
+                            Price{130},
+                            Quantity{20},
+                            Quantity{5},
+                            TradeCondition::Option::ImbalanceMoreBuyers)));
+  cache.update(make_update(
+      AuctionIndicativeUpdate{},
+      make_auction_cross(
+          TradingPhase::Option::ClosingAuction, Price{140}, Quantity{10})));
+  settings.enable_data_type_streaming(
+      MdEntryType::Option::PreviousClosingPrice);
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      ElementsAre(EntryHas(
+          Price{120}, NoAction, MdEntryType::Option::PreviousClosingPrice)));
+}
+
+TEST_F(InstrumentInfoCache, MarksIndicativeChangedOnSubsequentUpdate) {
+  cache.update(make_update(
+      make_indicative_cross(TradingPhase::Option::OpeningAuction,
+                            Price{60.07},
+                            Quantity{300},
+                            Quantity{300},
+                            TradeCondition::Option::ImbalanceMoreBuyers)));
+  cache.update(make_update(
+      make_indicative_cross(TradingPhase::Option::OpeningAuction,
+                            Price{60.08},
+                            Quantity{600},
+                            Quantity{200},
+                            TradeCondition::Option::ImbalanceMoreSellers)));
+  settings.enable_data_type_streaming(MdEntryType::Option::OpeningPrice)
+      .enable_data_type_streaming(MdEntryType::Option::Imbalance);
+
+  cache.compose_update(settings, entries);
+
+  ASSERT_THAT(
+      entries,
+      UnorderedElementsAre(
+          PriceQuantityEntryHas(Price{60.08},
+                                Quantity{600},
+                                MarketEntryAction::Option::Change,
+                                MdEntryType::Option::OpeningPrice),
+          ImbalanceEntryHas(Quantity{200},
+                            TradeCondition::Option::ImbalanceMoreSellers,
+                            MarketEntryAction::Option::Change)));
 }
 
 }  // namespace

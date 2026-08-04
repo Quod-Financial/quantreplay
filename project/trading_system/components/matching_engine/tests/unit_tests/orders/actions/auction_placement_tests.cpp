@@ -2,6 +2,7 @@
 
 #include "ih/orders/actions/auction_placement.hpp"
 #include "ih/orders/book/order_book.hpp"
+#include "ih/orders/book/order_book_update.hpp"
 #include "tests/mocks/event_listener_mock.hpp"
 #include "tools/matchers.hpp"
 #include "tools/order_builder.hpp"
@@ -31,9 +32,8 @@ struct MatchingEngineAuctionPlacementLimitOrder
     return OrderBuilder{}.with_order_id(order_id).build_limit_order();
   }
 
-  static auto resting_limit_order(Side side,
-                                  OrderPrice price,
-                                  OrderId id) -> LimitOrder {
+  static auto resting_limit_order(Side side, OrderPrice price, OrderId id)
+      -> LimitOrder {
     return OrderBuilder{}
         .with_order_id(id)
         .with_side(side)
@@ -167,6 +167,28 @@ TEST_F(MatchingEngineAuctionPlacementLimitOrder, AcceptsGoodTillDateOrder) {
   ASSERT_THAT(order_book.buy_page().limit_orders().size(), Eq(1));
 }
 
+TEST_F(MatchingEngineAuctionPlacementLimitOrder,
+       ReturnsNoUpdatesForRejectedImmediateOrCancelOrder) {
+  ASSERT_THAT(auction_placement(ioc_limit_order()), IsEmpty());
+}
+
+TEST_F(MatchingEngineAuctionPlacementLimitOrder,
+       ReturnsNoUpdatesForRejectedFillOrKillOrder) {
+  ASSERT_THAT(auction_placement(fok_limit_order()), IsEmpty());
+}
+
+TEST_F(MatchingEngineAuctionPlacementLimitOrder,
+       ReturnsAddUpdateForRestingOrder) {
+  const auto order = limit_order();
+
+  ASSERT_THAT(
+      auction_placement(order),
+      ElementsAre(OrderBookUpdate{.side = order.side(),
+                                  .action = OrderBookUpdate::Action::Add,
+                                  .price = order.price(),
+                                  .quantity = order.leaves_quantity()}));
+}
+
 struct MatchingEngineAuctionPlacementMarketOrder
     : public MatchingEngineAuctionPlacement {
   static constexpr OrderId order_id{42};
@@ -211,6 +233,18 @@ TEST_F(MatchingEngineAuctionPlacementMarketOrder, DoesNotRejectMarketOrder) {
       .Times(0);
 
   auction_placement(market_order());
+}
+
+TEST_F(MatchingEngineAuctionPlacementMarketOrder,
+       ReturnsAddUpdateForRestingOrder) {
+  const auto order = market_order();
+
+  ASSERT_THAT(
+      auction_placement(order),
+      ElementsAre(OrderBookUpdate{.side = order.side(),
+                                  .action = OrderBookUpdate::Action::Add,
+                                  .price = std::nullopt,
+                                  .quantity = order.leaves_quantity()}));
 }
 
 // NOLINTEND(*magic-numbers*)

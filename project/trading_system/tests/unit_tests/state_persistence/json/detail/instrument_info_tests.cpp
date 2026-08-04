@@ -28,6 +28,7 @@ TEST_F(TradingSystemJsonInstrumentInfo, ReadsFromJson) {
   json_value.AddMember("AuctionClearingQuantity", 500.0, doc.GetAllocator());
   json_value.AddMember("PreviousClosingPrice", 95.4, doc.GetAllocator());
   json_value.AddMember("TradeVolume", 700.0, doc.GetAllocator());
+  json_value.AddMember("LastOpenPhaseTradedPrice", 118.2, doc.GetAllocator());
 
   market_state::InstrumentInfo info;
   ASSERT_TRUE(json::read(json_value, info).has_value());
@@ -40,6 +41,7 @@ TEST_F(TradingSystemJsonInstrumentInfo, ReadsFromJson) {
   EXPECT_EQ(info.auction_clearing_quantity, Quantity{500.0});
   EXPECT_EQ(info.previous_closing_price, Price{95.4});
   EXPECT_EQ(info.trade_volume, Quantity{700.0});
+  EXPECT_EQ(info.last_open_phase_traded_price, Price{118.2});
 }
 
 TEST_F(TradingSystemJsonInstrumentInfo, WritingSetsJsonValueTypeToObject) {
@@ -64,7 +66,8 @@ TEST_F(TradingSystemJsonInstrumentInfo, WritesToJson) {
       .auction_clearing_price = Price{130.7},
       .auction_clearing_quantity = Quantity{500.0},
       .previous_closing_price = Price{95.4},
-      .trade_volume = Quantity{700.0}};
+      .trade_volume = Quantity{700.0},
+      .last_open_phase_traded_price = Price{118.2}};
 
   ASSERT_TRUE(
       json::write(json_value, doc.GetAllocator(), instrument_info).has_value());
@@ -77,6 +80,7 @@ TEST_F(TradingSystemJsonInstrumentInfo, WritesToJson) {
   EXPECT_THAT(json_value, HasDouble("AuctionClearingQuantity", 500.0));
   EXPECT_THAT(json_value, HasDouble("PreviousClosingPrice", 95.4));
   EXPECT_THAT(json_value, HasDouble("TradeVolume", 700.0));
+  EXPECT_THAT(json_value, HasDouble("LastOpenPhaseTradedPrice", 118.2));
 }
 
 TEST_F(TradingSystemJsonInstrumentInfo, WritesUnsetAuctionFieldsAsNull) {

@@ -16,6 +16,7 @@
 #include "protocol/app/order_placement_request.hpp"
 #include "protocol/app/security_status.hpp"
 #include "protocol/app/security_status_request.hpp"
+#include "tests/mocks/auction_reference_price_provider_mock.hpp"
 #include "tests/mocks/event_listener_mock.hpp"
 #include "tools/matchers.hpp"
 #include "tools/protocol_tools.hpp"
@@ -47,9 +48,63 @@ struct MatchingEngineOrderSystemFacade : public Test {
             phase, status, Phase::Settings{.allow_cancels = allow_cancels}}};
   }
 
+  auto place_limit(Side side, OrderPrice price, OrderQuantity quantity)
+      -> void {
+    auto request = make_message<protocol::OrderPlacementRequest>();
+    request.order_type = OrderType::Option::Limit;
+    request.side = side;
+    request.order_price = price;
+    request.order_quantity = quantity;
+    facade.process(request);
+  }
+
+  auto place_identifiable_limit(Side side,
+                                ClientOrderId id,
+                                OrderPrice price,
+                                OrderQuantity quantity) -> void {
+    auto request = make_message<protocol::OrderPlacementRequest>();
+    request.order_type = OrderType::Option::Limit;
+    request.side = side;
+    request.order_price = price;
+    request.order_quantity = quantity;
+    request.client_order_id = id;
+    facade.process(request);
+  }
+
+  auto place_market(Side side, OrderQuantity quantity) -> void {
+    auto request = make_message<protocol::OrderPlacementRequest>();
+    request.order_type = OrderType::Option::Market;
+    request.side = side;
+    request.order_quantity = quantity;
+    facade.process(request);
+  }
+
+  auto amend(Side side,
+             OrigClientOrderId id,
+             OrderPrice price,
+             OrderQuantity quantity) -> void {
+    auto request = make_message<protocol::OrderModificationRequest>();
+    request.order_type = OrderType::Option::Limit;
+    request.side = side;
+    request.order_price = price;
+    request.order_quantity = quantity;
+    request.orig_client_order_id = id;
+    facade.process(request);
+  }
+
+  auto cancel(Side side, OrigClientOrderId id) -> void {
+    auto request = make_message<protocol::OrderCancellationRequest>();
+    request.side = side;
+    request.orig_client_order_id = id;
+    facade.process(request);
+  }
+
   NiceMock<EventListenerMock> event_listener;
-  OrderSystemFacade facade = OrderSystemFacade::setup(
-      make_instrument(), make_configuration(), event_listener);
+  NiceMock<AuctionReferencePriceProviderMock> reference_price_provider;
+  OrderSystemFacade facade = OrderSystemFacade::setup(make_instrument(),
+                                                      make_configuration(),
+                                                      reference_price_provider,
+                                                      event_listener);
 };
 
 struct MatchingEngineOrderSystemFacadeUncrossing
@@ -105,6 +160,10 @@ TEST_F(MatchingEngineOrderSystemFacadeUncrossing,
 
 struct MatchingEngineOrderSystemFacadeMarketAmendment
     : public MatchingEngineOrderSystemFacade {
+  MatchingEngineOrderSystemFacadeMarketAmendment() {
+    EXPECT_CALL(event_listener, on(_)).Times(AnyNumber());
+  }
+
   static auto market_modification() -> protocol::OrderModificationRequest {
     auto request = make_message<protocol::OrderModificationRequest>();
     request.order_type = OrderType::Option::Market;
@@ -208,16 +267,6 @@ struct MatchingEngineOrderSystemFacadeAuctionUncross
   auto enter_uncrossing() -> PhaseTransitionOutcome {
     return facade.handle(transition(TradingPhase::Option::OpeningAuction,
                                     TradingStatus::Option::Halt));
-  }
-
-  auto place_limit(Side side, OrderPrice price, OrderQuantity quantity)
-      -> void {
-    auto request = make_message<protocol::OrderPlacementRequest>();
-    request.order_type = OrderType::Option::Limit;
-    request.side = side;
-    request.order_price = price;
-    request.order_quantity = quantity;
-    facade.process(request);
   }
 
   auto subscribe_to_security_status() -> void {
@@ -333,6 +382,98 @@ TEST_F(MatchingEngineOrderSystemFacadeAuctionUncross,
   EXPECT_EQ(outcome, PhaseTransitionOutcome::Regular);
 }
 
+TEST_F(MatchingEngineOrderSystemFacadeAuctionUncross,
+       DoesNotCarryAuctionResultOverIntoANewAuctionCallSession) {
+  enter_call();
+  place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{100});
+  place_limit(Side::Option::Buy, OrderPrice{100}, OrderQuantity{150});
+  // Fully fills the sell order, leaving 50 of the buy order resting.
+  enter_uncrossing();
+
+  enter_call();
+  // Alone with the 50 resting from the prior session, this crosses for 30 -
+  // only a calculator still carrying the prior session's cumulative 150/100
+  // buy/sell quantities would report anything larger.
+  place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{30});
+
+  EXPECT_CALL(
+      event_listener,
+      on(IsOrderBookNotification(VariantWith<AuctionFinalPriceUpdate>(
+          Field(&AuctionFinalPriceUpdate::clearing_value,
+                Optional(Field(&TradeResult::quantity, Eq(Quantity{30}))))))));
+
+  enter_uncrossing();
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeAuctionUncross,
+       UncrossReflectsAnOrderAmendedDuringTheCall) {
+  enter_call();
+  place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{60});
+  place_identifiable_limit(Side::Option::Buy,
+                           ClientOrderId{"bid"},
+                           OrderPrice{110},
+                           OrderQuantity{100});
+
+  // Reducing the buy side to 50 (same price) must lower the clearing
+  // quantity/price accordingly (50@100, not the pre-amendment 60@110) - the
+  // real cross would still execute the real resting 50 either way, so this
+  // can only be observed through the reported clearing values.
+  amend(Side::Option::Buy,
+        OrigClientOrderId{"bid"},
+        OrderPrice{110},
+        OrderQuantity{50});
+
+  EXPECT_CALL(
+      event_listener,
+      on(IsOrderBookNotification(VariantWith<AuctionFinalPriceUpdate>(Field(
+          &AuctionFinalPriceUpdate::clearing_value,
+          Optional(AllOf(Field(&TradeResult::price, Eq(Price{100})),
+                         Field(&TradeResult::quantity, Eq(Quantity{50})))))))));
+
+  enter_uncrossing();
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeAuctionUncross,
+       UncrossReflectsAnOrderCancelledDuringTheCall) {
+  enter_call();
+  place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{60});
+  place_identifiable_limit(Side::Option::Sell,
+                           ClientOrderId{"ask"},
+                           OrderPrice{100},
+                           OrderQuantity{40});
+  place_limit(Side::Option::Buy, OrderPrice{110}, OrderQuantity{100});
+
+  // Cancelling the sell side down to 60 must be reflected in the clearing
+  // quantity (60, not the pre-cancellation 100) - the actual cross would still
+  // execute the real resting 60 either way, so this can only be observed
+  // through the reported clearing quantity, not through trade presence.
+  cancel(Side::Option::Sell, OrigClientOrderId{"ask"});
+
+  EXPECT_CALL(
+      event_listener,
+      on(IsOrderBookNotification(VariantWith<AuctionFinalPriceUpdate>(
+          Field(&AuctionFinalPriceUpdate::clearing_value,
+                Optional(Field(&TradeResult::quantity, Eq(Quantity{60}))))))));
+
+  enter_uncrossing();
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeAuctionUncross,
+       IncludesMarketOrderQuantityPlacedDuringTheCallInTheClearingQuantity) {
+  enter_call();
+  place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{100});
+  place_limit(Side::Option::Buy, OrderPrice{100}, OrderQuantity{50});
+  place_market(Side::Option::Buy, OrderQuantity{30});
+
+  EXPECT_CALL(
+      event_listener,
+      on(IsOrderBookNotification(VariantWith<AuctionFinalPriceUpdate>(
+          Field(&AuctionFinalPriceUpdate::clearing_value,
+                Optional(Field(&TradeResult::quantity, Eq(Quantity{80}))))))));
+
+  enter_uncrossing();
+}
+
 struct MatchingEngineOrderSystemFacadeEarlyPrice
     : public MatchingEngineOrderSystemFacade {
   MatchingEngineOrderSystemFacadeEarlyPrice() {
@@ -349,43 +490,9 @@ struct MatchingEngineOrderSystemFacadeEarlyPrice
                              TradingStatus::Option::Halt));
   }
 
-  auto enter_open() -> void {
-    facade.handle(
-        transition(TradingPhase::Option::Open, TradingStatus::Option::Resume));
-  }
-
-  auto place_limit(Side side, OrderPrice price, OrderQuantity quantity)
-      -> void {
-    auto request = make_message<protocol::OrderPlacementRequest>();
-    request.order_type = OrderType::Option::Limit;
-    request.side = side;
-    request.order_price = price;
-    request.order_quantity = quantity;
-    facade.process(request);
-  }
-
   auto place_crossed_book() -> void {
     place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{100});
     place_limit(Side::Option::Buy, OrderPrice{110}, OrderQuantity{100});
-  }
-
-  auto place_identifiable_buy(ClientOrderId id,
-                              OrderPrice price,
-                              OrderQuantity quantity) -> void {
-    auto request = make_message<protocol::OrderPlacementRequest>();
-    request.order_type = OrderType::Option::Limit;
-    request.side = Side::Option::Buy;
-    request.order_price = price;
-    request.order_quantity = quantity;
-    request.client_order_id = id;
-    facade.process(request);
-  }
-
-  auto cancel_buy(OrigClientOrderId id) -> void {
-    auto request = make_message<protocol::OrderCancellationRequest>();
-    request.side = Side::Option::Buy;
-    request.orig_client_order_id = id;
-    facade.process(request);
   }
 
   auto tick_after(std::chrono::seconds elapsed) -> void {
@@ -398,11 +505,6 @@ struct MatchingEngineOrderSystemFacadeEarlyPrice
         Field(&EarlyPriceUpdate::early_value,
               Optional(AllOf(Field(&TradeResult::price, Eq(price)),
                              Field(&TradeResult::quantity, Eq(quantity)))))));
-  }
-
-  static auto PublishesAnyEarlyPrice() {
-    return IsOrderBookNotification(VariantWith<EarlyPriceUpdate>(
-        Field(&EarlyPriceUpdate::early_value, Optional(_))));
   }
 
   static auto ClearsEarlyPrice() {
@@ -422,28 +524,7 @@ TEST_F(MatchingEngineOrderSystemFacadeEarlyPrice,
   enter_call();
   place_crossed_book();
 
-  EXPECT_CALL(event_listener, on(PublishesEarly(Price{105}, Quantity{100})));
-
-  tick_after(std::chrono::seconds{0});
-  tick_after(std::chrono::seconds{30});
-}
-
-TEST_F(MatchingEngineOrderSystemFacadeEarlyPrice,
-       DoesNotPublishEarlyPriceBeforeThirtySecondsElapse) {
-  enter_call();
-  place_crossed_book();
-
-  EXPECT_CALL(event_listener, on(PublishesAnyEarlyPrice())).Times(0);
-
-  tick_after(std::chrono::seconds{0});
-  tick_after(std::chrono::seconds{29});
-}
-
-TEST_F(MatchingEngineOrderSystemFacadeEarlyPrice,
-       DoesNotPublishEarlyPriceOutsideTheAuctionCall) {
-  enter_open();
-
-  EXPECT_CALL(event_listener, on(PublishesAnyEarlyPrice())).Times(0);
+  EXPECT_CALL(event_listener, on(PublishesEarly(Price{100}, Quantity{100})));
 
   tick_after(std::chrono::seconds{0});
   tick_after(std::chrono::seconds{30});
@@ -463,30 +544,241 @@ TEST_F(MatchingEngineOrderSystemFacadeEarlyPrice,
        KeepsLastKnownEarlyPriceWhenTheBookDecrossesMidCall) {
   enter_call();
   place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{100});
-  place_identifiable_buy(
-      ClientOrderId{"bid"}, OrderPrice{110}, OrderQuantity{100});
+  place_identifiable_limit(Side::Option::Buy,
+                           ClientOrderId{"bid"},
+                           OrderPrice{110},
+                           OrderQuantity{100});
 
   tick_after(std::chrono::seconds{0});
   tick_after(std::chrono::seconds{30});
 
-  cancel_buy(OrigClientOrderId{"bid"});
+  cancel(Side::Option::Buy, OrigClientOrderId{"bid"});
 
   EXPECT_CALL(event_listener, on(EmitsAnyEarlyUpdate())).Times(0);
 
   tick_after(std::chrono::seconds{60});
 }
 
-TEST_F(MatchingEngineOrderSystemFacadeEarlyPrice,
-       ReArmsEarlyTimerForAnImmediatelyFollowingAuction) {
-  EXPECT_CALL(event_listener, on(PublishesAnyEarlyPrice())).Times(0);
+struct MatchingEngineOrderSystemFacadeReferencePrice
+    : public MatchingEngineOrderSystemFacade {
+  MatchingEngineOrderSystemFacadeReferencePrice() {
+    EXPECT_CALL(event_listener, on(_)).Times(AnyNumber());
+  }
 
-  enter_call();
-  tick_after(std::chrono::seconds{0});  // arms the first auction's timer
-  enter_uncrossing();                   // clears and re-arms the timer
+  auto enter_call(TradingPhase::Option phase) -> void {
+    facade.handle(transition(phase, TradingStatus::Option::Resume));
+  }
 
+  static auto PublishesIndicativePrice(Price price) {
+    return IsOrderBookNotification(VariantWith<AuctionIndicativeUpdate>(Field(
+        &AuctionIndicativeUpdate::price_qty,
+        Optional(Field(&AuctionIndicativeUpdate::IndicativePriceQuantity::price,
+                       Optional(Eq(price)))))));
+  }
+};
+
+TEST_F(MatchingEngineOrderSystemFacadeReferencePrice,
+       UsesClosingPriceAsReferenceForOpeningAuction) {
+  EXPECT_CALL(reference_price_provider, closing_price());
+
+  enter_call(TradingPhase::Option::OpeningAuction);
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeReferencePrice,
+       UsesLastOpenPhaseTradeAsReferenceForClosingAuction) {
+  EXPECT_CALL(reference_price_provider, last_open_phase_traded_price());
+
+  enter_call(TradingPhase::Option::ClosingAuction);
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeReferencePrice,
+       UsesLastOpenPhaseTradeAsReferenceForIntradayAuction) {
+  EXPECT_CALL(reference_price_provider, last_open_phase_traded_price());
+
+  enter_call(TradingPhase::Option::IntradayAuction);
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeReferencePrice,
+       FeedsResolvedReferencePriceToTheAuctionPriceCalculator) {
+  ON_CALL(reference_price_provider, closing_price())
+      .WillByDefault(Return(Price{110}));
+  enter_call(TradingPhase::Option::OpeningAuction);
+  place_limit(Side::Option::Buy, OrderPrice{110}, OrderQuantity{100});
+  place_limit(Side::Option::Buy, OrderPrice{100}, OrderQuantity{50});
+  place_limit(Side::Option::Sell, OrderPrice{110}, OrderQuantity{50});
+
+  // Both 100 and 110 clear 100 with opposite imbalances of the same size, so
+  // only a calculator that received the reference price picks 110 over the
+  // lower candidate it falls back to otherwise.
+  EXPECT_CALL(event_listener, on(PublishesIndicativePrice(Price{110})));
+
+  place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{100});
+}
+
+struct MatchingEngineOrderSystemFacadeIndicativePrice
+    : public MatchingEngineOrderSystemFacade {
+  MatchingEngineOrderSystemFacadeIndicativePrice() {
+    EXPECT_CALL(event_listener, on(_)).Times(AnyNumber());
+  }
+
+  auto enter_call(TradingPhase::Option phase =
+                      TradingPhase::Option::OpeningAuction) -> void {
+    facade.handle(transition(phase, TradingStatus::Option::Resume));
+  }
+
+  auto enter_uncrossing() -> void {
+    facade.handle(transition(TradingPhase::Option::OpeningAuction,
+                             TradingStatus::Option::Halt));
+  }
+
+  static auto PublishesIndicative(Price price, Quantity quantity) {
+    using PriceQuantity = AuctionIndicativeUpdate::IndicativePriceQuantity;
+    return IsOrderBookNotification(VariantWith<AuctionIndicativeUpdate>(
+        Field(&AuctionIndicativeUpdate::price_qty,
+              Optional(AllOf(Field(&PriceQuantity::price, Optional(Eq(price))),
+                             Field(&PriceQuantity::quantity, Eq(quantity)))))));
+  }
+
+  static auto PublishesImbalance(Quantity size, TradeCondition side) {
+    using Imbalance = AuctionIndicativeUpdate::Imbalance;
+    return IsOrderBookNotification(VariantWith<AuctionIndicativeUpdate>(
+        Field(&AuctionIndicativeUpdate::imbalance,
+              Optional(AllOf(Field(&Imbalance::size, Eq(size)),
+                             Field(&Imbalance::side, Eq(side)))))));
+  }
+
+  static auto PublishesNoIndicativePrice() {
+    using PriceQuantity = AuctionIndicativeUpdate::IndicativePriceQuantity;
+    return IsOrderBookNotification(VariantWith<AuctionIndicativeUpdate>(AllOf(
+        Field(
+            &AuctionIndicativeUpdate::price_qty,
+            Optional(AllOf(Field(&PriceQuantity::price, Eq(std::nullopt)),
+                           Field(&PriceQuantity::quantity, Eq(Quantity{0}))))),
+        Field(&AuctionIndicativeUpdate::imbalance, Eq(std::nullopt)))));
+  }
+
+  static auto ClearsIndicativeValues() {
+    return IsOrderBookNotification(VariantWith<AuctionIndicativeUpdate>(
+        AllOf(Field(&AuctionIndicativeUpdate::price_qty, Eq(std::nullopt)),
+              Field(&AuctionIndicativeUpdate::imbalance, Eq(std::nullopt)))));
+  }
+
+  static auto PublishesIndicativeForPhase(TradingPhase phase) {
+    return IsOrderBookNotification(VariantWith<AuctionIndicativeUpdate>(
+        Field(&AuctionIndicativeUpdate::auction_phase, Eq(phase))));
+  }
+};
+
+TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
+       PublishesIndicativePriceAndQuantityOnPlacementDuringTheCall) {
   enter_call();
-  place_crossed_book();
-  tick_after(std::chrono::seconds{31});
+  place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{100});
+
+  EXPECT_CALL(event_listener,
+              on(PublishesIndicative(Price{100}, Quantity{100})));
+
+  place_limit(Side::Option::Buy, OrderPrice{100}, OrderQuantity{150});
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
+       PublishesIndicativeQuantityIncludingMarketOrdersPlacedDuringTheCall) {
+  enter_call();
+  place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{100});
+  place_limit(Side::Option::Buy, OrderPrice{100}, OrderQuantity{50});
+
+  EXPECT_CALL(event_listener,
+              on(PublishesIndicative(Price{100}, Quantity{80})));
+
+  place_market(Side::Option::Buy, OrderQuantity{30});
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
+       PublishesIndicativeQuantityOnAmendmentDuringTheCall) {
+  enter_call();
+  place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{100});
+  place_identifiable_limit(Side::Option::Buy,
+                           ClientOrderId{"bid"},
+                           OrderPrice{100},
+                           OrderQuantity{150});
+
+  EXPECT_CALL(event_listener,
+              on(PublishesIndicative(Price{100}, Quantity{60})));
+
+  amend(Side::Option::Buy,
+        OrigClientOrderId{"bid"},
+        OrderPrice{100},
+        OrderQuantity{60});
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
+       PublishesIndicativeQuantityOnCancellationDuringTheCall) {
+  enter_call();
+  place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{100});
+  place_limit(Side::Option::Buy, OrderPrice{100}, OrderQuantity{40});
+  place_identifiable_limit(Side::Option::Buy,
+                           ClientOrderId{"bid"},
+                           OrderPrice{100},
+                           OrderQuantity{100});
+
+  EXPECT_CALL(event_listener,
+              on(PublishesIndicative(Price{100}, Quantity{40})));
+
+  cancel(Side::Option::Buy, OrigClientOrderId{"bid"});
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
+       PublishesImbalanceSizeAndSideWhenBuySideIsLarger) {
+  enter_call();
+  place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{100});
+
+  EXPECT_CALL(event_listener,
+              on(PublishesImbalance(
+                  Quantity{50}, TradeCondition::Option::ImbalanceMoreBuyers)));
+
+  place_limit(Side::Option::Buy, OrderPrice{100}, OrderQuantity{150});
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
+       PublishesImbalanceSizeAndSideWhenSellSideIsLarger) {
+  enter_call();
+  place_limit(Side::Option::Buy, OrderPrice{100}, OrderQuantity{100});
+
+  EXPECT_CALL(event_listener,
+              on(PublishesImbalance(
+                  Quantity{50}, TradeCondition::Option::ImbalanceMoreSellers)));
+
+  place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{150});
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
+       PublishesZeroQuantityWithoutPriceAndImbalanceWhenBookDoesNotCross) {
+  enter_call();
+
+  EXPECT_CALL(event_listener, on(PublishesNoIndicativePrice()));
+
+  place_limit(Side::Option::Buy, OrderPrice{100}, OrderQuantity{100});
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
+       ReportsTheOngoingAuctionPhaseInTheIndicativeUpdate) {
+  enter_call(TradingPhase::Option::ClosingAuction);
+
+  EXPECT_CALL(event_listener,
+              on(PublishesIndicativeForPhase(
+                  TradingPhase{TradingPhase::Option::ClosingAuction})));
+
+  place_limit(Side::Option::Buy, OrderPrice{100}, OrderQuantity{100});
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
+       ClearsIndicativeValuesWhenEnteringUncrossing) {
+  enter_call();
+  place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{100});
+  place_limit(Side::Option::Buy, OrderPrice{100}, OrderQuantity{150});
+
+  EXPECT_CALL(event_listener, on(ClearsIndicativeValues()));
+
+  enter_uncrossing();
 }
 
 // NOLINTEND(*magic-numbers*)

@@ -32,51 +32,21 @@ AuctionUncross::AuctionUncross(EventListener& event_listener,
       auction_phase_{auction_phase},
       price_tick_{price_tick} {}
 
-auto AuctionUncross::operator()(OrderBook& book) const
-    -> std::optional<AuctionResult> {
-  // TODO: REMOVE THIS IMPLEMENTATION ONCE VOLUME-MAXIMISING EQUILIBRIUM PRICE
-  // IS IMPLEMENTED, UNCOMMENT THE IMPLEMENTATION BELLOW
-  std::optional<AuctionResult> clearing;
-  double total_quantity = 0.0;
-  while (const auto result =
-             AuctionPriceCalculator{price_tick_}.compute(book)) {
-    if (!clearing.has_value()) {
-      clearing = result;
-    }
-    total_quantity += static_cast<double>(result->quantity);
+auto AuctionUncross::operator()(
+    OrderBook& book, const std::optional<AuctionResult>& auction_result) const
+    -> void {
+  if (auction_result.has_value()) {
     log::debug("uncrossing auction book at price {}, volume {}",
-               result->price,
-               result->quantity);
-    cross_book(book, *result);
-    remove_filled_limit_orders(book);
-  }
-
-  if (clearing.has_value()) {
-    clearing->quantity = Quantity{total_quantity};
+               auction_result->price,
+               auction_result->quantity);
+    cross_book(book, *auction_result);
   } else {
     log::debug("auction book did not cross, cancelling all market orders");
   }
 
   clear_market_orders(book.buy_page().market_orders());
   clear_market_orders(book.sell_page().market_orders());
-
-  return clearing;
-
-  // const auto result = AuctionPriceCalculator{price_tick_}.compute(book);
-  // if (result.has_value()) {
-  //   log::debug("uncrossing auction book at price {}, volume {}",
-  //              result->price,
-  //              result->quantity);
-  //   cross_book(book, *result);
-  // } else {
-  //   log::debug("auction book did not cross, cancelling all market orders");
-  // }
-  //
-  // clear_market_orders(book.buy_page().market_orders());
-  // clear_market_orders(book.sell_page().market_orders());
-  // remove_filled_limit_orders(book);
-  //
-  // return result;
+  remove_filled_limit_orders(book);
 }
 
 auto AuctionUncross::cross_book(OrderBook& book,

@@ -4,9 +4,30 @@
 #include <algorithm>
 #include <concepts>
 
+#include "core/common/unreachable.hpp"
+#include "core/domain/attributes.hpp"
 #include "ih/orders/book/order_book.hpp"
 
 namespace simulator::trading_system::matching_engine {
+
+// Whether the order price is at or better than the clearing price for its side.
+[[nodiscard]]
+inline auto limit_crosses_clearing_price(OrderPrice price,
+                                         Price clearing_price,
+                                         Side side) -> bool {
+  const auto order_price = static_cast<double>(price);
+  const auto clearing = static_cast<double>(clearing_price);
+  switch (static_cast<Side::Option>(side)) {
+    case Side::Option::Buy:
+      return order_price >= clearing;
+    case Side::Option::Sell:
+    case Side::Option::SellShort:
+    case Side::Option::SellShortExempt:
+      return order_price <= clearing;
+  }
+
+  core::unreachable();
+}
 
 template <typename T>
 concept LimitOrderPred = requires(T pred, const LimitOrder& order) {

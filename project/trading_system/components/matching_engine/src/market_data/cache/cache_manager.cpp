@@ -127,4 +127,13 @@ auto CacheManager::pending_trades() const -> std::vector<Trade> {
   return trades;
 }
 
+auto CacheManager::last_open_phase_traded_price() const
+    -> std::optional<Price> {
+  return instrument_info_cache_.last_open_phase_traded_price();
+}
+
+auto CacheManager::closing_price() const -> std::optional<Price> {
+  return instrument_info_cache_.closing_price();
+}
+
 }  // namespace simulator::trading_system::matching_engine::mdata

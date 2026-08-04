@@ -22,6 +22,7 @@ auto map_market_entry(const MarketDataEntry& source,
   map_fix_field<FIX::MDEntryType>(source.type, destination);
   map_fix_field<FIX::MDEntryPx>(source.price, destination);
   map_fix_field<FIX::MDEntrySize>(source.quantity, destination);
+  map_fix_field<FIX::TradeCondition>(source.trade_condition, destination);
   map_fix_field<FIX::MDEntryBuyer>(source.buyer_id, destination);
   map_fix_field<FIX::MDEntrySeller>(source.seller_id, destination);
   map_fix_field<FIX::AggressorSide>(source.aggressor_side, destination);

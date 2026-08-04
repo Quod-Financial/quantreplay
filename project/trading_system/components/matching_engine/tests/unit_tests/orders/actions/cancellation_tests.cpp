@@ -2,6 +2,7 @@
 
 #include "ih/orders/actions/cancellation.hpp"
 #include "ih/orders/book/order_book.hpp"
+#include "ih/orders/book/order_book_update.hpp"
 #include "ih/orders/book/order_updates.hpp"
 #include "ih/orders/replies/cancellation_reply_builders.hpp"
 #include "protocol/types/session.hpp"
@@ -60,6 +61,12 @@ TEST_F(MatchingEngineCancellation,
                 Optional(Eq(RejectText{"order not found"})))))));
 
   cancellation(cancel);
+}
+
+TEST_F(MatchingEngineCancellation, ReturnsNoUpdatesWhenOrderNotFound) {
+  const auto cancel = make_cancel(Side::Option::Buy, OrderId{123});
+
+  ASSERT_THAT(cancellation(cancel), IsEmpty());
 }
 
 TEST_F(MatchingEngineCancellation,
@@ -154,7 +161,7 @@ TEST_F(MatchingEngineCancellation, DeletesOrderFromOrderBook) {
                          .with_side(Side{Side::Option::Buy})
                          .with_client_session(client_session)
                          .build_limit_order();
-  order_book.buy_page().limit_orders().emplace(order);
+  rest(order);
 
   const auto cancel = make_cancel(Side::Option::Buy, OrderId{123});
 
@@ -169,7 +176,7 @@ TEST_F(MatchingEngineCancellation,
                          .with_side(Side{Side::Option::Buy})
                          .with_client_session(client_session)
                          .build_limit_order();
-  order_book.buy_page().limit_orders().emplace(order);
+  rest(order);
 
   const auto cancel = make_cancel(Side::Option::Buy, OrderId{123});
 
@@ -186,7 +193,7 @@ TEST_F(MatchingEngineCancellation,
                          .with_side(Side{Side::Option::Buy})
                          .with_client_session(client_session)
                          .build_limit_order();
-  order_book.buy_page().limit_orders().emplace(order);
+  rest(order);
 
   const auto cancel = make_cancel(Side::Option::Buy, OrderId{123});
 
@@ -203,7 +210,7 @@ TEST_F(MatchingEngineCancellation,
                          .with_side(Side{Side::Option::Buy})
                          .with_client_session(client_session)
                          .build_limit_order();
-  order_book.buy_page().limit_orders().emplace(order);
+  rest(order);
 
   const auto cancel = make_cancel(Side::Option::Buy, OrderId{123});
 
@@ -223,7 +230,7 @@ TEST_F(MatchingEngineCancellation,
                          .with_order_quantity(OrderQuantity{420})
                          .with_client_session(client_session)
                          .build_limit_order();
-  order_book.buy_page().limit_orders().emplace(order);
+  rest(order);
 
   const auto cancel = make_cancel(Side::Option::Buy, OrderId{123});
 
@@ -243,7 +250,7 @@ TEST_F(MatchingEngineCancellation,
                          .with_side(Side{Side::Option::Buy})
                          .with_client_session(client_session)
                          .build_limit_order();
-  order_book.buy_page().limit_orders().emplace(order);
+  rest(order);
 
   const auto cancel = make_cancel(Side::Option::Buy, OrderId{123});
 
@@ -262,7 +269,7 @@ TEST_F(MatchingEngineCancellation,
                          .with_side(Side{Side::Option::Buy})
                          .with_client_session(client_session)
                          .build_limit_order();
-  order_book.buy_page().limit_orders().emplace(order);
+  rest(order);
 
   auto cancel = make_cancel(Side::Option::Buy, OrderId{123});
   cancel.client_order_id = ClientOrderId{"CL-1"};
@@ -282,7 +289,7 @@ TEST_F(MatchingEngineCancellation,
                          .with_side(Side{Side::Option::Buy})
                          .with_client_session(client_session)
                          .build_limit_order();
-  order_book.buy_page().limit_orders().emplace(order);
+  rest(order);
 
   auto cancel = make_cancel(Side::Option::Buy, OrderId{123});
   cancel.orig_client_order_id = OrigClientOrderId{"ORIG-1"};
@@ -295,6 +302,37 @@ TEST_F(MatchingEngineCancellation,
               Optional(Eq(OrigClientOrderId{"ORIG-1"})))))));
 
   cancellation(cancel);
+}
+
+TEST_F(MatchingEngineCancellation, ReturnsRemoveUpdateForCancelledMarketOrder) {
+  const auto order = OrderBuilder{}
+                         .with_order_id(OrderId{42})
+                         .with_side(Side::Option::Buy)
+                         .with_order_quantity(OrderQuantity{7})
+                         .build_market_order();
+  rest(order);
+
+  ASSERT_THAT(
+      cancellation(cancel_by_order_id(Side::Option::Buy, OrderId{42})),
+      ElementsAre(OrderBookUpdate{.side = Side::Option::Buy,
+                                  .action = OrderBookUpdate::Action::Remove,
+                                  .price = std::nullopt,
+                                  .quantity = order.leaves_quantity()}));
+}
+
+TEST_F(MatchingEngineCancellation, ReturnsRemoveUpdateForCancelledLimitOrder) {
+  const auto order = builder.with_order_id(OrderId{123})
+                         .with_side(Side{Side::Option::Buy})
+                         .with_client_session(client_session)
+                         .build_limit_order();
+  rest(order);
+
+  ASSERT_THAT(
+      cancellation(make_cancel(Side::Option::Buy, OrderId{123})),
+      ElementsAre(OrderBookUpdate{.side = Side::Option::Buy,
+                                  .action = OrderBookUpdate::Action::Remove,
+                                  .price = order.price(),
+                                  .quantity = order.leaves_quantity()}));
 }
 
 // NOLINTEND(*magic-numbers*)

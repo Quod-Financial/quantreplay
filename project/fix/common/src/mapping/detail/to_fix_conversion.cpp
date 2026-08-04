@@ -335,17 +335,19 @@ auto make_md_entry_type_association()
       {MdEntryType::Bid, FIX::MDEntryType_BID},
       {MdEntryType::Offer, FIX::MDEntryType_OFFER},
       {MdEntryType::Trade, FIX::MDEntryType_TRADE},
-      {MdEntryType::LowPrice, FIX::MDEntryType_TRADING_SESSION_LOW_PRICE},
-      {MdEntryType::MidPrice, FIX::MDEntryType_MID_PRICE},
-      {MdEntryType::HighPrice, FIX::MDEntryType_TRADING_SESSION_HIGH_PRICE},
       {MdEntryType::OpeningPrice, FIX::MDEntryType_OPENING_PRICE},
       {MdEntryType::ClosingPrice, FIX::MDEntryType_CLOSING_PRICE},
-      {MdEntryType::AuctionClearingPrice, FIX::MDEntryType_AUCTION_CLEARING_PRICE},
+      {MdEntryType::SettlementPrice, FIX::MDEntryType_SETTLEMENT_PRICE},
+      {MdEntryType::HighPrice, FIX::MDEntryType_TRADING_SESSION_HIGH_PRICE},
+      {MdEntryType::LowPrice, FIX::MDEntryType_TRADING_SESSION_LOW_PRICE},
+      {MdEntryType::Imbalance, FIX::MDEntryType_IMBALANCE},
+      {MdEntryType::TradeVolume, FIX::MDEntryType_TRADE_VOLUME},
+      {MdEntryType::MidPrice, FIX::MDEntryType_MID_PRICE},
       {MdEntryType::EarlyPrice, FIX::MDEntryType_EARLY_PRICES},
-      {MdEntryType::PreviousClosingPrice, FIX::MDEntryType_PREVIOUS_CLOSING_PRICE},
+      {MdEntryType::AuctionClearingPrice, FIX::MDEntryType_AUCTION_CLEARING_PRICE},
       {MdEntryType::MarketBid, FIX::MDEntryType_MARKET_BID},
       {MdEntryType::MarketOffer, FIX::MDEntryType_MARKET_OFFER},
-      {MdEntryType::TradeVolume, FIX::MDEntryType_TRADE_VOLUME}};
+      {MdEntryType::PreviousClosingPrice, FIX::MDEntryType_PREVIOUS_CLOSING_PRICE}};
   // clang-format on
 }
 
@@ -375,6 +377,18 @@ auto make_trading_phase_association()
       {TradingPhase::OpeningAuction, FIX::TradingSessionSubID_OPENING_OR_OPENING_AUCTION},
       {TradingPhase::IntradayAuction, FIX::TradingSessionSubID_INTRADAY_AUCTION},
       {TradingPhase::ClosingAuction, FIX::TradingSessionSubID_CLOSING_OR_CLOSING_AUCTION}};
+  // clang-format on
+}
+
+[[nodiscard]]
+auto make_trade_condition_association()
+    -> EnumAssociationTable<core::enumerators::TradeCondition, std::string> {
+  using core::enumerators::TradeCondition;
+
+  // clang-format off
+  return {
+      {TradeCondition::ImbalanceMoreBuyers, FIX::TradeCondition_IMBALANCE_MORE_BUYERS},
+      {TradeCondition::ImbalanceMoreSellers, FIX::TradeCondition_IMBALANCE_MORE_SELLERS}};
   // clang-format on
 }
 
@@ -603,6 +617,18 @@ auto ToFixConverter<FIX::TradingSessionSubID>::convert(
 
   throw std::invalid_argument(
       fmt::format("cannot convert given TradingPhase value '{}'",
+                  core::underlying_cast(value)));
+}
+
+auto ToFixConverter<FIX::TradeCondition>::convert(
+    core::enumerators::TradeCondition value) -> std::string {
+  static const auto association = make_trade_condition_association();
+  if (const auto iter = association.find(value); iter != association.end()) {
+    return iter->second;
+  }
+
+  throw std::invalid_argument(
+      fmt::format("cannot convert given TradeCondition value '{}'",
                   core::underlying_cast(value)));
 }
 

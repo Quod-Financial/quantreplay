@@ -19,8 +19,9 @@ struct OrderBookNotification {
                              Trade,
                              LastTradeRecover,
                              InstrumentInfoRecover,
-                             AuctionPricesUpdate,
+                             AuctionFinalPriceUpdate,
                              EarlyPriceUpdate,
+                             AuctionIndicativeUpdate,
                              TzDayPassed>;
 
   template <typename NotificationType>

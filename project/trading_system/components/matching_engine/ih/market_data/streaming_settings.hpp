@@ -71,6 +71,8 @@ class StreamingSettings {
     stream_early_price_flag,
     stream_previous_closing_price_flag,
     stream_trade_volume_flag,
+    stream_settlement_price_flag,
+    stream_imbalance_flag,
     flags_count
   };
 
@@ -104,6 +106,10 @@ class StreamingSettings {
         return stream_market_offer_flag;
       case MdEntryType::Option::TradeVolume:
         return stream_trade_volume_flag;
+      case MdEntryType::Option::SettlementPrice:
+        return stream_settlement_price_flag;
+      case MdEntryType::Option::Imbalance:
+        return stream_imbalance_flag;
     }
     return flags_count;
   }

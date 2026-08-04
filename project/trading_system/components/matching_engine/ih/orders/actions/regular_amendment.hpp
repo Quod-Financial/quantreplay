@@ -7,6 +7,7 @@
 #include "ih/common/abstractions/event_listener.hpp"
 #include "ih/common/events/event_reporter.hpp"
 #include "ih/orders/book/order_book.hpp"
+#include "ih/orders/book/order_book_update.hpp"
 #include "ih/orders/book/order_updates.hpp"
 #include "ih/orders/matchers/order_matcher.hpp"
 
@@ -26,10 +27,10 @@ class RegularAmendment : private EventReporter {
   auto operator=(const RegularAmendment&) -> RegularAmendment& = delete;
   auto operator=(RegularAmendment&&) -> RegularAmendment& = delete;
 
-  auto operator()(LimitUpdate update) -> void;
+  auto operator()(LimitUpdate update) -> OrderBookUpdates;
 
  private:
-  auto amend_order(LimitUpdate update, OrderPage& page) -> void;
+  auto amend_order(LimitUpdate update, OrderPage& page) -> OrderBookUpdates;
 
   OrderBook& order_book_;
   RegularMatcher& matcher_;

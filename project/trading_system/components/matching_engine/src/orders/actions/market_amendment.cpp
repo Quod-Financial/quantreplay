@@ -16,21 +16,21 @@ MarketAmendment::MarketAmendment(EventListener& event_listener,
       order_book_{order_book},
       price_tick_{price_tick} {}
 
-auto MarketAmendment::operator()(MarketUpdate update) -> void {
+auto MarketAmendment::operator()(MarketUpdate update) -> OrderBookUpdates {
   log::debug("running market order amendment operation");
 
   const Side side = update.order_side;
-  amend_order(std::move(update), order_book_.take_page(side));
+  return amend_order(std::move(update), order_book_.take_page(side));
 }
 
-auto MarketAmendment::amend_order(MarketUpdate update,
-                                  OrderPage& page) -> void {
+auto MarketAmendment::amend_order(MarketUpdate update, OrderPage& page)
+    -> OrderBookUpdates {
   const auto order_it = find_target_market_order(page, update);
   if (order_it == market_orders_end(page)) {
     emit(ClientNotification(prepare_modification_reject(update)
                                 .with_reason(RejectText{"order not found"})
                                 .build()));
-    return;
+    return {};
   }
 
   if (static_cast<double>(update.order_diff.quantity) <=
@@ -39,7 +39,7 @@ auto MarketAmendment::amend_order(MarketUpdate update,
                                 .with_order_status(order_it->status())
                                 .with_reason(RejectText{"invalid quantity"})
                                 .build()));
-    return;
+    return {};
   }
 
   if (order_it->time_in_force() !=
@@ -49,8 +49,13 @@ auto MarketAmendment::amend_order(MarketUpdate update,
             .with_order_status(order_it->status())
             .with_reason(RejectText{"time in force can not be changed"})
             .build()));
-    return;
+    return {};
   }
+
+  const OrderBookUpdate removal{.side = order_it->side(),
+                                .action = OrderBookUpdate::Action::Remove,
+                                .price = std::nullopt,
+                                .quantity = order_it->leaves_quantity()};
 
   MarketOrder order = *order_it;
   page.market_orders().erase(order_it);
@@ -65,6 +70,12 @@ auto MarketAmendment::amend_order(MarketUpdate update,
 
   page.market_orders().emplace(order);
   emit(order::make_making_order_added_to_book_notification(order));
+
+  return {removal,
+          OrderBookUpdate{.side = order.side(),
+                          .action = OrderBookUpdate::Action::Add,
+                          .price = std::nullopt,
+                          .quantity = order.leaves_quantity()}};
 }
 
 }  // namespace simulator::trading_system::matching_engine

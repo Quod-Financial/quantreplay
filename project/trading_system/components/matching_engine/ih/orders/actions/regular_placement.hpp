@@ -6,6 +6,7 @@
 #include "ih/orders/book/limit_order.hpp"
 #include "ih/orders/book/market_order.hpp"
 #include "ih/orders/book/order_book.hpp"
+#include "ih/orders/book/order_book_update.hpp"
 #include "ih/orders/matchers/order_matcher.hpp"
 
 namespace simulator::trading_system::matching_engine {
@@ -23,16 +24,16 @@ class RegularPlacement : private EventReporter {
   auto operator=(const RegularPlacement&) -> RegularPlacement& = delete;
   auto operator=(RegularPlacement&&) -> RegularPlacement& = delete;
 
-  auto operator()(LimitOrder order) -> void;
+  auto operator()(LimitOrder order) -> OrderBookUpdates;
 
-  auto operator()(MarketOrder order) -> void;
+  auto operator()(MarketOrder order) -> OrderBookUpdates;
 
  private:
-  auto place_order(LimitOrder order) -> void;
+  auto place_order(LimitOrder order) -> OrderBookUpdates;
 
-  auto match_ioc_order(LimitOrder order) -> void;
+  auto match_ioc_order(LimitOrder order) -> OrderBookUpdates;
 
-  auto match_fok_order(LimitOrder order) -> void;
+  auto match_fok_order(LimitOrder order) -> OrderBookUpdates;
 
   OrderBook& order_book_;
   RegularMatcher& matcher_;

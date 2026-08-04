@@ -21,21 +21,27 @@ TEST_F(StreamingSettings, DefaultSettings) {
   EXPECT_FALSE(settings.is_data_type_requested(MdEntryType::Option::Bid));
   EXPECT_FALSE(settings.is_data_type_requested(MdEntryType::Option::Offer));
   EXPECT_FALSE(settings.is_data_type_requested(MdEntryType::Option::Trade));
-  EXPECT_FALSE(settings.is_data_type_requested(MdEntryType::Option::LowPrice));
-  EXPECT_FALSE(settings.is_data_type_requested(MdEntryType::Option::MidPrice));
-  EXPECT_FALSE(settings.is_data_type_requested(MdEntryType::Option::HighPrice));
   EXPECT_FALSE(
       settings.is_data_type_requested(MdEntryType::Option::OpeningPrice));
   EXPECT_FALSE(
       settings.is_data_type_requested(MdEntryType::Option::ClosingPrice));
-  EXPECT_FALSE(settings.is_data_type_requested(
-      MdEntryType::Option::AuctionClearingPrice));
+  EXPECT_FALSE(
+      settings.is_data_type_requested(MdEntryType::Option::SettlementPrice));
+  EXPECT_FALSE(settings.is_data_type_requested(MdEntryType::Option::HighPrice));
+  EXPECT_FALSE(settings.is_data_type_requested(MdEntryType::Option::LowPrice));
+  EXPECT_FALSE(settings.is_data_type_requested(MdEntryType::Option::Imbalance));
+  EXPECT_FALSE(
+      settings.is_data_type_requested(MdEntryType::Option::TradeVolume));
+  EXPECT_FALSE(settings.is_data_type_requested(MdEntryType::Option::MidPrice));
   EXPECT_FALSE(
       settings.is_data_type_requested(MdEntryType::Option::EarlyPrice));
   EXPECT_FALSE(settings.is_data_type_requested(
-      MdEntryType::Option::PreviousClosingPrice));
+      MdEntryType::Option::AuctionClearingPrice));
+  EXPECT_FALSE(settings.is_data_type_requested(MdEntryType::Option::MarketBid));
   EXPECT_FALSE(
-      settings.is_data_type_requested(MdEntryType::Option::TradeVolume));
+      settings.is_data_type_requested(MdEntryType::Option::MarketOffer));
+  EXPECT_FALSE(settings.is_data_type_requested(
+      MdEntryType::Option::PreviousClosingPrice));
   EXPECT_EQ(settings.excluded_orders_owner(), std::nullopt);
 }
 
@@ -47,15 +53,19 @@ TEST_F(StreamingSettings, EachRequestableDataTypeOwnsADistinctFlag) {
   constexpr std::array requestable_types{Option::Bid,
                                          Option::Offer,
                                          Option::Trade,
-                                         Option::LowPrice,
-                                         Option::MidPrice,
-                                         Option::HighPrice,
                                          Option::OpeningPrice,
                                          Option::ClosingPrice,
-                                         Option::AuctionClearingPrice,
+                                         Option::SettlementPrice,
+                                         Option::HighPrice,
+                                         Option::LowPrice,
+                                         Option::Imbalance,
+                                         Option::TradeVolume,
+                                         Option::MidPrice,
                                          Option::EarlyPrice,
-                                         Option::PreviousClosingPrice,
-                                         Option::TradeVolume};
+                                         Option::AuctionClearingPrice,
+                                         Option::MarketBid,
+                                         Option::MarketOffer,
+                                         Option::PreviousClosingPrice};
 
   for (const auto enabled : requestable_types) {
     mdata::StreamingSettings subject;

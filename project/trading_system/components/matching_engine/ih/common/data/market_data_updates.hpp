@@ -53,13 +53,13 @@ struct InstrumentInfoRecover {
   std::optional<market_state::InstrumentInfo> info;
 };
 
-struct AuctionPricesUpdate {
+struct AuctionFinalPriceUpdate {
   // Default-constructed value is a no-op; the producer always sets the phase.
   TradingPhase auction_phase{TradingPhase::Option::Open};
   std::optional<TradeResult> clearing_value;
 
   [[nodiscard]]
-  auto operator==(const AuctionPricesUpdate&) const -> bool = default;
+  auto operator==(const AuctionFinalPriceUpdate&) const -> bool = default;
 };
 
 struct EarlyPriceUpdate {
@@ -67,6 +67,31 @@ struct EarlyPriceUpdate {
 
   [[nodiscard]]
   auto operator==(const EarlyPriceUpdate&) const -> bool = default;
+};
+
+struct AuctionIndicativeUpdate {
+  struct IndicativePriceQuantity {
+    std::optional<Price> price;
+    Quantity quantity;
+
+    [[nodiscard]]
+    auto operator==(const IndicativePriceQuantity&) const -> bool = default;
+  };
+
+  struct Imbalance {
+    Quantity size;
+    TradeCondition side;
+
+    [[nodiscard]]
+    auto operator==(const Imbalance&) const -> bool = default;
+  };
+
+  TradingPhase auction_phase{TradingPhase::Option::Open};
+  std::optional<IndicativePriceQuantity> price_qty;
+  std::optional<Imbalance> imbalance;
+
+  [[nodiscard]]
+  auto operator==(const AuctionIndicativeUpdate&) const -> bool = default;
 };
 
 struct TzDayPassed {
@@ -174,16 +199,16 @@ struct fmt::formatter<
 
 template <>
 struct fmt::formatter<
-    simulator::trading_system::matching_engine::AuctionPricesUpdate>
+    simulator::trading_system::matching_engine::AuctionFinalPriceUpdate>
     : formatter<std::string_view> {
   using formattable =
-      simulator::trading_system::matching_engine::AuctionPricesUpdate;
+      simulator::trading_system::matching_engine::AuctionFinalPriceUpdate;
 
   auto format(const formattable& event, format_context& ctx) const
       -> format_context::iterator {
     return format_to(
         ctx.out(),
-        R"({{ "AuctionPricesUpdate": {{ "auction_phase": "{}", "clearing_value": {} }} }})",
+        R"({{ "AuctionFinalPriceUpdate": {{ "auction_phase": "{}", "clearing_value": {} }} }})",
         event.auction_phase,
         event.clearing_value);
   }
@@ -201,6 +226,57 @@ struct fmt::formatter<
     return format_to(ctx.out(),
                      R"({{ "EarlyPriceUpdate": {{ "early_value": {} }} }})",
                      event.early_value);
+  }
+};
+
+template <>
+struct fmt::formatter<simulator::trading_system::matching_engine::
+                          AuctionIndicativeUpdate::IndicativePriceQuantity>
+    : formatter<std::string_view> {
+  using formattable = simulator::trading_system::matching_engine::
+      AuctionIndicativeUpdate::IndicativePriceQuantity;
+
+  auto format(const formattable& value, format_context& ctx) const
+      -> format_context::iterator {
+    return format_to(
+        ctx.out(),
+        R"({{ "IndicativePriceQuantity": {{ "price": {}, "quantity": {} }} }})",
+        value.price,
+        value.quantity);
+  }
+};
+
+template <>
+struct fmt::formatter<simulator::trading_system::matching_engine::
+                          AuctionIndicativeUpdate::Imbalance>
+    : formatter<std::string_view> {
+  using formattable = simulator::trading_system::matching_engine::
+      AuctionIndicativeUpdate::Imbalance;
+
+  auto format(const formattable& value, format_context& ctx) const
+      -> format_context::iterator {
+    return format_to(ctx.out(),
+                     R"({{ "Imbalance": {{ "size": {}, "side": "{}" }} }})",
+                     value.size,
+                     value.side);
+  }
+};
+
+template <>
+struct fmt::formatter<
+    simulator::trading_system::matching_engine::AuctionIndicativeUpdate>
+    : formatter<std::string_view> {
+  using formattable =
+      simulator::trading_system::matching_engine::AuctionIndicativeUpdate;
+
+  auto format(const formattable& event, format_context& ctx) const
+      -> format_context::iterator {
+    return format_to(
+        ctx.out(),
+        R"({{ "AuctionIndicativeUpdate": {{ "auction_phase": "{}", "price_qty": {}, "imbalance": {} }} }})",
+        event.auction_phase,
+        event.price_qty,
+        event.imbalance);
   }
 };
 

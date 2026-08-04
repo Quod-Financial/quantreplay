@@ -1,7 +1,5 @@
 #include "ih/orders/actions/order_actions.hpp"
 
-#include <functional>
-
 #include "ih/orders/actions/auction_placement.hpp"
 #include "ih/orders/actions/cancellation.hpp"
 #include "ih/orders/actions/limit_order_recover.hpp"
@@ -18,73 +16,70 @@ auto place_limit_order(EventListener& event_listener,
                        OrderBook& order_book,
                        std::optional<PriceTick> price_tick,
                        LimitOrder order,
-                       OrderActionMode mode) -> void {
+                       OrderActionMode mode) -> OrderBookUpdates {
   if (mode == OrderActionMode::AuctionCall) {
     AuctionPlacement operation{event_listener, order_book};
     log::debug("executing auction limit order placement operation");
-    std::invoke(operation, std::move(order));
-    return;
+    return operation(std::move(order));
   }
 
   RegularOrderMatcher matcher{event_listener, order_book, price_tick};
   RegularPlacement operation{event_listener, order_book, matcher};
   log::debug("executing limit order placement operation");
-  std::invoke(operation, std::move(order));
+  return operation(std::move(order));
 }
 
 auto place_market_order(EventListener& event_listener,
                         OrderBook& order_book,
                         std::optional<PriceTick> price_tick,
                         MarketOrder order,
-                        OrderActionMode mode) -> void {
+                        OrderActionMode mode) -> OrderBookUpdates {
   if (mode == OrderActionMode::AuctionCall) {
     AuctionPlacement operation{event_listener, order_book};
     log::debug("executing auction market order placement operation");
-    std::invoke(operation, std::move(order));
-    return;
+    return operation(std::move(order));
   }
 
   RegularOrderMatcher matcher{event_listener, order_book, price_tick};
   RegularPlacement operation{event_listener, order_book, matcher};
   log::debug("executing market order placement operation");
-  std::invoke(operation, std::move(order));
+  return operation(std::move(order));
 }
 
 auto amend_limit_order(EventListener& event_listener,
                        OrderBook& order_book,
                        std::optional<PriceTick> price_tick,
                        LimitUpdate update,
-                       OrderActionMode mode) -> void {
+                       OrderActionMode mode) -> OrderBookUpdates {
   if (mode == OrderActionMode::AuctionCall) {
     NoCrossMatcher matcher;
     RegularAmendment operation{event_listener, order_book, matcher, price_tick};
     log::debug("executing auction limit order amendment action");
-    std::invoke(operation, std::move(update));
-    return;
+    return operation(std::move(update));
   }
 
   RegularOrderMatcher matcher{event_listener, order_book, price_tick};
   RegularAmendment operation{event_listener, order_book, matcher, price_tick};
   log::debug("executing limit order amendment action");
-  std::invoke(operation, std::move(update));
+  return operation(std::move(update));
 }
 
 auto amend_market_order(EventListener& event_listener,
                         OrderBook& order_book,
                         std::optional<PriceTick> price_tick,
-                        MarketUpdate update) -> void {
+                        MarketUpdate update) -> OrderBookUpdates {
   MarketAmendment operation{event_listener, order_book, price_tick};
   log::debug("executing market order amendment action");
-  std::invoke(operation, std::move(update));
+  return operation(std::move(update));
 }
 
 auto cancel_order(EventListener& event_listener,
                   OrderBook& order_book,
                   std::optional<PriceTick> price_tick,
-                  const OrderCancel& cancel) -> void {
+                  const OrderCancel& cancel) -> OrderBookUpdates {
   Cancellation operation{event_listener, order_book, price_tick};
   log::debug("executing order cancellation action");
-  std::invoke(operation, cancel);
+  return operation(cancel);
 }
 
 auto recover_order(EventListener& event_listener,
@@ -92,7 +87,7 @@ auto recover_order(EventListener& event_listener,
                    market_state::LimitOrder order_state) -> void {
   LimitOrderRecover operation{event_listener, order_book};
   log::debug("executing order recovering");
-  std::invoke(operation, std::move(order_state));
+  operation(std::move(order_state));
 }
 
 }  // namespace simulator::trading_system::matching_engine

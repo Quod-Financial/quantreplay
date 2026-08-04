@@ -69,6 +69,7 @@ struct InstrumentInfo {
   std::optional<double> auction_clearing_quantity;
   std::optional<double> previous_closing_price;
   std::optional<double> trade_volume;
+  std::optional<double> last_open_phase_traded_price;
 };
 
 struct InstrumentSpecification {

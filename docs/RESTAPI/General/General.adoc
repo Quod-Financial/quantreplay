@@ -642,8 +642,8 @@ They behave identically and differ only in the trading-session values reported t
 
 An auction runs in two consecutive sub-phases:
 
-* *Call*. Begins at the phase start time. New limit orders with a Time In Force of Day, GoodTillDate or GoodTillCancel are accepted and added to the order book by price/time priority, but no orders are crossed. Market orders are also accepted and rest ahead of all limit orders, ordered only by the time they were received (they carry no price). Limit orders with a Time In Force of ImmediateOrCancel or FillOrKill are rejected. Amends and cancels are accepted and follow the usual priority rules; resting market orders can also be amended (only their quantity) and cancelled. While the order book is crossed, an indicative auction price and volume is published on a fixed 30-second interval.
-* *Uncrossing*. Begins at a randomized time around the phase end time (see below). For its whole duration, every order action — new orders, amends and cancels — is rejected. The collected orders are then crossed once at a single clearing price (market orders are matched first; any market orders left unfilled are cancelled), and the resulting trades are published. Any limit orders that remain rest in the book.
+* *Call*. Begins at the phase start time. New limit orders with a Time In Force of Day, GoodTillDate or GoodTillCancel are accepted and added to the order book by price/time priority, but no orders are crossed. Market orders are also accepted and rest ahead of all limit orders, ordered only by the time they were received (they carry no price). Limit orders with a Time In Force of ImmediateOrCancel or FillOrKill are rejected. Amends and cancels are accepted and follow the usual priority rules; resting market orders can also be amended (only their quantity) and cancelled. An indicative auction price and volume are recalculated on every accepted order action and published with the resulting book update, and are additionally republished on a fixed 30-second interval while the order book is crossed. The market data entries carrying these values, and the auction imbalance published alongside them, are described in the Market Simulator FIX Rules of Engagement.
+* *Uncrossing*. Begins at a randomized time around the phase end time (see below). For its whole duration, every order action — new orders, amends and cancels — is rejected. The collected orders are then crossed at a single clearing price — the last indicative auction price calculated during the call — in price/time priority (market orders are matched first; any market orders left unfilled are cancelled), and the resulting trades are published. Any limit orders that remain rest in the book.
 
 The exact time at which the uncrossing begins is chosen randomly within `endTime` +/- `endTimeRange` (in minutes); the chosen instant can fall on any second within that window, not only on a whole minute.
 The window never reaches back before the start of the auction: for an auction configured with a `startTime` of 17:00, an `endTime` of 17:10 and an `endTimeRange` of 20, the uncrossing time is drawn between 17:00 and 17:30.
@@ -753,7 +753,8 @@ For instance, the file content indicated below contains the state of the venue �
             },
             "Info": {
                 "TradingSessionLowPrice": 1.18812,
-                "TradingSessionHighPrice": 1.18818
+                "TradingSessionHighPrice": 1.18818,
+                "LastOpenPhaseTradedPrice": 1.18815
             },
             "OrderBook": {
                 "BuyOrders": [

@@ -62,6 +62,11 @@ auto MarketDataFacade::publish_uncrossing() -> void {
   subscription_manager_.publish_snapshot();
 }
 
+auto MarketDataFacade::auction_reference_price_provider() const
+    -> const AuctionReferencePriceProvider& {
+  return cache_manager_;
+}
+
 auto MarketDataFacade::process(const protocol::MarketDataRequest& request)
     -> void {
   subscription_manager_.process(request);

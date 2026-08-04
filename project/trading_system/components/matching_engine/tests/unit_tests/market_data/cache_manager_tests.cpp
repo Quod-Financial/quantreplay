@@ -48,6 +48,13 @@ struct MatchingEngineCacheManager : Test {
     return NewTrade().with_trade_price(price).create();
   }
 
+  static auto closing_auction_cross(Price price, Quantity quantity)
+      -> AuctionFinalPriceUpdate {
+    return AuctionFinalPriceUpdate{
+        .auction_phase = TradingPhase{TradingPhase::Option::ClosingAuction},
+        .clearing_value = TradeResult{.price = price, .quantity = quantity}};
+  }
+
   static auto is_bid_at(Price price) {
     return AllOf(Field(&MarketDataEntry::type, Eq(MdEntryType::Option::Bid)),
                  Field(&MarketDataEntry::price, Optional(Eq(price))));
@@ -185,6 +192,20 @@ TEST_F(MatchingEngineCacheManager, HasUpdateWhenRequestedDepthChanges) {
   cache.apply_pending_changes();
 
   EXPECT_TRUE(cache.has_update(settings));
+}
+
+TEST_F(MatchingEngineCacheManager, ExposesLastOpenPhaseTradedPrice) {
+  push(trade_at(Price{100}));
+  cache.apply_pending_changes();
+
+  EXPECT_EQ(cache.last_open_phase_traded_price(), Price{100});
+}
+
+TEST_F(MatchingEngineCacheManager, ExposesClosingPrice) {
+  push(closing_auction_cross(Price{120}, Quantity{5}));
+  cache.apply_pending_changes();
+
+  EXPECT_EQ(cache.closing_price(), Price{120});
 }
 
 // NOLINTEND(*magic-numbers*,*non-private-member*)

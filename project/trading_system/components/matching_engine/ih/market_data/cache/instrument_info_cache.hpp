@@ -21,21 +21,56 @@ class InstrumentInfoCache {
     auto operator==(const PriceQuantity&) const -> bool = default;
   };
 
+  // Used to store the indicative (call, SecurityTradingStatus=Resume) and
+  // "final" (the uncrossing, SecurityTradingStatus = Halt) of auctions prices:
+  // - call:
+  //   - if the book is crossed:
+  //     - price (Indicative Equilibrium Price) is set
+  //     - quantity (Indicative Equilibrium Volume) is set
+  //   - otherwise:
+  //     - price = std::nullopt
+  //     - quantity = 0
+  // - uncrossing:
+  //   - publish only price
+  //   - quantity = std::nullopt
+  struct OptionalPriceQuantity {
+    std::optional<Price> price;
+    std::optional<Quantity> quantity;
+
+    auto operator==(const OptionalPriceQuantity&) const -> bool = default;
+  };
+
+  struct ImbalanceQuantity {
+    Quantity size;
+    TradeCondition side;
+
+    auto operator==(const ImbalanceQuantity&) const -> bool = default;
+  };
+
+  struct SettledPrice {
+    std::optional<Price> price;
+    std::optional<core::sys_us> time;
+
+    auto operator==(const SettledPrice&) const -> bool = default;
+  };
+
   struct CachedData {
     MdEntryValue<MdEntryType::Option::LowPrice, Price> low_price;
     MdEntryValue<MdEntryType::Option::MidPrice, Price> mid_price;
     MdEntryValue<MdEntryType::Option::HighPrice, Price> high_price;
-    MdEntryValue<MdEntryType::Option::OpeningPrice, Price> opening_price;
-    MdEntryValue<MdEntryType::Option::ClosingPrice, Price> closing_price;
+    MdEntryValue<MdEntryType::Option::OpeningPrice, OptionalPriceQuantity>
+        opening_price;
+    MdEntryValue<MdEntryType::Option::SettlementPrice, OptionalPriceQuantity>
+        settlement_price;
+    MdEntryValue<MdEntryType::Option::ClosingPrice, OptionalPriceQuantity>
+        closing_price;
     MdEntryValue<MdEntryType::Option::AuctionClearingPrice, PriceQuantity>
         auction_clearing_price;
     MdEntryValue<MdEntryType::Option::EarlyPrice, PriceQuantity> early_price;
     MdEntryValue<MdEntryType::Option::PreviousClosingPrice, Price>
         previous_closing_price;
-    MdEntryValue<MdEntryType::Option::TradeVolume, Quantity>
-        trade_volume;
-    std::optional<core::sys_us> opening_price_time;
-    std::optional<core::sys_us> closing_price_time;
+    MdEntryValue<MdEntryType::Option::TradeVolume, Quantity> trade_volume;
+    MdEntryValue<MdEntryType::Option::Imbalance, ImbalanceQuantity> imbalance;
   };
 
  public:
@@ -62,6 +97,12 @@ class InstrumentInfoCache {
   auto store_state(std::optional<market_state::InstrumentInfo>& info) const
       -> void;
 
+  [[nodiscard]]
+  auto last_open_phase_traded_price() const -> std::optional<Price>;
+
+  [[nodiscard]]
+  auto closing_price() const -> std::optional<Price>;
+
  private:
   auto update_low_price(Price trade_price) -> void;
 
@@ -75,6 +116,18 @@ class InstrumentInfoCache {
 
   auto update_closing_price(const TzDayPassed& day_passed) -> void;
 
+  auto set_opening_price(std::optional<Price> price,
+                         std::optional<core::sys_us> time) -> void;
+
+  auto set_closing_price(std::optional<Price> price,
+                         std::optional<core::sys_us> time) -> void;
+
+  auto clear_opening_price() -> void;
+
+  auto clear_closing_price() -> void;
+
+  auto roll_closing_price(Price price, core::sys_us time) -> void;
+
   auto set_low_price(Price price) -> bool;
 
   auto set_high_price(Price price) -> bool;
@@ -83,9 +136,14 @@ class InstrumentInfoCache {
 
   auto add_to_trade_volume(Quantity quantity) -> void;
 
-  auto apply_auction_prices(const AuctionPricesUpdate& prices) -> void;
+  auto apply_auction_final_price(const AuctionFinalPriceUpdate& price) -> void;
 
   auto apply_early_price(const EarlyPriceUpdate& early) -> void;
+
+  auto apply_auction_indicative(const AuctionIndicativeUpdate& indicative)
+      -> void;
+
+  auto end_auction_call() -> void;
 
   auto reset_session_high_low(Price opening_price) -> void;
 
@@ -96,13 +154,15 @@ class InstrumentInfoCache {
                const CachedData& data,
                bool with_action) const -> void;
 
-  auto less_tz_date(core::sys_us lh, core::sys_us rh) const -> bool;
-
   Config config_;
   CachedData actual_data_;
   CachedData last_update_;
 
+  SettledPrice settled_opening_;
+  SettledPrice settled_closing_;
+
   std::optional<Trade> last_trade_;
+  std::optional<Price> last_open_phase_trade_price_;
 };
 
 }  // namespace simulator::trading_system::matching_engine::mdata

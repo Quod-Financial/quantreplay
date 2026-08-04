@@ -18,21 +18,21 @@ RegularAmendment::RegularAmendment(EventListener& event_listener,
       matcher_{matcher},
       price_tick_{price_tick} {}
 
-auto RegularAmendment::operator()(LimitUpdate update) -> void {
+auto RegularAmendment::operator()(LimitUpdate update) -> OrderBookUpdates {
   log::debug("running regular limit order amendment operation");
 
   const Side side = update.order_side;
-  amend_order(std::move(update), order_book_.take_page(side));
+  return amend_order(std::move(update), order_book_.take_page(side));
 }
 
 auto RegularAmendment::amend_order(LimitUpdate update, OrderPage& page)
-    -> void {
+    -> OrderBookUpdates {
   const auto order_it = find_target_limit_order(page, update);
   if (order_it == limit_orders_end(page)) {
     emit(ClientNotification(prepare_modification_reject(update)
                                 .with_reason(RejectText{"order not found"})
                                 .build()));
-    return;
+    return {};
   }
 
   if (static_cast<double>(update.order_diff.quantity) <=
@@ -41,7 +41,7 @@ auto RegularAmendment::amend_order(LimitUpdate update, OrderPage& page)
                                 .with_order_status(order_it->status())
                                 .with_reason(RejectText{"invalid quantity"})
                                 .build()));
-    return;
+    return {};
   }
 
   if (order_it->time_in_force() !=
@@ -51,8 +51,13 @@ auto RegularAmendment::amend_order(LimitUpdate update, OrderPage& page)
             .with_order_status(order_it->status())
             .with_reason(RejectText{"time in force can not be changed"})
             .build()));
-    return;
+    return {};
   }
+
+  const OrderBookUpdate removal{.side = order_it->side(),
+                                .action = OrderBookUpdate::Action::Remove,
+                                .price = order_it->price(),
+                                .quantity = order_it->leaves_quantity()};
 
   LimitOrder order = *order_it;
   page.limit_orders().erase(order_it);
@@ -67,10 +72,18 @@ auto RegularAmendment::amend_order(LimitUpdate update, OrderPage& page)
 
   matcher_.match(order);
 
-  if (!order.executed()) {
-    page.limit_orders().emplace(order);
-    emit(order::make_making_order_added_to_book_notification(order));
+  if (order.executed()) {
+    return {removal};
   }
+
+  page.limit_orders().emplace(order);
+  emit(order::make_making_order_added_to_book_notification(order));
+
+  return {removal,
+          OrderBookUpdate{.side = order.side(),
+                          .action = OrderBookUpdate::Action::Add,
+                          .price = order.price(),
+                          .quantity = order.leaves_quantity()}};
 }
 
 }  // namespace simulator::trading_system::matching_engine
