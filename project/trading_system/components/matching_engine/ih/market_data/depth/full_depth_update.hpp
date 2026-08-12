@@ -27,7 +27,7 @@ class FullDepthUpdateBuilder {
  public:
   explicit FullDepthUpdateBuilder(FullDepthUpdate destination);
 
-  auto build(const std::ranges::forward_range auto& depth) -> void {
+  auto build(std::ranges::forward_range auto&& depth) -> void {
     static_assert(
         std::same_as<DepthLevel, std::ranges::range_value_t<decltype(depth)>>,
         "cannot build full depth update from a depth range "
@@ -50,7 +50,7 @@ class LimitedFullDepthUpdateBuilder {
   explicit LimitedFullDepthUpdateBuilder(FullDepthUpdate destination,
                                          std::uint32_t limit);
 
-  auto build(const std::ranges::forward_range auto& depth) -> void {
+  auto build(std::ranges::forward_range auto&& depth) -> void {
     static_assert(
         std::same_as<DepthLevel, std::ranges::range_value_t<decltype(depth)>>,
         "cannot build limited full depth update from a depth range "

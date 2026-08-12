@@ -6,12 +6,14 @@
 
 #include "api/database/context.hpp"
 #include "api/models/datasource.hpp"
+#include "api/models/fix_session.hpp"
 #include "api/models/listing.hpp"
 #include "api/models/price_seed.hpp"
 #include "api/models/venue.hpp"
 #include "ih/common/database/context_resolver.hpp"
 #include "ih/pqxx/context.hpp"
 #include "ih/pqxx/dao/datasource_dao.hpp"
+#include "ih/pqxx/dao/fix_session_dao.hpp"
 #include "ih/pqxx/dao/listing_dao.hpp"
 #include "ih/pqxx/dao/price_seed_dao.hpp"
 #include "ih/pqxx/dao/setting_dao.hpp"
@@ -42,6 +44,34 @@ class DatasourceCommandHandler final : public database::ContextResolver {
   auto execute_with(const internal_pqxx::Context& pqxx_context)
       -> void override {
     internal_pqxx::DatasourceDao::setup_with(pqxx_context).execute(command_);
+  }
+
+  std::reference_wrapper<CommandType> command_;
+};
+
+template <typename Command>
+class FixSessionCommandHandler final : public database::ContextResolver {
+ public:
+  using CommandType = Command;
+  using ModelType = typename CommandType::ModelType;
+
+  static_assert(std::is_same_v<ModelType, data_layer::FixSession>,
+                "FixSession command handler is instantiated with a command, "
+                "which is not designed to run with FixSession model");
+
+  static auto handle(CommandType& cmd, const database::Context& context)
+      -> void {
+    // Redirects control to `execute_with` method with a proper context type
+    FixSessionCommandHandler{cmd}.resolve(context);
+  }
+
+ private:
+  explicit FixSessionCommandHandler(CommandType& command) noexcept
+      : command_{command} {}
+
+  auto execute_with(const internal_pqxx::Context& pqxx_context)
+      -> void override {
+    internal_pqxx::FixSessionDao::setup_with(pqxx_context).execute(command_);
   }
 
   std::reference_wrapper<CommandType> command_;

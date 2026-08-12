@@ -1,5 +1,5 @@
-#ifndef SIMULATOR_LOG_TESTS_TEST_UTILS_RAPIDJSON_PRINTER_HPP_
-#define SIMULATOR_LOG_TESTS_TEST_UTILS_RAPIDJSON_PRINTER_HPP_
+#ifndef SIMULATOR_LOG_TESTS_TEST_UTILS_RAPIDJSON_UTILS_HPP_
+#define SIMULATOR_LOG_TESTS_TEST_UTILS_RAPIDJSON_UTILS_HPP_
 
 #include <gmock/gmock.h>
 #include <rapidjson/document.h>
@@ -17,4 +17,4 @@ inline auto PrintTo(const Document& document, std::ostream* os) -> void {
 
 }  // namespace rapidjson
 
-#endif  // SIMULATOR_LOG_TESTS_TEST_UTILS_RAPIDJSON_PRINTER_HPP_
+#endif  // SIMULATOR_LOG_TESTS_TEST_UTILS_RAPIDJSON_UTILS_HPP_

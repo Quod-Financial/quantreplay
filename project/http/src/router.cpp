@@ -47,6 +47,9 @@ struct fmt::formatter<Pistache::Http::Request>
     format_to(context.out(), "Request={{ ");
     format_to(context.out(), "Method={}, ", methodString(request.method()));
     format_to(context.out(), "Resource='{}', ", request.resource());
+    if (const auto query = request.query().as_str(); !query.empty()) {
+      format_to(context.out(), "Query='{}', ", query);
+    }
     format_to(context.out(), "Origin='{}', ", request.address());
     format_to(context.out(), "Body='{}', ", beautify_body(request.body()));
     format_to(context.out(), "Header='{}'", request.headers().rawList());
@@ -91,10 +94,12 @@ auto check_api_version(const Pistache::Http::Request& request) -> bool {
 }  // namespace
 
 Router::Router(std::shared_ptr<GetProcessor> get_processor,
+               std::shared_ptr<HeadProcessor> head_processor,
                std::shared_ptr<PostProcessor> post_processor,
                std::shared_ptr<PutProcessor> put_processor,
                std::shared_ptr<DeleteProcessor> delete_processor)
     : get_processor_{std::move(get_processor)},
+      head_processor_{std::move(head_processor)},
       post_processor_{std::move(post_processor)},
       put_processor_{std::move(put_processor)},
       delete_processor_{std::move(delete_processor)} {
@@ -254,6 +259,18 @@ auto Router::init_venue_routes() -> void {
       endpoint::Venues,
       Pistache::Rest::Routes::bind(&GetProcessor::get_venues,
                                    get_processor_.get()));
+
+  Pistache::Rest::Routes::Get(
+      router_,
+      endpoint::DataDictionaries,
+      Pistache::Rest::Routes::bind(&GetProcessor::get_data_dictionaries,
+                                   get_processor_.get()));
+
+  Pistache::Rest::Routes::Head(
+      router_,
+      endpoint::DataDictionaries,
+      Pistache::Rest::Routes::bind(&HeadProcessor::get_data_dictionaries,
+                                   head_processor_.get()));
 
   Pistache::Rest::Routes::Post(
       router_,

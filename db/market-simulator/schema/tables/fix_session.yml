@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_table_fix_session_1
+      labels: schema,v12
+      comment: Create fix_session table
+      preConditions:
+        - not:
+            - tableExists:
+                tableName: fix_session
+      changes:
+        - createTable:
+            tableName: fix_session
+            columns:
+              - column:
+                  name: venue_id
+                  type: text
+              - column:
+                  name: session_id
+                  type: text
+              - column:
+                  name: last_connected_time
+                  type: datetime

@@ -28,12 +28,14 @@ auto get_expire_date(const LimitOrder& order)
 }  // namespace
 
 SystemElimination::SystemElimination(EventListener& event_listener,
-                                     event::Tick system_tick)
-    : EventReporter(event_listener),
-      current_expire_time_(system_tick.sys_tick_time),
-      current_expire_date_(
-          core::as_local_time(core::to_date(system_tick.tz_tick_time))),
-      is_new_day_(system_tick.is_new_tz_day) {}
+                                     event::Tick system_tick,
+                                     std::optional<PriceTick> price_tick)
+    : EventReporter{event_listener},
+      current_expire_time_{system_tick.sys_tick_time},
+      current_expire_date_{
+          core::as_local_time(core::to_date(system_tick.tz_tick_time))},
+      is_new_day_{system_tick.is_new_tz_day},
+      price_tick_{price_tick} {}
 
 auto SystemElimination::operator()(OrderBook& book) const -> void {
   log::trace("eliminating buy orders");
@@ -79,7 +81,8 @@ auto SystemElimination::eliminate(LimitOrder& order) const -> void {
   log::trace("eliminating expired order: {}", order);
   order.cancel();
   emit(make_making_order_removed_from_book_notification(order));
-  emit(ClientNotification(prepare_cancellation_confirmation(order)
+  emit(ClientNotification(prepare_cancellation_confirmation(order, price_tick_)
+                              .with_leaving_quantity(order.leaves_quantity())
                               .with_execution_id(order.make_execution_id())
                               .with_client_order_id(order.client_order_id())
                               .build()));
@@ -91,34 +94,40 @@ AllOrdersElimination::AllOrdersElimination(EventListener& event_listener)
 
 auto AllOrdersElimination::operator()(OrderBook& book) const -> void {
   log::trace("eliminating all buy orders");
-  eliminate(book.buy_page().limit_orders());
+  eliminate(book.buy_page());
 
   log::trace("eliminating all sell orders");
-  eliminate(book.sell_page().limit_orders());
+  eliminate(book.sell_page());
 
   log::trace("finished eliminating all orders");
 }
 
-auto AllOrdersElimination::eliminate(LimitOrdersContainer& orders) const
+auto AllOrdersElimination::eliminate(OrderPage& page) const -> void {
+  eliminate_orders(page.limit_orders());
+  eliminate_orders(page.trade_at_last_orders());
+  eliminate_orders(page.market_orders());
+}
+
+template <typename OrdersContainer>
+auto AllOrdersElimination::eliminate_orders(OrdersContainer& orders) const
     -> void {
-  for (auto iter = orders.begin(); iter != orders.end();) {
-    eliminate(*iter);
-    iter = orders.erase(iter);
+  for (auto& order : orders) {
+    log::trace("eliminating order: {}", order);
+    order.cancel();
+    emit(make_making_order_removed_from_book_notification(order));
+    log::debug("eliminated the order {}", order.id());
   }
+  orders.erase(orders.begin(), orders.end());
 }
 
-auto AllOrdersElimination::eliminate(LimitOrder& order) const -> void {
-  log::trace("eliminating order: {}", order);
-  order.cancel();
-  emit(make_making_order_removed_from_book_notification(order));
-  log::debug("eliminated the order {}", order.id());
-}
-
-ClosedPhaseElimination::ClosedPhaseElimination(EventListener& event_listener,
-                                               core::tz_us phase_tz_start_time)
-    : EventReporter(event_listener),
-      phase_start_date_(
-          core::as_local_time(core::to_date(phase_tz_start_time))) {}
+ClosedPhaseElimination::ClosedPhaseElimination(
+    EventListener& event_listener,
+    core::tz_us phase_tz_start_time,
+    std::optional<PriceTick> price_tick)
+    : EventReporter{event_listener},
+      phase_start_date_{
+          core::as_local_time(core::to_date(phase_tz_start_time))},
+      price_tick_{price_tick} {}
 
 auto ClosedPhaseElimination::operator()(OrderBook& book) const -> void {
   log::trace("eliminating buy orders");
@@ -163,25 +172,65 @@ auto ClosedPhaseElimination::eliminate(LimitOrder& order) const -> void {
   log::trace("client disconnected, eliminating order: {}", order);
   order.cancel();
   emit(make_making_order_removed_from_book_notification(order));
-  emit(ClientNotification(prepare_cancellation_confirmation(order)
+  emit(ClientNotification(prepare_cancellation_confirmation(order, price_tick_)
+                              .with_leaving_quantity(order.leaves_quantity())
                               .with_execution_id(order.make_execution_id())
                               .with_client_order_id(order.client_order_id())
                               .build()));
   log::debug("eliminated the order {} due to client disconnect", order.id());
 }
 
+TradeAtLastElimination::TradeAtLastElimination(
+    EventListener& event_listener, std::optional<PriceTick> price_tick)
+    : EventReporter{event_listener}, price_tick_{price_tick} {}
+
+auto TradeAtLastElimination::operator()(OrderBook& book) const -> void {
+  log::trace("eliminating buy trade-at-last orders");
+  eliminate(book.buy_page().trade_at_last_orders());
+
+  log::trace("eliminating sell trade-at-last orders");
+  eliminate(book.sell_page().trade_at_last_orders());
+
+  log::trace("finished eliminating trade-at-last orders");
+}
+
+auto TradeAtLastElimination::eliminate(LimitOrdersContainer& orders) const
+    -> void {
+  for (auto iter = orders.begin(); iter != orders.end();) {
+    eliminate(*iter);
+    iter = orders.erase(iter);
+  }
+}
+
+auto TradeAtLastElimination::eliminate(LimitOrder& order) const -> void {
+  log::trace("the trade-at-last phase ended, eliminating order: {}", order);
+  order.cancel();
+  emit(make_making_order_removed_from_book_notification(order));
+  emit(ClientNotification(prepare_cancellation_confirmation(order, price_tick_)
+                              .with_leaving_quantity(order.leaves_quantity())
+                              .with_execution_id(order.make_execution_id())
+                              .with_client_order_id(order.client_order_id())
+                              .build()));
+  log::debug("eliminated the order {} due to the trade-at-last phase end",
+             order.id());
+}
+
 OnDisconnectElimination::OnDisconnectElimination(
     EventListener& event_listener,
-    const protocol::Session& disconnected_session)
-    : EventReporter(event_listener),
-      disconnected_session_(&disconnected_session) {}
+    const protocol::Session& disconnected_session,
+    std::optional<PriceTick> price_tick)
+    : EventReporter{event_listener},
+      disconnected_session_{&disconnected_session},
+      price_tick_{price_tick} {}
 
 auto OnDisconnectElimination::operator()(OrderBook& book) const -> void {
   log::trace("eliminating buy orders due to user disconnect");
   handle_eliminated_orders(book.buy_page().limit_orders());
+  handle_eliminated_orders(book.buy_page().trade_at_last_orders());
 
   log::trace("eliminating sell orders due to user disconnect");
   handle_eliminated_orders(book.sell_page().limit_orders());
+  handle_eliminated_orders(book.sell_page().trade_at_last_orders());
 
   log::trace("finished checking for orders eliminated due to user disconnect");
 }
@@ -208,7 +257,8 @@ auto OnDisconnectElimination::eliminate(LimitOrder& order) const -> void {
   log::trace("client disconnected, eliminating order: {}", order);
   order.cancel();
   emit(make_making_order_removed_from_book_notification(order));
-  emit(ClientNotification(prepare_cancellation_confirmation(order)
+  emit(ClientNotification(prepare_cancellation_confirmation(order, price_tick_)
+                              .with_leaving_quantity(order.leaves_quantity())
                               .with_execution_id(order.make_execution_id())
                               .with_client_order_id(order.client_order_id())
                               .build()));

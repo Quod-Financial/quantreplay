@@ -57,11 +57,85 @@ TEST_F(LimitOrderEntry, SetsOrderTimeOnCreation) {
   ASSERT_THAT(order.time(), Ge(min_order_time));
 }
 
+TEST_F(LimitOrderEntry, StoresPriceWhenConstructedWithFillState) {
+  const LimitOrder order{OrderPrice{7},
+                         OrderQuantity{123},
+                         builder.build_order_record(),
+                         CumExecutedQuantity{50},
+                         2500.0};
+
+  EXPECT_THAT(order.price(), Eq(OrderPrice{7}));
+}
+
+TEST_F(LimitOrderEntry, StoresTotalQuantityWhenConstructedWithFillState) {
+  const LimitOrder order{OrderPrice{7},
+                         OrderQuantity{123},
+                         builder.build_order_record(),
+                         CumExecutedQuantity{50},
+                         2500.0};
+
+  EXPECT_THAT(order.total_quantity(), Eq(OrderQuantity{123}));
+}
+
+TEST_F(LimitOrderEntry, StoresRecordStatusWhenConstructedWithFillState) {
+  OrderRecord record = builder.build_order_record();
+  record.set_order_status(OrderStatus::Option::PartiallyFilled);
+
+  const LimitOrder order{OrderPrice{1},
+                         OrderQuantity{100},
+                         std::move(record),
+                         CumExecutedQuantity{50},
+                         2500.0};
+
+  ASSERT_THAT(order.status(), Eq(OrderStatus::Option::PartiallyFilled));
+}
+
+TEST_F(LimitOrderEntry, StoresCumExecutedQuantityWhenConstructedWithFillState) {
+  const LimitOrder order{OrderPrice{7},
+                         OrderQuantity{123},
+                         builder.build_order_record(),
+                         CumExecutedQuantity{50},
+                         2500.0};
+
+  EXPECT_THAT(order.cum_executed_quantity(), Eq(CumExecutedQuantity{50}));
+}
+
+TEST_F(LimitOrderEntry, StoresCumPriceQuantityWhenConstructedWithFillState) {
+  const LimitOrder order{OrderPrice{7},
+                         OrderQuantity{123},
+                         builder.build_order_record(),
+                         CumExecutedQuantity{50},
+                         2500.0};
+
+  ASSERT_THAT(order.cum_px_qty(), DoubleEq(2500.0));
+}
+
+TEST_F(LimitOrderEntry,
+       CalculatesAveragePriceFromCumPxQtyAndCumExecutedQuantity) {
+  const LimitOrder order{OrderPrice{1},
+                         OrderQuantity{100},
+                         builder.build_order_record(),
+                         CumExecutedQuantity{50},
+                         2500.0};
+
+  EXPECT_THAT(order.average_price(), Optional(AveragePrice{50.0}));
+}
+
+TEST_F(LimitOrderEntry, ReturnsNoAveragePriceIfCumExecutedQuantityIsZero) {
+  const LimitOrder order{OrderPrice{1},
+                         OrderQuantity{100},
+                         builder.build_order_record(),
+                         CumExecutedQuantity{0},
+                         2500.0};
+
+  EXPECT_THAT(order.average_price(), Eq(std::nullopt));
+}
+
 TEST_F(LimitOrderEntry, ExecutesSpecifiedQuantity) {
   auto order = make_order(OrderQuantity{100});
   ASSERT_THAT(order.cum_executed_quantity(), Eq(Quantity{0}));
 
-  order.execute(ExecutedQuantity{50});
+  order.execute(ExecutedQuantity{50}, ExecutionPrice{10.0});
 
   ASSERT_THAT(order.cum_executed_quantity(), Eq(Quantity{50}));
 }
@@ -70,7 +144,7 @@ TEST_F(LimitOrderEntry, UpdatesLeavesQuantityAfterExecution) {
   auto order = make_order(OrderQuantity{100});
   ASSERT_THAT(order.leaves_quantity(), Eq(Quantity{100}));
 
-  order.execute(ExecutedQuantity{50});
+  order.execute(ExecutedQuantity{50}, ExecutionPrice{10.0});
 
   ASSERT_THAT(order.leaves_quantity(), Eq(Quantity{50}));
 }
@@ -79,7 +153,7 @@ TEST_F(LimitOrderEntry, KeepsTotalQuantityAfterExecution) {
   auto order = make_order(OrderQuantity{100});
   ASSERT_THAT(order.total_quantity(), Eq(OrderQuantity{100}));
 
-  order.execute(ExecutedQuantity{50});
+  order.execute(ExecutedQuantity{50}, ExecutionPrice{10.0});
 
   ASSERT_THAT(order.total_quantity(), Eq(OrderQuantity{100}));
 }
@@ -88,7 +162,7 @@ TEST_F(LimitOrderEntry, AccumulatesCumQuantityWhenOverfilled) {
   auto order = make_order(OrderQuantity{100});
   ASSERT_THAT(order.cum_executed_quantity(), Eq(Quantity{0}));
 
-  order.execute(ExecutedQuantity{150});
+  order.execute(ExecutedQuantity{150}, ExecutionPrice{10.0});
 
   ASSERT_THAT(order.cum_executed_quantity(), Eq(Quantity{150}));
 }
@@ -97,7 +171,7 @@ TEST_F(LimitOrderEntry, ReturnsZeroLeavesQuantityWhenOverfilled) {
   auto order = make_order(OrderQuantity{100});
   ASSERT_THAT(order.leaves_quantity(), Eq(Quantity{100}));
 
-  order.execute(ExecutedQuantity{150});
+  order.execute(ExecutedQuantity{150}, ExecutionPrice{10.0});
 
   ASSERT_THAT(order.leaves_quantity(), Eq(Quantity{0}));
 }
@@ -105,7 +179,7 @@ TEST_F(LimitOrderEntry, ReturnsZeroLeavesQuantityWhenOverfilled) {
 TEST_F(LimitOrderEntry, ReportsThatNotExecutedWhenCumQuantityLessThanTotal) {
   auto order = make_order(OrderQuantity{100});
 
-  order.execute(ExecutedQuantity{99});
+  order.execute(ExecutedQuantity{99}, ExecutionPrice{10.0});
 
   ASSERT_THAT(order.executed(), IsFalse());
 }
@@ -113,7 +187,7 @@ TEST_F(LimitOrderEntry, ReportsThatNotExecutedWhenCumQuantityLessThanTotal) {
 TEST_F(LimitOrderEntry, ReportsThatExecutedWhenCumQuantityEqualsTotal) {
   auto order = make_order(OrderQuantity{100});
 
-  order.execute(ExecutedQuantity{100});
+  order.execute(ExecutedQuantity{100}, ExecutionPrice{10.0});
 
   ASSERT_THAT(order.executed(), IsTrue());
 }
@@ -121,7 +195,7 @@ TEST_F(LimitOrderEntry, ReportsThatExecutedWhenCumQuantityEqualsTotal) {
 TEST_F(LimitOrderEntry, ReportsThatExecutedWhenOverfilled) {
   auto order = make_order(OrderQuantity{100});
 
-  order.execute(ExecutedQuantity{150});
+  order.execute(ExecutedQuantity{150}, ExecutionPrice{10.0});
 
   ASSERT_THAT(order.executed(), IsTrue());
 }
@@ -129,7 +203,7 @@ TEST_F(LimitOrderEntry, ReportsThatExecutedWhenOverfilled) {
 TEST_F(LimitOrderEntry, SetsPartiallyFilledStatusWhenExecuted) {
   auto order = make_order(OrderQuantity{100});
 
-  order.execute(ExecutedQuantity{50});
+  order.execute(ExecutedQuantity{50}, ExecutionPrice{10.0});
 
   ASSERT_THAT(order.status(), Eq(OrderStatus::Option::PartiallyFilled));
 }
@@ -137,7 +211,7 @@ TEST_F(LimitOrderEntry, SetsPartiallyFilledStatusWhenExecuted) {
 TEST_F(LimitOrderEntry, SetsFilledStatusWhenFullyExecuted) {
   auto order = make_order(OrderQuantity{100});
 
-  order.execute(ExecutedQuantity{100});
+  order.execute(ExecutedQuantity{100}, ExecutionPrice{10.0});
 
   ASSERT_THAT(order.status(), Eq(OrderStatus::Option::Filled));
 }
@@ -145,9 +219,41 @@ TEST_F(LimitOrderEntry, SetsFilledStatusWhenFullyExecuted) {
 TEST_F(LimitOrderEntry, SetsFilledStatusWhenOverfilled) {
   auto order = make_order(OrderQuantity{100});
 
-  order.execute(ExecutedQuantity{150});
+  order.execute(ExecutedQuantity{150}, ExecutionPrice{10.0});
 
   ASSERT_THAT(order.status(), Eq(OrderStatus::Option::Filled));
+}
+TEST_F(LimitOrderEntry, HasNoAveragePriceWhenNoFills) {
+  const auto order = make_order(OrderQuantity{100});
+
+  ASSERT_THAT(order.average_price(), Eq(std::nullopt));
+}
+
+TEST_F(LimitOrderEntry, SetsAveragePriceAfterSingleFillWithPrice) {
+  auto order = make_order(OrderQuantity{100});
+
+  order.execute(ExecutedQuantity{50}, ExecutionPrice{42.5});
+
+  ASSERT_THAT(order.average_price(), Optional(Eq(AveragePrice{42.5})));
+}
+
+TEST_F(LimitOrderEntry, SetsWeightedAveragePriceAcrossMultipleFills) {
+  auto order = make_order(OrderQuantity{100});
+
+  order.execute(ExecutedQuantity{40}, ExecutionPrice{10.0});
+  order.execute(ExecutedQuantity{60}, ExecutionPrice{15.0});
+
+  ASSERT_THAT(order.average_price(), Optional(AveragePrice{13.0}));
+}
+
+TEST_F(LimitOrderEntry, AccumulatesCumPxQtyAcrossFills) {
+  auto order = make_order(OrderQuantity{100});
+  ASSERT_THAT(order.cum_px_qty(), DoubleEq(0.0));
+
+  order.execute(ExecutedQuantity{40}, ExecutionPrice{10.0});
+  order.execute(ExecutedQuantity{60}, ExecutionPrice{15.0});
+
+  ASSERT_THAT(order.cum_px_qty(), DoubleEq(1300.0));
 }
 
 TEST_F(LimitOrderEntry, SetsModifiedStatusWhenAmended) {
@@ -172,7 +278,7 @@ TEST_F(LimitOrderEntry, UpdatesOrderPriceAndQuantityWhenAmended) {
 
 TEST_F(LimitOrderEntry, ThrowsExceptionWhenNewQuantityLessThanExecuted) {
   auto order = make_order(OrderQuantity{100});
-  order.execute(ExecutedQuantity{50});
+  order.execute(ExecutedQuantity{50}, ExecutionPrice{10.0});
 
   ASSERT_THROW(order.amend(make_update(OrderPrice{2}, OrderQuantity{40})),
                std::logic_error);

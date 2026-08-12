@@ -30,7 +30,8 @@ enum class OrderRequestError : std::uint8_t {
 
 using NewOrderInterpretation =
     std::variant<OrderRequestError, LimitOrder, MarketOrder>;
-using UpdateInterpretation = std::variant<OrderRequestError, LimitUpdate>;
+using UpdateInterpretation =
+    std::variant<OrderRequestError, LimitUpdate, MarketUpdate>;
 using CancelInterpretation = std::variant<OrderRequestError, OrderCancel>;
 
 // Converts a placement request to an order interpretation.
@@ -69,11 +70,16 @@ class PlacementInterpreter {
 class ModificationInterpreter {
  public:
   [[nodiscard]]
-  auto interpret(const protocol::OrderModificationRequest& request) const
+  auto interpret(const protocol::OrderModificationRequest& request,
+                 bool allow_market_amendment = false) const
       -> UpdateInterpretation;
 
  private:
   auto interpret_as_limit_update(
+      const protocol::OrderModificationRequest& request) const
+      -> UpdateInterpretation;
+
+  auto interpret_as_market_update(
       const protocol::OrderModificationRequest& request) const
       -> UpdateInterpretation;
 };

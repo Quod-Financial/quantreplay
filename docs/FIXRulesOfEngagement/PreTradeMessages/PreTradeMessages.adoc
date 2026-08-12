@@ -52,21 +52,11 @@ Required when SecurityIDSource = ISIN in the Instrument component.
 
 | 267 | NoMDEntryTypes | Y | Number of MDEntryType fields requested.
 
-| => 269 | MDEntryType | Y a| Must be the first field in this repeating group. 
+| => 269 | MDEntryType | Y | Must be the first field in this repeating group.
 This is a list of all the types of Market Data Entries that the firm requesting the Market Data is interested in receiving.
+See <<pretrade-messages-mdentrytypes>> for the supported entry types.
 
-* 0 - Bid
-* 1 - Offer
-* 2 - Trade
-* 7 - Trading Session High Price
-* 8 - Trading Session Low Price
-* H - Mid Price
-* b - Market bid
-* c - MarketOffer
-* Q - Auction Clearing Price
-* P - Early Prices
-
-| => Component | <<common-components-parties>> | N | 
+| => Component | <<common-components-parties>> | N |
 
 | Component | <<common-components-std-trailer>> | Y | 
 |===
@@ -110,24 +100,13 @@ Conditionally required if this message is in response to a MarketDataRequest(35=
 
 | 268 | NoMDEntries | N | Number of entries in Market Data message.
 
-| => 269 | MDEntryType | Y a| Type of market data entry.
+| => 269 | MDEntryType | Y | Type of market data entry, see <<pretrade-messages-mdentrytypes>>.
 
-* 0 - Bid
-* 1 - Offer
-* 2 - Trade
-* 7 - Trading Session High Price
-* 8 - Trading Session Low Price
-* H - Mid Price
-* b - Market Bid
-* c - Market Offer
-* Q - Auction Clearing Price
-* P - Early Price
-
-| => 270 | MDEntryPx | C | Price of the Market Data Entry.
+| => 270 | MDEntryPx | C | Price of the Market Data Entry. Not every entry type carries a price, see <<pretrade-messages-mdentrytypes>>.
 
 | => 15 | Currency | N | Can be used to specify the currency of the quoted price.
 
-| => 271 | MDEntrySize | C | Quantity or volume represented by the Market Data Entry. MDEntrySize=Indicative Volume.
+| => 271 | MDEntrySize | C | Quantity or volume represented by the Market Data Entry. What it counts depends on the entry type, see <<pretrade-messages-mdentrytypes>>.
 
 | => 272 | MDEntryDate | C | The date the trade happened. Required when MDEntryType=Trade.
 
@@ -156,8 +135,8 @@ Usage is determined by market or counterparties.
 
 * 2 - Opening Auction for PreOpen
 * 3 - Continuous Trading
-* 4 - Closing Auction for PreClosed
-* 5 - Post-Trading
+* 4 - Closing Auction for PreClose
+* 5 - Post-Trading for TradeAtLast
 * 6 - Intraday Auction
 * 9 - Unscheduled Intraday Auction
 * 10 - Out Of Main Session Trading
@@ -167,11 +146,11 @@ Required when MDEntryType=Trade.
 | => 326 | SecurityTradingStatus | C a| Identifies the trading status applicable to the transaction.
 
 * 2 - Trading Halt (Uncrossing of the Auction)
-* 3 - Resume (Start of the Auction)
+* 3 - Resume (Continuous Trading or TradeAtLast)
 
 Required when MDEntryType=Trade.
 
-| => 277 | TradeCondition | a| Side of the imbalance.
+| => 277 | TradeCondition | C a| Side of the auction imbalance (269=A).
 
 * P = Imbalance more buyers
 * Q = Imbalance more sellers
@@ -202,30 +181,19 @@ The timestamp component is a Unix Timestamp (Sec) that is generated when the sim
 * 1 - Change
 * 2 - Delete
 
-| => 269 | MDEntryType | Y a| Type of market data entry.
+| => 269 | MDEntryType | Y | Type of market data entry, see <<pretrade-messages-mdentrytypes>>.
 
-* 0 - Bid
-* 1 - Offer
-* 2 - Trade
-* 7 - Trading Session High Price
-* 8 - Trading Session Low Price
-* H - Mid Price
-* b - Market Bid
-* c - Market Offer
-* Q - Auction Clearing Price
-* P - Early Price
-
-| => 270 | MDEntryPx | C | Price of the Market Data Entry. MDEntryPx=Indicative Price.
+| => 270 | MDEntryPx | C | Price of the Market Data Entry. Not every entry type carries a price, see <<pretrade-messages-mdentrytypes>>.
 
 | => 15 | Currency | C | Can be used to specify the currency of the quoted price. Required when MDEntryType=Trade.
 
-| => 271 | MDEntrySize | C | Quantity or volume represented by the Market Data Entry. MDEntrySize=Indicative Volume
+| => 271 | MDEntrySize | C | Quantity or volume represented by the Market Data Entry. What it counts depends on the entry type, see <<pretrade-messages-mdentrytypes>>.
 
 | => 272 | MDEntryDate | C | The date the trade happened. Required when MDEntryType=Trade.
 
 | => 273 | MDEntryTime | C | The time the trade happened. Required when MDEntryType=Trade.
 
-| => 277 | TradeCondition | a| Side of the imbalance.
+| => 277 | TradeCondition | C a| Side of the auction imbalance (269=A).
 
 * P = Imbalance more buyers
 * Q = Imbalance more sellers
@@ -245,8 +213,8 @@ Required when MDEntryType=Trade
 
 * 2 - Opening Auction for PreOpen
 * 3 - Continuous Trading
-* 4 - Closing Auction for PreClosed
-* 5 - Post-Trading
+* 4 - Closing Auction for PreClose
+* 5 - Post-Trading for TradeAtLast
 * 6 - Intraday Auction
 * 9 - Unscheduled Intraday Auction
 * 10 - Out Of Main Session Trading
@@ -256,7 +224,7 @@ Required when MDEntryType=Trade.
 | => 326 | SecurityTradingStatus | C a| Identifies the trading status applicable to the transaction.
 
 * 2 - Trading Halt (Uncrossing of the Auction)
-* 3 - Resume (Start of the Auction)
+* 3 - Resume (Continuous Trading or TradeAtLast)
 
 Required when MDEntryType=Trade.
 
@@ -267,5 +235,50 @@ Required when MDEntryType=Trade.
 
 Required when MDEntryType=Trade.
 
-| Component | <<common-components-std-trailer>> | Y | 
+| Component | <<common-components-std-trailer>> | Y |
 |===
+
+[[pretrade-messages-mdentrytypes]]
+=== Market Data Entry Types
+
+The MDEntryType (269) values below are requested in a MarketDataRequest (35=V) and reported in a MarketDataSnapshotFullRefresh (35=W) or a MarketDataIncrementalRefresh (35=X).
+
+[cols="10,25,65"]
+|===
+| Value | Name | Comments
+
+| 0 | Bid |
+
+| 1 | Offer |
+
+| 2 | Trade |
+
+| 4 | Opening Price | During an opening auction call, carries the indicative auction price in MDEntryPx (270) and the indicative auction volume in MDEntrySize (271), see <<message-flows-mkt-data-auction-indicative>>.
+
+| 5 | Closing Price | During a closing auction call, carries the indicative auction price in MDEntryPx (270) and the indicative auction volume in MDEntrySize (271), see <<message-flows-mkt-data-auction-indicative>>.
+
+| 6 | Settlement Price | During an intraday auction call, carries the indicative auction price in MDEntryPx (270) and the indicative auction volume in MDEntrySize (271), see <<message-flows-mkt-data-auction-indicative>>.
+
+| 7 | Trading Session High Price |
+
+| 8 | Trading Session Low Price |
+
+| A | Imbalance | Auction imbalance size in MDEntrySize (271) and its side in TradeCondition (277), without MDEntryPx (270), see <<message-flows-mkt-data-auction-indicative>>.
+
+| B | Trade Volume | Daily traded volume in MDEntrySize (271), without MDEntryPx (270), see <<message-flows-mkt-data-daily-reset>>.
+
+| H | Mid Price |
+
+| P | Early Price | Price in MDEntryPx (270) with its volume in MDEntrySize (271), see <<message-flows-mkt-data-auction>>.
+
+| Q | Auction Clearing Price | Price in MDEntryPx (270) with its volume in MDEntrySize (271).
+
+| b | Market Bid |
+
+| c | Market Offer |
+
+| e | Previous Closing Price |
+
+|===
+
+Market Bid (269=b) and Market Offer (269=c) entries are not included in a Bid (0) / Offer (1) subscription — they are received only when requested as their own entry types.

@@ -19,7 +19,7 @@ set(UNIT_TESTS
   unit_tests/mapping/to_fix_conversion_tests.cpp
   unit_tests/mapping/setting/mapping_settings_tests.cpp
   unit_tests/session_conversion_tests.cpp
-  unit_tests/settings_tests.cpp)
+  unit_tests/session_settings_tests.cpp)
 
 #------------------------------------------------------------------------------#
 # Component tests                                                              #

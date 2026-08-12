@@ -46,6 +46,8 @@ auto determine_trading_phase(data_layer::MarketPhase::Phase value)
       return TradingPhase::Option::IntradayAuction;
     case data_layer::MarketPhase::Phase::Halted:
       return TradingStatus::Option::Halt;
+    case data_layer::MarketPhase::Phase::TradeAtLast:
+      return TradingPhase::Option::PostTrading;
   }
   return std::nullopt;
 }
@@ -75,7 +77,7 @@ auto PhaseEntryReader::operator()(const data_layer::MarketPhase& record)
   }
 
   const auto end_range =
-      std::chrono::seconds(std::abs(record.end_time_range().value_or(0)));
+      std::chrono::minutes(std::abs(record.end_time_range().value_or(0)));
 
   const auto allow_cancels = record.allow_cancels().value_or(false);
 

@@ -7,6 +7,7 @@
 #include "core/domain/party.hpp"
 #include "ih/common/events/client_notification.hpp"
 #include "ih/orders/book/order_algorithms.hpp"
+#include "ih/orders/replies/cancellation_reply_builders.hpp"
 #include "ih/orders/replies/execution_reply_builders.hpp"
 #include "ih/orders/tools/notification_creators.hpp"
 #include "log/logging.hpp"
@@ -14,8 +15,15 @@
 namespace simulator::trading_system::matching_engine {
 
 RegularOrderMatcher::RegularOrderMatcher(EventListener& event_listener,
-                                         OrderBook& order_book)
-    : EventReporter(event_listener), order_book_(order_book) {}
+                                         OrderBook& order_book,
+                                         std::optional<PriceTick> price_tick,
+                                         MarketPhase market_phase,
+                                         LimitOrderQueue queue)
+    : EventReporter{event_listener},
+      order_book_{order_book},
+      price_tick_{price_tick},
+      market_phase_{market_phase},
+      queue_{queue} {}
 
 auto RegularOrderMatcher::match(LimitOrder& taker) -> void {
   log::debug("matching: {}", taker);
@@ -99,11 +107,11 @@ auto RegularOrderMatcher::trade_taker(LimitOrder& taker,
                trade_px,
                *maker,
                taker);
-    taker.execute(trade_qty);
-    maker->execute(trade_qty);
+    taker.execute(trade_qty, trade_px);
+    maker->execute(trade_qty, trade_px);
 
     emit(ClientNotification(
-        prepare_execution_report(taker)
+        prepare_execution_report(taker, price_tick_)
             .with_execution_id(taker.make_execution_id())
             .with_execution_price(trade_px)
             .with_executed_quantity(trade_qty)
@@ -111,7 +119,7 @@ auto RegularOrderMatcher::trade_taker(LimitOrder& taker,
             .build()));
 
     emit(ClientNotification(
-        prepare_execution_report(*maker)
+        prepare_execution_report(*maker, price_tick_)
             .with_execution_id(maker->make_execution_id())
             .with_execution_price(trade_px)
             .with_executed_quantity(trade_qty)
@@ -119,7 +127,8 @@ auto RegularOrderMatcher::trade_taker(LimitOrder& taker,
             .build()));
 
     emit(order::make_making_order_reduced_notification(*maker));
-    emit(order::make_trade_notification(taker, *maker, trade_px, trade_qty));
+    emit(order::make_trade_notification(
+        taker, *maker, trade_px, trade_qty, market_phase_));
   }
 }
 
@@ -133,29 +142,22 @@ auto RegularOrderMatcher::trade_ioc_taker(
     throw std::logic_error("no orders can be traded with IoC order");
   }
 
-  const auto last_maker_it = std::prev(makers.end());
-  for (auto maker_iter = makers.begin(); maker_iter != makers.end();
-       ++maker_iter) {
+  for (LimitOrder* maker : makers) {
     if (taker.executed()) {
       break;
     }
 
-    LimitOrder* maker = *maker_iter;
     const auto [trade_px, trade_qty] = compute_trade(taker, *maker);
     log::debug("trading {}@{}: taker: {}; maker: {}",
                trade_qty,
                trade_px,
                taker,
                *maker);
-    taker.execute(trade_qty);
-    maker->execute(trade_qty);
-
-    if (maker_iter == last_maker_it && !taker.executed()) {
-      taker.cancel();
-    }
+    taker.execute(trade_qty, trade_px);
+    maker->execute(trade_qty, trade_px);
 
     emit(ClientNotification(
-        prepare_execution_report(taker)
+        prepare_execution_report(taker, price_tick_)
             .with_execution_id(taker.make_execution_id())
             .with_execution_price(trade_px)
             .with_executed_quantity(trade_qty)
@@ -163,7 +165,7 @@ auto RegularOrderMatcher::trade_ioc_taker(
             .build()));
 
     emit(ClientNotification(
-        prepare_execution_report(*maker)
+        prepare_execution_report(*maker, price_tick_)
             .with_execution_id(maker->make_execution_id())
             .with_execution_price(trade_px)
             .with_executed_quantity(trade_qty)
@@ -171,7 +173,21 @@ auto RegularOrderMatcher::trade_ioc_taker(
             .build()));
 
     emit(order::make_making_order_reduced_notification(*maker));
-    emit(order::make_trade_notification(taker, *maker, trade_px, trade_qty));
+    emit(order::make_trade_notification(
+        taker, *maker, trade_px, trade_qty, market_phase_));
+  }
+
+  if (!taker.executed()) {
+    taker.cancel();
+    emit(
+        ClientNotification(prepare_cancellation_confirmation(taker, price_tick_)
+                               .with_leaving_quantity(LeavesQuantity{0})
+                               .with_execution_id(taker.make_execution_id())
+                               .with_client_order_id(taker.client_order_id())
+                               .with_cancellation_text(CancellationText{
+                                   "not enough liquidity to fully fill IoC "
+                                   "order"})
+                               .build()));
   }
 }
 
@@ -185,29 +201,22 @@ auto RegularOrderMatcher::trade_market_taker(
     throw std::logic_error("no orders can be traded with market order");
   }
 
-  const auto last_maker_it = std::prev(makers.end());
-  for (auto maker_iter = makers.begin(); maker_iter != makers.end();
-       ++maker_iter) {
+  for (LimitOrder* maker : makers) {
     if (taker.executed()) {
       break;
     }
 
-    LimitOrder* maker = *maker_iter;
     const auto [trade_px, trade_qty] = compute_trade(taker, *maker);
     log::debug("trading {}@{}: taker: {}; maker: {}",
                trade_qty,
                trade_px,
                taker,
                *maker);
-    taker.execute(trade_qty);
-    maker->execute(trade_qty);
-
-    if (maker_iter == last_maker_it && !taker.executed()) {
-      taker.cancel();
-    }
+    taker.execute(trade_qty, trade_px);
+    maker->execute(trade_qty, trade_px);
 
     emit(ClientNotification(
-        prepare_execution_report(taker)
+        prepare_execution_report(taker, price_tick_)
             .with_execution_id(taker.make_execution_id())
             .with_execution_price(trade_px)
             .with_executed_quantity(trade_qty)
@@ -215,7 +224,7 @@ auto RegularOrderMatcher::trade_market_taker(
             .build()));
 
     emit(ClientNotification(
-        prepare_execution_report(*maker)
+        prepare_execution_report(*maker, price_tick_)
             .with_execution_id(maker->make_execution_id())
             .with_execution_price(trade_px)
             .with_executed_quantity(trade_qty)
@@ -223,7 +232,20 @@ auto RegularOrderMatcher::trade_market_taker(
             .build()));
 
     emit(order::make_making_order_reduced_notification(*maker));
-    emit(order::make_trade_notification(taker, *maker, trade_px, trade_qty));
+    emit(order::make_trade_notification(
+        taker, *maker, trade_px, trade_qty, market_phase_));
+  }
+
+  if (!taker.executed()) {
+    taker.cancel();
+    emit(ClientNotification(
+        prepare_cancellation_confirmation(taker, price_tick_)
+            .with_leaving_quantity(LeavesQuantity{0})
+            .with_execution_id(taker.make_execution_id())
+            .with_client_order_id(taker.client_order_id())
+            .with_cancellation_text(CancellationText{
+                "not enough liquidity to fully fill market order"})
+            .build()));
   }
 }
 
@@ -231,11 +253,11 @@ auto RegularOrderMatcher::take_opposite_limit_orders(Side aggressor_side)
     -> LimitOrdersContainer& {
   switch (static_cast<Side::Option>(aggressor_side)) {
     case Side::Option::Buy:
-      return order_book_.sell_page().limit_orders();
+      return select_limit_orders(order_book_.sell_page(), queue_);
     case Side::Option::Sell:
     case Side::Option::SellShort:
     case Side::Option::SellShortExempt:
-      return order_book_.buy_page().limit_orders();
+      return select_limit_orders(order_book_.buy_page(), queue_);
   }
 
   core::unreachable();
@@ -264,11 +286,7 @@ auto RegularOrderMatcher::make_price_criteria(const LimitOrder& aggressor)
 
 auto RegularOrderMatcher::remove_filled_orders(LimitOrdersContainer& side)
     -> void {
-  constexpr auto non_filled_order = [](const LimitOrder& order) {
-    return !order.executed();
-  };
-
-  side.erase(side.begin(), find_limit_order(side, non_filled_order));
+  erase_filled_limit_orders(side);
 }
 
 template <typename TakerOrderType>

@@ -2,6 +2,8 @@
 
 #include <fmt/format.h>
 
+#include <optional>
+
 namespace simulator::trading_system::json {
 
 auto write(rapidjson::Value& json_value,
@@ -93,6 +95,8 @@ auto write(rapidjson::Value& json_value,
           json_value, allocator, "SenderCompID", source.sender_comp_id))
       .and_then(write_field(
           json_value, allocator, "TargetCompID", source.target_comp_id))
+      .and_then(write_field(
+          json_value, allocator, "SessionQualifier", source.session_qualifier))
       .and_then(write_field(
           json_value, allocator, "SenderSubID", source.client_sub_id));
 }
@@ -293,6 +297,12 @@ auto write(rapidjson::Value& json_value,
     fix_session.begin_string = source.fix_session->begin_string.value();
     fix_session.sender_comp_id = source.fix_session->sender_comp_id.value();
     fix_session.target_comp_id = source.fix_session->target_comp_id.value();
+    if (source.fix_session->session_qualifier.has_value()) {
+      fix_session.session_qualifier =
+          source.fix_session->session_qualifier->value();
+    } else {
+      fix_session.session_qualifier = std::nullopt;
+    }
     if (source.fix_session->client_sub_id.has_value()) {
       fix_session.client_sub_id = source.fix_session->client_sub_id->value();
     } else {
@@ -348,6 +358,7 @@ auto write(rapidjson::Value& json_value,
   model.order_price = source.order_price.value();
   model.total_quantity = source.total_quantity.value();
   model.cum_executed_quantity = source.cum_executed_quantity.value();
+  model.cum_px_qty = source.cum_px_qty;
 
   json_value.SetObject();
   return write(json_value,
@@ -380,21 +391,64 @@ auto write(rapidjson::Value& json_value,
       .and_then(
           write_field(json_value, allocator, "OrderQty", model.total_quantity))
       .and_then(write_field(
-          json_value, allocator, "CumQty", model.cum_executed_quantity));
+          json_value, allocator, "CumQty", model.cum_executed_quantity))
+      .and_then(
+          write_field(json_value, allocator, "CumPxQty", model.cum_px_qty));
 }
 
 auto write(rapidjson::Value& json_value,
            rapidjson::Document::AllocatorType& allocator,
            const market_state::InstrumentInfo& source)
     -> tl::expected<void, std::string> {
+  const auto to_double = [](const auto& attribute) -> std::optional<double> {
+    return attribute.has_value() ? std::make_optional(attribute->value())
+                                 : std::nullopt;
+  };
+
   json::InstrumentInfo model;
-  model.low_price = source.low_price.value();
-  model.high_price = source.high_price.value();
+  model.low_price = to_double(source.low_price);
+  model.high_price = to_double(source.high_price);
+  model.opening_price = to_double(source.opening_price);
+  model.opening_price_time = source.opening_price_time;
+  model.closing_price = to_double(source.closing_price);
+  model.closing_price_time = source.closing_price_time;
+  model.auction_clearing_price = to_double(source.auction_clearing_price);
+  model.auction_clearing_quantity = to_double(source.auction_clearing_quantity);
+  model.previous_closing_price = to_double(source.previous_closing_price);
+  model.trade_volume = to_double(source.trade_volume);
+  model.last_open_phase_traded_price =
+      to_double(source.last_open_phase_traded_price);
 
   json_value.SetObject();
   return write(json_value, allocator, "TradingSessionLowPrice", model.low_price)
       .and_then(write_field(
-          json_value, allocator, "TradingSessionHighPrice", model.high_price));
+          json_value, allocator, "TradingSessionHighPrice", model.high_price))
+      .and_then(write_field(
+          json_value, allocator, "OpeningPrice", model.opening_price))
+      .and_then(write_field(
+          json_value, allocator, "OpeningPriceTime", model.opening_price_time))
+      .and_then(write_field(
+          json_value, allocator, "ClosingPrice", model.closing_price))
+      .and_then(write_field(
+          json_value, allocator, "ClosingPriceTime", model.closing_price_time))
+      .and_then(write_field(json_value,
+                            allocator,
+                            "AuctionClearingPrice",
+                            model.auction_clearing_price))
+      .and_then(write_field(json_value,
+                            allocator,
+                            "AuctionClearingQuantity",
+                            model.auction_clearing_quantity))
+      .and_then(write_field(json_value,
+                            allocator,
+                            "PreviousClosingPrice",
+                            model.previous_closing_price))
+      .and_then(
+          write_field(json_value, allocator, "TradeVolume", model.trade_volume))
+      .and_then(write_field(json_value,
+                            allocator,
+                            "LastOpenPhaseTradedPrice",
+                            model.last_open_phase_traded_price));
 }
 
 auto write(rapidjson::Value& json_value,

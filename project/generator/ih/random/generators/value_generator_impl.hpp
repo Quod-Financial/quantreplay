@@ -12,7 +12,9 @@ class ValueGeneratorImpl final : public random::ValueGenerator {
  public:
   ValueGeneratorImpl();
 
-  static auto create() -> std::shared_ptr<ValueGeneratorImpl>;
+  [[nodiscard]] static auto create() -> std::shared_ptr<ValueGeneratorImpl>;
+
+  auto reseed(std::uint64_t seed) -> void override;
 
  private:
   auto generate_uniform(RandomInt min, RandomInt max) -> RandomInt override;
@@ -23,7 +25,7 @@ class ValueGeneratorImpl final : public random::ValueGenerator {
   auto generate_uniform(RandomFloat min, RandomFloat max)
       -> RandomFloat override;
 
-  std::mt19937 engine_;
+  std::mt19937_64 engine_;
 };
 
 }  // namespace simulator::generator::random

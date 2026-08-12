@@ -6,11 +6,16 @@
 #include <memory>
 #include <stdexcept>
 
-#include "cfg/api/cfg.hpp"
+#include "core/version.hpp"
 #include "data_layer/api/data_access_layer.hpp"
+#include "data_layer/api/exceptions/exceptions.hpp"
+#include "ih/config_provider.hpp"
+#include "ih/controllers/fix_session_controller.hpp"
+#include "ih/data_bridge/fix_session_accessor.hpp"
 #include "ih/headers/x_api_version.hpp"
 #include "ih/router.hpp"
 #include "ih/server.hpp"
+#include "ih/utils/host_resolver.hpp"
 #include "log/logging.hpp"
 
 namespace database = simulator::data_layer::database;
@@ -43,14 +48,19 @@ namespace {
       "database record");
 }
 
-[[nodiscard]] auto create_server_implementation(database::Context db,
-                                                ControlCallbacks callbacks)
+[[nodiscard]] auto create_server_implementation(
+    database::Context db,
+    ControlCallbacks callbacks,
+    const std::vector<core::FixSessionSettings>& session_settings)
     -> std::unique_ptr<Server::Implementation> {
   try {
     const std::uint16_t server_port =
         retrieve_configured_http_port(data_layer::select_simulated_venue(db));
     return std::make_unique<Server::Implementation>(
-        server_port, std::move(db), std::move(callbacks));
+        server_port, std::move(db), std::move(callbacks), session_settings);
+  } catch (const data_layer::ConnectionFailure&) {
+    // preserve the type for retry
+    throw;
   } catch (const std::exception& exception) {
     log::err("failed to create http server, an error occurred: {}",
              exception.what());
@@ -108,16 +118,36 @@ auto Server::implementation() noexcept -> Implementation& {
   std::abort();
 }
 
-Server::Implementation::Implementation(std::uint16_t accept_port,
-                                       database::Context database,
-                                       ControlCallbacks callbacks)
+Server::Implementation::Implementation(
+    std::uint16_t accept_port,
+    database::Context database,
+    ControlCallbacks callbacks,
+    const std::vector<core::FixSessionSettings>& session_settings)
     : endpoint_(create_endpoint(accept_port)) {
-  setup_handler(std::move(database), std::move(callbacks));
+  setup_handler(
+      std::move(database), accept_port, std::move(callbacks), session_settings);
 }
 
 auto Server::Implementation::launch() -> void { endpoint_->serveThreaded(); }
 
 auto Server::Implementation::terminate() -> void { endpoint_->shutdown(); }
+
+auto Server::Implementation::react_on(
+    const protocol::SessionConnectedEvent& event) -> void {
+  log::info("http server notified about trading session connection: {}", event);
+  if (fix_session_controller_) [[likely]] {
+    fix_session_controller_->handle(event);
+  }
+}
+
+auto Server::Implementation::react_on(
+    const protocol::SessionTerminatedEvent& event) -> void {
+  log::info("http server notified about trading session termination: {}",
+            event);
+  if (fix_session_controller_) [[likely]] {
+    fix_session_controller_->handle(event);
+  }
+}
 
 auto Server::Implementation::create_endpoint(std::uint16_t accept_port)
     -> std::unique_ptr<Pistache::Http::Endpoint> {
@@ -135,8 +165,11 @@ auto Server::Implementation::create_endpoint(std::uint16_t accept_port)
   return endpoint;
 }
 
-auto Server::Implementation::setup_handler(database::Context database,
-                                           ControlCallbacks callbacks) -> void {
+auto Server::Implementation::setup_handler(
+    database::Context database,
+    std::uint16_t current_rest_port,
+    ControlCallbacks callbacks,
+    const std::vector<core::FixSessionSettings>& session_settings) -> void {
   auto listing_accessor =
       std::make_unique<data_bridge::DataLayerListingAccessor>(database);
   auto setting_accessor =
@@ -160,22 +193,36 @@ auto Server::Implementation::setup_handler(database::Context database,
       std::make_shared<data_bridge::DataLayerVenueAccessor>(database);
   auto venue_controller = std::make_shared<VenueController>(venue_accessor);
 
-  auto redirector =
-      std::make_shared<redirect::RedirectionProcessorImpl>(venue_accessor);
+  auto redirector = std::make_shared<redirect::RedirectionProcessorImpl>(
+      venue_accessor, current_rest_port);
 
-  const auto venue_name = cfg::venue().name;
+  auto config_provider = std::make_shared<ConfigProviderImpl>(
+      RuntimeConfiguration{cfg::venue().name,
+                           cfg::venue().start_time,
+                           std::string{core::version()},
+                           session_settings});
 
   auto app_controller = std::make_unique<AppControllerImpl>(
-      venue_accessor, venue_name, std::move(callbacks));
+      venue_accessor, config_provider->venue_id(), std::move(callbacks));
 
-  auto get_processor = std::make_shared<GetProcessorImpl>(venue_accessor,
-                                                          redirector,
-                                                          datasource_controller,
-                                                          listing_controller,
-                                                          price_seed_controller,
-                                                          setting_controller,
-                                                          venue_controller,
-                                                          venue_name);
+  fix_session_controller_ = std::make_shared<FixSessionControllerImpl>(
+      std::make_shared<data_bridge::DataLayerFixSessionAccessor>(database),
+      config_provider,
+      resolve_host_ip());
+
+  auto get_processor =
+      std::make_shared<GetProcessorImpl>(venue_accessor,
+                                         redirector,
+                                         datasource_controller,
+                                         listing_controller,
+                                         price_seed_controller,
+                                         setting_controller,
+                                         venue_controller,
+                                         config_provider,
+                                         fix_session_controller_);
+  auto head_processor =
+      std::make_shared<HeadProcessorImpl>(redirector, config_provider);
+
   auto post_processor =
       std::make_shared<PostProcessorImpl>(redirector,
                                           datasource_controller,
@@ -185,7 +232,7 @@ auto Server::Implementation::setup_handler(database::Context database,
                                           trading_controller,
                                           venue_controller,
                                           std::move(app_controller),
-                                          venue_name);
+                                          config_provider->venue_id());
   auto put_processor = std::make_shared<PutProcessorImpl>(datasource_controller,
                                                           listing_controller,
                                                           price_seed_controller,
@@ -197,16 +244,19 @@ auto Server::Implementation::setup_handler(database::Context database,
       std::make_shared<DeleteProcessorImpl>(price_seed_controller);
 
   endpoint_->setHandler(std::make_shared<Router>(std::move(get_processor),
+                                                 std::move(head_processor),
                                                  std::move(post_processor),
                                                  std::move(put_processor),
                                                  std::move(delete_processor)));
 }
 
-auto create_http_server(database::Context database, ControlCallbacks callbacks)
-    -> Server {
+auto create_http_server(
+    database::Context database,
+    ControlCallbacks callbacks,
+    const std::vector<core::FixSessionSettings>& session_settings) -> Server {
   log::debug("creating http server");
-  Server server{
-      create_server_implementation(std::move(database), std::move(callbacks))};
+  Server server{create_server_implementation(
+      std::move(database), std::move(callbacks), session_settings)};
   log::info("http server has been created");
   return server;
 }
@@ -221,6 +271,18 @@ auto terminate_http_server(Server& server) noexcept -> void {
   log::debug("terminating http server");
   terminate_server(server.implementation());
   log::info("http server has been terminated");
+}
+
+auto react_on(const protocol::SessionConnectedEvent& event, Server& server)
+    -> void {
+  log::debug("called procedure to react on SessionConnectedEvent");
+  server.implementation().react_on(event);
+}
+
+auto react_on(const protocol::SessionTerminatedEvent& event, Server& server)
+    -> void {
+  log::debug("called procedure to react on SessionTerminatedEvent");
+  server.implementation().react_on(event);
 }
 
 }  // namespace simulator::http

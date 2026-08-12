@@ -29,11 +29,12 @@ A realistic market simulator for testing and building better trading strategies.
 
 * **Multiple Markets and Listings.** Configure separate concurrent markets and traded listings, using industry standard symbology, and custom trading rules to emulate distinct markets.
 * **Matching Engine.** Standard price/time priority order book matching logic, with support for different order types and time in force. Subscribe to L2 market depth full refresh or incremental updates, specified depth levels, and L1 details such as Last Trades, OHLC, and more.
-* **Market Phases.** Continuous trading and configurable market phases.
-* **Random Order Generation.** Realistic pseudo random order activity at a configurable update rate and quantity and price range.
-* **Historic Data Playback.** Playback of historic multi level market data from a database or CSV file.
-* **Recovery Options.** Save and recover system state on demand.
-* **API.** FIX API for trading functions and REST API for remote administration of settings and status.
+* **Market Phases.** Continuous trading, plus scheduled Closed, TradeAtLast, PreOpen, PreClose, and intraday Auction phases, with indicative auction prices and randomized uncrossing times.
+* **Daily Market Statistics.** Open, close, previous close, high, low, mid, and daily traded volume, rolled over daily whether or not auctions are configured.
+* **Random Order Generation.** Realistic pseudo-random order activity at a configurable update rate, quantity, and price range, with an optional seed for reproducible runs.
+* **Historic Data Playback.** Playback of historic multi level market data from a database or CSV file, with flexible column mapping and tolerance of sparse depth data.
+* **Recovery Options.** Save, recover, and reset system state on demand.
+* **API.** FIX API for trading functions and REST API for remote administration of settings and status. The REST API also serves downloadable FIX data dictionaries and reports session configuration and connection status.
 
 These features can be used in different trading and execution scenarios.
 
@@ -96,7 +97,6 @@ These features can be used in different trading and execution scenarios.
 
 ## Roadmap
 
-* **Additional Market Phases.** Support for Auction and Trade at Last market phases.
 * **Multi-listed Instruments.** Synchronization of prices for random order generation across multiple listings of the same instrument.
 * **Real-Time Data Playback.** In addition to playback of historic data recorded in a database or file, also the ability to take a real-time FIX feed of market data, and play it back through the simulator in a way it can be traded against.
 * **High Availability Recovery.** Additional recovery option to run multiple simulator instances and seamlessly recover from application failures during long test runs.
@@ -123,6 +123,7 @@ networks:
 services:
   XETRA:
     image: ghcr.io/quod-financial/deploy_marketsim:latest
+    platform: linux/amd64
     container_name: XETRA
     networks:
       - market-simulator-net
@@ -211,7 +212,7 @@ request NewOrderSingle:
 
 reply ExecutionReport:
 ```
-8=FIXT.1.1|9=167|35=8|34=2|49=SIM_XETRA|52=20250624-14:02:53.134|56=CLIENT_XETRA|11=1|14=0|17=250624140253000000-1|37=250624140253000000|39=0|40=2|44=10|54=1|55=VOW|59=0|150=0|151=100|10=150|
+8=FIXT.1.1|9=178|35=8|34=2|49=SIM_XETRA|52=20250624-14:02:53.134|56=CLIENT_XETRA|6=0|11=1|14=0|17=250624140253000000-1|37=250624140253000000|38=100|39=0|40=2|44=10|54=1|55=VOW|59=0|150=0|151=100|10=118|
 ```
 
 #### Order modification
@@ -223,7 +224,7 @@ request OrderCancelReplaceRequest:
 
 reply ExecutionReport:
 ```
-8=FIXT.1.1|9=167|35=8|34=5|49=SIM_XETRA|52=20250624-14:03:44.524|56=CLIENT_XETRA|11=1|14=0|17=250624140253000000-2|37=250624140253000000|39=5|40=2|44=20|54=1|55=VOW|59=0|150=5|151=100|10=169|
+8=FIXT.1.1|9=178|35=8|34=5|49=SIM_XETRA|52=20250624-14:03:44.524|56=CLIENT_XETRA|6=0|11=1|14=0|17=250624140253000000-2|37=250624140253000000|38=100|39=5|40=2|44=20|54=1|55=VOW|59=0|150=5|151=100|10=137|
 ```
 
 #### Order cancelation
@@ -235,7 +236,7 @@ request OrderCancelRequest:
 
 reply ExecutionReport:
 ```
-8=FIXT.1.1|9=167|35=8|34=7|49=SIM_XETRA|52=20250624-14:04:07.942|56=CLIENT_XETRA|11=1|14=0|17=250624140253000000-3|37=250624140253000000|39=4|40=2|44=20|54=1|55=VOW|59=0|150=4|151=100|10=174|
+8=FIXT.1.1|9=176|35=8|34=7|49=SIM_XETRA|52=20250624-14:04:07.942|56=CLIENT_XETRA|6=0|11=1|14=0|17=250624140253000000-3|37=250624140253000000|38=100|39=4|40=2|44=20|54=1|55=VOW|59=0|150=4|151=0|10=043|
 ```
 
 ### Market Data session

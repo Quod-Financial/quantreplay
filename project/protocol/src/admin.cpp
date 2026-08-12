@@ -50,9 +50,10 @@ auto fmt::formatter<protocol::StartGenerationReply::Result>::format(
 }
 
 auto fmt::formatter<protocol::StartGenerationRequest>::format(
-    [[maybe_unused]] const formattable& request, format_context& context) const
+    const formattable& request, format_context& context) const
     -> decltype(context.out()) {
-  return format_to(context.out(), "StartGenerationRequest={{}}");
+  return format_to(
+      context.out(), "StartGenerationRequest={{ seed={} }}", request.seed);
 }
 
 auto fmt::formatter<protocol::StartGenerationReply>::format(
@@ -109,6 +110,8 @@ auto fmt::formatter<protocol::HaltPhaseReply::Result>::format(
       return base_formatter::format("NoActivePhase", context);
     case formattable::UnableToHalt:
       return base_formatter::format("UnableToHalt", context);
+    case formattable::AuctionInProgress:
+      return base_formatter::format("AuctionInProgress", context);
   }
   return base_formatter::format("undefined", context);
 }
@@ -135,6 +138,8 @@ auto fmt::formatter<protocol::ResumePhaseReply::Result>::format(
       return base_formatter::format("Resumed", context);
     case formattable::NoRequestedHalt:
       return base_formatter::format("NoRequestedHalt", context);
+    case formattable::AuctionInProgress:
+      return base_formatter::format("AuctionInProgress", context);
   }
   return base_formatter::format("undefined", context);
 }

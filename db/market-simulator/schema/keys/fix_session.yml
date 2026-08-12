@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_key_fix_session_1
+      labels: schema,v12
+      comment: Add fix_session_pkey (venue_id, session_id) for fix_session table
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: fix_session
+        - columnExists:
+            tableName: fix_session
+            columnName: venue_id
+        - columnExists:
+            tableName: fix_session
+            columnName: session_id
+        - not:
+            - primaryKeyExists:
+                tableName: fix_session
+                primaryKeyName: fix_session_pkey
+      changes:
+        - addPrimaryKey:
+            constraintName: fix_session_pkey
+            tableName: fix_session
+            columnNames: venue_id, session_id
+            validate: true
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_key_fix_session_2
+      labels: schema,v12
+      comment: Add fix_session_venue_fkey (fix_session.venue_id) to (venue.venue_id)
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: fix_session
+        - columnExists:
+            tableName: fix_session
+            columnName: venue_id
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: venue_id
+        - primaryKeyExists:
+            tableName: venue
+            primaryKeyName: venue_pkey
+        - not:
+            - foreignKeyConstraintExists:
+                foreignKeyName: fix_session_venue_fkey
+      changes:
+        - addForeignKeyConstraint:
+            constraintName: fix_session_venue_fkey
+            baseTableName: fix_session
+            baseColumnNames: venue_id
+            referencedTableName: venue
+            referencedColumnNames: venue_id
+            onUpdate: CASCADE
+            onDelete: CASCADE
+            validate: true

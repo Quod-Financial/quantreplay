@@ -1,5 +1,7 @@
 #include "ih/market_data/cache/cache_manager.hpp"
 
+#include <variant>
+
 #include "matching_engine/configuration.hpp"
 
 namespace simulator::trading_system::matching_engine::mdata {
@@ -21,6 +23,15 @@ auto make_depth_cache_configuration(const Configuration& configuration) {
           configuration.support_market_data_orders_exclusion};
 }
 
+[[nodiscard]]
+auto make_instrument_info_cache_configuration(
+    const Configuration& configuration) {
+  return InstrumentInfoCache::Config{
+      .clock = configuration.clock,
+      .opening_auction_scheduled = configuration.opening_auction_scheduled,
+      .closing_auction_scheduled = configuration.closing_auction_scheduled};
+}
+
 }  // namespace
 
 CacheManager::CacheManager(const Configuration& configuration)
@@ -29,6 +40,8 @@ CacheManager::CacheManager(const Configuration& configuration)
       trade_cache_(*entry_id_generator_) {
   depth_cache_.configure(make_depth_cache_configuration(configuration));
   trade_cache_.configure(make_trade_cache_configuration(configuration));
+  instrument_info_cache_.configure(
+      make_instrument_info_cache_configuration(configuration));
 }
 
 auto CacheManager::compose_initial(const StreamingSettings& settings) const
@@ -47,6 +60,35 @@ auto CacheManager::compose_update(const StreamingSettings& settings) const
   instrument_info_cache_.compose_update(settings, update);
   depth_cache_.compose_update(settings, update);
   return update;
+}
+
+auto CacheManager::has_update(const StreamingSettings& settings) const -> bool {
+  return trade_cache_.has_update(settings) ||
+         instrument_info_cache_.has_update(settings) ||
+         depth_cache_.has_update(settings);
+}
+
+auto CacheManager::compose_full_update(const StreamingSettings& settings) const
+    -> std::vector<MarketDataEntry> {
+  std::vector<MarketDataEntry> update;
+  trade_cache_.compose_update(settings, update);
+  instrument_info_cache_.compose_initial(settings, update);
+  depth_cache_.compose_initial(settings, update);
+  return update;
+}
+
+auto CacheManager::compose_book(const StreamingSettings& settings) const
+    -> std::vector<MarketDataEntry> {
+  std::vector<MarketDataEntry> book;
+  instrument_info_cache_.compose_initial(settings, book);
+  depth_cache_.compose_initial(settings, book);
+  return book;
+}
+
+auto CacheManager::compose_trade(const StreamingSettings& settings,
+                                 const Trade& trade) const
+    -> std::optional<MarketDataEntry> {
+  return trade_cache_.compose_trade(settings, trade);
 }
 
 auto CacheManager::capture(protocol::InstrumentState& state) const -> void {
@@ -73,6 +115,25 @@ auto CacheManager::apply_pending_changes() -> void {
 
 auto CacheManager::was_updated() const -> bool {
   return !pending_notifications_.empty();
+}
+
+auto CacheManager::pending_trades() const -> std::vector<Trade> {
+  std::vector<Trade> trades;
+  for (const auto& notification : pending_notifications_) {
+    if (const auto* trade = std::get_if<Trade>(&notification.value)) {
+      trades.push_back(*trade);
+    }
+  }
+  return trades;
+}
+
+auto CacheManager::last_open_phase_traded_price() const
+    -> std::optional<Price> {
+  return instrument_info_cache_.last_open_phase_traded_price();
+}
+
+auto CacheManager::closing_price() const -> std::optional<Price> {
+  return instrument_info_cache_.closing_price();
 }
 
 }  // namespace simulator::trading_system::matching_engine::mdata

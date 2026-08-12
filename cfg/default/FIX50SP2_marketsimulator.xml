@@ -6547,6 +6547,9 @@
    <value enum='a' description='RECOVERY_RATE_FOR_SHORT' />
    <value enum='W' description='FIXING_PRICE' />
    <value enum='X' description='CASH_RATE' />
+   <value enum='b' description='MARKET_BID' />
+   <value enum='c' description='MARKET_OFFER' />
+   <value enum='e' description='PREVIOUS_CLOSING_PRICE' />
   </field>
   <field number='270' name='MDEntryPx' type='PRICE' />
   <field number='271' name='MDEntrySize' type='QTY' />

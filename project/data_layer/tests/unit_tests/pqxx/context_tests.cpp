@@ -103,7 +103,10 @@ TEST(DataLayer_Pqxx_Context_Configurator, FormatConnectionString) {
   configurator.with_database(database);
   configurator.with_password(password);
 
-  const std::string expected{"postgresql://user:password@host:5432/database"};
+  const std::string expected{
+      "postgresql://user:password@host:5432/database"
+      "?connect_timeout=5&keepalives=1&keepalives_idle=10"
+      "&keepalives_interval=5&keepalives_count=3&tcp_user_timeout=15000"};
 
   EXPECT_EQ(configurator.format_connection_string(), expected);
 }
@@ -133,7 +136,10 @@ TEST(DataLayer_Pqxx_Context, GetConnectionString_ProperlyConfigured) {
   config.user = "user";
   config.name = "database";
   config.password = "password";
-  const std::string expected{"postgresql://user:password@host:5432/database"};
+  const std::string expected{
+      "postgresql://user:password@host:5432/database"
+      "?connect_timeout=5&keepalives=1&keepalives_idle=10"
+      "&keepalives_interval=5&keepalives_count=3&tcp_user_timeout=15000"};
 
   Context context;
   ASSERT_NO_THROW(context.configure(config));

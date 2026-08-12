@@ -28,6 +28,11 @@ class DepthLevel {
 
   auto is_removed() const -> bool { return status_ == Status::Removed; }
 
+  auto is_updated() const -> bool {
+    return status_ == Status::Added || status_ == Status::Changed ||
+           status_ == Status::Removed;
+  }
+
   auto id() const -> const MarketEntryId& { return record_->id(); }
 
   auto price() const -> std::optional<Price> { return record_->price(); }

@@ -10,14 +10,19 @@ namespace simulator::trading_system::matching_engine {
 
 MatchingEngine::Implementation::Implementation(
     const Instrument& instrument, const Configuration& configuration)
-    : order_system_facade_(OrderSystemFacade::setup(
-          instrument, configuration, event_dispatcher_)),
-      market_data_facade_(
-          MarketDataFacade::setup(configuration, event_dispatcher_)) {
+    : market_data_facade_(
+          MarketDataFacade::setup(configuration, event_dispatcher_)),
+      order_system_facade_(OrderSystemFacade::setup(
+          instrument,
+          configuration,
+          market_data_facade_.auction_reference_price_provider(),
+          event_dispatcher_)) {
   event_dispatcher_
       .on_client_notification([this](ClientNotification notification) {
         cached_client_notifications_.add(std::move(notification));
       })
+      .on_client_notification_flush(
+          [this] { cached_client_notifications_.collect().publish(); })
       .on_order_book_notification([this](OrderBookNotification notification) {
         market_data_facade_.handle(std::move(notification));
       });

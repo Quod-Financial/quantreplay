@@ -22,6 +22,12 @@ class LimitOrder {
 
   LimitOrder(OrderPrice price, OrderQuantity quantity, OrderRecord record);
 
+  LimitOrder(OrderPrice price,
+             OrderQuantity quantity,
+             OrderRecord record,
+             CumExecutedQuantity cum_executed_quantity,
+             double cum_px_qty);
+
   [[nodiscard]]
   auto id() const -> OrderId;
 
@@ -77,9 +83,15 @@ class LimitOrder {
   [[nodiscard]]
   auto executed() const -> bool;
 
+  [[nodiscard]]
+  auto average_price() const -> std::optional<AveragePrice>;
+
+  [[nodiscard]]
+  auto cum_px_qty() const -> double;
+
   auto make_execution_id() -> ExecutionId;
 
-  auto execute(ExecutedQuantity quantity) -> void;
+  auto execute(ExecutedQuantity quantity, ExecutionPrice price) -> void;
 
   auto amend(Update update) -> void;
 
@@ -90,6 +102,7 @@ class LimitOrder {
   OrderPrice price_;
   OrderQuantity total_quantity_;
   CumExecutedQuantity cum_executed_quantity_;
+  double cum_px_qty_;
 };
 
 }  // namespace simulator::trading_system::matching_engine

@@ -38,6 +38,11 @@ struct MatchingEnginePhaseTransitionCommand : public Test {
                                  client_notification_cache};
 
   NiceMock<TradingReplyReceiverMock> trading_reply_receiver;
+
+ private:
+  auto TearDown() -> void override {
+    middleware::release_trading_reply_channel();
+  }
 };
 
 TEST_F(MatchingEnginePhaseTransitionCommand,
@@ -47,8 +52,24 @@ TEST_F(MatchingEnginePhaseTransitionCommand,
   const auto client_notifications = command();
 }
 
-TEST_F(MatchingEnginePhaseTransitionCommand, CallsMarketDataPublish) {
+TEST_F(MatchingEnginePhaseTransitionCommand,
+       PublishesRegularMarketDataWhenTransitionDoesNotUncross) {
+  ON_CALL(order_event_handler, handle(PhaseTransition))
+      .WillByDefault(Return(PhaseTransitionOutcome::Regular));
+
   EXPECT_CALL(market_data_publisher, publish);
+  EXPECT_CALL(market_data_publisher, publish_uncrossing).Times(0);
+
+  const auto client_notifications = command();
+}
+
+TEST_F(MatchingEnginePhaseTransitionCommand,
+       PublishesUncrossingMarketDataWhenTransitionUncrosses) {
+  ON_CALL(order_event_handler, handle(PhaseTransition))
+      .WillByDefault(Return(PhaseTransitionOutcome::AuctionUncross));
+
+  EXPECT_CALL(market_data_publisher, publish_uncrossing);
+  EXPECT_CALL(market_data_publisher, publish).Times(0);
 
   const auto client_notifications = command();
 }
@@ -62,6 +83,7 @@ TEST_F(MatchingEnginePhaseTransitionCommand, ReturnsClientNotifications) {
   ON_CALL(order_event_handler, handle(PhaseTransition))
       .WillByDefault(InvokeWithoutArgs([&] {
         client_notification_cache.add(ClientNotification{execution_report});
+        return PhaseTransitionOutcome::Regular;
       }));
 
   EXPECT_CALL(trading_reply_receiver,

@@ -3,6 +3,9 @@
 
 #include <gmock/gmock.h>
 
+#include <optional>
+#include <string>
+
 #include "ih/redirect/redirection_processor.hpp"
 
 namespace simulator::http::test::mock {
@@ -13,7 +16,8 @@ class RedirectionProcessor : public redirect::RedirectionProcessor {
               redirect_to_venue,
               (const std::string& venue_id,
                Pistache::Http::Method method,
-               const std::string& url),
+               const std::string& url,
+               std::optional<std::string> body),
               (const, override));
 };
 

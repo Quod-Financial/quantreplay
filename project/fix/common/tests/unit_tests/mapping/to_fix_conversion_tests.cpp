@@ -108,7 +108,8 @@ TEST(ToFixUtcTimeOnlyConversion, ConvertsSystemMicrosecondsToFixSeconds) {
   // 2024-05-28 10:31:58.999999 GMT
   constexpr auto timestamp = core::sys_microseconds{1716892318999999us};
 
-  const auto fix_field = convert_to_fix<FIX::TestUtcTimeOnlyField>(timestamp, TimestampPrecision::Seconds);
+  const auto fix_field = convert_to_fix<FIX::TestUtcTimeOnlyField>(
+      timestamp, TimestampPrecision::Seconds);
 
   ASSERT_EQ(fix_field.getString(), "10:31:58");
 }
@@ -119,7 +120,8 @@ TEST(ToFixUtcTimeOnlyConversion, ConvertsSystemMicrosecondsToFixMilliseconds) {
   // 2024-05-28 10:31:58.123999 GMT
   constexpr auto timestamp = core::sys_microseconds{1716892318123999us};
 
-  const auto fix_field = convert_to_fix<FIX::TestUtcTimeOnlyField>(timestamp, TimestampPrecision::Milliseconds);
+  const auto fix_field = convert_to_fix<FIX::TestUtcTimeOnlyField>(
+      timestamp, TimestampPrecision::Milliseconds);
 
   ASSERT_EQ(fix_field.getString(), "10:31:58.123");
 }
@@ -130,7 +132,8 @@ TEST(ToFixUtcTimeOnlyConversion, ConvertsSystemMicrosecondsToFixMicroseconds) {
   // 2024-05-28 10:31:58.123456 GMT
   constexpr auto timestamp = core::sys_microseconds{1716892318123456us};
 
-  const auto fix_field = convert_to_fix<FIX::TestUtcTimeOnlyField>(timestamp, TimestampPrecision::Microseconds);
+  const auto fix_field = convert_to_fix<FIX::TestUtcTimeOnlyField>(
+      timestamp, TimestampPrecision::Microseconds);
 
   ASSERT_EQ(fix_field.getString(), "10:31:58.123456");
 }
@@ -141,7 +144,8 @@ TEST(ToFixUtcTimeStampConversion, ConvertsSystemMicrosecondsToFixSeconds) {
   // 2024-05-28 10:31:58.999999 GMT
   constexpr auto timestamp = core::sys_microseconds{1716892318999999us};
 
-  const auto fix_field = convert_to_fix<FIX::TestUtcTimeStampField>(timestamp, TimestampPrecision::Seconds);
+  const auto fix_field = convert_to_fix<FIX::TestUtcTimeStampField>(
+      timestamp, TimestampPrecision::Seconds);
 
   ASSERT_EQ(fix_field.getString(), "20240528-10:31:58");
 }
@@ -152,7 +156,8 @@ TEST(ToFixUtcTimeStampConversion, ConvertsSystemMicrosecondsToFixMilliseconds) {
   // 2024-05-28 10:31:58.123999 GMT
   constexpr auto timestamp = core::sys_microseconds{1716892318123999us};
 
-  const auto fix_field = convert_to_fix<FIX::TestUtcTimeStampField>(timestamp, TimestampPrecision::Milliseconds);
+  const auto fix_field = convert_to_fix<FIX::TestUtcTimeStampField>(
+      timestamp, TimestampPrecision::Milliseconds);
 
   ASSERT_EQ(fix_field.getString(), "20240528-10:31:58.123");
 }
@@ -163,7 +168,8 @@ TEST(ToFixUtcTimeStampConversion, ConvertsSystemMicrosecondsToFixMicroseconds) {
   // 2024-05-28 10:31:58.123456 GMT
   constexpr auto timestamp = core::sys_microseconds{1716892318123456us};
 
-  const auto fix_field = convert_to_fix<FIX::TestUtcTimeStampField>(timestamp, TimestampPrecision::Microseconds);
+  const auto fix_field = convert_to_fix<FIX::TestUtcTimeStampField>(
+      timestamp, TimestampPrecision::Microseconds);
 
   ASSERT_EQ(fix_field.getString(), "20240528-10:31:58.123456");
 }
@@ -637,9 +643,45 @@ INSTANTIATE_TEST_SUITE_P(InternalEnum, ToFixMdEntryTypeConversion,
     std::make_tuple(MdEntryType::Option::Bid, FIX::MDEntryType_BID),
     std::make_tuple(MdEntryType::Option::Offer, FIX::MDEntryType_OFFER),
     std::make_tuple(MdEntryType::Option::Trade, FIX::MDEntryType_TRADE),
+    std::make_tuple(MdEntryType::Option::OpeningPrice, FIX::MDEntryType_OPENING_PRICE),
+    std::make_tuple(MdEntryType::Option::ClosingPrice, FIX::MDEntryType_CLOSING_PRICE),
+    std::make_tuple(MdEntryType::Option::SettlementPrice, FIX::MDEntryType_SETTLEMENT_PRICE),
+    std::make_tuple(MdEntryType::Option::HighPrice, FIX::MDEntryType_TRADING_SESSION_HIGH_PRICE),
     std::make_tuple(MdEntryType::Option::LowPrice, FIX::MDEntryType_TRADING_SESSION_LOW_PRICE),
+    std::make_tuple(MdEntryType::Option::Imbalance, FIX::MDEntryType_IMBALANCE),
+    std::make_tuple(MdEntryType::Option::TradeVolume, FIX::MDEntryType_TRADE_VOLUME),
     std::make_tuple(MdEntryType::Option::MidPrice, FIX::MDEntryType_MID_PRICE),
-    std::make_tuple(MdEntryType::Option::HighPrice, FIX::MDEntryType_TRADING_SESSION_HIGH_PRICE)
+    std::make_tuple(MdEntryType::Option::EarlyPrice, FIX::MDEntryType_EARLY_PRICES),
+    std::make_tuple(MdEntryType::Option::AuctionClearingPrice, FIX::MDEntryType_AUCTION_CLEARING_PRICE),
+    std::make_tuple(MdEntryType::Option::MarketBid, FIX::MDEntryType_MARKET_BID),
+    std::make_tuple(MdEntryType::Option::MarketOffer, FIX::MDEntryType_MARKET_OFFER),
+    std::make_tuple(MdEntryType::Option::PreviousClosingPrice, FIX::MDEntryType_PREVIOUS_CLOSING_PRICE)
+  ));
+// clang-format on
+
+/*----------------------------------------------------------------------------*/
+
+struct ToFixTradeConditionConversion
+    : public TestWithParam<std::tuple<TradeCondition, std::string>> {};
+
+TEST_P(ToFixTradeConditionConversion, ConvertsToFixValue) {
+  const auto [internal_value, expected_fix_value] = GetParam();
+
+  ASSERT_EQ(convert_to_fix<FIX::TradeCondition>(internal_value),
+            expected_fix_value);
+}
+
+TEST_F(ToFixTradeConditionConversion, ReportsErrorOnUnknownValueConversion) {
+  ASSERT_THROW(convert_to_fix<FIX::TradeCondition>(
+                   static_cast<TradeCondition::Option>(0xFF)),
+               std::invalid_argument);
+}
+
+// clang-format off
+INSTANTIATE_TEST_SUITE_P(InternalEnum, ToFixTradeConditionConversion,
+  Values(
+    std::make_tuple(TradeCondition::Option::ImbalanceMoreBuyers, FIX::TradeCondition_IMBALANCE_MORE_BUYERS),
+    std::make_tuple(TradeCondition::Option::ImbalanceMoreSellers, FIX::TradeCondition_IMBALANCE_MORE_SELLERS)
   ));
 // clang-format on
 

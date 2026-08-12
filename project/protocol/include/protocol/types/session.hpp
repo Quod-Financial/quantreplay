@@ -28,6 +28,11 @@ struct TargetCompId {
                                    .plural = "TargetCompIDs"};
 };
 
+struct SessionQualifier {
+  constexpr static core::Name name{.singular = "SessionQualifier",
+                                   .plural = "SessionQualifiers"};
+};
+
 struct ClientSubId {
   constexpr static core::Name name{.singular = "ClientSubID",
                                    .plural = "ClientSubIDs"};
@@ -38,6 +43,9 @@ struct ClientSubId {
 SIMULATOR_DECLARE_ATTRIBUTE(simulator::protocol::fix, BeginString, Literal);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator::protocol::fix, SenderCompId, Literal);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator::protocol::fix, TargetCompId, Literal);
+SIMULATOR_DECLARE_ATTRIBUTE(simulator::protocol::fix,
+                            SessionQualifier,
+                            Literal);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator::protocol::fix, ClientSubId, Literal);
 
 namespace simulator::protocol {
@@ -58,7 +66,8 @@ struct Session {
   [[nodiscard]] auto operator==(const Session& other) const noexcept -> bool {
     return begin_string == other.begin_string &&
            sender_comp_id == other.sender_comp_id &&
-           target_comp_id == other.target_comp_id;
+           target_comp_id == other.target_comp_id &&
+           session_qualifier == other.session_qualifier;
   }
 
   [[nodiscard]] consteval static auto name() noexcept -> core::Name {
@@ -68,6 +77,7 @@ struct Session {
   BeginString begin_string;
   SenderCompId sender_comp_id;
   TargetCompId target_comp_id;
+  std::optional<SessionQualifier> session_qualifier;
   std::optional<ClientSubId> client_sub_id;
 };
 

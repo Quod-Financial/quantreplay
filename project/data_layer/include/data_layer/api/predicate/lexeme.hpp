@@ -3,6 +3,7 @@
 
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include "data_layer/api/predicate/definitions.hpp"
 #include "data_layer/api/predicate/traits.hpp"
@@ -48,6 +49,44 @@ class BasicPredicate {
  private:
   GenericValue value_;
   BasicOperation operation_;
+  AttributeType field_;
+};
+
+// Represents a membership predicate expression, which matches a given model
+// attribute against a set of values, equivalent to the SQL `IN` operator:
+//     `venue_id IN ('XETRA', 'FASTMATCH')`, where:
+//          'venue_id' represents an attribute name (enumeration)
+//          'IN' represents the membership operation
+//          'XETRA', 'FASTMATCH' represent the set of accepted values
+// As with BasicPredicate, the attribute is an enumeration from the model traits
+// and each value must be a type from StandardTypes or the model's
+// CustomFieldTypes tuple.
+template <typename Model, typename ModelTraits = ModelTraits<Model>>
+class InPredicate {
+  using AttributeType = typename ModelTraits::AttributeType;
+  using ExtendedTypes = typename ModelTraits::CustomFieldTypes;
+  using FieldTypes = aggregated_tuple_t<StandardTypes, ExtendedTypes>;
+  using GenericValue = variant_from_tuple_t<FieldTypes>;
+
+ public:
+  InPredicate() = delete;
+
+  template <typename V,
+            std::enable_if_t<is_in_tuple_v<V, FieldTypes>>* = nullptr>
+  InPredicate(AttributeType field, std::vector<V> values) : field_(field) {
+    values_.reserve(values.size());
+    for (V& value : values) {
+      values_.emplace_back(std::move(value));
+    }
+  }
+
+  template <typename Formatter>
+  auto accept(Formatter& formatter) const -> void {
+    formatter(field_, values_);
+  }
+
+ private:
+  std::vector<GenericValue> values_;
   AttributeType field_;
 };
 

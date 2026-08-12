@@ -2,6 +2,9 @@
 #include <pistache/http_defs.h>
 
 #include <cstdint>
+#include <optional>
+#include <string>
+#include <utility>
 
 #include "cfg/api/cfg.hpp"
 #include "ih/redirect/destination.hpp"
@@ -35,28 +38,44 @@ class HttpRequestRedirector : public testing::Test {
       -> Request {
     return make_request(std::move(destination),
                         Pistache::Http::Method::Get,
-                        std::move(endpoint));
+                        std::move(endpoint),
+                        std::nullopt);
   }
 
-  static auto make_post_request(Destination destination, std::string endpoint)
+  static auto make_head_request(Destination destination, std::string endpoint)
+      -> Request {
+    return make_request(std::move(destination),
+                        Pistache::Http::Method::Head,
+                        std::move(endpoint),
+                        std::nullopt);
+  }
+
+  static auto make_post_request(Destination destination,
+                                std::string endpoint,
+                                std::optional<std::string> body = std::nullopt)
       -> Request {
     return make_request(std::move(destination),
                         Pistache::Http::Method::Post,
-                        std::move(endpoint));
+                        std::move(endpoint),
+                        std::move(body));
   }
 
-  static auto make_put_request(Destination destination, std::string endpoint)
+  static auto make_put_request(Destination destination,
+                               std::string endpoint,
+                               std::optional<std::string> body = std::nullopt)
       -> Request {
     return make_request(std::move(destination),
                         Pistache::Http::Method::Put,
-                        std::move(endpoint));
+                        std::move(endpoint),
+                        std::move(body));
   }
 
   static auto make_delete_request(Destination destination, std::string endpoint)
       -> Request {
     return make_request(std::move(destination),
                         Pistache::Http::Method::Delete,
-                        std::move(endpoint));
+                        std::move(endpoint),
+                        std::nullopt);
   }
 
  protected:
@@ -68,8 +87,10 @@ class HttpRequestRedirector : public testing::Test {
  private:
   static auto make_request(Destination destination,
                            Pistache::Http::Method method,
-                           std::string endpoint) -> Request {
-    return Request{std::move(destination), method, std::move(endpoint)};
+                           std::string endpoint,
+                           std::optional<std::string> body) -> Request {
+    return Request{
+        std::move(destination), method, std::move(endpoint), std::move(body)};
   }
 
   std::shared_ptr<RequestRedirector> request_redirector_;
@@ -110,7 +131,8 @@ TEST_F(HttpRequestRedirector,
   EXPECT_FALSE(response.has_value());
 }
 
-TEST_F(HttpRequestRedirector, RedirectsSuccessfullyIfEndpointDoesNotSupportMethod) {
+TEST_F(HttpRequestRedirector,
+       RedirectsSuccessfullyIfEndpointDoesNotSupportMethod) {
   const auto request =
       make_get_request(make_destination(server_port()), "/test/post/request");
 
@@ -126,6 +148,19 @@ TEST_F(HttpRequestRedirector, RedirectsMethodGet) {
 
   const auto request =
       make_get_request(make_destination(server_port()), "/test/get/request");
+
+  auto [response, status] = redirect(request);
+  ASSERT_EQ(status, RedirectStatus::Success);
+
+  ASSERT_TRUE(response.has_value());
+  ASSERT_EQ(response->http_code(), Pistache::Http::Code::Ok);
+}
+
+TEST_F(HttpRequestRedirector, RedirectsMethodHead) {
+  server_responder().set_response_data(Pistache::Http::Code::Ok);
+
+  const auto request =
+      make_head_request(make_destination(server_port()), "/test/head/request");
 
   auto [response, status] = redirect(request);
   ASSERT_EQ(status, RedirectStatus::Success);
@@ -211,6 +246,56 @@ TEST_F(HttpRequestRedirector, RedirectsResponseBody) {
 
   ASSERT_TRUE(response.has_value());
   ASSERT_EQ(response->body_content(), body);
+}
+
+TEST_F(HttpRequestRedirector, ForwardsBodyOnPostRedirect) {
+  const std::string body = R"({"seed":"42"})";
+  server_responder().set_response_data(Pistache::Http::Code::Ok);
+
+  const auto request = make_post_request(
+      make_destination(server_port()), "/test/post/request", body);
+
+  auto [response, status] = redirect(request);
+  ASSERT_EQ(status, RedirectStatus::Success);
+
+  ASSERT_EQ(server_responder().last_request_body(), body);
+}
+
+TEST_F(HttpRequestRedirector, ForwardsBodyOnPutRedirect) {
+  const std::string body = R"({"key":false})";
+  server_responder().set_response_data(Pistache::Http::Code::Ok);
+
+  const auto request = make_put_request(
+      make_destination(server_port()), "/test/put/request", body);
+
+  auto [response, status] = redirect(request);
+  ASSERT_EQ(status, RedirectStatus::Success);
+
+  ASSERT_EQ(server_responder().last_request_body(), body);
+}
+
+TEST_F(HttpRequestRedirector, SendsBodylessPostWhenBodyIsAbsent) {
+  server_responder().set_response_data(Pistache::Http::Code::Ok);
+
+  const auto request =
+      make_post_request(make_destination(server_port()), "/test/post/request");
+
+  auto [response, status] = redirect(request);
+  ASSERT_EQ(status, RedirectStatus::Success);
+
+  ASSERT_TRUE(server_responder().last_request_body().empty());
+}
+
+TEST_F(HttpRequestRedirector, SendsBodylessPutWhenBodyIsAbsent) {
+  server_responder().set_response_data(Pistache::Http::Code::Ok);
+
+  const auto request =
+      make_put_request(make_destination(server_port()), "/test/put/request");
+
+  auto [response, status] = redirect(request);
+  ASSERT_EQ(status, RedirectStatus::Success);
+
+  ASSERT_TRUE(server_responder().last_request_body().empty());
 }
 
 }  // namespace

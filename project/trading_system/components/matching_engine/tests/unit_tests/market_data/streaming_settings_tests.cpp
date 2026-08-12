@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <array>
 #include <optional>
 
 #include "core/domain/attributes.hpp"
@@ -20,46 +21,61 @@ TEST_F(StreamingSettings, DefaultSettings) {
   EXPECT_FALSE(settings.is_data_type_requested(MdEntryType::Option::Bid));
   EXPECT_FALSE(settings.is_data_type_requested(MdEntryType::Option::Offer));
   EXPECT_FALSE(settings.is_data_type_requested(MdEntryType::Option::Trade));
-  EXPECT_FALSE(settings.is_data_type_requested(MdEntryType::Option::LowPrice));
-  EXPECT_FALSE(settings.is_data_type_requested(MdEntryType::Option::MidPrice));
+  EXPECT_FALSE(
+      settings.is_data_type_requested(MdEntryType::Option::OpeningPrice));
+  EXPECT_FALSE(
+      settings.is_data_type_requested(MdEntryType::Option::ClosingPrice));
+  EXPECT_FALSE(
+      settings.is_data_type_requested(MdEntryType::Option::SettlementPrice));
   EXPECT_FALSE(settings.is_data_type_requested(MdEntryType::Option::HighPrice));
+  EXPECT_FALSE(settings.is_data_type_requested(MdEntryType::Option::LowPrice));
+  EXPECT_FALSE(settings.is_data_type_requested(MdEntryType::Option::Imbalance));
+  EXPECT_FALSE(
+      settings.is_data_type_requested(MdEntryType::Option::TradeVolume));
+  EXPECT_FALSE(settings.is_data_type_requested(MdEntryType::Option::MidPrice));
+  EXPECT_FALSE(
+      settings.is_data_type_requested(MdEntryType::Option::EarlyPrice));
+  EXPECT_FALSE(settings.is_data_type_requested(
+      MdEntryType::Option::AuctionClearingPrice));
+  EXPECT_FALSE(settings.is_data_type_requested(MdEntryType::Option::MarketBid));
+  EXPECT_FALSE(
+      settings.is_data_type_requested(MdEntryType::Option::MarketOffer));
+  EXPECT_FALSE(settings.is_data_type_requested(
+      MdEntryType::Option::PreviousClosingPrice));
   EXPECT_EQ(settings.excluded_orders_owner(), std::nullopt);
 }
 
-TEST_F(StreamingSettings, ManageBidMarketDataType) {
-  settings.enable_data_type_streaming(MdEntryType::Option::Bid);
+TEST_F(StreamingSettings, EachRequestableDataTypeOwnsADistinctFlag) {
+  using Option = MdEntryType::Option;
 
-  ASSERT_TRUE(settings.is_data_type_requested(MdEntryType::Option::Bid));
-}
+  // Every requestable entry type must map to its own flag, so enabling one
+  // never marks another as requested.
+  constexpr std::array requestable_types{Option::Bid,
+                                         Option::Offer,
+                                         Option::Trade,
+                                         Option::OpeningPrice,
+                                         Option::ClosingPrice,
+                                         Option::SettlementPrice,
+                                         Option::HighPrice,
+                                         Option::LowPrice,
+                                         Option::Imbalance,
+                                         Option::TradeVolume,
+                                         Option::MidPrice,
+                                         Option::EarlyPrice,
+                                         Option::AuctionClearingPrice,
+                                         Option::MarketBid,
+                                         Option::MarketOffer,
+                                         Option::PreviousClosingPrice};
 
-TEST_F(StreamingSettings, ManageOfferMarketDataType) {
-  settings.enable_data_type_streaming(MdEntryType::Option::Offer);
+  for (const auto enabled : requestable_types) {
+    mdata::StreamingSettings subject;
+    subject.enable_data_type_streaming(enabled);
 
-  ASSERT_TRUE(settings.is_data_type_requested(MdEntryType::Option::Offer));
-}
-
-TEST_F(StreamingSettings, ManageTradeMarketDataType) {
-  settings.enable_data_type_streaming(MdEntryType::Option::Trade);
-
-  ASSERT_TRUE(settings.is_data_type_requested(MdEntryType::Option::Trade));
-}
-
-TEST_F(StreamingSettings, ManageLowPriceMarketDataType) {
-  settings.enable_data_type_streaming(MdEntryType::Option::LowPrice);
-
-  ASSERT_TRUE(settings.is_data_type_requested(MdEntryType::Option::LowPrice));
-}
-
-TEST_F(StreamingSettings, ManageMidPriceMarketDataType) {
-  settings.enable_data_type_streaming(MdEntryType::Option::MidPrice);
-
-  ASSERT_TRUE(settings.is_data_type_requested(MdEntryType::Option::MidPrice));
-}
-
-TEST_F(StreamingSettings, ManageHighPriceMarketDataType) {
-  settings.enable_data_type_streaming(MdEntryType::Option::HighPrice);
-
-  ASSERT_TRUE(settings.is_data_type_requested(MdEntryType::Option::HighPrice));
+    for (const auto other : requestable_types) {
+      EXPECT_EQ(subject.is_data_type_requested(other), other == enabled)
+          << "enabling one requestable data type affected another";
+    }
+  }
 }
 
 TEST_F(StreamingSettings, ManageFullUpdateStreamingOption) {

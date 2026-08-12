@@ -6,20 +6,25 @@
 
 namespace simulator::trading_system::matching_engine {
 
-struct AmendLmtOrder;
-struct CancelOrder;
-
-}  // namespace simulator::trading_system::matching_engine
-
-namespace simulator::trading_system::matching_engine {
-
 [[nodiscard]]
-auto find_target_limit_order(OrderPage& page, const LimitUpdate& update)
+auto find_target_limit_order(LimitOrdersContainer& orders,
+                             const LimitUpdate& update)
     -> LimitOrdersContainer::iterator;
 
 [[nodiscard]]
-auto find_target_limit_order(OrderPage& page, const OrderCancel& cancel)
+auto find_target_market_order(MarketOrdersContainer& orders,
+                              const MarketUpdate& update)
+    -> MarketOrdersContainer::iterator;
+
+[[nodiscard]]
+auto find_target_limit_order(LimitOrdersContainer& orders,
+                             const OrderCancel& cancel)
     -> LimitOrdersContainer::iterator;
+
+[[nodiscard]]
+auto find_target_market_order(MarketOrdersContainer& orders,
+                              const OrderCancel& cancel)
+    -> MarketOrdersContainer::iterator;
 
 }  // namespace simulator::trading_system::matching_engine
 

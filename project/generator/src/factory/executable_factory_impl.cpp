@@ -17,7 +17,8 @@ auto InstrumentRandomGeneratorFactoryImpl::create()
 
 auto InstrumentRandomGeneratorFactoryImpl::create_orders_executable(
     std::shared_ptr<OrderInstrumentContext> instrument_context,
-    const data_layer::PriceSeed& price_seed) -> std::unique_ptr<Executable> {
+    const data_layer::PriceSeed& price_seed)
+    -> std::unique_ptr<random::OrderGenerator> {
   assert(instrument_context);
 
   const auto& instrument = instrument_context->get_instrument();

@@ -1,12 +1,16 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_BOOK_ORDER_BOOK_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_BOOK_ORDER_BOOK_HPP_
 
+#include <cstdint>
 #include <vector>
 
 #include "core/domain/attributes.hpp"
 #include "ih/orders/book/limit_order.hpp"
+#include "ih/orders/book/market_order.hpp"
 
 namespace simulator::trading_system::matching_engine {
+
+enum class LimitOrderQueue : std::uint8_t { Regular, TradeAtLast };
 
 class BetterOrderComparator {
  public:
@@ -57,24 +61,85 @@ class LimitOrdersContainer {
   BetterOrderComparator order_cmp_;
 };
 
+class MarketOrdersContainer {
+ public:
+  using iterator = std::vector<MarketOrder>::iterator;
+  using const_iterator = std::vector<MarketOrder>::const_iterator;
+  using value_type = std::vector<MarketOrder>::value_type;
+
+  auto size() const -> std::size_t;
+
+  auto empty() const -> bool;
+
+  auto begin() -> iterator;
+
+  auto begin() const -> const_iterator;
+
+  auto end() -> iterator;
+
+  auto end() const -> const_iterator;
+
+  auto emplace(const MarketOrder& order) -> iterator;
+
+  auto erase(iterator iter) -> iterator;
+
+  auto erase(iterator begin, iterator end) -> void;
+
+ private:
+  using Orders = std::vector<MarketOrder>;
+
+  Orders orders_;
+};
+
 class OrderPage {
  public:
   explicit OrderPage(Side side);
 
   OrderPage() = delete;
 
+  [[nodiscard]]
   auto limit_orders() -> LimitOrdersContainer&;
+
+  [[nodiscard]]
+  auto limit_orders() const -> const LimitOrdersContainer&;
+
+  [[nodiscard]]
+  auto market_orders() -> MarketOrdersContainer&;
+
+  [[nodiscard]]
+  auto market_orders() const -> const MarketOrdersContainer&;
+
+  [[nodiscard]]
+  auto trade_at_last_orders() -> LimitOrdersContainer&;
+
+  [[nodiscard]]
+  auto trade_at_last_orders() const -> const LimitOrdersContainer&;
 
  private:
   LimitOrdersContainer limit_orders_;
+  LimitOrdersContainer trade_at_last_orders_;
+  MarketOrdersContainer market_orders_;
 };
+
+[[nodiscard]]
+auto select_limit_orders(OrderPage& page,
+                         LimitOrderQueue queue) -> LimitOrdersContainer&;
 
 class OrderBook {
  public:
+  [[nodiscard]]
   auto buy_page() -> OrderPage&;
 
+  [[nodiscard]]
+  auto buy_page() const -> const OrderPage&;
+
+  [[nodiscard]]
   auto sell_page() -> OrderPage&;
 
+  [[nodiscard]]
+  auto sell_page() const -> const OrderPage&;
+
+  [[nodiscard]]
   auto take_page(Side side) -> OrderPage&;
 
  private:

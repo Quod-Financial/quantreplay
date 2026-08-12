@@ -3,14 +3,20 @@
 
 #include <gsl/pointers>
 #include <memory>
+#include <optional>
 #include <string_view>
 
 #include "common/instrument.hpp"
+#include "ih/common/abstractions/auction_reference_price_provider.hpp"
 #include "ih/common/abstractions/event_listener.hpp"
 #include "ih/common/abstractions/order_event_handler.hpp"
 #include "ih/common/abstractions/order_request_processor.hpp"
-#include "ih/orders/actions/order_action_handler.hpp"
+#include "ih/orders/actions/auction_indicative_reporter.hpp"
+#include "ih/orders/actions/early_price_reporter.hpp"
+#include "ih/orders/actions/order_actions.hpp"
 #include "ih/orders/book/order_book.hpp"
+#include "ih/orders/book/order_book_update.hpp"
+#include "ih/orders/matchers/auction_price_calculator.hpp"
 #include "ih/orders/phase_handler.hpp"
 #include "ih/orders/replies/reject_notifier.hpp"
 #include "ih/orders/tools/order_id_generator.hpp"
@@ -49,13 +55,16 @@ class OrderSystemFacade : public OrderRequestProcessor,
 
   auto handle(const event::Tick& tick) -> void override;
 
-  auto handle(const event::PhaseTransition& phase_transition) -> void override;
+  auto handle(const event::PhaseTransition& phase_transition)
+      -> PhaseTransitionOutcome override;
 
   auto handle_disconnection(const protocol::Session& session) -> void override;
 
-  static auto setup(const Instrument& instrument,
-                    const Configuration& configuration,
-                    EventListener& listener) -> OrderSystemFacade;
+  static auto setup(
+      const Instrument& instrument,
+      const Configuration& configuration,
+      const AuctionReferencePriceProvider& reference_price_provider,
+      EventListener& listener) -> OrderSystemFacade;
 
  private:
   template <typename RequestType>
@@ -71,15 +80,20 @@ class OrderSystemFacade : public OrderRequestProcessor,
   template <typename RequestType>
   auto reject_on_halt(const RequestType& request) -> bool;
 
+  [[nodiscard]]
+  auto make_action_context() const -> OrderActionContext;
+
+  auto refresh_auction_indicative(const OrderBookUpdates& updates) -> void;
+
   OrderSystemFacade(
       EventListener& event_listener,
+      const AuctionReferencePriceProvider& reference_price_provider,
       const Instrument& instrument,
-      Configuration configuration,
+      const Configuration& configuration,
       std::unique_ptr<order::OrderIdGenerator> order_id_generator,
       std::unique_ptr<order::Validator> validator,
       std::unique_ptr<order::RejectNotifier> reject_notifier,
-      std::unique_ptr<OrderBook> depr_order_book,
-      std::unique_ptr<OrderActionHandler> depr_order_action_handler);
+      std::unique_ptr<OrderBook> depr_order_book);
 
   Configuration configuration_;
   order::PhaseHandler phase_handler_;
@@ -91,8 +105,11 @@ class OrderSystemFacade : public OrderRequestProcessor,
   std::unique_ptr<order::RejectNotifier> reject_notifier_;
 
   std::unique_ptr<OrderBook> depr_order_book_;
-  std::unique_ptr<OrderActionHandler> depr_order_action_handler_;
   gsl::not_null<EventListener*> event_listener_;
+  gsl::not_null<const AuctionReferencePriceProvider*> reference_price_provider_;
+  AuctionPriceCalculator auction_price_calculator_;
+  order::EarlyPriceReporter early_price_reporter_;
+  order::AuctionIndicativeReporter auction_indicative_reporter_;
 };
 
 }  // namespace simulator::trading_system::matching_engine

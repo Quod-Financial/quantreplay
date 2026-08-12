@@ -2,6 +2,9 @@
 
 #include <gsl/pointers>
 
+#include "core/domain/attributes.hpp"
+#include "ies/phase_record.hpp"
+#include "ies/phase_schedule.hpp"
 #include "ih/config/config.hpp"
 #include "log/logging.hpp"
 #include "matching_engine/configuration.hpp"
@@ -43,7 +46,13 @@ class MatchingEngineFactory final : public TradingEngineFactory {
         .report_trade_aggressor_side =
             config_->trade_aggressor_streaming_enabled(),
         .support_market_data_orders_exclusion =
-            config_->depth_orders_exclusion_enabled()};
+            config_->depth_orders_exclusion_enabled(),
+        .opening_auction_scheduled =
+            config_->trading_phases_schedule().has_phase(
+                TradingPhase::Option::OpeningAuction),
+        .closing_auction_scheduled =
+            config_->trading_phases_schedule().has_phase(
+                TradingPhase::Option::ClosingAuction)};
   }
 
   gsl::not_null<const Config*> config_;

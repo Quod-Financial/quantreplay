@@ -28,7 +28,8 @@ class MarketPhase {
     OpeningAuction,
     ClosingAuction,
     IntradayAuction,
-    Halted
+    Halted,
+    TradeAtLast
   };
 
   [[nodiscard]]

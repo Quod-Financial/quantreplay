@@ -16,8 +16,10 @@ Depending on *SubscriptionRequestType* value, the market simulator:
 * cancels an existing subscription and stops market data streaming for cancelled subscription;
 * responds with an actual state of requested market data in the form of a snapshot.
 
-Each market data request can be associated with only one listing. 
+Each market data request can be associated with only one listing.
 Market data updates are sent for each visible market data change.
+A change is visible to a subscription only if it affects at least one of the entry types requested in the subscription;
+a change affecting only entry types that were not requested produces no message, in either streaming format.
 
 The format of a market data being streamed can be configured by a client in the *MDUpdateType* tag in the *MarketDataRequest* with 
 *SubscriptionRequestType=Subscribe*, which allows to:
@@ -73,6 +75,236 @@ Unknown Symbol (0) | ‘listing identification attributes set is malformed’
 
 |===
 
+[[message-flows-mkt-data-auction]]
+==== Market Data During an Auction
+During an auction's call sub-phase, market data is published on every order action, exactly as during normal trading. The book reported to clients combines the orders already resting at the start of the phase with the orders placed during the call. Resting market orders are reported as Market Bid (269=b) and Market Offer (269=c) depth entries that carry no MDEntryPx and are ranked ahead of all priced levels; these entries are received only by clients that requested the 269=b/c entry types — a plain Bid (0) / Offer (1) subscription does not include them.
+
+Snapshots taken during an auction also carry the last known values of the session-level entries:
+
+* Opening Price (269=4);
+* Closing Price (269=5);
+* Previous Closing Price (269=e);
+* Auction Clearing Price (269=Q), with its volume;
+* Trade Volume (269=B).
+
+Each of these entries is included only if the corresponding entry type was requested, and any value that has never been determined is simply omitted. During an opening or a closing auction call, the Opening Price (269=4) or the Closing Price (269=5) carries that auction's indicative price and volume instead of the value of a previous session. An intraday auction has no session-level entry of its own: it publishes its indicative value as a Settlement Price (269=6) entry that exists only for the duration of the call. See <<message-flows-mkt-data-auction-indicative>>.
+
+[[message-flows-mkt-data-auction-indicative]]
+===== Indicative Auction Price, Volume and Imbalance
+
+Throughout the call sub-phase the simulator maintains an indicative equilibrium price (IEP), an indicative equilibrium volume (IEV) and an imbalance (a size and a side) for the instrument. They are recalculated after every order placement, amendment and cancellation accepted during the call, and are reported in the *same* market data message that carries the resulting book change — no separate message is emitted for them.
+
+The entry type carrying the indicative price and volume depends on the auction phase:
+
+[cols="35,20,45"]
+|===
+| Auction phase | MDEntryType (269) | Entry
+
+| Opening auction (PreOpen) | 4 | Opening Price
+| Closing auction (PreClose) | 5 | Closing Price
+| Intraday auction (Auction) | 6 | Settlement Price
+|===
+
+While the order book is crossed (the best bid is priced at or above the best offer), two entries are published:
+
+* the auction phase's price entry (269=4, 269=5 or 269=6), with *MDEntryPx* (270) = IEP and *MDEntrySize* (271) = IEV;
+* an imbalance entry, with *MDEntryType* (269) = A, *MDEntrySize* (271) = imbalance size and *TradeCondition* (277) = imbalance side (`P` — more buyers, `Q` — more sellers). This entry carries no *MDEntryPx* (270). Venues normally suppress the imbalance when they already publish market depth; the simulator publishes both.
+
+While the order book is not crossed, no equilibrium price exists. Only the auction phase's price entry is published, with *MDEntrySize* (271) = 0 and no *MDEntryPx* (270), and any imbalance entry published earlier is deleted.
+
+In addition, the same indicative price and volume are republished as an Early Price (269=P) entry on a fixed 30-second interval while the book is crossed, whether or not the value changed. The entry is deleted when the uncrossing begins, and a snapshot request returns its last published value immediately, without waiting for the next interval. If the book stops being crossed during the call, the entry is neither updated nor deleted — it keeps its last value until the uncrossing, so it may report an equilibrium price while the auction phase's own price entry reports a zero volume and no price.
+
+[[message-flows-mkt-data-auction-calculation]]
+===== Calculation of the Indicative Price, Volume and Imbalance
+
+*1 — Candidate prices.* The candidates are every distinct limit order price in the book that lies between the best offer and the best bid, inclusive. If the book is not crossed the range is empty, so there is no candidate and no indicative price.
+
+*2 — Cumulative quantities.* For each candidate price stem:[p]:
+
+* the cumulative buy quantity stem:[CQB(p)] is the total quantity of all buy orders eligible to trade at stem:[p] — every buy limit order priced at stem:[p] or higher, plus every buy market ("at-auction") order, which is eligible at every candidate price;
+* the cumulative sell quantity stem:[CQS(p)] is the total quantity of all sell orders eligible to trade at stem:[p] — every sell limit order priced at stem:[p] or lower, plus every sell market order.
+
+*3 — Tradable quantity and imbalance.* For each candidate price stem:[p]:
+
+* stem:[TradeQty(p) = \min(CQB(p), CQS(p))];
+* stem:[Imb(p) = CQB(p) - CQS(p)]. A positive imbalance means demand exceeds supply at that price, a negative one that supply exceeds demand.
+
+*4 — Selecting the IEP.* The following rules are applied in order, each one narrowing the candidates left by the previous rule, until a single price remains:
+
+. the price with the highest stem:[TradeQty(p)];
+. the price with the lowest stem:[\lvert Imb(p) \rvert];
+. if the remaining imbalances are non-zero and all share the same sign: the highest of the remaining prices when the imbalance is positive, the lowest when it is negative;
+. otherwise — the remaining imbalances are all zero, or they are equal in size but differ in sign — the remaining price closest to the reference price. The reference price is the last known Closing Price (269=5) for an opening auction, and the last trade price of the preceding Open phase for a closing or an intraday auction;
+. when no reference price has been determined yet the previous rule cannot apply: the lowest of the remaining prices is used.
+
+*5 — Reported values.* The IEV is stem:[TradeQty(IEP)] and the imbalance size is stem:[\lvert Imb(IEP) \rvert]. The imbalance side is `P` (more buyers) for a positive imbalance and `Q` (more sellers) for a negative one. When the imbalance at the IEP is zero, the side is taken from the heavier surplus across all candidate prices — `Q` if the largest sell surplus exceeds the largest buy surplus, `P` otherwise.
+
+[[message-flows-mkt-data-auction-example]]
+===== Calculation Example
+
+Consider the following order book during a call for auction. The book is crossed: the best bid (60.10) is above the best offer (60.07).
+
+[cols="10,12,12,12,12,10"]
+|===
+| Order # | Bid Size | Bid Price | Ask Price | Ask Size | Order #
+
+| 1 | 100 | 60.10 | 60.07 | 300 | 2
+| 3 | 200 | 60.09 | 60.08 | 500 | 5
+| 4 | 300 | 60.07 | 60.11 | 300 | 6
+|===
+
+The candidate prices are the book's limit prices between 60.07 and 60.10 inclusive: {60.07, 60.08, 60.09, 60.10}. The order at 60.11 lies outside the range and is not a candidate.
+
+[cols="20,20,20,20,20"]
+|===
+| Candidate price stem:[p] | stem:[CQB(p)] | stem:[CQS(p)] | stem:[TradeQty(p)] | stem:[Imb(p)]
+
+| 60.07 | 600 | 300 | 300 | +300
+| 60.08 | 300 | 800 | 300 | −500
+| 60.09 | 300 | 800 | 300 | −500
+| 60.10 | 100 | 800 | 100 | −700
+|===
+
+The maximum tradable quantity, 300, occurs at 60.07, 60.08 and 60.09; among those, the lowest absolute imbalance (300) singles out 60.07. The values published are therefore:
+
+* Opening/Closing/Settlement Price entry: *MDEntryPx* (270) = 60.07, *MDEntrySize* (271) = 300;
+* Imbalance entry (269=A): *MDEntrySize* (271) = 300, *TradeCondition* (277) = `P` (more buyers).
+
+Suppose a sell market ("at-auction") order for 500 is now entered:
+
+[cols="10,12,12,12,12,10"]
+|===
+| Order # | Bid Size | Bid Price | Ask Price | Ask Size | Order #
+
+| | | | At-Auction | 500 | 7
+| 1 | 100 | 60.10 | 60.07 | 300 | 2
+| 3 | 200 | 60.09 | 60.08 | 500 | 5
+| 4 | 300 | 60.07 | 60.11 | 300 | 6
+|===
+
+The market order is eligible at every candidate price, so it raises stem:[CQS(p)] across the whole range:
+
+[cols="20,20,20,20,20"]
+|===
+| Candidate price stem:[p] | stem:[CQB(p)] | stem:[CQS(p)] | stem:[TradeQty(p)] | stem:[Imb(p)]
+
+| 60.07 | 600 | 800 | 600 | −200
+| 60.08 | 300 | 1300 | 300 | −1000
+| 60.09 | 300 | 1300 | 300 | −1000
+| 60.10 | 100 | 1300 | 100 | −1200
+|===
+
+The maximum tradable quantity is now 600, at 60.07 alone, so the values published are:
+
+* Opening/Closing/Settlement Price entry: *MDEntryPx* (270) = 60.07, *MDEntrySize* (271) = 600;
+* Imbalance entry (269=A): *MDEntrySize* (271) = 200, *TradeCondition* (277) = `Q` (more sellers).
+
+Suppose a buy market order for 1,000 is entered on top of that:
+
+[cols="10,12,12,12,12,10"]
+|===
+| Order # | Bid Size | Bid Price | Ask Price | Ask Size | Order #
+
+| 8 | 1,000 | At-Auction | At-Auction | 500 | 7
+| 1 | 100 | 60.10 | 60.07 | 300 | 2
+| 3 | 200 | 60.09 | 60.08 | 500 | 5
+| 4 | 300 | 60.07 | 60.11 | 300 | 6
+|===
+
+[cols="20,20,20,20,20"]
+|===
+| Candidate price stem:[p] | stem:[CQB(p)] | stem:[CQS(p)] | stem:[TradeQty(p)] | stem:[Imb(p)]
+
+| 60.07 | 1600 | 800 | 800 | +800
+| 60.08 | 1300 | 1300 | 1300 | 0
+| 60.09 | 1300 | 1300 | 1300 | 0
+| 60.10 | 1100 | 1300 | 1100 | −200
+|===
+
+The maximum tradable quantity, 1300, is reached at both 60.08 and 60.09, and both leave a zero imbalance, so the reference price decides — 60.08 if it is the closer of the two. The values published are:
+
+* Opening/Closing/Settlement Price entry: *MDEntryPx* (270) = 60.08, *MDEntrySize* (271) = 1300;
+* Imbalance entry (269=A): *MDEntrySize* (271) = 0, *TradeCondition* (277) = `P`. There is no imbalance at the IEP, so the side is taken from the heavier surplus across the candidates (800 on the buy side against 200 on the sell side).
+
+[[message-flows-mkt-data-auction-uncrossing]]
+===== Uncrossing
+
+The uncrossing crosses the book at the last IEP calculated during the call, for a total quantity equal to the IEV, in price-time priority. Orders are crossed in three passes, all executing at the IEP:
+
+. market orders against opposing market orders, in time priority;
+. the market orders left on one side (market orders can remain on one side only) against the opposing limit orders priced at or better than the IEP, best price first and oldest first within a price;
+. the remaining limit orders priced at or better than the IEP against one another, best price and oldest first on both sides.
+
+Every cross produces the usual ExecutionReport messages for both orders and a trade market data entry. Market orders that remain unexecuted once the passes are complete are cancelled, and their owners receive an ExecutionReport with *ExecType* (150) = 4 (Canceled). If no IEP could be calculated — the book was not crossed at the end of the call — nothing is crossed and all market orders are cancelled. Because the IEP maximises the tradable quantity, the book is no longer crossed once the uncrossing completes; limit orders priced through the IEP may nevertheless remain in the book when the opposing side is exhausted.
+
+Continuing the example above, the uncrossing takes place at 60.08 for 1300:
+
+* the two at-auction orders cross first — order 8 against order 7 for 500;
+* order 8's remaining 500 crosses against the offers eligible at 60.08: 300 against order 2 and 200 against order 5;
+* the eligible bids then cross against order 5's remaining 300 — 100 from order 1 and 200 from order 3.
+
+1300 shares change hands, all at 60.08, and the book is left with order 4 (300 at 60.07) on the bid side and order 6 (300 at 60.11) on the offer side. Order 4 and order 6 were never eligible at the IEP, so neither trades.
+
+When the uncrossing sub-phase begins, the indicative entries are withdrawn:
+
+* Early Price (269=P) — deleted;
+* Imbalance (269=A) — deleted;
+* Settlement Price (269=6) — deleted, for an intraday auction;
+* Opening Price (269=4) and Closing Price (269=5) — kept at their indicative value until the auction's outcome replaces or clears it, as described below.
+
+Each individual cross is reported as it occurs:
+
+* a client subscribed to full snapshots (MarketDataSnapshotFullRefresh, 35=W) receives, for every cross, a snapshot of the order book _as it stood immediately before the uncrossing started_ together with that cross's trade (Last Trade, 269=2);
+* a client subscribed to incremental updates (MarketDataIncrementalRefresh, 35=X) receives only the trade for each cross, with no bids or offers;
+* a client not subscribed to trades receives nothing for the individual crosses.
+
+Once all crosses are complete, the simulator publishes a single fresh full snapshot of the resulting order book to every subscription, regardless of its update type. An auction in which nothing crosses produces no per-cross messages but still publishes this closing snapshot.
+
+This closing snapshot reflects the auction's outcome. A closing auction first carries the last settled Closing Price (269=5) — the price of an earlier session, never the indicative value published during the call — into the Previous Closing Price (269=e), whether or not the auction crossed. The remaining entries depend on the outcome.
+
+An auction that crossed sets:
+
+* Auction Clearing Price (269=Q) — the IEP and IEV the book was crossed at (see <<message-flows-mkt-data-auction-calculation>>);
+* Opening Price (269=4) — set by an opening auction to the clearing price, reported with *MDEntryPx* (270) only, replacing the indicative price and volume published during the call;
+* Closing Price (269=5) — set by a closing auction to the clearing price;
+* Trading Session High Price (269=7) and Trading Session Low Price (269=8) — reset by an opening auction to the opening price, and tracked from there on;
+* Trade Volume (269=B) — reset by an opening auction to the auction's clearing volume; a closing or an intraday auction adds its clearing volume to it (see <<message-flows-mkt-data-daily-reset>>).
+
+If an auction does not cross, no clearing price can be calculated, and the entries are instead cleared and omitted from updates until a price can next be determined:
+
+* Auction Clearing Price (269=Q) — cleared for any auction type;
+* Opening Price (269=4) — cleared by an opening auction;
+* Closing Price (269=5) — cleared by a closing auction;
+* Trade Volume (269=B) — cleared by an opening auction;
+* Trading Session High Price (269=7) and Trading Session Low Price (269=8) — left untouched.
+
+[[message-flows-mkt-data-trade-at-last]]
+==== Market Data During the TradeAtLast Phase
+
+During the TradeAtLast phase, market data is published on every accepted order action, exactly as during normal trading. The orders accepted during the phase appear in the Bid (269=0) and Offer (269=1) depth entries like any other resting order; since all of them are priced at the closing price, they aggregate into a single price level, together with any order an earlier phase left at that price.
+
+Every cross between two orders of the phase is published as a Trade (269=2) entry priced at the closing price, carrying TradingSessionID (336) = 1 (Day), TradingSessionSubID (625) = 5 (Post-Trading) and SecurityTradingStatus (326) = 3 (Resume). Their quantity is added to the daily Trade Volume (269=B), and their price updates the Trading Session High Price (269=7), the Trading Session Low Price (269=8) and the Mid Price (269=H) derived from them. The Closing Price (269=5) the phase trades at is not changed by them.
+
+[[message-flows-mkt-data-daily-reset]]
+==== Daily Session Price Reset Without Auction Phases
+
+The session-level L1 prices are normally reset by the opening and closing auctions, as described above:
+
+* Opening Price (269=4);
+* Closing Price (269=5);
+* Previous Closing Price (269=e);
+* Trading Session High Price (269=7);
+* Trading Session Low Price (269=8);
+* Mid Price (269=H).
+
+When a venue's phase schedule does not include the corresponding auction, the simulator instead resets these values to the day's trades so they still roll over once per day.
+
+When no opening auction (PreOpen) is scheduled, the Opening Price (269=4) is set from the price of the first trade that occurs after midnight in the venue's configured time zone, and the session high (269=7) and low (269=8) prices are reset to that opening price and tracked from there on.
+
+When no closing auction (PreClose) is scheduled, the Closing Price (269=5) is set to the price of the last trade before midnight in the venue's configured time zone. As with the closing auction, each rollover first carries the last known Closing Price into the Previous Closing Price (269 = e).
+
+The daily Trade Volume (269=B) follows the same daily cycle. During the Open phase and during the TradeAtLast phase, the quantity matched by each trade is added to it. When an opening auction is scheduled, the auction resets it to the auction's clearing volume (see <<message-flows-mkt-data-auction>>); when no opening auction is scheduled, it is instead reset to the matched quantity of the first trade that occurs after midnight in the venue's configured time zone. Closing and intraday auctions add their clearing volume on top.
+
 [[message-flows-trd-msg]]
 === Trading Messages
 
@@ -103,7 +335,7 @@ NewOrderSingle message rejection reasons are listed in the table below:
 | Listing identification attributes cannot be used to identify the listing (see Instrument Resolution section) | – | 
 ‘listing identification attributes set is malformed’
 
-| Price (44) is missing in NewOrderSingle request | Reported when an order with OrdType=Limit is specified without a price | ‘order price not found'
+| Price (44) is missing in NewOrderSingle request | Reported when an order with OrdType=Limit is specified without a price | ‘order price missing'
 
 | Price (44) is specified in NewOrderSingle request | Reported when an order with OrdType=Market is specified with a price | ‘order price is not allowed’
 
@@ -117,13 +349,7 @@ NewOrderSingle message rejection reasons are listed in the table below:
 
 | Value in OrderQty (38) is greater than the requested listing’s quantity maximum | – | ‘maximal order quantity constraint is violated’
 
-| An opposite side has no orders matching the new order to be traded | Reported only for orders with
-
-OrdType=Market or TimeInForce=ImmediateOrCancel or TimeInForce=FillOrKill | ‘no facing orders found’
-
-| All matching opposite orders cannot fill a new FillOrKill order | Reported only for orders with TimeInForce=FillOrKill | 'not enough liquidity to fill FoK order'
-
-| Both ExpireDate (432) and ExpireTime (126) are missing for a GoodTillCancel order | Reported only for orders with TimeInForce=GoodTillCancel 
+| Both ExpireDate (432) and ExpireTime (126) are missing for a GoodTillCancel order | Reported only for orders with TimeInForce=GoodTillCancel
 | ‘neither expire date nor expire time specified’
 
 | Both ExpireDate (432) and ExpireTime (126) are specified for a GoodTillCancel order | Reported only for orders with TimeInForce=GoodTillCancel | 
@@ -132,12 +358,51 @@ OrdType=Market or TimeInForce=ImmediateOrCancel or TimeInForce=FillOrKill | ‘n
 | A new GoodTillCancel order is already expired as per the specified ExpireDate (432) or ExpireTime (126) | Reported only for orders with TimeInForce=GoodTillCancel | 
 ‘order already expired’
 
-a| The venue is in the Open halted phase.
+a| The venue is in the Open or the TradeAtLast halted phase.
 
 It means that in the message SecurityStatus (35=f), the tags are:
 
-* TradingSessionSubID is “(Continuous) Trading” - 625=3
+* TradingSessionSubID is “(Continuous) Trading” - 625=3 or “Post-Trading” - 625=5
 * SecurityTradingStatus is “Trading halt” - 326=2 | – | ‘request cannot be processed during halted trading status’
+
+| An ImmediateOrCancel or FillOrKill limit order is submitted during an auction call sub-phase | Reported for orders with TimeInForce=ImmediateOrCancel or TimeInForce=FillOrKill while an auction is in its call sub-phase (SecurityTradingStatus 326=3 with an auction TradingSessionSubID 625=2/4/6) | ‘immediate-or-cancel and fill-or-kill orders are not accepted during an auction’
+
+| Any new order is submitted during an auction uncrossing sub-phase | Reported while an auction is uncrossing (SecurityTradingStatus 326=2 with an auction TradingSessionSubID 625=2/4/6) | ‘orders are not allowed during the uncrossing phase’
+
+| Any new order is submitted during the Closed phase | Reported while the Closed phase is active (SecurityTradingStatus 326=2 with TradingSessionSubID 625=10) | ‘request cannot be processed during closed phase’
+
+| A market order is submitted during the TradeAtLast phase | Reported for orders with OrdType=Market while the TradeAtLast phase is active (TradingSessionSubID 625=5); only limit orders are accepted during that phase | ‘only limit orders are accepted during the trade-at-last phase’
+
+| A limit order with a TimeInForce other than Day is submitted during the TradeAtLast phase | Covers ImmediateOrCancel, FillOrKill, GoodTillCancel and GoodTillDate | ‘only day orders are accepted during the trade-at-last phase’
+
+| A new order is submitted during the TradeAtLast phase while no Closing Price (269=5) is known | For instance after a closing auction that did not cross; no order is accepted for the whole phase in that case | ‘no closing price is available, orders are not accepted during the trade-at-last phase’
+
+| A new order is submitted during the TradeAtLast phase with a Price (44) differing from the Closing Price (269=5) | – | ‘order price must be equal to the closing price during the trade-at-last phase’
+
+|===
+
+A NewOrderSingle message can be cancelled by the simulator.
+An application-level cancellation is issued in the form of an *ExecutionReport* message with *ExecType=Cancelled*, *OrdStatus=Cancelled*,
+and a *Text* field specifying the reason for the cancellation:
+
+image::17MktDataNewOrderCancel.png[width = 600, height=300]
+
+NewOrderSingle message cancellation reasons are listed in the table below:
+
+[cols="1,1,1"]
+
+|===
+| Reason | Condition |  Text (tag 58) value
+
+| An opposite side has no orders matching the new order to be traded | Reported only for orders with
+
+OrdType=Market or TimeInForce=ImmediateOrCancel or TimeInForce=FillOrKill | ‘no facing orders found’
+
+| All matching opposite orders cannot fill a new FillOrKill order | Reported only for orders with TimeInForce=FillOrKill | ‘not enough liquidity to fill FoK order’
+
+| Matching opposite orders cannot fully fill a new order; the non-executed remainder is cancelled after partial execution | Reported only for orders with OrdType=Limit and TimeInForce=ImmediateOrCancel | ‘not enough liquidity to fully fill IoC order’
+
+| Matching opposite orders cannot fully fill a new order; the non-executed remainder is cancelled after partial execution | Reported only for orders with OrdType=Market | ‘not enough liquidity to fully fill market order’
 
 |===
 [[message-flows-trd-msg-exe-rpt]]
@@ -151,8 +416,9 @@ The diagram below illustrates the basic message flow for the order lifetime betw
 
 image::07MktDataExeRpt.png[width = 600, height=300]
 
-The simulator cancels orders with *TimeInForce=ImmediateOrCancel* automatically if there is a non-executed order part left after the order matching and trading process. 
-Such cancellation would be reported by *OrdStatus=Cancelled* in the last execution report for an order:
+The simulator cancels orders with *TimeInForce=ImmediateOrCancel* automatically if there is a non-executed order part left after the order matching and trading process.
+Such cancellation would be reported by *ExecType=Cancelled* and *OrdStatus=Cancelled* in the last execution report for an order,
+with the *Text* field specifying the cancellation reason:
 
 image::08MktDataCancel.png[width = 600, height=300]
 
@@ -160,6 +426,8 @@ The simulator automatically cancels expired orders with *TimeInForce=Day* and *T
 The cancellation is reported to a client in the form of an ExecutionReport message with *ExecType=Cancelled* and *OrdStatus=Cancelled*:
 
 image::09MktDataPartialCancel.png[width = 600, height=300]
+
+The orders left in the TradeAtLast queues are cancelled and reported the same way when that phase ends, whichever phase follows it, with *LeavesQty* (151) carrying the quantity that was not filled.
 
 [[message-flows-trd-msg-odr-cl-rep-req]]
 ==== Order Cancel Replace Request
@@ -194,10 +462,10 @@ Order is terminated (e.g. filled or cancelled)
 
 | New OrderQty (38) value is less than or equal to the already executed CumQty (14) for an order | – | ‘invalid quantity’
 
-| New TimeInForce (59) value does not match the original value specified for an order | – | ‘time in force value can not be changed’
+| New TimeInForce (59) value does not match the original value specified for an order | – | ‘time in force can not be changed’
 
 | Price (44) is missing in NewOrderSingle request | Reported when an order with OrdType=Limit is specified without a price | 
-‘order price not found’
+‘order price missing’
 
 | OrderQty (38) is missing in NewOrderSingle request | – | ‘order quantity missing’
 
@@ -218,12 +486,26 @@ Order is terminated (e.g. filled or cancelled)
 | A new GoodTillCancel order is already expired as per specified ExpireDate (432) or ExpireTime (126) | 
 Reported only for orders with TimeInForce=GoodTillCancel | ‘order already expired’
 
-a| The venue is in the Open halted phase. 
+a| The venue is in the Open or the TradeAtLast halted phase.
 
 It means that in the message SecurityStatus (35=f),the tags are:
 
-* TradingSessionSubID is “(Continuous) Trading” - 625=3
+* TradingSessionSubID is “(Continuous) Trading” - 625=3 or “Post-Trading” - 625=5
 * SecurityTradingStatus is “Trading halt” - 326=2 | – | ‘request cannot be processed during halted trading status'
+
+| OrderCancelReplaceRequest targets a market order (OrdType=Market) outside an auction call sub-phase | Market orders rest in the book only during an auction call, and only then can they be amended (their quantity); at any other time, the TradeAtLast phase included, an amendment of a market order is rejected | ‘unknown order type’
+
+| Any amend is submitted during an auction uncrossing sub-phase | Reported while an auction is uncrossing (SecurityTradingStatus 326=2 with an auction TradingSessionSubID 625=2/4/6) | ‘orders are not allowed during the uncrossing phase’
+
+| Any amend is submitted during the Closed phase | Reported while the Closed phase is active (SecurityTradingStatus 326=2 with TradingSessionSubID 625=10) | ‘request cannot be processed during closed phase’
+
+| An amend submitted during the TradeAtLast phase does not identify an order placed during that phase | During the TradeAtLast phase (TradingSessionSubID 625=5) amendments are resolved only against the orders accepted in that phase; an order resting from an earlier phase is left untouched | ‘order not found’
+
+| An amend submitted during the TradeAtLast phase specifies a TimeInForce other than Day | The amended values must satisfy the same rules as a new order submitted during that phase | ‘only day orders are accepted during the trade-at-last phase’
+
+| An amend is submitted during the TradeAtLast phase while no Closing Price (269=5) is known | – | ‘no closing price is available, orders are not accepted during the trade-at-last phase’
+
+| An amend submitted during the TradeAtLast phase specifies a Price (44) differing from the Closing Price (269=5) | – | ‘order price must be equal to the closing price during the trade-at-last phase’
 
 |===
 
@@ -256,13 +538,19 @@ OrderCancelRequest message rejection reasons are listed in the table below:
 Side (54) does not match the original order side value.
 Order is terminated (e.g. filled or cancelled) | – | ‘order not found’
 
-a| The venue is in the Open halted phase and OrderCancelRequest is not allowed on this halted phase.
+a| The venue is in the Open or the TradeAtLast halted phase and OrderCancelRequest is not allowed on this halted phase.
 
-“Open halted phase” means that in the message SecurityStatus (35=f), the tags are:
+It means that in the message SecurityStatus (35=f), the tags are:
 
-* TradingSessionSubID is “(Continuous) Trading” - 625=3
+* TradingSessionSubID is “(Continuous) Trading” - 625=3 or “Post-Trading” - 625=5
 * SecurityTradingStatus is “Trading halt” - 326=2
 | – | ‘request cannot be processed during halted trading status'
+
+| Any cancel is submitted during an auction uncrossing sub-phase | Order cancels are rejected while an auction is uncrossing, even when the halt settings would otherwise allow cancels (SecurityTradingStatus 326=2 with an auction TradingSessionSubID 625=2/4/6) | ‘orders are not allowed during the uncrossing phase’
+
+| Any cancel is submitted during the Closed phase | Reported while the Closed phase is active (SecurityTradingStatus 326=2 with TradingSessionSubID 625=10) | ‘request cannot be processed during closed phase’
+
+| A cancel submitted during the TradeAtLast phase does not identify an order placed during that phase | During the TradeAtLast phase (TradingSessionSubID 625=5) cancels are resolved only against the orders accepted in that phase, a halted phase that allows cancels included; an order resting from an earlier phase is left untouched | ‘order not found’
 
 |===
 
@@ -279,7 +567,11 @@ The general trading phase/status reporting message flow is described in a diagra
 
 image::14MktDataStsReport.png[width = 600, height=300]
 
-A client may also issue a current trading phase/status information only, without the creation of a subscription and further updates streaming. 
+During an auction the phase is reported in two steps: a SecurityStatus carrying SecurityTradingStatus (326) = 3 (Resume) and the auction's TradingSessionSubID (625 = 2 opening, 4 closing, 6 intraday) when the call sub-phase begins, then a SecurityStatus carrying SecurityTradingStatus (326) = 2 (Trading Halt) with the same TradingSessionSubID when the uncrossing sub-phase begins. The phase scheduled to follow the auction is reported afterwards.
+
+The TradeAtLast phase, typically scheduled right after a closing auction, is reported in a single step: a SecurityStatus carrying TradingSessionSubID (625) = 5 (Post-Trading) and SecurityTradingStatus (326) = 3 (Resume) when the phase begins. A halt of the phase is reported as SecurityTradingStatus (326) = 2 (Trading Halt) with the same TradingSessionSubID. The phase accepts only limit orders with a TimeInForce of Day priced at the last Closing Price (269=5), crosses them only against one another and leaves the orders resting from earlier phases untouched; the rejections it produces are listed in the tables of <<message-flows-trd-msg>>.
+
+A client may also issue a current trading phase/status information only, without the creation of a subscription and further updates streaming.
 In this case, a client shall send a *SecurityStatusRequest* message with *SubscriptionRequestType=Snapshot*. 
 The simulator replies with the *SecurityStatus* message only, as shown in the diagram below: 
 

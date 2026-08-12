@@ -35,6 +35,14 @@ struct DepthCacheTest : Test {
     return make_order_added(id, px, vol).with_order_side(Side::Option::Sell);
   }
 
+  static auto buy_market_order_added(OrderId id, Quantity vol) {
+    return NewOrderAdded()
+        .with_order_id(id)
+        .with_order_side(Side::Option::Buy)
+        .with_order_price(std::nullopt)
+        .with_order_quantity(vol);
+  }
+
   static auto sell_order_reduced(OrderId id, Price px, Quantity vol) {
     return make_order_reduced(id, px, vol).with_order_side(Side::Option::Sell);
   }
@@ -57,6 +65,13 @@ struct DepthCacheTest : Test {
                  Field(&MarketDataEntry::quantity, Eq(quantity)),
                  Field(&MarketDataEntry::type, Eq(MdEntryType::Option::Offer)),
                  Field(&MarketDataEntry::action, Eq(action)));
+  }
+
+  static auto MarketBidEntryWith(std::optional<Quantity> quantity) {
+    return AllOf(
+        Field(&MarketDataEntry::price, Eq(std::nullopt)),
+        Field(&MarketDataEntry::quantity, Eq(quantity)),
+        Field(&MarketDataEntry::type, Eq(MdEntryType::Option::MarketBid)));
   }
 
   StreamingSettings settings;
@@ -149,7 +164,7 @@ TEST_F(DepthCacheTest, ReportsFirstLevelOnlyInInitialUpdate) {
                           OfferEntryWith(Price(200), Quantity(200))));
 }
 
-TEST_F(DepthCacheTest, ReportsInitialWhenFullUpdateRequested) {
+TEST_F(DepthCacheTest, ReportsLevelsAccumulatedAcrossBatchesInInitial) {
   cache.update(
       make_update(buy_order_added(OrderId(2), Price(150), Quantity(150)),
                   sell_order_added(OrderId(3), Price(200), Quantity(200))));
@@ -157,7 +172,6 @@ TEST_F(DepthCacheTest, ReportsInitialWhenFullUpdateRequested) {
       make_update(buy_order_added(OrderId(1), Price(100), Quantity(100)),
                   sell_order_added(OrderId(4), Price(250), Quantity(250))));
 
-  settings.enable_full_update_streaming();
   cache.compose_initial(settings, data);
 
   ASSERT_THAT(data,
@@ -167,7 +181,7 @@ TEST_F(DepthCacheTest, ReportsInitialWhenFullUpdateRequested) {
                           OfferEntryWith(Price(250), Quantity(250))));
 }
 
-TEST_F(DepthCacheTest, ReportsInitialWithTopLevelOnlyWhenFullUpdateRequested) {
+TEST_F(DepthCacheTest, ReportsTopLevelAccumulatedAcrossBatchesInInitial) {
   cache.update(
       make_update(buy_order_added(OrderId(2), Price(150), Quantity(150)),
                   sell_order_added(OrderId(3), Price(200), Quantity(200))));
@@ -175,7 +189,6 @@ TEST_F(DepthCacheTest, ReportsInitialWithTopLevelOnlyWhenFullUpdateRequested) {
       make_update(buy_order_added(OrderId(1), Price(100), Quantity(100)),
                   sell_order_added(OrderId(4), Price(250), Quantity(250))));
 
-  settings.enable_full_update_streaming();
   settings.enable_top_of_book_only_streaming();
   cache.compose_initial(settings, data);
 
@@ -203,6 +216,55 @@ TEST_F(DepthCacheTest, ReportsInitialWithExcludedOrders) {
   cache.compose_initial(settings, data);
 
   ASSERT_THAT(data, ElementsAre(BidEntryWith(Price(100), Quantity(500))));
+}
+
+TEST_F(DepthCacheTest, DoesNotReportMarketOrdersWhenOnlyPricedSideRequested) {
+  cache.update(
+      make_update(buy_market_order_added(OrderId(1), Quantity(50)),
+                  buy_order_added(OrderId(2), Price(100), Quantity(100))));
+
+  cache.compose_initial(settings, data);
+
+  ASSERT_THAT(data, ElementsAre(BidEntryWith(Price(100), Quantity(100))));
+}
+
+TEST_F(DepthCacheTest, ReportsMarketOrdersWhenMarketSideRequested) {
+  cache.update(
+      make_update(buy_market_order_added(OrderId(1), Quantity(50)),
+                  buy_order_added(OrderId(2), Price(100), Quantity(100))));
+
+  StreamingSettings market_settings;
+  market_settings.enable_data_type_streaming(MdEntryType::Option::MarketBid);
+  cache.compose_initial(market_settings, data);
+
+  ASSERT_THAT(data, ElementsAre(MarketBidEntryWith(Quantity(50))));
+}
+
+TEST_F(
+    DepthCacheTest,
+    DoesNotReportMarketOrdersInIncrementalUpdateWhenOnlyPricedSideRequested) {
+  cache.update(
+      make_update(buy_market_order_added(OrderId(1), Quantity(50)),
+                  buy_order_added(OrderId(2), Price(100), Quantity(100))));
+
+  cache.compose_update(settings, data);
+
+  ASSERT_THAT(data,
+              ElementsAre(BidEntryWith(
+                  Price(100), Quantity(100), MarketEntryAction::Option::New)));
+}
+
+TEST_F(DepthCacheTest,
+       ReportsMarketOrdersInIncrementalUpdateWhenMarketSideRequested) {
+  cache.update(
+      make_update(buy_market_order_added(OrderId(1), Quantity(50)),
+                  buy_order_added(OrderId(2), Price(100), Quantity(100))));
+
+  StreamingSettings market_settings;
+  market_settings.enable_data_type_streaming(MdEntryType::Option::MarketBid);
+  cache.compose_update(market_settings, data);
+
+  ASSERT_THAT(data, ElementsAre(MarketBidEntryWith(Quantity(50))));
 }
 
 TEST_F(DepthCacheTest, ReportsEmptyIncrementalUpdateWhenNoUpdatesApplied) {
@@ -375,6 +437,85 @@ TEST_F(DepthCacheTest, CapturesOfferState) {
 
   EXPECT_THAT(state.best_offer_price, Eq(Price(10)));
   EXPECT_THAT(state.current_offer_depth, Eq(CurrentOfferDepth(2)));
+}
+
+TEST_F(DepthCacheTest, HasNoUpdateWhenNoChangesApplied) {
+  EXPECT_FALSE(cache.has_update(settings));
+}
+
+TEST_F(DepthCacheTest, HasNoUpdateWhenChangesAlreadyFolded) {
+  cache.update(
+      make_update(buy_order_added(OrderId(1), Price(100), Quantity(100))));
+  cache.update({});
+
+  EXPECT_FALSE(cache.has_update(settings));
+}
+
+TEST_F(DepthCacheTest, HasNoUpdateWhenChangedSideNotRequested) {
+  cache.update(
+      make_update(buy_order_added(OrderId(1), Price(100), Quantity(100))));
+
+  StreamingSettings offer_only;
+  offer_only.enable_data_type_streaming(MdEntryType::Option::Offer);
+
+  EXPECT_FALSE(cache.has_update(offer_only));
+}
+
+TEST_F(DepthCacheTest, HasNoUpdateWhenRestingMarketOrderNotRequested) {
+  cache.update(make_update(buy_market_order_added(OrderId(1), Quantity(70))));
+
+  EXPECT_FALSE(cache.has_update(settings));
+}
+
+TEST_F(DepthCacheTest, HasNoUpdateWhenOnlyExcludedOwnerOrdersChange) {
+  cache.configure(DepthCache::Config{.allow_orders_exclusion = true});
+  cache.update(make_update(NewOrderAdded()
+                               .with_order_id(OrderId(1))
+                               .with_order_owner(PartyId("owner"))
+                               .with_order_side(Side::Option::Buy)
+                               .with_order_price(Price(100))
+                               .with_order_quantity(Quantity(200))));
+
+  settings.filter_orders_by_owner(PartyId("owner"));
+
+  EXPECT_FALSE(cache.has_update(settings));
+}
+
+TEST_F(DepthCacheTest, HasUpdateWhenRequestedSideChanged) {
+  cache.update(
+      make_update(buy_order_added(OrderId(1), Price(100), Quantity(100))));
+
+  EXPECT_TRUE(cache.has_update(settings));
+}
+
+TEST_F(DepthCacheTest, HasUpdateWhenRequestedMarketOrderRests) {
+  cache.update(make_update(buy_market_order_added(OrderId(1), Quantity(70))));
+
+  settings.enable_data_type_streaming(MdEntryType::Option::MarketBid);
+
+  EXPECT_TRUE(cache.has_update(settings));
+}
+
+TEST_F(DepthCacheTest, HasNoUpdateInTopOfBookWhenOnlyDeeperLevelChanges) {
+  cache.update(
+      make_update(buy_order_added(OrderId(1), Price(150), Quantity(100))));
+  cache.update(
+      make_update(buy_order_added(OrderId(2), Price(100), Quantity(100))));
+
+  settings.enable_top_of_book_only_streaming();
+
+  EXPECT_FALSE(cache.has_update(settings));
+}
+
+TEST_F(DepthCacheTest, HasUpdateInTopOfBookWhenTopLevelChanges) {
+  cache.update(
+      make_update(buy_order_added(OrderId(1), Price(100), Quantity(100))));
+  cache.update(
+      make_update(buy_order_added(OrderId(2), Price(150), Quantity(100))));
+
+  settings.enable_top_of_book_only_streaming();
+
+  EXPECT_TRUE(cache.has_update(settings));
 }
 
 // NOLINTEND(*magic-numbers*,*non-private-member*)

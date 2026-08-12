@@ -3,6 +3,8 @@
 
 #include <fmt/format.h>
 
+#include <optional>
+
 #include "common/attributes.hpp"
 #include "common/trade.hpp"
 #include "core/domain/attributes.hpp"
@@ -37,14 +39,24 @@ struct LimitOrder {
   OrderPrice order_price{0.};
   OrderQuantity total_quantity{0.};
   CumExecutedQuantity cum_executed_quantity{0.};
+  double cum_px_qty{0.};
 
   [[nodiscard]]
   auto operator==(const LimitOrder&) const -> bool = default;
 };
 
 struct InstrumentInfo {
-  Price low_price{0.};
-  Price high_price{0.};
+  std::optional<Price> low_price{};
+  std::optional<Price> high_price{};
+  std::optional<Price> opening_price{};
+  std::optional<core::sys_us> opening_price_time{};
+  std::optional<Price> closing_price{};
+  std::optional<core::sys_us> closing_price_time{};
+  std::optional<Price> auction_clearing_price{};
+  std::optional<Quantity> auction_clearing_quantity{};
+  std::optional<Price> previous_closing_price{};
+  std::optional<Quantity> trade_volume{};
+  std::optional<Price> last_open_phase_traded_price{};
 
   [[nodiscard]]
   auto operator==(const InstrumentInfo&) const -> bool = default;

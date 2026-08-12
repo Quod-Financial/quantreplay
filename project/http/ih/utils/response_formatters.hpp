@@ -2,15 +2,15 @@
 #define SIMULATOR_HTTP_IH_UTILS_RESPONSE_FORMATTERS_HPP_
 
 #include <fmt/format.h>
-#include <rapidjson/document.h>
+#include <pistache/http_defs.h>
 
 #include <string>
 #include <string_view>
+#include <unordered_map>
 
-#include "cfg/api/cfg.hpp"
-#include "core/version.hpp"
 #include "data_layer/api/models/venue.hpp"
-#include "ih/marshalling/json/detail/utils.hpp"
+#include "ih/config_provider.hpp"
+#include "ih/controllers/fix_session_controller.hpp"
 
 namespace simulator::http {
 
@@ -26,37 +26,20 @@ inline auto format_result_response(std::string_view result_message)
   return format_response("result", result_message);
 }
 
+// Formats the status of another simulator instance when response_code != OK.
 [[nodiscard]]
-inline auto format_venue_status(const data_layer::Venue& venue,
-                                int response_code) -> std::string {
-  rapidjson::Document document;
-  rapidjson::Value value;
+auto format_venue_status(const data_layer::Venue& venue,
+                         const Pistache::Http::Code& response_code)
+    -> std::string;
 
-  auto& allocator = document.GetAllocator();
-  document.SetObject();
-
-  value.SetString(venue.venue_id().data(), allocator);
-  document.AddMember("id", value, allocator);
-
-  if (const auto& venue_name = venue.name()) {
-    value.SetString(venue_name->data(), allocator);
-    document.AddMember("name", value, allocator);
-  }
-
-  auto time_str = fmt::format("{:%Y-%b-%d %T}", cfg::venue().start_time);
-  value.SetString(time_str.data(), allocator);
-  document.AddMember("startTime", value, allocator);
-
-  value.SetString(core::version().data(), allocator);
-  document.AddMember("version", value, allocator);
-
-  if (response_code != 0) {
-    value.SetInt(response_code);
-    document.AddMember("statusCode", value, allocator);
-  }
-
-  return json::encode(document);
-}
+// Formats the status of the current simulator instance
+[[nodiscard]]
+auto format_current_venue_status(
+    const data_layer::Venue& venue,
+    const Pistache::Http::Code& response_code,
+    const ConfigProvider& config_provider,
+    const std::unordered_map<std::string, FixSessionController::FixSessionInfo>&
+        fix_sessions) -> std::string;
 
 }  // namespace simulator::http
 

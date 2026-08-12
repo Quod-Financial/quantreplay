@@ -1,5 +1,6 @@
 #include <utility>
 
+#include "core/tools/numeric.hpp"
 #include "ih/orders/replies/cancellation_reply_builders.hpp"
 #include "ih/orders/replies/execution_reply_builders.hpp"
 #include "ih/orders/replies/modification_reply_builders.hpp"
@@ -9,9 +10,23 @@
 
 namespace simulator::trading_system::matching_engine {
 
+namespace {
+
+auto rounded_average_price(const std::optional<AveragePrice>& average_price,
+                           const std::optional<PriceTick>& price_tick)
+    -> std::optional<AveragePrice> {
+  if (!average_price.has_value() || !price_tick.has_value()) {
+    return average_price;
+  }
+  return std::make_optional<AveragePrice>(core::round_to_tick(
+      static_cast<double>(*average_price), static_cast<double>(*price_tick)));
+}
+
+}  // namespace
+
 CancellationConfirmationBuilder::CancellationConfirmationBuilder(
-    protocol::Session session)
-    : message_(std::move(session)) {}
+    protocol::Session session, std::optional<PriceTick> price_tick)
+    : message_{std::move(session)}, price_tick_{price_tick} {}
 
 auto CancellationConfirmationBuilder::build() const
     -> protocol::OrderCancellationConfirmation {
@@ -23,8 +38,10 @@ auto CancellationConfirmationBuilder::for_order(const LimitOrder& order)
   message_.instrument = order.instrument();
   message_.parties = order.attributes().order_parties();
   message_.venue_order_id = order::to_venue_order_id(order.id());
-  message_.leaving_quantity = order.leaves_quantity();
   message_.cum_executed_quantity = order.cum_executed_quantity();
+  message_.order_quantity = order.total_quantity();
+  message_.average_price =
+      rounded_average_price(order.average_price(), price_tick_);
   message_.order_price = order.price();
   message_.order_status = order.status();
   message_.side = order.side();
@@ -33,6 +50,37 @@ auto CancellationConfirmationBuilder::for_order(const LimitOrder& order)
   message_.expire_time = order.expire_time();
   message_.expire_date = order.expire_date();
   message_.order_type = OrderType::Option::Limit;
+  return *this;
+}
+
+auto CancellationConfirmationBuilder::for_order(const MarketOrder& order)
+    -> CancellationConfirmationBuilder& {
+  message_.instrument = order.instrument();
+  message_.parties = order.attributes().order_parties();
+  message_.venue_order_id = order::to_venue_order_id(order.id());
+  message_.cum_executed_quantity = order.cum_executed_quantity();
+  message_.order_quantity = order.total_quantity();
+  message_.average_price =
+      rounded_average_price(order.average_price(), price_tick_);
+  message_.order_status = order.status();
+  message_.side = order.side();
+  message_.time_in_force = order.time_in_force();
+  message_.short_sale_exempt_reason = order.short_sale_exemption_reason();
+  message_.expire_time = order.expire_time();
+  message_.expire_date = order.expire_date();
+  message_.order_type = OrderType::Option::Market;
+  return *this;
+}
+
+auto CancellationConfirmationBuilder::with_leaving_quantity(
+    LeavesQuantity quantity) -> CancellationConfirmationBuilder& {
+  message_.leaving_quantity = quantity;
+  return *this;
+}
+
+auto CancellationConfirmationBuilder::with_cancellation_text(
+    CancellationText text) -> CancellationConfirmationBuilder& {
+  message_.cancellation_text = std::move(text);
   return *this;
 }
 
@@ -56,15 +104,24 @@ auto CancellationConfirmationBuilder::with_orig_client_order_id(
   return *this;
 }
 
-auto prepare_cancellation_confirmation(const LimitOrder& order)
+auto prepare_cancellation_confirmation(const LimitOrder& order,
+                                       std::optional<PriceTick> price_tick)
     -> CancellationConfirmationBuilder {
-  CancellationConfirmationBuilder builder{order.client_session()};
+  CancellationConfirmationBuilder builder{order.client_session(), price_tick};
+  builder.for_order(order);
+  return builder;
+}
+
+auto prepare_cancellation_confirmation(const MarketOrder& order,
+                                       std::optional<PriceTick> price_tick)
+    -> CancellationConfirmationBuilder {
+  CancellationConfirmationBuilder builder{order.client_session(), price_tick};
   builder.for_order(order);
   return builder;
 }
 
 CancellationRejectBuilder::CancellationRejectBuilder(protocol::Session session)
-    : message_(std::move(session)) {
+    : message_{std::move(session)} {
   message_.order_status = OrderStatus::Option::Rejected;
 }
 
@@ -129,8 +186,9 @@ auto prepare_cancellation_reject(const OrderCancel& cancel)
   return builder;
 }
 
-ExecutionReportBuilder::ExecutionReportBuilder(protocol::Session session)
-    : message_(std::move(session)) {
+ExecutionReportBuilder::ExecutionReportBuilder(
+    protocol::Session session, std::optional<PriceTick> price_tick)
+    : message_{std::move(session)}, price_tick_{price_tick} {
   message_.execution_type = ExecutionType::Option::OrderTraded;
 }
 
@@ -145,8 +203,11 @@ auto ExecutionReportBuilder::for_order(const LimitOrder& order)
   message_.venue_order_id = order::to_venue_order_id(order.id());
   message_.client_order_id = order.client_order_id();
   message_.order_price = order.price();
+  message_.order_quantity = order.total_quantity();
   message_.leaves_quantity = order.leaves_quantity();
   message_.cum_executed_quantity = order.cum_executed_quantity();
+  message_.average_price =
+      rounded_average_price(order.average_price(), price_tick_);
   message_.order_status = order.status();
   message_.side = order.side();
   message_.time_in_force = order.time_in_force();
@@ -163,8 +224,11 @@ auto ExecutionReportBuilder::for_order(const MarketOrder& order)
   message_.parties = order.attributes().order_parties();
   message_.venue_order_id = order::to_venue_order_id(order.id());
   message_.client_order_id = order.client_order_id();
+  message_.order_quantity = order.total_quantity();
   message_.leaves_quantity = order.leaves_quantity();
   message_.cum_executed_quantity = order.cum_executed_quantity();
+  message_.average_price =
+      rounded_average_price(order.average_price(), price_tick_);
   message_.order_status = order.status();
   message_.side = order.side();
   message_.time_in_force = order.time_in_force();
@@ -201,23 +265,25 @@ auto ExecutionReportBuilder::with_counterparty(
   return *this;
 }
 
-auto prepare_execution_report(const LimitOrder& order)
+auto prepare_execution_report(const LimitOrder& order,
+                              std::optional<PriceTick> price_tick)
     -> ExecutionReportBuilder {
-  ExecutionReportBuilder builder{order.client_session()};
+  ExecutionReportBuilder builder{order.client_session(), price_tick};
   builder.for_order(order);
   return builder;
 }
 
-auto prepare_execution_report(const MarketOrder& order)
+auto prepare_execution_report(const MarketOrder& order,
+                              std::optional<PriceTick> price_tick)
     -> ExecutionReportBuilder {
-  ExecutionReportBuilder builder{order.client_session()};
+  ExecutionReportBuilder builder{order.client_session(), price_tick};
   builder.for_order(order);
   return builder;
 }
 
 ModificationConfirmationBuilder::ModificationConfirmationBuilder(
-    protocol::Session session)
-    : message_(std::move(session)) {}
+    protocol::Session session, std::optional<PriceTick> price_tick)
+    : message_{std::move(session)}, price_tick_{price_tick} {}
 
 auto ModificationConfirmationBuilder::build() const
     -> protocol::OrderModificationConfirmation {
@@ -231,8 +297,11 @@ auto ModificationConfirmationBuilder::for_order(const LimitOrder& order)
   message_.venue_order_id = order::to_venue_order_id(order.id());
   message_.client_order_id = order.client_order_id();
   message_.order_price = order.price();
+  message_.order_quantity = order.total_quantity();
   message_.leaving_quantity = order.leaves_quantity();
   message_.cum_executed_quantity = order.cum_executed_quantity();
+  message_.average_price =
+      rounded_average_price(order.average_price(), price_tick_);
   message_.order_status = order.status();
   message_.side = order.side();
   message_.time_in_force = order.time_in_force();
@@ -240,6 +309,27 @@ auto ModificationConfirmationBuilder::for_order(const LimitOrder& order)
   message_.expire_time = order.expire_time();
   message_.expire_date = order.expire_date();
   message_.order_type = OrderType::Option::Limit;
+  return *this;
+}
+
+auto ModificationConfirmationBuilder::for_order(const MarketOrder& order)
+    -> ModificationConfirmationBuilder& {
+  message_.instrument = order.instrument();
+  message_.parties = order.attributes().order_parties();
+  message_.venue_order_id = order::to_venue_order_id(order.id());
+  message_.client_order_id = order.client_order_id();
+  message_.order_quantity = order.total_quantity();
+  message_.leaving_quantity = order.leaves_quantity();
+  message_.cum_executed_quantity = order.cum_executed_quantity();
+  message_.average_price =
+      rounded_average_price(order.average_price(), price_tick_);
+  message_.order_status = order.status();
+  message_.side = order.side();
+  message_.time_in_force = order.time_in_force();
+  message_.short_sale_exempt_reason = order.short_sale_exemption_reason();
+  message_.expire_time = order.expire_time();
+  message_.expire_date = order.expire_date();
+  message_.order_type = OrderType::Option::Market;
   return *this;
 }
 
@@ -256,15 +346,24 @@ auto ModificationConfirmationBuilder::with_orig_client_order_id(
   return *this;
 }
 
-auto prepare_modification_confirmation(const LimitOrder& order)
+auto prepare_modification_confirmation(const LimitOrder& order,
+                                       std::optional<PriceTick> price_tick)
     -> ModificationConfirmationBuilder {
-  ModificationConfirmationBuilder builder{order.client_session()};
+  ModificationConfirmationBuilder builder{order.client_session(), price_tick};
+  builder.for_order(order);
+  return builder;
+}
+
+auto prepare_modification_confirmation(const MarketOrder& order,
+                                       std::optional<PriceTick> price_tick)
+    -> ModificationConfirmationBuilder {
+  ModificationConfirmationBuilder builder{order.client_session(), price_tick};
   builder.for_order(order);
   return builder;
 }
 
 ModificationRejectBuilder::ModificationRejectBuilder(protocol::Session session)
-    : message_(std::move(session)) {
+    : message_{std::move(session)} {
   message_.order_status = OrderStatus::Option::Rejected;
 }
 
@@ -331,9 +430,18 @@ auto prepare_modification_reject(const LimitUpdate& update)
   return builder;
 }
 
+auto prepare_modification_reject(const MarketUpdate& update)
+    -> ModificationRejectBuilder {
+  ModificationRejectBuilder builder{update.client_session};
+  builder.with_order_id(update.order_id)
+      .with_client_order_id(update.client_order_id)
+      .with_orig_client_order_id(update.orig_client_order_id);
+  return builder;
+}
+
 PlacementConfirmationBuilder::PlacementConfirmationBuilder(
     protocol::Session session)
-    : message_(std::move(session)) {}
+    : message_{std::move(session)} {}
 
 auto PlacementConfirmationBuilder::build() const
     -> protocol::OrderPlacementConfirmation {
@@ -394,26 +502,10 @@ auto prepare_placement_confirmation(const MarketOrder& order)
 }
 
 PlacementRejectBuilder::PlacementRejectBuilder(protocol::Session session)
-    : message_(std::move(session)) {}
+    : message_{std::move(session)} {}
 
 auto PlacementRejectBuilder::build() const -> protocol::OrderPlacementReject {
   return message_;
-}
-
-auto PlacementRejectBuilder::for_request(
-    const protocol::OrderPlacementRequest& request) -> PlacementRejectBuilder& {
-  message_.instrument = request.instrument;
-  message_.order_price = request.order_price;
-  message_.order_quantity = request.order_quantity;
-  message_.side = request.side;
-  message_.order_type = request.order_type;
-  message_.time_in_force = request.time_in_force;
-  message_.client_order_id = request.client_order_id;
-  message_.parties = request.parties;
-  message_.short_sale_exempt_reason = request.short_sale_exempt_reason;
-  message_.expire_time = request.expire_time;
-  message_.expire_date = request.expire_date;
-  return *this;
 }
 
 auto PlacementRejectBuilder::for_order(const LimitOrder& order)
@@ -465,16 +557,6 @@ auto PlacementRejectBuilder::with_execution_id(ExecutionId identifier)
     -> PlacementRejectBuilder& {
   message_.execution_id = std::move(identifier);
   return *this;
-}
-
-auto prepare_placement_reject(const protocol::OrderPlacementRequest& request,
-                              OrderId rejected_order_id)
-    -> PlacementRejectBuilder {
-  PlacementRejectBuilder builder{request.session};
-  builder.for_request(request)
-      .with_order_id(rejected_order_id)
-      .with_execution_id(order::generate_aux_execution_id(rejected_order_id));
-  return builder;
 }
 
 auto prepare_placement_reject(const LimitOrder& order)

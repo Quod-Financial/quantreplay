@@ -510,11 +510,16 @@ TEST_F(MatchingEngineOrderBookStateConverterOrderRecord,
 
 struct MatchingEngineOrderBookStateConverterLimitOrder
     : public ::testing::Test {
-  OrderRecord order_record{OrderId{42},
-                           Side::Option::Buy,
-                           protocol::Session{protocol::generator::Session{}},
-                           {},
-                           {}};
+  OrderRecord buy_record{OrderId{42},
+                         Side::Option::Buy,
+                         protocol::Session{protocol::generator::Session{}},
+                         {},
+                         {}};
+  OrderRecord sell_record{OrderId{42},
+                          Side::Option::Sell,
+                          protocol::Session{protocol::generator::Session{}},
+                          {},
+                          {}};
   OrderBook order_book;
   market_state::OrderBook order_book_state;
 };
@@ -522,7 +527,7 @@ struct MatchingEngineOrderBookStateConverterLimitOrder
 TEST_F(MatchingEngineOrderBookStateConverterLimitOrder,
        StoresOrderPriceInBuyOrder) {
   const LimitOrder order{
-      OrderPrice{3.14}, OrderQuantity{2.74}, std::move(order_record)};
+      OrderPrice{3.14}, OrderQuantity{2.74}, std::move(buy_record)};
   order_book.buy_page().limit_orders().emplace(order);
 
   store_order_book_state(order_book, order_book_state);
@@ -533,7 +538,7 @@ TEST_F(MatchingEngineOrderBookStateConverterLimitOrder,
 TEST_F(MatchingEngineOrderBookStateConverterLimitOrder,
        StoresOrderPriceInSellOrder) {
   const LimitOrder order{
-      OrderPrice{3.14}, OrderQuantity{2.74}, std::move(order_record)};
+      OrderPrice{3.14}, OrderQuantity{2.74}, std::move(sell_record)};
   order_book.sell_page().limit_orders().emplace(order);
 
   store_order_book_state(order_book, order_book_state);
@@ -544,7 +549,7 @@ TEST_F(MatchingEngineOrderBookStateConverterLimitOrder,
 TEST_F(MatchingEngineOrderBookStateConverterLimitOrder,
        StoresTotalQuantityInBuyOrder) {
   const LimitOrder order{
-      OrderPrice{3.14}, OrderQuantity{2.74}, std::move(order_record)};
+      OrderPrice{3.14}, OrderQuantity{2.74}, std::move(buy_record)};
   order_book.buy_page().limit_orders().emplace(order);
 
   store_order_book_state(order_book, order_book_state);
@@ -555,7 +560,7 @@ TEST_F(MatchingEngineOrderBookStateConverterLimitOrder,
 TEST_F(MatchingEngineOrderBookStateConverterLimitOrder,
        StoresTotalQuantityInSellOrder) {
   const LimitOrder order{
-      OrderPrice{3.14}, OrderQuantity{2.74}, std::move(order_record)};
+      OrderPrice{3.14}, OrderQuantity{2.74}, std::move(sell_record)};
   order_book.sell_page().limit_orders().emplace(order);
 
   store_order_book_state(order_book, order_book_state);
@@ -567,7 +572,7 @@ TEST_F(MatchingEngineOrderBookStateConverterLimitOrder,
 TEST_F(MatchingEngineOrderBookStateConverterLimitOrder,
        StoresCumExecutedQuantityInBuyOrder) {
   const LimitOrder order{
-      OrderPrice{3.14}, OrderQuantity{2.74}, std::move(order_record)};
+      OrderPrice{3.14}, OrderQuantity{2.74}, std::move(buy_record)};
   order_book.buy_page().limit_orders().emplace(order);
 
   store_order_book_state(order_book, order_book_state);
@@ -579,13 +584,80 @@ TEST_F(MatchingEngineOrderBookStateConverterLimitOrder,
 TEST_F(MatchingEngineOrderBookStateConverterLimitOrder,
        StoresCumExecutedQuantityInSellOrder) {
   const LimitOrder order{
-      OrderPrice{3.14}, OrderQuantity{2.74}, std::move(order_record)};
+      OrderPrice{3.14}, OrderQuantity{2.74}, std::move(sell_record)};
   order_book.sell_page().limit_orders().emplace(order);
 
   store_order_book_state(order_book, order_book_state);
 
   ASSERT_EQ(order_book_state.sell_orders[0].cum_executed_quantity,
             CumExecutedQuantity{0.0});
+}
+
+TEST_F(MatchingEngineOrderBookStateConverterLimitOrder,
+       StoresCumPxQtyInBuyOrder) {
+  LimitOrder order{
+      OrderPrice{60.0}, OrderQuantity{200.0}, std::move(buy_record)};
+  order.execute(ExecutedQuantity{100.0}, ExecutionPrice{50.0});
+  order_book.buy_page().limit_orders().emplace(std::move(order));
+
+  store_order_book_state(order_book, order_book_state);
+
+  ASSERT_EQ(order_book_state.buy_orders[0].cum_px_qty, 5000.0);
+}
+
+TEST_F(MatchingEngineOrderBookStateConverterLimitOrder,
+       StoresCumPxQtyInSellOrder) {
+  LimitOrder order{
+      OrderPrice{60.0}, OrderQuantity{200.0}, std::move(sell_record)};
+  order.execute(ExecutedQuantity{100.0}, ExecutionPrice{50.0});
+  order_book.sell_page().limit_orders().emplace(std::move(order));
+
+  store_order_book_state(order_book, order_book_state);
+
+  ASSERT_EQ(order_book_state.sell_orders[0].cum_px_qty, 5000.0);
+}
+
+struct MatchingEngineOrderBookStateConverterTradeAtLastOrder
+    : public ::testing::Test {
+  [[nodiscard]]
+  static auto create_limit_order(OrderId identifier, Side side) -> LimitOrder {
+    OrderRecord order_record{identifier,
+                             side,
+                             protocol::Session{protocol::generator::Session{}},
+                             {},
+                             {}};
+    return LimitOrder{
+        OrderPrice{3.14}, OrderQuantity{2.74}, std::move(order_record)};
+  }
+
+  OrderBook order_book;
+  market_state::OrderBook order_book_state;
+};
+
+TEST_F(MatchingEngineOrderBookStateConverterTradeAtLastOrder,
+       DoesNotStoreTradeAtLastOrders) {
+  order_book.buy_page().trade_at_last_orders().emplace(
+      create_limit_order(OrderId{42}, Side::Option::Buy));
+  order_book.sell_page().trade_at_last_orders().emplace(
+      create_limit_order(OrderId{43}, Side::Option::Sell));
+
+  store_order_book_state(order_book, order_book_state);
+
+  EXPECT_THAT(order_book_state.buy_orders, IsEmpty());
+  EXPECT_THAT(order_book_state.sell_orders, IsEmpty());
+}
+
+TEST_F(MatchingEngineOrderBookStateConverterTradeAtLastOrder,
+       StoresLimitOrdersRestingNextToTradeAtLastOrders) {
+  order_book.buy_page().limit_orders().emplace(
+      create_limit_order(OrderId{42}, Side::Option::Buy));
+  order_book.buy_page().trade_at_last_orders().emplace(
+      create_limit_order(OrderId{43}, Side::Option::Buy));
+
+  store_order_book_state(order_book, order_book_state);
+
+  ASSERT_THAT(order_book_state.buy_orders, SizeIs(1));
+  ASSERT_EQ(order_book_state.buy_orders[0].order_id, OrderId{42});
 }
 
 }  // namespace

@@ -1,6 +1,7 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_MARKET_DATA_MARKET_DATA_FACADE_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_MARKET_DATA_MARKET_DATA_FACADE_HPP_
 
+#include "ih/common/abstractions/auction_reference_price_provider.hpp"
 #include "ih/common/abstractions/event_listener.hpp"
 #include "ih/common/abstractions/market_data_publisher.hpp"
 #include "ih/common/abstractions/market_data_request_processor.hpp"
@@ -18,7 +19,13 @@ class MarketDataFacade : public MarketDataRequestProcessor,
  public:
   auto handle(OrderBookNotification notification) -> void;
 
+  [[nodiscard]]
+  auto auction_reference_price_provider() const
+      -> const AuctionReferencePriceProvider&;
+
   auto publish() -> void override;
+
+  auto publish_uncrossing() -> void override;
 
   auto process(const protocol::MarketDataRequest& request) -> void override;
 

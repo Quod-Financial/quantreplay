@@ -1,10 +1,13 @@
-#ifndef SIMULATOR_HTTP_TEST_UTILS_TEST_SERVER_HPP_
-#define SIMULATOR_HTTP_TEST_UTILS_TEST_SERVER_HPP_
+#ifndef SIMULATOR_HTTP_TESTS_TEST_UTILS_TEST_SERVER_HPP_
+#define SIMULATOR_HTTP_TESTS_TEST_UTILS_TEST_SERVER_HPP_
 
 #include <pistache/endpoint.h>
 #include <pistache/http.h>
 #include <pistache/router.h>
 
+#include <memory>
+#include <mutex>
+#include <string>
 #include <utility>
 
 namespace simulator::http::test::util {
@@ -19,9 +22,29 @@ class Responder {
     body_ = std::move(response_body);
   }
 
+  auto last_request_body() -> std::string {
+    const std::lock_guard<std::mutex> lock{request_body_state_->mutex};
+    return request_body_state_->body;
+  }
+
  protected:
+  void store_request_body(std::string request_body) {
+    const std::lock_guard<std::mutex> lock{request_body_state_->mutex};
+    request_body_state_->body = std::move(request_body);
+  }
+
   std::string body_;
   Pistache::Http::Code code_{Pistache::Http::Code::Ok};
+
+ private:
+  // shared between handler clones made by HTTP_PROTOTYPE's copy-based clone()
+  struct RequestBodyState {
+    std::mutex mutex;
+    std::string body;
+  };
+
+  std::shared_ptr<RequestBodyState> request_body_state_{
+      std::make_shared<RequestBodyState>()};
 };
 
 class Router : public Pistache::Http::Handler, public Responder {
@@ -42,6 +65,11 @@ class Router : public Pistache::Http::Handler, public Responder {
         "/test/get/request",
         Pistache::Rest::Routes::bind(&Router::respond, this));
 
+    Pistache::Rest::Routes::Head(
+        router_,
+        "/test/head/request",
+        Pistache::Rest::Routes::bind(&Router::respond, this));
+
     Pistache::Rest::Routes::Post(
         router_,
         "/test/post/request",
@@ -58,8 +86,9 @@ class Router : public Pistache::Http::Handler, public Responder {
         Pistache::Rest::Routes::bind(&Router::respond, this));
   }
 
-  auto respond([[maybe_unused]] const Pistache::Rest::Request& request,
+  auto respond(const Pistache::Rest::Request& request,
                Pistache::Http::ResponseWriter response) -> void {
+    store_request_body(request.body());
     response.send(code_, body_);
   }
 
@@ -78,8 +107,8 @@ class Server {
     endpoint_.serveThreaded();
   }
 
-  Server(Server const&) = delete;
-  Server operator=(Server const&) = delete;
+  Server(const Server&) = delete;
+  Server operator=(const Server&) = delete;
 
   Server(Server&&) noexcept = delete;
   Server operator=(Server&&) noexcept = delete;
@@ -101,4 +130,4 @@ class Server {
 
 }  // namespace simulator::http::test::util
 
-#endif  // SIMULATOR_HTTP_TEST_TEST_UTILS_TEST_SERVER_HPP_
+#endif  // SIMULATOR_HTTP_TESTS_TEST_UTILS_TEST_SERVER_HPP_

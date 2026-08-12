@@ -30,6 +30,13 @@ class TradeCache {
   auto compose_update(const StreamingSettings& settings,
                       std::vector<MarketDataEntry>& destination) const -> void;
 
+  [[nodiscard]]
+  auto has_update(const StreamingSettings& settings) const -> bool;
+
+  [[nodiscard]]
+  auto compose_trade(const StreamingSettings& settings, const Trade& trade)
+      const -> std::optional<MarketDataEntry>;
+
   auto update(const std::vector<OrderBookNotification>& updates) -> void;
 
   auto store_state(std::optional<Trade>& last_trade) const -> void;

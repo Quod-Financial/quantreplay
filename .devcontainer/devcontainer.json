@@ -1,0 +1,17 @@
+{
+  "name": "QuantReplay Dev Container",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "xetra",
+  "workspaceFolder": "/market-simulator/quod/quantreplay",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools-extension-pack",
+        "streetsidesoftware.code-spell-checker"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  }
+}

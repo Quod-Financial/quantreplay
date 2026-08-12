@@ -22,6 +22,8 @@ struct Configuration {
   bool report_trade_parties = true;
   bool report_trade_aggressor_side = true;
   bool support_market_data_orders_exclusion = false;
+  bool opening_auction_scheduled = false;
+  bool closing_auction_scheduled = false;
 };
 
 }  // namespace simulator::trading_system::matching_engine

@@ -621,9 +621,19 @@ INSTANTIATE_TEST_SUITE_P(
            std::make_pair(MdEntryType::Option::Bid, "Bid"),
            std::make_pair(MdEntryType::Option::Offer, "Offer"),
            std::make_pair(MdEntryType::Option::Trade, "Trade"),
+           std::make_pair(MdEntryType::Option::OpeningPrice, "OpeningPrice"),
+           std::make_pair(MdEntryType::Option::ClosingPrice, "ClosingPrice"),
+           std::make_pair(MdEntryType::Option::SettlementPrice, "SettlementPrice"),
+           std::make_pair(MdEntryType::Option::HighPrice, "HighPrice"),
            std::make_pair(MdEntryType::Option::LowPrice, "LowPrice"),
+           std::make_pair(MdEntryType::Option::Imbalance, "Imbalance"),
+           std::make_pair(MdEntryType::Option::TradeVolume, "TradeVolume"),
            std::make_pair(MdEntryType::Option::MidPrice, "MidPrice"),
-           std::make_pair(MdEntryType::Option::HighPrice, "HighPrice")));
+           std::make_pair(MdEntryType::Option::EarlyPrice, "EarlyPrice"),
+           std::make_pair(MdEntryType::Option::AuctionClearingPrice, "AuctionClearingPrice"),
+           std::make_pair(MdEntryType::Option::MarketBid, "MarketBid"),
+           std::make_pair(MdEntryType::Option::MarketOffer, "MarketOffer"),
+           std::make_pair(MdEntryType::Option::PreviousClosingPrice, "PreviousClosingPrice")));
 // clang-format on
 
 struct CoreMdSubscriptionRequestTypeFormatting

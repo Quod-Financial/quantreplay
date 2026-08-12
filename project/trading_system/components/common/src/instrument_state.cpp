@@ -48,7 +48,7 @@ auto fmt::formatter<simulator::trading_system::market_state::LimitOrder>::
       "\"short_sale_exemption_reason\": {}, \"time_in_force\": {}, "
       "\"order_id\": {}, \"order_time\": {}, \"side\": {}, \"order_status\": "
       "{}, \"order_price\": {}, \"total_quantity\": {}, "
-      "\"cum_executed_quantity\": {} }}\"",
+      "\"cum_executed_quantity\": {}, \"cum_px_qty\": {} }}\"",
       order.client_instrument_descriptor,
       order.client_session,
       order.client_order_id,
@@ -63,14 +63,32 @@ auto fmt::formatter<simulator::trading_system::market_state::LimitOrder>::
       order.order_status,
       order.order_price,
       order.total_quantity,
-      order.cum_executed_quantity);
+      order.cum_executed_quantity,
+      order.cum_px_qty);
 }
 
 auto fmt::formatter<simulator::trading_system::market_state::InstrumentInfo>::
     format(const formattable& info, format_context& ctx) const
     -> format_context::iterator {
-  return format_to(ctx.out(),
-                   R"({{ "low_price": {}, "high_price": {} }})",
-                   info.low_price,
-                   info.high_price);
+  // clang-format off
+  return format_to(
+      ctx.out(),
+      R"({{ "low_price": {}, "high_price": {}, )"
+      R"("opening_price": {}, "opening_price_time": {}, )"
+      R"("closing_price": {}, "closing_price_time": {}, )"
+      R"("auction_clearing_price": {}, "auction_clearing_quantity": {}, )"
+      R"("previous_closing_price": {}, "trade_volume": {}, )"
+      R"("last_open_phase_traded_price": {} }})",
+      info.low_price,
+      info.high_price,
+      info.opening_price,
+      info.opening_price_time,
+      info.closing_price,
+      info.closing_price_time,
+      info.auction_clearing_price,
+      info.auction_clearing_quantity,
+      info.previous_closing_price,
+      info.trade_volume,
+      info.last_open_phase_traded_price);
+  // clang-format on
 }

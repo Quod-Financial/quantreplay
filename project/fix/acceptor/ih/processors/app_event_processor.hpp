@@ -11,6 +11,12 @@ namespace simulator::fix::acceptor {
 
 class AppEventProcessor : public EventProcessor {
  public:
+  auto process_session_connection(const FIX::SessionID& fix_session) const
+      -> void override {
+    middleware::emit_trading_session_event(
+        protocol::SessionConnectedEvent{decode_session(fix_session)});
+  }
+
   auto process_session_disconnection(const FIX::SessionID& fix_session) const
       -> void override {
     middleware::emit_trading_session_event(

@@ -9,6 +9,7 @@ namespace simulator::trading_system::matching_engine {
 
 struct MarketDataPublisherMock : public MarketDataPublisher {
   MOCK_METHOD(void, publish, (), (override));
+  MOCK_METHOD(void, publish_uncrossing, (), (override));
 };
 
 }  // namespace simulator::trading_system::matching_engine

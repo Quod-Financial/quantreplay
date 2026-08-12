@@ -26,6 +26,7 @@ add_static_library(
     include/core/common/meta.hpp
     include/core/common/name.hpp
     include/core/common/return_code.hpp
+    include/core/common/session_settings.hpp
     include/core/common/unreachable.hpp
     include/core/common/std_formatter.hpp
     include/core/tools/format.hpp

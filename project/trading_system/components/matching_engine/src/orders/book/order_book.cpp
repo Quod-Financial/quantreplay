@@ -111,15 +111,115 @@ auto LimitOrdersContainer::erase(iterator begin, iterator end) -> void {
   orders_.erase(begin, end);
 }
 
-OrderPage::OrderPage(Side side) : limit_orders_(side) {}
+auto MarketOrdersContainer::size() const -> std::size_t {
+  return orders_.size();
+}
+
+auto MarketOrdersContainer::empty() const -> bool { return orders_.empty(); }
+
+auto MarketOrdersContainer::begin() -> iterator { return orders_.begin(); }
+
+auto MarketOrdersContainer::begin() const -> const_iterator {
+  return orders_.begin();
+}
+
+auto MarketOrdersContainer::end() -> iterator { return orders_.end(); }
+
+auto MarketOrdersContainer::end() const -> const_iterator {
+  return orders_.end();
+}
+
+auto MarketOrdersContainer::emplace(const MarketOrder& order) -> iterator {
+  const auto is_older = [](const MarketOrder& left, const MarketOrder& right) {
+    return left.time() < right.time();
+  };
+
+  log::debug("adding order to the market side: {}", order);
+
+  return orders_.emplace(std::upper_bound(begin(), end(), order, is_older),
+                         order);
+}
+
+auto MarketOrdersContainer::erase(iterator iter) -> iterator {
+  if (iter < begin() || iter >= end()) [[unlikely]] {
+    throw std::invalid_argument{
+        "failed to erase market order, bad order iterator passed"};
+  }
+
+  log::debug("erasing order from the market side: {}", *iter);
+
+  return orders_.erase(iter);
+}
+
+auto MarketOrdersContainer::erase(iterator begin, iterator end) -> void {
+  if (begin < this->begin() || begin > this->end()) [[unlikely]] {
+    throw std::invalid_argument{
+        "failed to erase market orders range, bad begin iterator passed"};
+  }
+
+  if (end < this->begin() || end > this->end()) [[unlikely]] {
+    throw std::invalid_argument{
+        "failed to erase market orders range, bad end iterator passed"};
+  }
+
+  if (begin > end) [[unlikely]] {
+    throw std::invalid_argument{
+        "failed to erase market orders range, "
+        "begin iterator is greater than end iterator"};
+  }
+
+  log::debug("erasing {} market orders from the side",
+             std::distance(begin, end));
+
+  orders_.erase(begin, end);
+}
+
+OrderPage::OrderPage(Side side)
+    : limit_orders_(side), trade_at_last_orders_(side) {}
 
 auto OrderPage::limit_orders() -> LimitOrdersContainer& {
   return limit_orders_;
 }
 
+auto OrderPage::limit_orders() const -> const LimitOrdersContainer& {
+  return limit_orders_;
+}
+
+auto OrderPage::market_orders() -> MarketOrdersContainer& {
+  return market_orders_;
+}
+
+auto OrderPage::market_orders() const -> const MarketOrdersContainer& {
+  return market_orders_;
+}
+
+auto OrderPage::trade_at_last_orders() -> LimitOrdersContainer& {
+  return trade_at_last_orders_;
+}
+
+auto OrderPage::trade_at_last_orders() const -> const LimitOrdersContainer& {
+  return trade_at_last_orders_;
+}
+
+auto select_limit_orders(OrderPage& page,
+                         LimitOrderQueue queue) -> LimitOrdersContainer& {
+  switch (queue) {
+    case LimitOrderQueue::Regular:
+      return page.limit_orders();
+    case LimitOrderQueue::TradeAtLast:
+      return page.trade_at_last_orders();
+  }
+
+  core::unreachable();
+}
+
 auto OrderBook::buy_page() -> OrderPage& { return buy_page_; }
 
+auto OrderBook::buy_page() const -> const OrderPage& { return buy_page_; }
+
 auto OrderBook::sell_page() -> OrderPage& { return sell_page_; }
+
+auto OrderBook::sell_page() const -> const OrderPage& { return sell_page_; }
 
 auto OrderBook::take_page(const Side side) -> OrderPage& {
   switch (static_cast<Side::Option>(side)) {

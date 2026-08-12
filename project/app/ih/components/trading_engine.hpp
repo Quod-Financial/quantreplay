@@ -9,12 +9,12 @@
 
 namespace simulator {
 
-class TradingEngine final : public middleware::TradingAdminRequestReceiver,
-                            public middleware::TradingRequestReceiver,
-                            public middleware::TradingSessionEventListener {
+class TradingEngine final
+    : public middleware::TradingAdminRequestReceiver,
+      public middleware::TradingRequestReceiver,
+      public middleware::TradingSessionTerminationEventListener {
  public:
-  explicit TradingEngine(
-      const data_layer::database::Context& database)
+  explicit TradingEngine(const data_layer::database::Context& database)
       : trading_system_(trading_system::create_trading_system(database)) {}
 
   auto launch() -> void {

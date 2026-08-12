@@ -2,10 +2,12 @@
 #define SIMULATOR_DATA_LAYER_IH_PQXX_RESULT_DETAIL_BASIC_ROW_PARSER_HPP_
 
 #include <functional>
+#include <optional>
 #include <pqxx/row>
 #include <string>
 
 #include "core/common/meta.hpp"
+#include "core/tools/time.hpp"
 #include "ih/pqxx/common/column_resolver.hpp"
 #include "ih/pqxx/common/enumeration_resolver.hpp"
 
@@ -20,8 +22,12 @@ class BasicRowParser {
   constexpr inline static bool is_enumerable_v = std::is_enum_v<T>;
 
   template <typename T>
+  constexpr inline static bool is_timestamp_v =
+      std::is_same_v<std::remove_cvref_t<T>, core::sys_us>;
+
+  template <typename T>
   constexpr inline static bool is_default_decodable_v =
-      !is_character_v<T> && !is_enumerable_v<T>;
+      !is_character_v<T> && !is_enumerable_v<T> && !is_timestamp_v<T>;
 
   template <typename T>
   constexpr inline static bool is_resolvable_column_v =
@@ -144,7 +150,31 @@ class BasicRowParser {
     return false;
   }
 
+  template <typename ColumnType>
+  auto operator()(ColumnType column, core::sys_us& value) -> bool {
+    static_assert(
+        is_resolvable_column_v<ColumnType>,
+        "Given ColumnType can not be resolved by pqxx::ColumnResolver");
+
+    std::string encoded_timestamp;
+    if (!(*this)(column, encoded_timestamp)) {
+      return false;
+    }
+
+    const auto parsed = parse_timestamp(encoded_timestamp);
+    if (!parsed.has_value()) {
+      return false;
+    }
+
+    value = *parsed;
+    return true;
+  }
+
  private:
+  [[nodiscard]]
+  static auto parse_timestamp(const std::string& encoded_timestamp)
+      -> std::optional<core::sys_us>;
+
   template <typename ColumnType>
   [[nodiscard]]
   auto get_column_idx(ColumnType column) const noexcept

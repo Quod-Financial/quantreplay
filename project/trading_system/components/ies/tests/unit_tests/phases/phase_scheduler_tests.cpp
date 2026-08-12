@@ -26,8 +26,13 @@ struct PhaseSchedulerTest : public ::testing::Test {
     };
   }
 
+  static auto local_at(auto time_of_day) -> core::local_us {
+    return core::as_local_time(make_tick(time_of_day).tz_tick_time);
+  }
+
   static auto TradingPhaseIs(TradingPhase trading_phase) {
-    return Optional(Property(&Phase::phase, Eq(trading_phase)));
+    return Optional(Field(&ScheduledPhase::phase,
+                          Property(&Phase::phase, Eq(trading_phase))));
   }
 
   PhaseScheduler scheduler;
@@ -94,6 +99,65 @@ TEST_F(PhaseSchedulerTest, DoesNotReportTransitionWhenSamePhaseRescheduled) {
   EXPECT_THAT(scheduler.update(make_tick(8h)),
               TradingPhaseIs(TradingPhase::Option::Open));
   EXPECT_THAT(scheduler.update(make_tick(9h)), Eq(std::nullopt));
+}
+
+TEST_F(PhaseSchedulerTest, SurfacesConfiguredEndWindowForScheduledAuction) {
+  scheduler.configure({
+      PhaseRecord{.begin = 9h,
+                  .end = 10h,
+                  .end_range = 5min,
+                  .phase = TradingPhase::Option::OpeningAuction},
+  });
+
+  EXPECT_THAT(
+      scheduler.update(make_tick(9h)),
+      Optional(
+          Field(&ScheduledPhase::auction,
+                Optional(AllOf(Field(&AuctionTiming::end, Eq(10h)),
+                               Field(&AuctionTiming::end_range, Eq(5min)))))));
+}
+
+TEST_F(PhaseSchedulerTest, LeavesAuctionWindowUnsetForNonAuctionPhase) {
+  scheduler.configure({
+      PhaseRecord{
+          .begin = 12h, .end = 14h, .phase = TradingPhase::Option::Closed},
+  });
+
+  EXPECT_THAT(scheduler.update(make_tick(13h)),
+              Optional(Field(&ScheduledPhase::auction, Eq(std::nullopt))));
+}
+
+TEST_F(PhaseSchedulerTest,
+       PhaseAtReturnsScheduledPhaseWithEndWindowForScheduledAuction) {
+  scheduler.configure({
+      PhaseRecord{.begin = 9h,
+                  .end = 10h,
+                  .end_range = 5min,
+                  .phase = TradingPhase::Option::OpeningAuction},
+  });
+
+  const auto scheduled = scheduler.phase_at(local_at(9h + 30min));
+
+  EXPECT_THAT(
+      scheduled.phase,
+      Property(&Phase::phase, Eq(TradingPhase::Option::OpeningAuction)));
+  ASSERT_TRUE(scheduled.auction.has_value());
+  EXPECT_EQ(scheduled.auction->end, 10h);
+  EXPECT_EQ(scheduled.auction->end_range, 5min);
+}
+
+TEST_F(PhaseSchedulerTest,
+       PhaseAtReturnsScheduledPhaseWithoutEndWindowForNonAuctionPhase) {
+  scheduler.configure({
+      PhaseRecord{
+          .begin = 12h, .end = 14h, .phase = TradingPhase::Option::Closed},
+  });
+
+  const auto scheduled = scheduler.phase_at(local_at(13h));
+
+  EXPECT_THAT(scheduled.phase,
+              Property(&Phase::phase, Eq(TradingPhase::Option::Closed)));
+  EXPECT_FALSE(scheduled.auction.has_value());
 }
 
 }  // namespace

@@ -7,6 +7,7 @@
 #include "data_layer/api/models/datasource.hpp"
 #include "data_layer/api/models/price_seed.hpp"
 #include "ih/context/instrument_context.hpp"
+#include "ih/random/instrument_generator.hpp"
 #include "ih/utils/executable.hpp"
 
 namespace simulator::generator {
@@ -19,7 +20,7 @@ class InstrumentRandomGeneratorFactory {
   virtual auto create_orders_executable(
       std::shared_ptr<OrderInstrumentContext> instrument_context,
       const data_layer::PriceSeed& price_seed)
-      -> std::unique_ptr<Executable> = 0;
+      -> std::unique_ptr<random::OrderGenerator> = 0;
 };
 
 class InstrumentHistoricalReplierFactory {

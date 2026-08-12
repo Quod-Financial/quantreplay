@@ -46,12 +46,20 @@ struct TradingRequestChannelUnboundError : ChannelUnboundError {
       "trading request channel is not bound";
 };
 
-struct TradingSessionEventChannelUnboundError : ChannelUnboundError {
+struct TradingSessionConnectionEventChannelUnboundError : ChannelUnboundError {
   auto what() const noexcept -> const char* override { return message.data(); }
 
  private:
   static inline std::string_view message =
-      "trading session event channel is not bound";
+      "trading session connection event channel is not bound";
+};
+
+struct TradingSessionTerminationEventChannelUnboundError : ChannelUnboundError {
+  auto what() const noexcept -> const char* override { return message.data(); }
+
+ private:
+  static inline std::string_view message =
+      "trading session termination event channel is not bound";
 };
 
 template <typename Request, typename Reply>
@@ -91,8 +99,11 @@ auto send_via_trading_admin_channel(Request&& request, Reply&& reply) -> void {
 
 template <typename Message>
 auto send_via_trading_reply_channel(Message&& message) -> void {
-  if (auto* receiver = TradingReplyChannel::receiver()) [[likely]] {
-    receiver->process(std::forward<Message>(message));
+  const auto& receivers = TradingReplyChannel::receivers();
+  if (!receivers.empty()) [[likely]] {
+    for (const auto& receiver : receivers) {
+      receiver->process(message);
+    }
     return;
   }
 
@@ -124,19 +135,42 @@ auto send_via_trading_request_channel(Request&& request, Args&&... args)
 }
 
 template <typename Event>
-auto emit_via_trading_session_event_channel(Event&& event) -> void {
-  if (auto* receiver = TradingSessionEventChannel::receiver()) [[likely]] {
-    receiver->on_event(std::forward<Event>(event));
+auto emit_via_trading_session_connection_event_channel(const Event& event)
+    -> void {
+  const auto& receivers = TradingSessionConnectionEventChannel::receivers();
+  if (!receivers.empty()) [[likely]] {
+    for (const auto& receiver : receivers) {
+      receiver->on_event(event);
+    }
     return;
   }
 
   log::warn(
-      "unable to emit event via trading session event channel, "
+      "unable to emit event via trading session connection event channel, "
       "probably channel has not been bound or has been released already, "
       "can not emit {}",
       event);
 
-  throw TradingSessionEventChannelUnboundError{};
+  throw TradingSessionConnectionEventChannelUnboundError{};
+}
+
+template <typename Event>
+auto emit_via_trading_session_termination_event_channel(Event&& event) -> void {
+  const auto& receivers = TradingSessionTerminationEventChannel::receivers();
+  if (!receivers.empty()) [[likely]] {
+    for (const auto& receiver : receivers) {
+      receiver->on_event(event);
+    }
+    return;
+  }
+
+  log::warn(
+      "unable to emit event via trading session termination event channel, "
+      "probably channel has not been bound or has been released already, "
+      "can not emit {}",
+      event);
+
+  throw TradingSessionTerminationEventChannelUnboundError{};
 }
 
 }  // namespace
@@ -346,24 +380,46 @@ auto send_trading_request(const protocol::InstrumentStateRequest& request,
   send_via_trading_request_channel(request, reply);
 }
 
-// Trading session event channel implementation
+// Trading session connection event channel implementation
 
-auto bind_trading_session_event_channel(
-    std::shared_ptr<TradingSessionEventListener> listener) -> void {
-  TradingSessionEventChannel::bind(std::move(listener));
-  log::info("trading session event channel bound");
+auto bind_trading_session_connection_event_channel(
+    std::shared_ptr<TradingSessionConnectionEventListener> listener) -> void {
+  TradingSessionConnectionEventChannel::bind(std::move(listener));
+  log::info("trading session connection event channel bound");
 }
 
-auto release_trading_session_event_channel() noexcept -> void {
-  TradingSessionEventChannel::release();
-  log::info("trading session event channel released");
+auto release_trading_session_connection_event_channel() noexcept -> void {
+  TradingSessionConnectionEventChannel::release();
+  log::info("trading session connection event channel released");
+}
+
+auto emit_trading_session_event(const protocol::SessionConnectedEvent& event)
+    -> void {
+  log::debug(
+      "trading session connection event channel is emitting "
+      "SessionLogonEvent");
+  emit_via_trading_session_connection_event_channel(event);
+}
+
+// Trading session termination event channel implementation
+
+auto bind_trading_session_termination_event_channel(
+    std::shared_ptr<TradingSessionTerminationEventListener> listener) -> void {
+  TradingSessionTerminationEventChannel::bind(std::move(listener));
+  log::info("trading session termination event channel bound");
+}
+
+auto release_trading_session_termination_event_channel() noexcept -> void {
+  TradingSessionTerminationEventChannel::release();
+  log::info("trading session termination event channel released");
 }
 
 auto emit_trading_session_event(const protocol::SessionTerminatedEvent& event)
     -> void {
   log::debug(
-      "trading session event channel is emitting SessionTerminatedEvent");
-  emit_via_trading_session_event_channel(event);
+      "trading session termination event channel is emitting "
+      "SessionTerminatedEvent");
+  emit_via_trading_session_termination_event_channel(event);
 }
 
 }  // namespace simulator::middleware

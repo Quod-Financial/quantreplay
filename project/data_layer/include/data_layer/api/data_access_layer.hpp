@@ -7,6 +7,7 @@
 #include "data_layer/api/database/context.hpp"
 #include "data_layer/api/exceptions/exceptions.hpp"
 #include "data_layer/api/models/datasource.hpp"
+#include "data_layer/api/models/fix_session.hpp"
 #include "data_layer/api/models/listing.hpp"
 #include "data_layer/api/models/price_seed.hpp"
 #include "data_layer/api/models/setting.hpp"
@@ -44,6 +45,33 @@ auto update_one_datasource(const database::Context& context,
                            Datasource::Patch update,
                            Datasource::Predicate predicate)
     -> data_layer::Datasource;
+
+// Fix Sessions
+
+auto insert_fix_session(const database::Context& context,
+                        FixSession::Patch initial_patch)
+    -> data_layer::FixSession;
+
+auto select_one_fix_session(const database::Context& context,
+                            FixSession::Predicate predicate)
+    -> data_layer::FixSession;
+
+auto select_all_fix_sessions(
+    const database::Context& context,
+    std::optional<FixSession::Predicate> predicate = std::nullopt)
+    -> std::vector<data_layer::FixSession>;
+
+auto update_one_fix_session(const database::Context& context,
+                            FixSession::Patch update,
+                            FixSession::Predicate predicate)
+    -> data_layer::FixSession;
+
+auto delete_one_fix_session(const database::Context& context,
+                            FixSession::Predicate predicate) -> void;
+
+auto delete_all_fix_session(
+    const database::Context& context,
+    std::optional<FixSession::Predicate> predicate = std::nullopt) -> void;
 
 // Listings
 

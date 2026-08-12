@@ -26,7 +26,7 @@ TEST(TradingSystemCommonSessionFmt, FormatsFixToString) {
             "{ \"type\": \"Fix\", \"fix_session\": { "
             "BeginString=\"begin\", "
             "SenderCompID=\"sender\", TargetCompID=\"target\", "
-            "ClientSubID=none } }");
+            "SessionQualifier=none, ClientSubID=none } }");
 }
 
 TEST(TradingSystemCommonSessionFmt, FormatsGeneratedToString) {
@@ -36,11 +36,31 @@ TEST(TradingSystemCommonSessionFmt, FormatsGeneratedToString) {
             R"({ "type": "Generator", "fix_session": none })");
 }
 
-TEST(TradingSystemMarketStateInstrumentInfoFmt, FormatsToString) {
-  const InstrumentInfo instrument_info{.low_price = Price{100.1},
-                                       .high_price = Price{300.3}};
+TEST(TradingSystemMarketStateInstrumentInfoFmt, FormatsAllValuesToString) {
+  using namespace std::chrono_literals;
+  const InstrumentInfo instrument_info{
+      .low_price = Price{100.1},
+      .high_price = Price{300.3},
+      .opening_price = Price{110.5},
+      .opening_price_time = core::sys_us{1696161600123456us},
+      .closing_price = Price{120.6},
+      .closing_price_time = core::sys_us{1696190400654321us},
+      .auction_clearing_price = Price{130.7},
+      .auction_clearing_quantity = Quantity{500.5},
+      .previous_closing_price = Price{95.4},
+      .trade_volume = Quantity{700.7},
+      .last_open_phase_traded_price = Price{118.2}};
   ASSERT_EQ(fmt::to_string(instrument_info),
-            R"({ "low_price": 100.1, "high_price": 300.3 })");
+            "{ \"low_price\": 100.1, \"high_price\": 300.3, "
+            "\"opening_price\": 110.5, "
+            "\"opening_price_time\": 2023-10-01 12:00:00.123456, "
+            "\"closing_price\": 120.6, "
+            "\"closing_price_time\": 2023-10-01 20:00:00.654321, "
+            "\"auction_clearing_price\": 130.7, "
+            "\"auction_clearing_quantity\": 500.5, "
+            "\"previous_closing_price\": 95.4, "
+            "\"trade_volume\": 700.7, "
+            "\"last_open_phase_traded_price\": 118.2 }");
 }
 
 struct TradingSystemCommonLimitOrderFmt : public ::testing::Test {
@@ -92,7 +112,8 @@ TEST_F(TradingSystemCommonLimitOrderFmt, FormatsToString) {
       .order_status = OrderStatus::Option::PartiallyFilled,
       .order_price = OrderPrice{100.1},
       .total_quantity = OrderQuantity{200.2},
-      .cum_executed_quantity = CumExecutedQuantity{50.5}};
+      .cum_executed_quantity = CumExecutedQuantity{50.5},
+      .cum_px_qty = 5065.05};
 
   ASSERT_EQ(
       fmt::to_string(order),
@@ -103,15 +124,16 @@ TEST_F(TradingSystemCommonLimitOrderFmt, FormatsToString) {
       "PartyID=\"party_id\", PartyIDSource=BIC }, PartyRole=ExecutingFirm } ] "
       "}, \"client_session\": { \"type\": \"Fix\", \"fix_session\": { "
       "BeginString=\"FIX.4.2\", SenderCompID=\"sender\", "
-      "TargetCompID=\"target\", ClientSubID=none } }, \"client_order_id\": "
-      "\"ClientOrderId\", \"order_parties\": [ { PartyIdentifier={ "
+      "TargetCompID=\"target\", SessionQualifier=none, ClientSubID=none } }, "
+      "\"client_order_id\": \"ClientOrderId\", \"order_parties\": [ { "
+      "PartyIdentifier={ "
       "PartyID=\"PartyId\", PartyIDSource=BIC }, PartyRole=ExecutingFirm } ], "
       "\"expire_time\": 2023-Oct-01 12:00:00.123456, \"expire_date\": "
       "2023-Oct-01, \"short_sale_exemption_reason\": -1, "
       "\"time_in_force\": GoodTillDate, \"order_id\": 42, \"order_time\": "
       "2023-Oct-01 13:00:00.123456, \"side\": SellShort, \"order_status\": "
       "PartiallyFilled, \"order_price\": 100.1, \"total_quantity\": 200.2, "
-      "\"cum_executed_quantity\": 50.5 }\"");
+      "\"cum_executed_quantity\": 50.5, \"cum_px_qty\": 5065.05 }\"");
 }
 
 }  // namespace

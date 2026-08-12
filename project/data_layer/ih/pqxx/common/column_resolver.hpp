@@ -3,6 +3,7 @@
 
 #include "api/models/column_mapping.hpp"
 #include "api/models/datasource.hpp"
+#include "api/models/fix_session.hpp"
 #include "api/models/listing.hpp"
 #include "api/models/market_phase.hpp"
 #include "api/models/price_seed.hpp"
@@ -16,6 +17,8 @@ class ColumnResolver {
   auto operator()(ColumnMapping::Attribute attribute) const -> std::string;
 
   auto operator()(Datasource::Attribute attribute) const -> std::string;
+
+  auto operator()(FixSession::Attribute attribute) const -> std::string;
 
   auto operator()(Listing::Attribute attribute) const -> std::string;
 
@@ -31,6 +34,8 @@ class ColumnResolver {
   static auto to_column_name(ColumnMapping::Attribute attribute) -> std::string;
 
   static auto to_column_name(Datasource::Attribute attribute) -> std::string;
+
+  static auto to_column_name(FixSession::Attribute attribute) -> std::string;
 
   static auto to_column_name(Listing::Attribute attribute) -> std::string;
 

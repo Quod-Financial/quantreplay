@@ -26,6 +26,9 @@ class DepthCache {
   auto compose_update(const StreamingSettings& settings,
                       std::vector<MarketDataEntry>& destination) const -> void;
 
+  [[nodiscard]]
+  auto has_update(const StreamingSettings& settings) const -> bool;
+
   auto capture(protocol::InstrumentState& state) const -> void;
 
   auto update(const std::vector<OrderBookNotification>& updates) -> void;
@@ -42,6 +45,10 @@ class DepthCache {
                                 const StreamingSettings& settings,
                                 std::vector<MarketDataEntry>& destination) const
       -> void;
+
+  [[nodiscard]]
+  auto sheet_has_update(const auto& sheet,
+                        const StreamingSettings& settings) const -> bool;
 
   DepthSheet bid_depth_;
   DepthSheet offer_depth_;

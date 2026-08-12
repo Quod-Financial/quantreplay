@@ -38,6 +38,11 @@ auto ColumnResolver::operator()(Setting::Attribute attribute) const
   return ColumnResolver::to_column_name(attribute);
 }
 
+auto ColumnResolver::operator()(FixSession::Attribute attribute) const
+    -> std::string {
+  return ColumnResolver::to_column_name(attribute);
+}
+
 auto ColumnResolver::operator()(Venue::Attribute attribute) const
     -> std::string {
   return ColumnResolver::to_column_name(attribute);
@@ -320,6 +325,27 @@ auto ColumnResolver::to_column_name(Setting::Attribute attribute)
     return std::string{column_name};
   }
   throw ColumnNameEncodingError(table::Setting, attribute);
+}
+
+auto ColumnResolver::to_column_name(FixSession::Attribute attribute)
+    -> std::string {
+  std::string_view column_name;
+  switch (attribute) {
+    case FixSession::Attribute::VenueId:
+      column_name = fix_session_column::VenueId;
+      break;
+    case FixSession::Attribute::SessionId:
+      column_name = fix_session_column::SessionId;
+      break;
+    case FixSession::Attribute::LastConnectedTime:
+      column_name = fix_session_column::LastConnectedTime;
+      break;
+  }
+
+  if (!column_name.empty()) {
+    return std::string{column_name};
+  }
+  throw ColumnNameEncodingError(table::FixSession, attribute);
 }
 
 auto ColumnResolver::to_column_name(Venue::Attribute attribute) -> std::string {

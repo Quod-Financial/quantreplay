@@ -8,6 +8,7 @@ project(http
 ensure_project_dependency_exist(Pistache::Pistache)
 ensure_project_dependency_exist(RapidJSON::RapidJSON)
 ensure_project_dependency_exist(httplib::httplib)
+ensure_project_dependency_exist(libzip::zip)
 ensure_project_dependency_exist(simulator::core)
 ensure_project_dependency_exist(simulator::protocol)
 ensure_project_dependency_exist(simulator::middleware)
@@ -24,12 +25,14 @@ add_static_library(
     ih/constants.hpp
     ih/controllers/app_controller.hpp
     ih/controllers/datasource_controller.hpp
+    ih/controllers/fix_session_controller.hpp
     ih/controllers/listing_controller.hpp
     ih/controllers/price_seed_controller.hpp
     ih/controllers/setting_controller.hpp
     ih/controllers/trading_controller.hpp
     ih/controllers/venue_controller.hpp
     ih/data_bridge/datasource_accessor.hpp
+    ih/data_bridge/fix_session_accessor.hpp
     ih/data_bridge/operation_failure.hpp
     ih/data_bridge/listing_accessor.hpp
     ih/data_bridge/price_seed_accessor.hpp
@@ -37,6 +40,7 @@ add_static_library(
     ih/data_bridge/venue_accessor.hpp
     ih/formatters/redirect.hpp
     ih/formatters/request_formatter.hpp
+    ih/headers/content_disposition_attachment.hpp
     ih/headers/x_api_version.hpp
     ih/marshalling/json/detail/enumeration_resolver.hpp
     ih/marshalling/json/detail/key_resolver.hpp
@@ -47,6 +51,8 @@ add_static_library(
     ih/marshalling/json/detail/unmarshaller.hpp
     ih/marshalling/json/detail/utils.hpp
     ih/marshalling/json/datasource.hpp
+    ih/marshalling/json/fix_session.hpp
+    ih/marshalling/json/generator.hpp
     ih/marshalling/json/halt.hpp
     ih/marshalling/json/listing.hpp
     ih/marshalling/json/price_seed.hpp
@@ -57,14 +63,19 @@ add_static_library(
     ih/redirect/request.hpp
     ih/redirect/resolver.hpp
     ih/redirect/result.hpp
+    ih/utils/compression.hpp
+    ih/utils/host_resolver.hpp
+    ih/utils/path.hpp
     ih/utils/response_formatters.hpp
     ih/redirect/destination_resolver.hpp
     ih/redirect/redirection_processor.hpp
     ih/redirect/request_redirector.hpp
     ih/processors/delete_processor.hpp
     ih/processors/get_processor.hpp
+    ih/processors/head_processor.hpp
     ih/processors/post_processor.hpp
     ih/processors/put_processor.hpp
+    ih/config_provider.hpp
     ih/endpoint.hpp
     ih/router.hpp
     ih/server.hpp
@@ -72,12 +83,14 @@ add_static_library(
   SOURCES
     src/controllers/app_controller.cpp
     src/controllers/datasource_controller.cpp
+    src/controllers/fix_session_controller.cpp
     src/controllers/listing_controller.cpp
     src/controllers/price_seed_controller.cpp
     src/controllers/setting_controller.cpp
     src/controllers/trading_controller.cpp
     src/controllers/venue_controller.cpp
     src/data_bridge/datasource_accessor.cpp
+    src/data_bridge/fix_session_accessor.cpp
     src/data_bridge/listing_accessor.cpp
     src/data_bridge/price_seed_accessor.cpp
     src/data_bridge/setting_accessor.cpp
@@ -85,6 +98,8 @@ add_static_library(
     src/marshalling/json/detail/enumeration_resolver.cpp
     src/marshalling/json/detail/key_resolver.cpp
     src/marshalling/json/datasource.cpp
+    src/marshalling/json/fix_session.cpp
+    src/marshalling/json/generator.cpp
     src/marshalling/json/halt.cpp
     src/marshalling/json/listing.cpp
     src/marshalling/json/price_seed.cpp
@@ -92,11 +107,17 @@ add_static_library(
     src/marshalling/json/venue.cpp
     src/processors/delete_processor.cpp
     src/processors/get_processor.cpp
+    src/processors/head_processor.cpp
     src/processors/post_processor.cpp
     src/processors/put_processor.cpp
+    src/utils/compression.cpp
     src/redirect/destination_resolver.cpp
     src/redirect/redirection_processor.cpp
     src/redirect/request_redirector.cpp
+    src/utils/host_resolver.cpp
+    src/utils/path.cpp
+    src/utils/response_formatters.cpp
+    src/config_provider.cpp
     src/http.cpp
     src/router.cpp
   PUBLIC_INCLUDE_DIRECTORIES
@@ -108,6 +129,7 @@ add_static_library(
     Pistache::Pistache
     RapidJSON::RapidJSON
     httplib::httplib
+    libzip::zip
     tl::expected
     simulator::core
     simulator::protocol

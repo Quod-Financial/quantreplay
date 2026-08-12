@@ -1,8 +1,12 @@
+#include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <pistache/http_defs.h>
 
 #include <memory>
+#include <optional>
+#include <string>
+#include <utility>
 
 #include "ih/redirect/destination.hpp"
 #include "ih/redirect/redirection_processor.hpp"
@@ -19,7 +23,7 @@ using namespace ::testing;
 
 class HttpRedirectionProcessor : public testing::Test {
  public:
-  using ResolveStatus = redirect::Resolver::Status;
+  using ResolveStatus = redirect::Resolver::Error;
   using RedirectStatus = redirect::Redirector::Status;
 
   auto resolver() -> mock::Resolver& { return *resolver_; }
@@ -28,8 +32,10 @@ class HttpRedirectionProcessor : public testing::Test {
 
   auto redirect(const std::string& venue_id,
                 Pistache::Http::Method method,
-                const std::string& url) -> redirect::Result {
-    return processor_->redirect_to_venue(venue_id, method, url);
+                const std::string& url,
+                std::optional<std::string> body) -> redirect::Result {
+    return processor_->redirect_to_venue(venue_id, method, url,
+                                         std::move(body));
   }
 
   static auto make_redirect_result(Pistache::Http::Code response_code,
@@ -69,11 +75,11 @@ TEST_F(HttpRedirectionProcessor,
 
   EXPECT_CALL(resolver(), resolve_by_venue_id(Eq(TestVenueId)))
       .Times(1)
-      .WillOnce(Return(
-          mock::Resolver::make_output(ResolveStatus::NonexistentInstance)));
+      .WillOnce(
+          Return(tl::make_unexpected(ResolveStatus::NonexistentInstance)));
 
   const redirect::Result result =
-      redirect(TestVenueId, TestMethod, TestEndpoint);
+      redirect(TestVenueId, TestMethod, TestEndpoint, std::nullopt);
 
   ASSERT_EQ(result.http_code(), Pistache::Http::Code::Bad_Gateway);
   ASSERT_EQ(result.body_content(), expected_response);
@@ -88,11 +94,10 @@ TEST_F(HttpRedirectionProcessor,
 
   EXPECT_CALL(resolver(), resolve_by_venue_id(Eq(TestVenueId)))
       .Times(1)
-      .WillOnce(
-          Return(mock::Resolver::make_output(ResolveStatus::ResolvingFailed)));
+      .WillOnce(Return(tl::make_unexpected(ResolveStatus::ResolvingFailed)));
 
   const redirect::Result result =
-      redirect(TestVenueId, TestMethod, TestEndpoint);
+      redirect(TestVenueId, TestMethod, TestEndpoint, std::nullopt);
 
   ASSERT_EQ(result.http_code(), Pistache::Http::Code::Bad_Gateway);
   ASSERT_EQ(result.body_content(), expected_response);
@@ -107,31 +112,29 @@ TEST_F(HttpRedirectionProcessor,
 
   EXPECT_CALL(resolver(), resolve_by_venue_id(Eq(TestVenueId)))
       .Times(1)
-      .WillOnce(
-          Return(mock::Resolver::make_output(ResolveStatus::UnknownError)));
+      .WillOnce(Return(tl::make_unexpected(ResolveStatus::UnknownError)));
 
   const redirect::Result result =
-      redirect(TestVenueId, TestMethod, TestEndpoint);
+      redirect(TestVenueId, TestMethod, TestEndpoint, std::nullopt);
 
   ASSERT_EQ(result.http_code(), Pistache::Http::Code::Internal_Server_Error);
   ASSERT_EQ(result.body_content(), expected_response);
 }
 
 TEST_F(HttpRedirectionProcessor,
-       ReturnsInternalServerErrorWhenDestinationIsNotReturnedOnResolving) {
-  const std::string expected_response{
-      "{"
-      R"("result":"Request destination resolving failed with unknown error")"
-      "}"};
+       ReturnsServiceUnavailableOnSelfRedirectDetection) {
+  const std::string expected_response = fmt::format(
+      R"({{"result":"Request redirection to venue {} was blocked to prevent self-redirect"}})",
+      TestVenueId);
 
   EXPECT_CALL(resolver(), resolve_by_venue_id(Eq(TestVenueId)))
       .Times(1)
-      .WillOnce(Return(mock::Resolver::make_output(ResolveStatus::Success)));
+      .WillOnce(Return(tl::make_unexpected(ResolveStatus::SelfRedirect)));
 
   const redirect::Result result =
-      redirect(TestVenueId, TestMethod, TestEndpoint);
+      redirect(TestVenueId, TestMethod, TestEndpoint, std::nullopt);
 
-  ASSERT_EQ(result.http_code(), Pistache::Http::Code::Internal_Server_Error);
+  ASSERT_EQ(result.http_code(), Pistache::Http::Code::Service_Unavailable);
   ASSERT_EQ(result.body_content(), expected_response);
 }
 
@@ -139,15 +142,14 @@ TEST_F(HttpRedirectionProcessor,
        RedirectionCallsRedirectorOnSuccessfullyResolved) {
   EXPECT_CALL(resolver(), resolve_by_venue_id(Eq(TestVenueId)))
       .Times(1)
-      .WillOnce(Return(mock::Resolver::make_output(
-          redirect::Destination{"localhost", 10001})));
+      .WillOnce(Return(redirect::Destination{"localhost", 10001}));
 
   EXPECT_CALL(redirector(), redirect)
       .Times(1)
       .WillOnce(Return(
           mock::Redirector::make_output(RedirectStatus::ConnectionFailed)));
 
-  redirect(TestVenueId, TestMethod, TestEndpoint);
+  redirect(TestVenueId, TestMethod, TestEndpoint, std::nullopt);
 }
 
 TEST_F(HttpRedirectionProcessor,
@@ -159,8 +161,7 @@ TEST_F(HttpRedirectionProcessor,
 
   EXPECT_CALL(resolver(), resolve_by_venue_id(Eq(TestVenueId)))
       .Times(1)
-      .WillOnce(Return(mock::Resolver::make_output(
-          redirect::Destination{"localhost", 10001})));
+      .WillOnce(Return(redirect::Destination{"localhost", 10001}));
 
   EXPECT_CALL(redirector(), redirect)
       .Times(1)
@@ -168,7 +169,7 @@ TEST_F(HttpRedirectionProcessor,
           mock::Redirector::make_output(RedirectStatus::ConnectionFailed)));
 
   const redirect::Result result =
-      redirect(TestVenueId, TestMethod, TestEndpoint);
+      redirect(TestVenueId, TestMethod, TestEndpoint, std::nullopt);
 
   ASSERT_EQ(result.http_code(), Pistache::Http::Code::Bad_Gateway);
   ASSERT_EQ(result.body_content(), expected_response);
@@ -183,8 +184,7 @@ TEST_F(HttpRedirectionProcessor,
 
   EXPECT_CALL(resolver(), resolve_by_venue_id(Eq(TestVenueId)))
       .Times(1)
-      .WillOnce(Return(mock::Resolver::make_output(
-          redirect::Destination{"localhost", 10001})));
+      .WillOnce(Return(redirect::Destination{"localhost", 10001}));
 
   EXPECT_CALL(redirector(), redirect)
       .Times(1)
@@ -192,7 +192,7 @@ TEST_F(HttpRedirectionProcessor,
           Return(mock::Redirector::make_output(RedirectStatus::UnknownError)));
 
   const redirect::Result result =
-      redirect(TestVenueId, TestMethod, TestEndpoint);
+      redirect(TestVenueId, TestMethod, TestEndpoint, std::nullopt);
 
   ASSERT_EQ(result.http_code(), Pistache::Http::Code::Internal_Server_Error);
   ASSERT_EQ(result.body_content(), expected_response);
@@ -207,15 +207,14 @@ TEST_F(HttpRedirectionProcessor,
 
   EXPECT_CALL(resolver(), resolve_by_venue_id(Eq(TestVenueId)))
       .Times(1)
-      .WillOnce(Return(mock::Resolver::make_output(
-          redirect::Destination{"localhost", 10001})));
+      .WillOnce(Return(redirect::Destination{"localhost", 10001}));
 
   EXPECT_CALL(redirector(), redirect)
       .Times(1)
       .WillOnce(Return(mock::Redirector::make_output(RedirectStatus::Success)));
 
   const redirect::Result result =
-      redirect(TestVenueId, TestMethod, TestEndpoint);
+      redirect(TestVenueId, TestMethod, TestEndpoint, std::nullopt);
 
   ASSERT_EQ(result.http_code(), Pistache::Http::Code::Internal_Server_Error);
   ASSERT_EQ(result.body_content(), expected_response);
@@ -230,8 +229,7 @@ TEST_F(HttpRedirectionProcessor, ReturnsOkOnSuccessfulRedirection) {
 
   EXPECT_CALL(resolver(), resolve_by_venue_id(Eq(TestVenueId)))
       .Times(1)
-      .WillOnce(Return(mock::Resolver::make_output(
-          redirect::Destination{"localhost", 10001})));
+      .WillOnce(Return(redirect::Destination{"localhost", 10001}));
 
   EXPECT_CALL(redirector(), redirect)
       .Times(1)
@@ -239,10 +237,28 @@ TEST_F(HttpRedirectionProcessor, ReturnsOkOnSuccessfulRedirection) {
           make_redirect_result(Pistache::Http::Code::Ok, response_body))));
 
   const redirect::Result result =
-      redirect(TestVenueId, TestMethod, TestEndpoint);
+      redirect(TestVenueId, TestMethod, TestEndpoint, std::nullopt);
 
   ASSERT_EQ(result.http_code(), response_code);
   ASSERT_EQ(result.body_content(), response_body);
+}
+
+TEST_F(HttpRedirectionProcessor, ForwardsBodyToRedirector) {
+  const std::string request_body{R"({"seed":"42"})"};
+
+  EXPECT_CALL(resolver(), resolve_by_venue_id(Eq(TestVenueId)))
+      .Times(1)
+      .WillOnce(Return(redirect::Destination{"localhost", 10001}));
+
+  EXPECT_CALL(redirector(),
+              redirect(Property(&redirect::Request::body,
+                                Optional(Eq(request_body)))))
+      .Times(1)
+      .WillOnce(Return(mock::Redirector::make_output(
+          make_redirect_result(Pistache::Http::Code::Ok))));
+
+  redirect(TestVenueId, Pistache::Http::Method::Post, TestEndpoint,
+           request_body);
 }
 
 }  // namespace

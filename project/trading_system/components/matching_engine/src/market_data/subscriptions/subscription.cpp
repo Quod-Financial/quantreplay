@@ -1,5 +1,8 @@
 #include "ih/market_data/subscriptions/subscription.hpp"
 
+#include <optional>
+#include <utility>
+
 #include "ih/market_data/tools/notification_creators.hpp"
 
 namespace simulator::trading_system::matching_engine::mdata {
@@ -37,10 +40,14 @@ auto Subscription::send_update(const MarketDataProvider& provider) -> void {
 
 auto Subscription::send_full_update(const MarketDataProvider& provider)
     -> void {
+  if (!provider.has_update(settings_)) {
+    return;
+  }
+
   protocol::MarketDataSnapshot update{session_};
   update.request_id = request_id_;
   update.instrument = instrument_;
-  update.market_data_entries = provider.compose_update(settings_);
+  update.market_data_entries = provider.compose_full_update(settings_);
   emit(make_snapshot_published_notification(std::move(update)));
 }
 
@@ -50,6 +57,29 @@ auto Subscription::send_incremental_update(const MarketDataProvider& provider)
   update.request_id = request_id_;
   update.market_data_entries = provider.compose_update(settings_);
   if (!update.market_data_entries.empty()) {
+    emit(make_update_published_notification(std::move(update)));
+  }
+}
+
+auto Subscription::send_uncrossing_cross(const MarketDataProvider& provider,
+                                         const Trade& trade) -> void {
+  std::optional<MarketDataEntry> trade_entry =
+      provider.compose_trade(settings_, trade);
+  if (!trade_entry.has_value()) {
+    return;
+  }
+
+  if (settings_.is_full_update_requested()) {
+    protocol::MarketDataSnapshot snapshot{session_};
+    snapshot.request_id = request_id_;
+    snapshot.instrument = instrument_;
+    snapshot.market_data_entries = provider.compose_book(settings_);
+    snapshot.market_data_entries.push_back(*std::move(trade_entry));
+    emit(make_snapshot_published_notification(std::move(snapshot)));
+  } else {
+    protocol::MarketDataUpdate update{session_};
+    update.request_id = request_id_;
+    update.market_data_entries.push_back(*std::move(trade_entry));
     emit(make_update_published_notification(std::move(update)));
   }
 }

@@ -333,6 +333,39 @@ TEST_F(AcceptorToFixExecutionReportMapping, MapsExpireTimeMilliseconds) {
       Optional(FIX::ExpireTime{{7, 44, 53, 123456, 20, 8, 2024, 6}, 3}));
 }
 
+TEST_F(AcceptorToFixExecutionReportMapping, MapsOrderQuantityToOrderQty) {
+  reply.order_quantity = OrderQuantity{100};
+
+  ToFixMapper::map(reply, fix_message, {});
+
+  ASSERT_THAT(get_fix_field<FIX::OrderQty>(fix_message), Optional(Eq(100.0)));
+}
+
+TEST_F(AcceptorToFixExecutionReportMapping,
+       OmitsOrderQtyWhenOrderQuantityAbsent) {
+  reply.order_quantity = std::nullopt;
+
+  ToFixMapper::map(reply, fix_message, {});
+
+  ASSERT_THAT(get_fix_field<FIX::OrderQty>(fix_message), Eq(std::nullopt));
+}
+
+TEST_F(AcceptorToFixExecutionReportMapping, MapsAveragePriceToAvgPx) {
+  reply.average_price = AveragePrice{42.5};
+
+  ToFixMapper::map(reply, fix_message, {});
+
+  ASSERT_THAT(get_fix_field<FIX::AvgPx>(fix_message), Optional(Eq(42.5)));
+}
+
+TEST_F(AcceptorToFixExecutionReportMapping, SetsZeroAvgPx) {
+  reply.average_price = std::nullopt;
+
+  ToFixMapper::map(reply, fix_message, {});
+
+  ASSERT_THAT(get_fix_field<FIX::AvgPx>(fix_message), Optional(Eq(0.0)));
+}
+
 // endregion ExecutionReport mapping
 
 // region OrderPlacementConfirmation mapping
@@ -483,6 +516,30 @@ TEST_F(AcceptorToFixOrderPlacementConfirmationMapping,
   ASSERT_THAT(
       get_fix_field<FIX::ExpireTime>(fix_message),
       Optional(FIX::ExpireTime{{7, 44, 53, 123456, 20, 8, 2024, 6}, 3}));
+}
+
+TEST_F(AcceptorToFixOrderPlacementConfirmationMapping,
+       MapsOrderQuantityToOrderQty) {
+  reply.order_quantity = OrderQuantity{200};
+
+  ToFixMapper::map(reply, fix_message, {});
+
+  ASSERT_THAT(get_fix_field<FIX::OrderQty>(fix_message), Optional(Eq(200.0)));
+}
+
+TEST_F(AcceptorToFixOrderPlacementConfirmationMapping,
+       OmitsOrderQtyWhenOrderQuantityAbsent) {
+  reply.order_quantity = std::nullopt;
+
+  ToFixMapper::map(reply, fix_message, {});
+
+  ASSERT_THAT(get_fix_field<FIX::OrderQty>(fix_message), Eq(std::nullopt));
+}
+
+TEST_F(AcceptorToFixOrderPlacementConfirmationMapping, SetsZeroAvgPx) {
+  ToFixMapper::map(reply, fix_message, {});
+
+  ASSERT_THAT(get_fix_field<FIX::AvgPx>(fix_message), Optional(Eq(0.0)));
 }
 
 // endregion OrderPlacementConfirmation mapping
@@ -639,6 +696,29 @@ TEST_F(AcceptorToFixOrderPlacementRejectMapping, MapsExpireTimeMilliseconds) {
   ASSERT_THAT(
       get_fix_field<FIX::ExpireTime>(fix_message),
       Optional(FIX::ExpireTime{{7, 44, 53, 123456, 20, 8, 2024, 6}, 3}));
+}
+
+TEST_F(AcceptorToFixOrderPlacementRejectMapping, MapsOrderQuantityToOrderQty) {
+  reply.order_quantity = OrderQuantity{150};
+
+  ToFixMapper::map(reply, fix_message, {});
+
+  ASSERT_THAT(get_fix_field<FIX::OrderQty>(fix_message), Optional(Eq(150.0)));
+}
+
+TEST_F(AcceptorToFixOrderPlacementRejectMapping,
+       OmitsOrderQtyWhenOrderQuantityAbsent) {
+  reply.order_quantity = std::nullopt;
+
+  ToFixMapper::map(reply, fix_message, {});
+
+  ASSERT_THAT(get_fix_field<FIX::OrderQty>(fix_message), Eq(std::nullopt));
+}
+
+TEST_F(AcceptorToFixOrderPlacementRejectMapping, SetsZeroAvgPx) {
+  ToFixMapper::map(reply, fix_message, {});
+
+  ASSERT_THAT(get_fix_field<FIX::AvgPx>(fix_message), Optional(Eq(0.0)));
 }
 
 // endregion OrderPlacementReject mapping
@@ -806,6 +886,41 @@ TEST_F(AcceptorToFixOrderModificationConfirmationMapping,
   ASSERT_THAT(
       get_fix_field<FIX::ExpireTime>(fix_message),
       Optional(FIX::ExpireTime{{7, 44, 53, 123456, 20, 8, 2024, 6}, 3}));
+}
+
+TEST_F(AcceptorToFixOrderModificationConfirmationMapping,
+       MapsOrderQuantityToOrderQty) {
+  reply.order_quantity = OrderQuantity{300};
+
+  ToFixMapper::map(reply, fix_message, {});
+
+  ASSERT_THAT(get_fix_field<FIX::OrderQty>(fix_message), Optional(Eq(300.0)));
+}
+
+TEST_F(AcceptorToFixOrderModificationConfirmationMapping,
+       OmitsOrderQtyWhenOrderQuantityAbsent) {
+  reply.order_quantity = std::nullopt;
+
+  ToFixMapper::map(reply, fix_message, {});
+
+  ASSERT_THAT(get_fix_field<FIX::OrderQty>(fix_message), Eq(std::nullopt));
+}
+
+TEST_F(AcceptorToFixOrderModificationConfirmationMapping,
+       MapsAveragePriceToAvgPx) {
+  reply.average_price = AveragePrice{99.99};
+
+  ToFixMapper::map(reply, fix_message, {});
+
+  ASSERT_THAT(get_fix_field<FIX::AvgPx>(fix_message), Optional(Eq(99.99)));
+}
+
+TEST_F(AcceptorToFixOrderModificationConfirmationMapping, SetsZeroAvgPx) {
+  reply.average_price = std::nullopt;
+
+  ToFixMapper::map(reply, fix_message, {});
+
+  ASSERT_THAT(get_fix_field<FIX::AvgPx>(fix_message), Optional(Eq(0.0)));
 }
 
 // endregion OrderModificationConfirmation mapping
@@ -1044,6 +1159,51 @@ TEST_F(AcceptorToFixOrderCancellationConfirmationMapping,
   ASSERT_THAT(
       get_fix_field<FIX::ExpireTime>(fix_message),
       Optional(FIX::ExpireTime{{7, 44, 53, 123456, 20, 8, 2024, 6}, 3}));
+}
+
+TEST_F(AcceptorToFixOrderCancellationConfirmationMapping,
+       MapsOrderQuantityToOrderQty) {
+  reply.order_quantity = OrderQuantity{50};
+
+  ToFixMapper::map(reply, fix_message, {});
+
+  ASSERT_THAT(get_fix_field<FIX::OrderQty>(fix_message), Optional(Eq(50.0)));
+}
+
+TEST_F(AcceptorToFixOrderCancellationConfirmationMapping,
+       OmitsOrderQtyWhenOrderQuantityAbsent) {
+  reply.order_quantity = std::nullopt;
+
+  ToFixMapper::map(reply, fix_message, {});
+
+  ASSERT_THAT(get_fix_field<FIX::OrderQty>(fix_message), Eq(std::nullopt));
+}
+
+TEST_F(AcceptorToFixOrderCancellationConfirmationMapping,
+       MapsAveragePriceToAvgPx) {
+  reply.average_price = AveragePrice{123.456};
+
+  ToFixMapper::map(reply, fix_message, {});
+
+  ASSERT_THAT(get_fix_field<FIX::AvgPx>(fix_message), Optional(Eq(123.456)));
+}
+
+TEST_F(AcceptorToFixOrderCancellationConfirmationMapping, SetsZeroAvgPx) {
+  reply.average_price = std::nullopt;
+
+  ToFixMapper::map(reply, fix_message, {});
+
+  ASSERT_THAT(get_fix_field<FIX::AvgPx>(fix_message), Optional(Eq(0.0)));
+}
+
+TEST_F(AcceptorToFixOrderCancellationConfirmationMapping,
+       MapsCancellationText) {
+  reply.cancellation_text = CancellationText{"CancellationText"};
+
+  ToFixMapper::map(reply, fix_message, {});
+
+  ASSERT_THAT(get_fix_field<FIX::Text>(fix_message),
+              Optional(Eq("CancellationText")));
 }
 
 // endregion OrderCancellationConfirmation mapping

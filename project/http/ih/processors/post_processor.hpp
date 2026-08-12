@@ -7,7 +7,6 @@
 #include <memory>
 #include <string>
 
-#include "http/http.hpp"
 #include "ih/controllers/app_controller.hpp"
 #include "ih/controllers/datasource_controller.hpp"
 #include "ih/controllers/listing_controller.hpp"
@@ -15,7 +14,6 @@
 #include "ih/controllers/setting_controller.hpp"
 #include "ih/controllers/trading_controller.hpp"
 #include "ih/controllers/venue_controller.hpp"
-#include "ih/data_bridge/venue_accessor.hpp"
 #include "ih/redirect/redirection_processor.hpp"
 #include "ih/redirect/result.hpp"
 
@@ -80,7 +78,7 @@ class PostProcessorImpl : public PostProcessor {
                     std::shared_ptr<TradingController> trading_controller,
                     std::shared_ptr<VenueController> venue_controller,
                     std::unique_ptr<AppController> app_controller,
-                    std::string venue_name);
+                    std::string venue_id);
 
   auto add_venue(const Pistache::Rest::Request& request,
                  Pistache::Http::ResponseWriter response) -> void override;

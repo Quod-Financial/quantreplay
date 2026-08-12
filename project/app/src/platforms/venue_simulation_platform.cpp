@@ -38,14 +38,18 @@ VenueSimulationPlatform::VenueSimulationPlatform(
   trading_engine_ = std::make_shared<TradingEngine>(database);
   fix_acceptor_ = std::make_shared<FixAcceptor>(get_fix_configuration_path());
   generator_ = std::make_shared<Generator>(database);
-  http_server_ = std::make_shared<HttpServer>(
-      database, convert_to_http_callbacks(callbacks));
+  http_server_ =
+      std::make_shared<HttpServer>(database,
+                                   convert_to_http_callbacks(callbacks),
+                                   fix_acceptor_->session_settings());
 
   middleware::bind_trading_admin_channel(trading_engine_);
   middleware::bind_trading_reply_channel(
       std::make_shared<VenueTradingReplyDispatcher>(generator_, fix_acceptor_));
   middleware::bind_trading_request_channel(trading_engine_);
-  middleware::bind_trading_session_event_channel(trading_engine_);
+  middleware::bind_trading_session_connection_event_channel(http_server_);
+  middleware::bind_trading_session_termination_event_channel(trading_engine_);
+  middleware::bind_trading_session_termination_event_channel(http_server_);
   middleware::bind_generator_admin_channel(generator_);
   log::debug("venue simulation platform has been created");
 }
@@ -69,7 +73,8 @@ auto VenueSimulationPlatform::terminate() -> void {
   middleware::release_trading_admin_channel();
   middleware::release_trading_reply_channel();
   middleware::release_trading_request_channel();
-  middleware::release_trading_session_event_channel();
+  middleware::release_trading_session_connection_event_channel();
+  middleware::release_trading_session_termination_event_channel();
   middleware::release_generator_admin_channel();
 
   trading_engine_.reset();

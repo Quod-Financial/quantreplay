@@ -16,6 +16,18 @@ Application::Application(const RequestProcessor& request_processor,
     : request_processor_(request_processor),
       event_processor_(event_processor) {}
 
+auto Application::onLogon(const FIX::SessionID& fix_session) -> void {
+  try {
+    log::debug("application accepted session connection event");
+    emit_session_connection_event(event_processor_, fix_session);
+  } catch (const std::exception& exception) {
+    log::err("failed to handle session connection: an error occurred: {}",
+             exception.what());
+  } catch (...) {
+    log::err("failed to handle session connection: unknown error occurred");
+  }
+}
+
 auto Application::onLogout(const FIX::SessionID& fix_session) -> void {
   try {
     log::debug("application accepted session disconnection event");
@@ -65,6 +77,12 @@ auto Application::process_request(const RequestProcessor& request_processor,
                                   const FIX::SessionID& fix_session,
                                   const FIX::Message& fix_message) -> void {
   request_processor.process_fix_request(fix_message, fix_session);
+}
+
+auto Application::emit_session_connection_event(
+    const EventProcessor& event_processor, const FIX::SessionID& fix_session)
+    -> void {
+  event_processor.process_session_connection(fix_session);
 }
 
 auto Application::emit_session_disconnection_event(

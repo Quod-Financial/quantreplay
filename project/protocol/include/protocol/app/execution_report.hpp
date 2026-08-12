@@ -29,6 +29,8 @@ struct ExecutionReport {
   std::optional<LeavesQuantity> leaves_quantity;
   std::optional<CumExecutedQuantity> cum_executed_quantity;
   std::optional<ExecutedQuantity> executed_quantity;
+  std::optional<OrderQuantity> order_quantity;
+  std::optional<AveragePrice> average_price;
   std::optional<ShortSaleExemptionReason> short_sale_exempt_reason;
   std::optional<ExecutionType> execution_type;
   std::optional<OrderStatus> order_status;

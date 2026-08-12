@@ -81,8 +81,8 @@ class MatchingEngine::Implementation {
 
   EventDispatcher event_dispatcher_;
   ClientNotificationCache cached_client_notifications_;
-  OrderSystemFacade order_system_facade_;
   MarketDataFacade market_data_facade_;
+  OrderSystemFacade order_system_facade_;
 };
 
 }  // namespace simulator::trading_system::matching_engine

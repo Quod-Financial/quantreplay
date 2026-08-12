@@ -277,9 +277,27 @@ json::EnumConverter<MdEntryType> json::EnumConverter<MdEntryType>::instance_{
     {{enumerators::MdEntryType::Bid, "Bid"},
      {enumerators::MdEntryType::Offer, "Offer"},
      {enumerators::MdEntryType::Trade, "Trade"},
+     {enumerators::MdEntryType::OpeningPrice, "OpeningPrice"},
+     {enumerators::MdEntryType::ClosingPrice, "ClosingPrice"},
+     {enumerators::MdEntryType::SettlementPrice, "SettlementPrice"},
+     {enumerators::MdEntryType::HighPrice, "HighPrice"},
      {enumerators::MdEntryType::LowPrice, "LowPrice"},
+     {enumerators::MdEntryType::Imbalance, "Imbalance"},
+     {enumerators::MdEntryType::TradeVolume, "TradeVolume"},
      {enumerators::MdEntryType::MidPrice, "MidPrice"},
-     {enumerators::MdEntryType::HighPrice, "HighPrice"}}};
+     {enumerators::MdEntryType::EarlyPrice, "EarlyPrice"},
+     {enumerators::MdEntryType::AuctionClearingPrice, "AuctionClearingPrice"},
+     {enumerators::MdEntryType::MarketBid, "MarketBid"},
+     {enumerators::MdEntryType::MarketOffer, "MarketOffer"},
+     {enumerators::MdEntryType::PreviousClosingPrice, "PreviousClosingPrice"}}};
+
+template <>
+json::EnumConverter<TradeCondition>
+    json::EnumConverter<TradeCondition>::instance_{
+        {{enumerators::TradeCondition::ImbalanceMoreBuyers,
+          "ImbalanceMoreBuyers"},
+         {enumerators::TradeCondition::ImbalanceMoreSellers,
+          "ImbalanceMoreSellers"}}};
 
 template <>
 json::EnumConverter<MdSubscriptionRequestType>
@@ -422,6 +440,11 @@ auto operator<<(std::ostream& stream, TimeInForce time_in_force)
 auto operator<<(std::ostream& stream, MdEntryType md_entry_type)
     -> std::ostream& {
   return stream << fmt::to_string(md_entry_type);
+}
+
+auto operator<<(std::ostream& stream, TradeCondition trade_condition)
+    -> std::ostream& {
+  return stream << fmt::to_string(trade_condition);
 }
 
 auto operator<<(std::ostream& stream, MdSubscriptionRequestType request_type)
@@ -610,6 +633,22 @@ auto fmt::formatter<simulator::core::enumerators::MdEntryType>::format(
   try {
     return base_formatter::format(
         simulator::core::json::EnumConverter<MdEntryType>::str(md_entry_type),
+        context);
+  } catch (const std::runtime_error& ex) {
+    return base_formatter::format("undefined", context);
+  }
+}
+
+auto fmt::formatter<simulator::core::enumerators::TradeCondition>::format(
+    formattable trade_condition, fmt::format_context& context) const
+    -> decltype(context.out()) {
+  using base_formatter = formatter<std::string_view>;
+  using TradeCondition = formattable;
+
+  try {
+    return base_formatter::format(
+        simulator::core::json::EnumConverter<TradeCondition>::str(
+            trade_condition),
         context);
   } catch (const std::runtime_error& ex) {
     return base_formatter::format("undefined", context);

@@ -114,6 +114,11 @@ struct RejectText {
                                    .plural = "RejectTexts"};
 };
 
+struct CancellationText {
+  constexpr static core::Name name{.singular = "CancellationText",
+                                   .plural = "CancellationTexts"};
+};
+
 struct SecurityExchange {
   constexpr static core::Name name{.singular = "SecurityExchange",
                                    .plural = "SecurityExchanges"};
@@ -171,6 +176,12 @@ struct MdSubscriptionRequestType {
   using value_type = core::enumerators::MdSubscriptionRequestType;
   constexpr static core::Name name{.singular = "MDSubscriptionRequestType",
                                    .plural = "MDSubscriptionRequestTypes"};
+};
+
+struct TradeCondition {
+  using value_type = core::enumerators::TradeCondition;
+  constexpr static core::Name name{.singular = "TradeCondition",
+                                   .plural = "TradeConditions"};
 };
 
 struct TradingPhase {
@@ -267,6 +278,7 @@ SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, SecurityType);
 SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, Side);
 SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, TimeInForce);
 SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, MdEntryType);
+SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, TradeCondition);
 SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, MdSubscriptionRequestType);
 SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, MdRejectReason);
 SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, MarketEntryAction);
@@ -285,6 +297,7 @@ SIMULATOR_DECLARE_ATTRIBUTE(simulator, ExecutionId, Literal);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, OrigClientOrderId, Literal);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, PartyId, Literal);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, RejectText, Literal);
+SIMULATOR_DECLARE_ATTRIBUTE(simulator, CancellationText, Literal);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, SecurityExchange, Literal);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, SecurityId, Literal);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, Symbol, Literal);
@@ -321,6 +334,12 @@ struct ExecutionPrice {
   using primary_type = simulator::Price;
   constexpr static core::Name name{.singular = "ExecutionPrice",
                                    .plural = "ExecutionPrices"};
+};
+
+struct AveragePrice {
+  using primary_type = simulator::Price;
+  constexpr static core::Name name{.singular = "AveragePrice",
+                                   .plural = "AveragePrices"};
 };
 
 struct CumExecutedQuantity {
@@ -383,6 +402,7 @@ SIMULATOR_DECLARE_ATTRIBUTE(simulator, OrderPrice, Derived);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, BestBidPrice, Derived);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, BestOfferPrice, Derived);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, ExecutionPrice, Derived);
+SIMULATOR_DECLARE_ATTRIBUTE(simulator, AveragePrice, Derived);
 
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, CumExecutedQuantity, Derived);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, LeavesQuantity, Derived);

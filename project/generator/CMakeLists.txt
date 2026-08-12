@@ -64,6 +64,7 @@ add_static_library(
     ih/random/generators/value_generator.hpp
     ih/random/generators/value_generator_impl.hpp
     ih/random/instrument_generator.hpp
+    ih/random/seed_hasher.hpp
     ih/random/utils.hpp
     ih/random/values/event.hpp
     ih/random/values/price_generation_params.hpp
@@ -119,6 +120,7 @@ add_static_library(
     src/random/generators/resting_order_action_generator.cpp
     src/random/generators/value_generator_impl.cpp
     src/random/instrument_generator.cpp
+    src/random/seed_hasher.cpp
     src/random/values/event.cpp
     src/random/values/price_generation_params.cpp
     src/random/values/quantity_generation_params.cpp

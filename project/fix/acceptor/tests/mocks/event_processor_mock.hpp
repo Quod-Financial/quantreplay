@@ -9,6 +9,11 @@ namespace simulator::fix::acceptor::test {
 
 struct EventProcessorMock : public EventProcessor {
   MOCK_METHOD(void,
+              process_session_connection,
+              (const FIX::SessionID&),
+              (const, override));
+
+  MOCK_METHOD(void,
               process_session_disconnection,
               (const FIX::SessionID&),
               (const, override));

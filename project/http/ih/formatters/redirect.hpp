@@ -3,6 +3,7 @@
 
 #include <fmt/format.h>
 
+#include "core/common/std_formatter.hpp"
 #include "ih/redirect/destination.hpp"
 #include "ih/redirect/request.hpp"
 #include "ih/redirect/result.hpp"
@@ -34,11 +35,13 @@ struct formatter<simulator::http::redirect::Request> {
   auto format(const FormatableType& request, FormattingContext& ctx) const {
     using Pistache::Http::methodString;
 
-    return format_to(ctx.out(),
-                     "redirect::Request: {{ Resource: '{}:{}', {} }}",
-                     methodString(request.method()),
-                     request.url(),
-                     request.destination());
+    return format_to(
+        ctx.out(),
+        "redirect::Request: {{ Resource: '{}:{}', Body: '{}', {} }}",
+        methodString(request.method()),
+        request.url(),
+        request.body(),
+        request.destination());
   }
 };
 

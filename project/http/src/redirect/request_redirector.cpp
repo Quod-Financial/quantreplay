@@ -19,13 +19,23 @@ static const std::map<Pistache::Http::Method, MethodHandler> Handlers{
      [](auto& client, const auto& request) {
        return client.Get(request.url());
      }},
+    {Pistache::Http::Method::Head,
+     [](auto& client, const auto& request) {
+       return client.Head(request.url());
+     }},
     {Pistache::Http::Method::Post,
      [](auto& client, const auto& request) {
-       return client.Post(request.url());
+       return request.body().has_value()
+                  ? client.Post(
+                        request.url(), *request.body(), "application/json")
+                  : client.Post(request.url());
      }},
     {Pistache::Http::Method::Put,
      [](auto& client, const auto& request) {
-       return client.Put(request.url());
+       return request.body().has_value()
+                  ? client.Put(
+                        request.url(), *request.body(), "application/json")
+                  : client.Put(request.url());
      }},
 };
 

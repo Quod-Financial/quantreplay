@@ -5,6 +5,7 @@ add_target_tests(
     mocks/historical/data_access_adapter.hpp
     mocks/historical/provider.hpp
     mocks/historical/record.hpp
+    mocks/random/algorithm/generation_algorithm.hpp
     mocks/random/counterparty_generator.hpp
     mocks/random/price_generator.hpp
     mocks/random/quantity_generator.hpp
@@ -54,6 +55,7 @@ add_target_tests(
     unit_tests/random/generators/quantity_generator_tests.cpp
     unit_tests/random/generators/resting_order_action_generator_tests.cpp
     unit_tests/random/generators/value_generator_impl_tests.cpp
+    unit_tests/random/seed_hasher_tests.cpp
     unit_tests/random/values/event_tests.cpp
     unit_tests/random/values/price_generation_params_tests.cpp
     unit_tests/random/values/quantity_generation_params_tests.cpp

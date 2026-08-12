@@ -5,6 +5,7 @@
 #include "ih/router.hpp"
 #include "mocks/delete_processor.hpp"
 #include "mocks/get_processor.hpp"
+#include "mocks/head_processor.hpp"
 #include "mocks/post_processor.hpp"
 #include "mocks/put_processor.hpp"
 #include "test_utils/processors.hpp"
@@ -19,17 +20,22 @@ class HttpRouter : public ::testing::Test {
     auto delete_processor = std::make_shared<mock::DeleteProcessor>();
 
     get_processor = std::make_shared<mock::GetProcessor>();
+    head_processor = std::make_shared<mock::HeadProcessor>();
     post_processor = std::make_shared<mock::PostProcessor>();
     router = std::make_unique<Router>(get_processor,
+                                      head_processor,
                                       post_processor,
                                       std::move(put_processor),
                                       std::move(delete_processor));
   }
 
   static constexpr std::string MethodNameGet{"GET"};
+  static constexpr std::string MethodNameHead{"HEAD"};
   static constexpr std::string MethodNamePost{"POST"};
   static constexpr std::string ByVenueIdSuffix{"/venueId"};
+
   std::shared_ptr<mock::GetProcessor> get_processor;
+  std::shared_ptr<mock::HeadProcessor> head_processor;
   std::shared_ptr<mock::PostProcessor> post_processor;
   std::unique_ptr<Router> router;
 };
@@ -150,6 +156,26 @@ TEST_F(HttpRouter, CallsGetProcessorGetOrderGenStatusByVenueIdOnGetRequest) {
 
   const auto request =
       util::make_request(MethodNameGet, endpoint::GenStatus + ByVenueIdSuffix);
+  auto response_writer = util::make_response_writer(*router);
+  router->onRequest(request, std::move(response_writer.writer));
+}
+
+TEST_F(HttpRouter, CallsGetProcessorGetDataDictionariesOnGetRequest) {
+  EXPECT_CALL(*get_processor, get_data_dictionaries).Times(1);
+
+  const auto request = util::make_request(
+      MethodNameGet,
+      "/api/venues/venue_id/sessions/session_id/dataDictionaries");
+  auto response_writer = util::make_response_writer(*router);
+  router->onRequest(request, std::move(response_writer.writer));
+}
+
+TEST_F(HttpRouter, CallsHeadProcessorGetDataDictionariesOnHeadRequest) {
+  EXPECT_CALL(*head_processor, get_data_dictionaries).Times(1);
+
+  const auto request = util::make_request(
+      MethodNameHead,
+      "/api/venues/venue_id/sessions/session_id/dataDictionaries");
   auto response_writer = util::make_response_writer(*router);
   router->onRequest(request, std::move(response_writer.writer));
 }

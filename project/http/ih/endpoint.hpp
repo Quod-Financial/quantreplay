@@ -29,6 +29,8 @@ const std::string VenueStatusByVenueId{"/api/venuestatus/:venueId"};
 const std::string AllVenueStatus{"/api/allvenuestatus"};
 const std::string Venues{"/api/venues"};
 const std::string VenuesByVenueId{"/api/venues/:venueId"};
+const std::string DataDictionaries{
+    "/api/venues/:venueId/sessions/:sessionId/dataDictionaries"};
 const std::string ListingsBySymbol{"/api/listings/:symbol"};
 const std::string Listings{"/api/listings"};
 const std::string PriceSeedsById{"/api/priceseeds/:id"};

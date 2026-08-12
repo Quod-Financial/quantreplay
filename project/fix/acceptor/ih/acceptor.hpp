@@ -39,9 +39,12 @@ struct Acceptor::Implementation {
 
   auto stop_server() noexcept -> void;
 
+  auto session_settings() const noexcept -> const FIX::SessionSettings&;
+
  private:
   auto fix_acceptor_server() noexcept -> FIX::Acceptor&;
 
+  FIX::SessionSettings settings_;
   acceptor::FixReplySender reply_sender_;
   RequestProcessor request_processor_;
   EventProcessor event_processor_;

@@ -11,7 +11,9 @@
 namespace simulator::trading_system::matching_engine {
 
 struct Event {
-  using Category = std::variant<ClientNotification, OrderBookNotification>;
+  using Category = std::variant<ClientNotification,
+                                OrderBookNotification,
+                                ClientNotificationFlush>;
 
   template <typename EventCategory>
     requires std::constructible_from<Category, EventCategory>

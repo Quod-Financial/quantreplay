@@ -1,15 +1,25 @@
+#include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "core/domain/attributes.hpp"
+#include "data_layer/api/models/listing.hpp"
+#include "data_layer/api/models/price_seed.hpp"
+#include "data_layer/api/models/venue.hpp"
 #include "ih/adaptation/generated_message.hpp"
+#include "ih/context/order_market_data_provider.hpp"
 #include "ih/random/algorithm/order_generation_algorithm.hpp"
+#include "ih/random/generators/value_generator_impl.hpp"
 #include "ih/random/values/event.hpp"
 #include "ih/random/values/resting_order_action.hpp"
 #include "ih/registry/generated_order_data.hpp"
@@ -169,12 +179,14 @@ class Generator_Random_OrderGenerationAlgorithm : public testing::Test {
     quantity_generator_ = std::ref(*qty_gen);
     event_generator_ = std::ref(*event_gen);
 
-    algorithm_ = OrderGenerationAlgorithm::create(context_,
-                                                  std::move(event_gen),
-                                                  std::move(cp_gen),
-                                                  std::move(action_gen),
-                                                  std::move(price_gen),
-                                                  std::move(qty_gen));
+    algorithm_ = std::make_unique<OrderGenerationAlgorithm>(
+        context_,
+        std::make_shared<ValueGeneratorImpl>(),
+        std::move(event_gen),
+        std::move(cp_gen),
+        std::move(action_gen),
+        std::move(price_gen),
+        std::move(qty_gen));
   }
 
   data_layer::Listing listing;
@@ -194,10 +206,6 @@ class Generator_Random_OrderGenerationAlgorithm : public testing::Test {
   Captured<mock::QuantityGenerator> quantity_generator_;
   Captured<mock::EventGenerator> event_generator_;
 };
-
-TEST_F(Generator_Random_OrderGenerationAlgorithm, Construct_WithContextOnly) {
-  EXPECT_NO_THROW(OrderGenerationAlgorithm::create(get_context_pointer()));
-}
 
 TEST_F(Generator_Random_OrderGenerationAlgorithm, Generate_NoopEvent) {
   constexpr auto event = EventType::NoOperation;

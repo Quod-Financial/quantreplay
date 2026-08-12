@@ -1,7 +1,10 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cstdint>
 #include <string>
+#include <variant>
+#include <vector>
 
 #include "api/predicate/lexeme.hpp"
 #include "common/model.hpp"
@@ -17,6 +20,12 @@ class FormatterMock {
  public:
   using Field = TestModel::Attribute;
   using CustomType = TestModel::CustomFieldType;
+  using Value = std::variant<bool,
+                             std::int64_t,
+                             std::uint64_t,
+                             std::double_t,
+                             std::string,
+                             CustomType>;
 
   auto operator()(Field field, BasicOperation operation, bool value) -> void {
     format_boolean(field, operation, value);
@@ -48,6 +57,10 @@ class FormatterMock {
     format_custom(field, operation, value);
   }
 
+  auto operator()(Field field, const std::vector<Value>& values) -> void {
+    format_in(field, values);
+  }
+
   auto operator()(CompositeOperation operation) -> void {
     format_composite(operation);
   }
@@ -66,6 +79,8 @@ class FormatterMock {
   MOCK_METHOD(void, format_double, (Field, BasicOperation, std::double_t));
   MOCK_METHOD(void, format_string, (Field, BasicOperation, const std::string&));
   MOCK_METHOD(void, format_custom, (Field, BasicOperation, CustomType));
+
+  MOCK_METHOD(void, format_in, (Field, (const std::vector<Value>&)));
 
   MOCK_METHOD(void, format_composite, (CompositeOperation));
 
@@ -319,6 +334,70 @@ TEST_F(DataLayer_Predicate_BasicPredicateLexeme,
 
   FormatterMock formatter;
   EXPECT_CALL(formatter, format_custom(_, _, Eq(value))).Times(1);
+
+  predicate.accept(formatter);
+}
+
+class DataLayer_Predicate_InPredicateLexeme : public ::testing::Test {
+ public:
+  using Field = TestModel::Attribute;
+  using CustomType = TestModel::CustomFieldType;
+  using Value = FormatterMock::Value;
+  using InPredicate = predicate::InPredicate<TestModel>;
+
+  static_assert(std::is_copy_constructible_v<InPredicate>);
+  static_assert(std::is_move_constructible_v<InPredicate>);
+
+  template <typename... Args>
+  static auto make_predicate(Args&&... args) -> InPredicate {
+    return InPredicate{std::forward<Args>(args)...};
+  }
+};
+
+TEST_F(DataLayer_Predicate_InPredicateLexeme, Accept_Attribute) {
+  const InPredicate predicate =
+      make_predicate(Field::StringField, std::vector<std::string>{"ABC"});
+
+  FormatterMock formatter;
+  EXPECT_CALL(formatter, format_in(Eq(Field::StringField), _)).Times(1);
+
+  predicate.accept(formatter);
+}
+
+TEST_F(DataLayer_Predicate_InPredicateLexeme, Accept_StringValues) {
+  const InPredicate predicate = make_predicate(
+      Field::StringField, std::vector<std::string>{"ABC", "DEF"});
+
+  const std::vector<Value> expected{std::string{"ABC"}, std::string{"DEF"}};
+
+  FormatterMock formatter;
+  EXPECT_CALL(formatter, format_in(_, Eq(expected))).Times(1);
+
+  predicate.accept(formatter);
+}
+
+TEST_F(DataLayer_Predicate_InPredicateLexeme, Accept_IntegerValues) {
+  const InPredicate predicate =
+      make_predicate(Field::IntegerField, std::vector<std::int64_t>{1, 2, 3});
+
+  const std::vector<Value> expected{
+      std::int64_t{1}, std::int64_t{2}, std::int64_t{3}};
+
+  FormatterMock formatter;
+  EXPECT_CALL(formatter, format_in(_, Eq(expected))).Times(1);
+
+  predicate.accept(formatter);
+}
+
+TEST_F(DataLayer_Predicate_InPredicateLexeme, Accept_CustomTypeValues) {
+  const InPredicate predicate = make_predicate(
+      Field::CustomField,
+      std::vector<CustomType>{CustomType::Value1, CustomType::Value3});
+
+  const std::vector<Value> expected{CustomType::Value1, CustomType::Value3};
+
+  FormatterMock formatter;
+  EXPECT_CALL(formatter, format_in(_, Eq(expected))).Times(1);
 
   predicate.accept(formatter);
 }

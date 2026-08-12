@@ -1,5 +1,5 @@
-#ifndef SIMULATOR_HTTP_TEST_UTILS_UTILS_HPP_
-#define SIMULATOR_HTTP_TEST_UTILS_UTILS_HPP_
+#ifndef SIMULATOR_HTTP_TESTS_TEST_UTILS_UTILS_HPP_
+#define SIMULATOR_HTTP_TESTS_TEST_UTILS_UTILS_HPP_
 
 #include <limits>
 #include <type_traits>
@@ -15,4 +15,4 @@ static constexpr auto invalid_enum_value() -> E {
 
 }  // namespace simulator::http::test::util
 
-#endif  // SIMULATOR_HTTP_TEST_UTILS_UTILS_HPP_
+#endif  // SIMULATOR_HTTP_TESTS_TEST_UTILS_UTILS_HPP_

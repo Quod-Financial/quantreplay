@@ -9,6 +9,8 @@ namespace simulator::generator::mock {
 
 class ValueGenerator : public generator::random::ValueGenerator {
  public:
+  MOCK_METHOD(void, reseed, (std::uint64_t seed), (override));
+
   MOCK_METHOD(RandomInt, generate_uniform, (RandomInt, RandomInt), (override));
 
   MOCK_METHOD(RandomUnsignedInt,

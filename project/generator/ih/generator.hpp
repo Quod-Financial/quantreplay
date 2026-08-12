@@ -1,6 +1,9 @@
 #ifndef SIMULATOR_GENERATOR_IH_GENERATOR_HPP_
 #define SIMULATOR_GENERATOR_IH_GENERATOR_HPP_
 
+#include <optional>
+#include <string>
+
 #include "ih/adaptation/protocol_conversion.hpp"
 #include "ih/generator_impl.hpp"
 #include "log/logging.hpp"
@@ -22,7 +25,9 @@ struct Generator::Implementation {
 
   auto launch() -> void { generator_->start(); }
 
-  auto resume() -> void { generator_->resume(); }
+  auto resume(const std::optional<std::string>& user_seed) -> void {
+    generator_->resume(user_seed);
+  }
 
   auto suspend() -> void { generator_->suspend(); }
 

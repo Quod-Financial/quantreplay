@@ -8,6 +8,7 @@
 namespace simulator::trading_system::matching_engine {
 
 struct ClientNotification;
+struct ClientNotificationFlush;
 struct OrderBookNotification;
 
 class EventDispatcher : public EventListener {
@@ -22,10 +23,15 @@ class EventDispatcher : public EventListener {
 
   using ClientNotificationHandler = std::function<void(ClientNotification)>;
 
+  using ClientNotificationFlushHandler = std::function<void()>;
+
   using OrderBookNotificationHandler =
       std::function<void(OrderBookNotification)>;
 
   auto on_client_notification(ClientNotificationHandler handler)
+      -> EventDispatcher&;
+
+  auto on_client_notification_flush(ClientNotificationFlushHandler handler)
       -> EventDispatcher&;
 
   auto on_order_book_notification(OrderBookNotificationHandler handler)
@@ -35,9 +41,11 @@ class EventDispatcher : public EventListener {
   auto on(Event event) -> void override;
 
   auto dispatch(ClientNotification notification) -> void;
+  auto dispatch(ClientNotificationFlush flush) -> void;
   auto dispatch(OrderBookNotification notification) -> void;
 
   ClientNotificationHandler client_notification_handler_;
+  ClientNotificationFlushHandler client_notification_flush_handler_;
   OrderBookNotificationHandler order_book_notification_handler_;
 };
 

@@ -215,8 +215,12 @@ PhaseTransitionCommand::PhaseTransitionCommand(
       market_data_publisher_(market_data_publisher) {}
 
 auto PhaseTransitionCommand::execute() const -> void {
-  order_handler_.handle(phase_transition_);
-  market_data_publisher_.publish();
+  if (order_handler_.handle(phase_transition_) ==
+      PhaseTransitionOutcome::AuctionUncross) {
+    market_data_publisher_.publish_uncrossing();
+  } else {
+    market_data_publisher_.publish();
+  }
 }
 
 auto PhaseTransitionCommand::name() const -> std::string_view {

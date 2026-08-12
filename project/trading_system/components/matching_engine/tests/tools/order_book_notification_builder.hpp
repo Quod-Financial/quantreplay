@@ -37,8 +37,20 @@ struct NewOrderAdded {
     return *this;
   }
 
+  auto with_order_type(OrderType order_type) -> NewOrderAdded& {
+    order_type_ = order_type;
+    return *this;
+  }
+
   auto create() const -> OrderAdded {
-    return {owner_, price_, quantity_.value(), id_.value(), side_.value()};
+    return {
+        owner_,
+        price_,
+        quantity_.value(),
+        id_.value(),
+        side_.value(),
+        order_type_.value_or(price_.has_value() ? OrderType::Option::Limit
+                                                : OrderType::Option::Market)};
   }
 
   static auto init() -> NewOrderAdded {
@@ -56,6 +68,7 @@ struct NewOrderAdded {
   std::optional<Quantity> quantity_;
   std::optional<OrderId> id_;
   std::optional<Side> side_;
+  std::optional<OrderType> order_type_;
 };
 
 struct NewOrderReduced {

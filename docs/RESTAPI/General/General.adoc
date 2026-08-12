@@ -250,20 +250,12 @@ _Example_
 ==== Date/Time
 All time stamps sent to or returned from Market Simulators must be expressed in UTC.
 
-Time stamps with second granularity are expressed using the format: yyyy-MM-ddTHH:mm:ss
+Time stamps are expressed using the format: YYYY-MM-DD HH:mm:SS.ssssss
 
 _Example_
 
 ----
-2015-09-08T15:32:09
-----
-
-Time stamps with milli-second granularity are expressed using the format: yyyy-MM-ddTHH:mm:ss.SSS
-
-_Example_
-
-----
-2015-09-08T15:32:09.119
+2015-09-08 15:32:09.119456
 ----
 
 [[general-randomorder]]
@@ -290,9 +282,10 @@ The specific action taken is randomly chosen each time by a statistically correc
 
 There is a hard-coded 1/3 probability of the simulator choosing to "do nothing" as an action, therefore the effective applied frequency of choosing a random action 
 (including "do nothing") is:
-
-Actual Effective Random Action Frequency = (Configured randomOrdersRate value * 3 ) / 2
-
+[stem]
+++++
+\text{Actual Effective Random Action Frequency} = \frac{randomOrdersRate \times 3}{2}
+++++
 Of actual actions taken, there is a hard-coded probability distribution of:
 
 40% probability of resting bid action
@@ -368,7 +361,7 @@ Once this initial price value is determined, the setting Listings â†’ randomTick
 relative to the starting value. 
 New resting Bid order prices and aggressive Sell order prices are randomly chosen as a number of ticks below the initial value, 
 and new resting Ask order prices and new aggressive Buy order prices are randomly chosen as a number of ticks above the initial value. 
-The frequency distribution of random prices across this range of prices is exponentially weighted by a factor of 1.05 ^ (randomTickRange - 1) 
+The frequency distribution of random prices across this range of prices is exponentially weighted by a factor of stem:[1.05 ^ {randomTickRange - 1}]
 so that more orders are placed near the top of the book than lower down. 
 
 The following diagram represents this distribution:
@@ -638,8 +631,49 @@ While the Open market phase is active, all normal trading activity is allowed.
 While the Closed market phase is active, all trading activity is blocked. 
 It is still possible for market sessions to be connected and remain connected, and it is still possible to subscribe to market data updates and remain subscribed to market 
 data updates, but all order action requests will be rejected, such as requests for new orders, amending orders, or canceling orders.
-In addition, at the moment a Closed phase starts, any existing orders in the matching engine for any listing will be terminated and rejected if they have a Time In Force of 
+In addition, at the moment a Closed phase starts, any existing orders in the matching engine for any listing will be terminated and rejected if they have a Time In Force of
 Day or Time In Force of GoodTillDate with an expiration of the current day.
+
+[[general-mktphs-auction]]
+==== Auction Phase
+An auction phase collects orders over a call period and then crosses them in a single uncrossing event, instead of matching orders continuously.
+There are three auction phase types â€” PreOpen (opening auction), PreClose (closing auction) and Auction (intraday auction).
+They behave identically and differ only in the trading-session values reported to clients over the FIX interface.
+
+An auction runs in two consecutive sub-phases:
+
+* *Call*. Begins at the phase start time. New limit orders with a Time In Force of Day, GoodTillDate or GoodTillCancel are accepted and added to the order book by price/time priority, but no orders are crossed. Market orders are also accepted and rest ahead of all limit orders, ordered only by the time they were received (they carry no price). Limit orders with a Time In Force of ImmediateOrCancel or FillOrKill are rejected. Amends and cancels are accepted and follow the usual priority rules; resting market orders can also be amended (only their quantity) and cancelled. An indicative auction price and volume are recalculated on every accepted order action and published with the resulting book update, and are additionally republished on a fixed 30-second interval while the order book is crossed. The market data entries carrying these values, and the auction imbalance published alongside them, are described in the Market Simulator FIX Rules of Engagement.
+* *Uncrossing*. Begins at a randomized time around the phase end time (see below). For its whole duration, every order action â€” new orders, amends and cancels â€” is rejected. The collected orders are then crossed at a single clearing price â€” the last indicative auction price calculated during the call â€” in price/time priority (market orders are matched first; any market orders left unfilled are cancelled), and the resulting trades are published. Any limit orders that remain rest in the book.
+
+The exact time at which the uncrossing begins is chosen randomly within `endTime` +/- `endTimeRange` (in minutes); the chosen instant can fall on any second within that window, not only on a whole minute.
+The window never reaches back before the start of the auction: for an auction configured with a `startTime` of 17:00, an `endTime` of 17:10 and an `endTimeRange` of 20, the uncrossing time is drawn between 17:00 and 17:30.
+When the uncrossing completes, the simulator immediately switches to the phase scheduled to be active at the auction's configured `endTime` or at the moment the auction actually finished, whichever is later. An auction that finishes early therefore starts the following phase ahead of schedule only if that phase is configured to start exactly at the auction's `endTime`; an auction that finishes late enters whichever phase is scheduled to be active at that moment. As with any phase, if no phase is scheduled at that time, the simulator falls back to the Open phase.
+
+While an auction phase is active (in either sub-phase), halt and resume requests are rejected (see <<admincmds-mktphshalt-haltresume,Halt/Resume Market Phase>>). Conversely, if the market is halted at the moment an auction is scheduled to start, the halt is discarded and the auction starts as scheduled.
+
+The precise FIX trading-status and market-data reporting for each sub-phase is described in the FIX Rules of Engagement.
+
+[[general-mktphs-tal]]
+==== Trade At Last Phase
+The TradeAtLast phase is typically scheduled immediately after a closing auction (PreClose) and lets a restricted set of orders trade at the price that auction settled.
+It begins and ends at its configured times and does not use the `endTimeRange` setting; when it follows a closing auction it instead begins as soon as that auction's uncrossing completes (see <<general-mktphs-auction,Auction Phase>>).
+
+While the phase is active, only new limit orders with a Time In Force of Day and a price equal to the current closing price are accepted; every other new order is rejected, market orders included.
+The price traded at is the closing price maintained for the listing: the price settled by the most recent closing auction or, on a venue that schedules no closing auction, the price rolled over from the last trade of the previous day.
+If no closing price has ever been determined, no order is accepted for the whole duration of the phase.
+
+Accepted orders are held in a queue of their own, one per side, in the order they were accepted, and are crossed only against the orders accepted during the same phase: an incoming order is matched against the opposite queue in time priority, and whatever is left of it joins its own queue.
+Since both sides are priced at the closing price, every cross happens at that price.
+The orders already resting in the order book are neither matched nor modified, and are still there when the phase ends.
+
+Only the orders accepted during the phase can be amended and cancelled: a request identifying any other order is rejected as not found and leaves that order untouched, and amended values must satisfy the same rules as a new order.
+When the phase ends, every order still resting in its queues is cancelled and reported to its owner, whichever phase follows.
+
+The phase can be halted and resumed like the Open phase, both on demand and through a scheduled halt (see <<general-mktphs-halt,Phase Halt>>).
+While it is halted, new orders and amends are rejected, and cancels are processed only if allowCancels is set â€” and then still only for the orders accepted during the phase.
+
+Non-order messages are unaffected: sessions, market data and security status subscriptions and their snapshots work as in any other phase.
+Market data is published on every accepted order action, exactly as during normal trading, and the trades of the phase feed the daily traded volume and the session high and low prices; the details are described in the Market Simulator FIX Rules of Engagement.
 
 [[general-mktphs-halt]]
 ==== Phase Halt
@@ -668,6 +702,8 @@ The market simulator may store and recover:
 
 * The order book state for actively traded listings
 * Last known L1 market data values (such as last traded price, open / high / low / close prices, etc)
+
+Orders that do not rest in the regular price/time queues of the order book are neither stored nor recovered, and are discarded when a state is recovered: the orders accepted during a <<general-mktphs-tal,TradeAtLast phase>> and the market orders resting during an <<general-mktphs-auction,auction call>>.
 
 The settings persistenceEnabled and persistenceFilePath are used to configure this feature. If persistenceEnabled is true:
 
@@ -741,7 +777,8 @@ For instance, the file content indicated below contains the state of the venue â
             },
             "Info": {
                 "TradingSessionLowPrice": 1.18812,
-                "TradingSessionHighPrice": 1.18818
+                "TradingSessionHighPrice": 1.18818,
+                "LastOpenPhaseTradedPrice": 1.18815
             },
             "OrderBook": {
                 "BuyOrders": [
@@ -780,7 +817,8 @@ For instance, the file content indicated below contains the state of the venue â
                         "OrdStatus": "Replaced",
                         "Price": 0.38799,
                         "OrderQty": 3000000.0,
-                        "CumQty": 1000535.0
+                        "CumQty": 1000535.0,
+                        "CumPxQty": 388197.57465
                     }
                 ],
                 "SellOrders": [
@@ -801,6 +839,7 @@ For instance, the file content indicated below contains the state of the venue â
                                 "BeginString": "FIXT.1.1",
                                 "SenderCompID": "SENDER",
                                 "TargetCompID": "TARGET",
+                                "SessionQualifier": null,
                                 "SenderSubID": null
                             }
                         },
@@ -824,7 +863,8 @@ For instance, the file content indicated below contains the state of the venue â
                         "OrdStatus": "Replaced",
                         "Price": 1.188,
                         "OrderQty": 408.0,
-                        "CumQty": 0.0
+                        "CumQty": 0.0,
+                        "CumPxQty": 0.0
                     },
                     {
                         "ClientInstrumentDescriptor": {
@@ -861,7 +901,8 @@ For instance, the file content indicated below contains the state of the venue â
                         "OrdStatus": "Replaced",
                         "Price": 1.18812,
                         "OrderQty": 606.0,
-                        "CumQty": 0.0
+                        "CumQty": 0.0,
+                        "CumPxQty": 0.0
                     }
                 ]
             }

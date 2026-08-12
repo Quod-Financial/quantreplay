@@ -35,6 +35,7 @@ add_static_library(
     include/protocol/app/order_placement_request.hpp
     include/protocol/app/security_status.hpp
     include/protocol/app/security_status_request.hpp
+    include/protocol/app/session_connected_event.hpp
     include/protocol/app/session_terminated_event.hpp
     include/protocol/types/session.hpp
   SOURCES

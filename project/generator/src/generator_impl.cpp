@@ -1,12 +1,16 @@
 #include "ih/generator_impl.hpp"
 
 #include <memory>
+#include <optional>
+#include <string>
+#include <utility>
 
 #include "data_layer/api/data_access_layer.hpp"
 #include "ih/adaptation/protocol_conversion.hpp"
 #include "ih/context/generation_manager.hpp"
 #include "ih/context/order_generation_context_impl.hpp"
 #include "ih/factory/executable_factory_impl.hpp"
+#include "ih/random/seed_hasher.hpp"
 #include "ih/registry/registry_updater.hpp"
 #include "ih/utils/executor.hpp"
 #include "ih/utils/validator.hpp"
@@ -37,11 +41,42 @@ auto GeneratorImpl::status() -> bool {
 
 auto GeneratorImpl::suspend() -> void { generation_manager_->suspend(); }
 
-auto GeneratorImpl::resume() -> void { generation_manager_->launch(); }
+auto GeneratorImpl::resume(const std::optional<std::string>& user_seed)
+    -> void {
+  //  We assume that there are only two threads changing PRNG state:
+  //  1. Order generation state, managed by executor
+  //  2. "Admin" thread invoking GeneratorImpl::resume
+  //  The behaviour is undefined when:
+  //  1. Reseed is called when order generation thread is running
+  //  2. More than one thread is executing GeneratorImpl::resume at the same
+  //  time
+  //  3. PRNG is used by more than one thread (OrderGenerator thread)
+  if (generation_manager_->is_component_running()) {
+    log::info(
+        "start generation request ignored - generation is already running "
+        "(any user-provided seed is ignored)");
+    return;
+  }
+
+  if (user_seed.has_value()) {
+    log::info(
+        "re-seeding {} per-listing random order generators "
+        "before resume (user seed provided)",
+        listings_random_generators_.size());
+
+    for (auto& random_generator : listings_random_generators_) {
+      const auto listing_seed =
+          random_generator.seed_hasher.with_seed(*user_seed);
+      random_generator.random_root->reseed(listing_seed);
+    }
+  }
+
+  generation_manager_->launch();
+}
 
 auto GeneratorImpl::start() -> void {
-  for (const auto& random_orders_executable : listings_random_generators_) {
-    random_orders_executable->launch();
+  for (const auto& entry : listings_random_generators_) {
+    entry.executor->launch();
   }
 
   if (historical_replier_) {
@@ -100,7 +135,7 @@ auto GeneratorImpl::initialize_random_generation_executors() -> void {
       continue;
     }
 
-    std::unique_ptr<Executable> executable;
+    std::unique_ptr<random::OrderGenerator> order_generator;
     try {
       const auto px_seed = data_layer::select_one_price_seed(
           database_context_,
@@ -108,7 +143,7 @@ auto GeneratorImpl::initialize_random_generation_executors() -> void {
               data_layer::PriceSeed::Attribute::InstrumentSymbol,
               *instrument.instr_symbol()));
 
-      executable = rnd_executor_factory_->create_orders_executable(
+      order_generator = rnd_executor_factory_->create_orders_executable(
           instrument_ctx, px_seed);
     } catch (std::logic_error& e) {
       log::info(
@@ -119,9 +154,12 @@ auto GeneratorImpl::initialize_random_generation_executors() -> void {
       continue;
     }
 
-    if (executable) {
-      listings_random_generators_.emplace_back(
-          Executor::create(std::move(executable), generation_manager_));
+    if (order_generator) {
+      auto* random_root = order_generator.get();
+      listings_random_generators_.push_back(RandomGenerationEntry{
+          Executor::create(std::move(order_generator), generation_manager_),
+          random_root,
+          random::ListingSeedHasher{instrument}});
     }
   }
 }
@@ -173,8 +211,8 @@ auto GeneratorImpl::terminate_generator() noexcept -> void {
   }
 
   was_terminated_ = true;
-  for (const auto& random_orders_executable : listings_random_generators_) {
-    random_orders_executable->terminate();
+  for (auto& entry : listings_random_generators_) {
+    entry.executor->terminate();
   }
   listings_random_generators_.clear();
 

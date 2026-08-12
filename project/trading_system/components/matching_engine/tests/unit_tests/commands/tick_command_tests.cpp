@@ -39,6 +39,11 @@ struct MatchingEngineTickCommand : public Test {
                       client_notification_cache};
 
   NiceMock<TradingReplyReceiverMock> trading_reply_receiver;
+
+ private:
+  auto TearDown() -> void override {
+    middleware::release_trading_reply_channel();
+  }
 };
 
 TEST_F(MatchingEngineTickCommand, PassesTickToOrderEventHandler) {

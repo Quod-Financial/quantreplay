@@ -12,6 +12,7 @@ struct FixSession {
   std::string begin_string;
   std::string sender_comp_id;
   std::string target_comp_id;
+  std::optional<std::string> session_qualifier;
   std::optional<std::string> client_sub_id;
 };
 
@@ -54,11 +55,21 @@ struct LimitOrder {
   double order_price;
   double total_quantity;
   double cum_executed_quantity;
+  double cum_px_qty;
 };
 
 struct InstrumentInfo {
-  double low_price;
-  double high_price;
+  std::optional<double> low_price;
+  std::optional<double> high_price;
+  std::optional<double> opening_price;
+  std::optional<core::sys_us> opening_price_time;
+  std::optional<double> closing_price;
+  std::optional<core::sys_us> closing_price_time;
+  std::optional<double> auction_clearing_price;
+  std::optional<double> auction_clearing_quantity;
+  std::optional<double> previous_closing_price;
+  std::optional<double> trade_volume;
+  std::optional<double> last_open_phase_traded_price;
 };
 
 struct InstrumentSpecification {

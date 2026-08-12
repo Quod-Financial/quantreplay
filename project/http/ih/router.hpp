@@ -5,6 +5,7 @@
 
 #include "ih/processors/delete_processor.hpp"
 #include "ih/processors/get_processor.hpp"
+#include "ih/processors/head_processor.hpp"
 #include "ih/processors/post_processor.hpp"
 #include "ih/processors/put_processor.hpp"
 
@@ -15,6 +16,7 @@ class Router : public Pistache::Http::Handler {
   HTTP_PROTOTYPE(Router)
 
   explicit Router(std::shared_ptr<GetProcessor> get_processor,
+                  std::shared_ptr<HeadProcessor> head_processor,
                   std::shared_ptr<PostProcessor> post_processor,
                   std::shared_ptr<PutProcessor> put_processor,
                   std::shared_ptr<DeleteProcessor> delete_processor);
@@ -42,6 +44,7 @@ class Router : public Pistache::Http::Handler {
   Pistache::Rest::Router router_;
 
   std::shared_ptr<GetProcessor> get_processor_;
+  std::shared_ptr<HeadProcessor> head_processor_;
   std::shared_ptr<PostProcessor> post_processor_;
   std::shared_ptr<PutProcessor> put_processor_;
   std::shared_ptr<DeleteProcessor> delete_processor_;

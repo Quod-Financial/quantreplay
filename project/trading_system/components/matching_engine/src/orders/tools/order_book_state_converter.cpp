@@ -2,6 +2,7 @@
 
 #include "core/tools/overload.hpp"
 #include "ih/orders/book/order_metadata.hpp"
+#include "log/logging.hpp"
 
 namespace simulator::trading_system::matching_engine {
 
@@ -37,6 +38,7 @@ auto store(const LimitOrder& order, market_state::LimitOrder& order_state) {
   order_state.order_price = order.price();
   order_state.total_quantity = order.total_quantity();
   order_state.cum_executed_quantity = order.cum_executed_quantity();
+  order_state.cum_px_qty = order.cum_px_qty();
 }
 
 auto store(OrderPage& page,
@@ -45,6 +47,27 @@ auto store(OrderPage& page,
     market_state::LimitOrder order_state;
     store(orders, order_state);
     orders_state.push_back(std::move(order_state));
+  }
+
+  if (const auto resting_market_orders = page.market_orders().size();
+      resting_market_orders > 0) {
+    // Resting market orders are not part of the persisted book state;
+    // recovering an in-progress auction is intentionally unsupported.
+    log::warn(
+        "skipping {} resting market order(s) while persisting the order book "
+        "state, in-auction state recovery is not supported",
+        resting_market_orders);
+  }
+
+  if (const auto trade_at_last_orders = page.trade_at_last_orders().size();
+      trade_at_last_orders > 0) {
+    // Trade-at-last orders are not part of the persisted book state;
+    // recovering an in-progress trade-at-last phase is intentionally
+    // unsupported.
+    log::warn(
+        "skipping {} trade-at-last order(s) while persisting the order book "
+        "state, trade-at-last state recovery is not supported",
+        trade_at_last_orders);
   }
 }
 

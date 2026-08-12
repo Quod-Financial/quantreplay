@@ -1,9 +1,13 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_REGULAR_AMENDMENT_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_REGULAR_AMENDMENT_HPP_
 
+#include <optional>
+
+#include "common/attributes.hpp"
 #include "ih/common/abstractions/event_listener.hpp"
 #include "ih/common/events/event_reporter.hpp"
 #include "ih/orders/book/order_book.hpp"
+#include "ih/orders/book/order_book_update.hpp"
 #include "ih/orders/book/order_updates.hpp"
 #include "ih/orders/matchers/order_matcher.hpp"
 
@@ -13,7 +17,9 @@ class RegularAmendment : private EventReporter {
  public:
   RegularAmendment(EventListener& event_listener,
                    OrderBook& order_book,
-                   RegularMatcher& matcher);
+                   RegularMatcher& matcher,
+                   std::optional<PriceTick> price_tick,
+                   LimitOrderQueue queue);
 
   RegularAmendment(const RegularAmendment&) = default;
   RegularAmendment(RegularAmendment&&) = default;
@@ -22,13 +28,16 @@ class RegularAmendment : private EventReporter {
   auto operator=(const RegularAmendment&) -> RegularAmendment& = delete;
   auto operator=(RegularAmendment&&) -> RegularAmendment& = delete;
 
-  auto operator()(LimitUpdate update) -> void;
+  auto operator()(LimitUpdate update) -> OrderBookUpdates;
 
  private:
-  auto amend_order(LimitUpdate update, OrderPage& page) -> void;
+  auto amend_order(LimitUpdate update, LimitOrdersContainer& orders)
+      -> OrderBookUpdates;
 
   OrderBook& order_book_;
   RegularMatcher& matcher_;
+  std::optional<PriceTick> price_tick_;
+  LimitOrderQueue queue_;
 };
 
 }  // namespace simulator::trading_system::matching_engine

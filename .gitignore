@@ -17,18 +17,21 @@
 
 !CMakeLists.txt
 !CMakePresets.json
-!README.md
 
 !**.adoc
 !**.bat
 !**.cmake
 !**.cpp
+!**.csv
 !**.Dockerfile
+!**.drawio
 !**.err
 !**.hpp
 !**.html
 !**.ico
+!**.ini
 !**.json
+!**.md
 !**.odt
 !**.pdf
 !**.png
@@ -36,13 +39,18 @@
 !**.py
 !**.sh
 !**.sky
+!**.sql
 !**.txt
 !**.xml
 !**.yml
+!**.yaml
 !**.yml.example
 
 # ...even if they are in subdirectories
 !*/
+
+# Ignore Allure runtime results/report
+test/Automation/mktsimtest/tests/docker_compose_mktsim/allure_output/
 
 # But make git ignore all cmake dev build directories,
 cmake-build-*/
@@ -53,9 +61,12 @@ cmake-install-*/
 # and local development environment
 devenv/*
 
-# Ignore PySys output files
-**/Output/**
+# Ignore folder
 .idea/*
 
 # Ignore Python virtual environment
 env/*
+
+# Documentation test output
+docs/*/output/
+

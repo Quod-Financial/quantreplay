@@ -4,11 +4,11 @@
 #include <fmt/format.h>
 
 #include <functional>
-#include <map>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <type_traits>
+
+#include "core/tools/time.hpp"
 
 namespace simulator::data_layer {
 
@@ -79,6 +79,18 @@ class DataExtractor {
     std::string string_value = sanitizer_(value);
     extracted_data_.emplace_back(
         std::make_pair(std::move(column_name), std::move(string_value)));
+  }
+
+  template <typename Column>
+  auto operator()(Column column, core::sys_us value) -> void {
+    static_assert(
+        can_represent_column_v<Column>,
+        "Given Column type can not represent a column (attribute) or can "
+        "not be resolved by given EnumerationResolver");
+
+    // a quoted textual timestamp is implicitly cast to the column type by
+    // PostgreSQL; the format matches a `timestamp` literal
+    (*this)(column, fmt::format("{:%F %T}", value));
   }
 
   template <typename Column, typename T>

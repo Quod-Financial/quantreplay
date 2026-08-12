@@ -3,6 +3,8 @@
 #include <fmt/format.h>
 
 #include <memory>
+#include <optional>
+#include <utility>
 
 #include "core/tools/numeric.hpp"
 #include "ih/constants.hpp"
@@ -15,6 +17,7 @@
 #include "ih/random/generators/price_generator.hpp"
 #include "ih/random/generators/quantity_generator.hpp"
 #include "ih/random/generators/resting_order_action_generator.hpp"
+#include "ih/random/generators/value_generator.hpp"
 #include "ih/random/generators/value_generator_impl.hpp"
 #include "ih/random/utils.hpp"
 #include "ih/random/values/event.hpp"
@@ -26,12 +29,14 @@ namespace simulator::generator::random {
 
 OrderGenerationAlgorithm::OrderGenerationAlgorithm(
     std::shared_ptr<OrderGenerationContext> algorithm_context,
+    std::shared_ptr<ValueGenerator> value_generator,
     std::unique_ptr<EventGenerator> event_generator,
     std::unique_ptr<CounterpartyGenerator> counterparty_generator,
     std::unique_ptr<RestingOrderActionGenerator> resting_action_generator,
     std::unique_ptr<PriceGenerator> price_generator,
     std::unique_ptr<QuantityGenerator> qty_generator) noexcept
     : context_{std::move(algorithm_context)},
+      value_generator_{std::move(value_generator)},
       event_generator_{std::move(event_generator)},
       counterparty_generator_{std::move(counterparty_generator)},
       resting_action_generator_{std::move(resting_action_generator)},
@@ -39,6 +44,7 @@ OrderGenerationAlgorithm::OrderGenerationAlgorithm(
       qty_generator_{std::move(qty_generator)},
       quantity_params_selector_{take_context().get_instrument()} {
   assert(context_);
+  assert(value_generator_);
   assert(event_generator_);
   assert(counterparty_generator_);
   assert(resting_action_generator_);
@@ -52,7 +58,8 @@ auto OrderGenerationAlgorithm::create(
   assert(algorithm_context);
   const auto& target_venue = algorithm_context->get_venue();
 
-  auto value_generator = ValueGeneratorImpl::create();
+  std::shared_ptr<ValueGeneratorImpl> value_generator =
+      ValueGeneratorImpl::create();
   auto event_generator = EventGeneratorImpl::create(value_generator);
   auto price_generator = PriceGeneratorImpl::create(value_generator);
   auto qty_generator = QuantityGeneratorImpl::create(value_generator);
@@ -63,30 +70,14 @@ auto OrderGenerationAlgorithm::create(
           constant::DefaultVenueRandomPartiesCount),
       value_generator);
 
-  return create(std::move(algorithm_context),
-                std::move(event_generator),
-                std::move(counterparty_generator),
-                std::move(resting_action_generator),
-                std::move(price_generator),
-                std::move(qty_generator));
-}
-
-auto OrderGenerationAlgorithm::create(
-    std::shared_ptr<OrderGenerationContext> algorithm_context,
-    std::unique_ptr<EventGenerator> event_generator,
-    std::unique_ptr<CounterpartyGenerator> counterparty_generator,
-    std::unique_ptr<RestingOrderActionGenerator> resting_action_generator,
-    std::unique_ptr<PriceGenerator> price_generator,
-    std::unique_ptr<QuantityGenerator> qty_generator)
-    -> std::unique_ptr<OrderGenerationAlgorithm> {
-  using Pointer = std::unique_ptr<OrderGenerationAlgorithm>;
-  return Pointer{
-      new OrderGenerationAlgorithm{std::move(algorithm_context),
-                                   std::move(event_generator),
-                                   std::move(counterparty_generator),
-                                   std::move(resting_action_generator),
-                                   std::move(price_generator),
-                                   std::move(qty_generator)}};
+  return std::make_unique<OrderGenerationAlgorithm>(
+      std::move(algorithm_context),
+      std::move(value_generator),
+      std::move(event_generator),
+      std::move(counterparty_generator),
+      std::move(resting_action_generator),
+      std::move(price_generator),
+      std::move(qty_generator));
 }
 
 auto OrderGenerationAlgorithm::generate(GeneratedMessage& target_message)
@@ -96,6 +87,10 @@ auto OrderGenerationAlgorithm::generate(GeneratedMessage& target_message)
   };
 
   return trace::trace(algorithm);
+}
+
+auto OrderGenerationAlgorithm::reseed(std::uint64_t seed) -> void {
+  value_generator_->reseed(seed);
 }
 
 template <typename GenerationTracer>

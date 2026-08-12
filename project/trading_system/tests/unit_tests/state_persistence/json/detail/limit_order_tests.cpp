@@ -83,6 +83,7 @@ TEST_F(TradingSystemJsonLimitOrder, ReadsFromJson) {
   json_value.AddMember("Price", 100.1, doc.GetAllocator());
   json_value.AddMember("OrderQty", 200.2, doc.GetAllocator());
   json_value.AddMember("CumQty", 50.5, doc.GetAllocator());
+  json_value.AddMember("CumPxQty", 99.9, doc.GetAllocator());
 
   market_state::LimitOrder order;
   ASSERT_TRUE(json::read(json_value, order).has_value());
@@ -103,6 +104,35 @@ TEST_F(TradingSystemJsonLimitOrder, ReadsFromJson) {
   ASSERT_EQ(order.order_price, OrderPrice{100.1});
   ASSERT_EQ(order.total_quantity, OrderQuantity{200.2});
   ASSERT_EQ(order.cum_executed_quantity, CumExecutedQuantity{50.5});
+  ASSERT_DOUBLE_EQ(order.cum_px_qty, 99.9);
+}
+
+TEST_F(TradingSystemJsonLimitOrder,
+       DerivesCumPxQtyFromPriceAndCumQtyWhenMissing) {
+  using namespace simulator::trading_system::test;
+
+  json_value.SetObject();
+  json_value.AddMember(
+      "ClientSession", json(default_session).Move(), doc.GetAllocator());
+  json_value.AddMember("ClientInstrumentDescriptor",
+                       json(default_descriptor).Move(),
+                       doc.GetAllocator());
+  json_value.AddMember(
+      "OrderParties", json(default_parties).Move(), doc.GetAllocator());
+  json_value.AddMember("TimeInForce", "Day", doc.GetAllocator());
+  json_value.AddMember(
+      "OrderID", rapidjson::Value{}.SetUint64(0), doc.GetAllocator());
+  json_value.AddMember(
+      "OrderTime", "20231001-12:00:00.000000", doc.GetAllocator());
+  json_value.AddMember("Side", "Buy", doc.GetAllocator());
+  json_value.AddMember("OrdStatus", "New", doc.GetAllocator());
+  json_value.AddMember("Price", 10.0, doc.GetAllocator());
+  json_value.AddMember("OrderQty", 100.0, doc.GetAllocator());
+  json_value.AddMember("CumQty", 50.0, doc.GetAllocator());
+
+  market_state::LimitOrder order;
+  ASSERT_TRUE(json::read(json_value, order).has_value());
+  ASSERT_DOUBLE_EQ(order.cum_px_qty, 500.0);
 }
 
 TEST_F(TradingSystemJsonLimitOrder, WritingSetsJsonValueTypeToObject) {
@@ -135,7 +165,8 @@ TEST_F(TradingSystemJsonLimitOrder, WritesToJson) {
       .order_status = OrderStatus::Option::PartiallyFilled,
       .order_price = OrderPrice{100.1},
       .total_quantity = OrderQuantity{200.2},
-      .cum_executed_quantity = CumExecutedQuantity{50.5}};
+      .cum_executed_quantity = CumExecutedQuantity{50.5},
+      .cum_px_qty = 75.3};
 
   ASSERT_TRUE(json::write(json_value, doc.GetAllocator(), order).has_value());
 
@@ -154,6 +185,17 @@ TEST_F(TradingSystemJsonLimitOrder, WritesToJson) {
   ASSERT_THAT(json_value, HasDouble("Price", 100.1));
   ASSERT_THAT(json_value, HasDouble("OrderQty", 200.2));
   ASSERT_THAT(json_value, HasDouble("CumQty", 50.5));
+  ASSERT_THAT(json_value, HasDouble("CumPxQty", 75.3));
+}
+
+TEST_F(TradingSystemJsonLimitOrder, WritesZeroCumPxQtyWhenNoFills) {
+  using namespace simulator::trading_system::test;
+
+  const market_state::LimitOrder order;
+
+  ASSERT_TRUE(json::write(json_value, doc.GetAllocator(), order).has_value());
+
+  ASSERT_THAT(json_value, HasDouble("CumPxQty", 0.0));
 }
 
 }  // namespace

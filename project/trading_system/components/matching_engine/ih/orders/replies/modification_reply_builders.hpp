@@ -5,6 +5,7 @@
 
 #include "common/attributes.hpp"
 #include "ih/orders/book/limit_order.hpp"
+#include "ih/orders/book/market_order.hpp"
 #include "ih/orders/book/order_updates.hpp"
 #include "protocol/app/order_modification_confirmation.hpp"
 #include "protocol/app/order_modification_reject.hpp"
@@ -15,12 +16,15 @@ namespace simulator::trading_system::matching_engine {
 
 class ModificationConfirmationBuilder {
  public:
-  explicit ModificationConfirmationBuilder(protocol::Session client_session);
+  ModificationConfirmationBuilder(protocol::Session client_session,
+                                  std::optional<PriceTick> price_tick);
 
   [[nodiscard]]
   auto build() const -> protocol::OrderModificationConfirmation;
 
   auto for_order(const LimitOrder& order) -> ModificationConfirmationBuilder&;
+
+  auto for_order(const MarketOrder& order) -> ModificationConfirmationBuilder&;
 
   auto with_execution_id(ExecutionId identifier)
       -> ModificationConfirmationBuilder&;
@@ -30,10 +34,17 @@ class ModificationConfirmationBuilder {
 
  private:
   protocol::OrderModificationConfirmation message_;
+  std::optional<PriceTick> price_tick_;
 };
 
 [[nodiscard]]
-auto prepare_modification_confirmation(const LimitOrder& order)
+auto prepare_modification_confirmation(const LimitOrder& order,
+                                       std::optional<PriceTick> price_tick)
+    -> ModificationConfirmationBuilder;
+
+[[nodiscard]]
+auto prepare_modification_confirmation(const MarketOrder& order,
+                                       std::optional<PriceTick> price_tick)
     -> ModificationConfirmationBuilder;
 
 class ModificationRejectBuilder {
@@ -70,6 +81,10 @@ auto prepare_modification_reject(
 
 [[nodiscard]]
 auto prepare_modification_reject(const LimitUpdate& update)
+    -> ModificationRejectBuilder;
+
+[[nodiscard]]
+auto prepare_modification_reject(const MarketUpdate& update)
     -> ModificationRejectBuilder;
 
 }  // namespace simulator::trading_system::matching_engine

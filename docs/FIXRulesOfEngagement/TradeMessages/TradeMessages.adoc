@@ -109,9 +109,15 @@ ExecutionReport ExecID values are unique per listing per order.
 * 5 - Replaced
 * 8 - Rejected
 
+| 6 | AvgPx | Y | Running weighted-average price of all fills on the current order up to and including this trade: stem:[AvgPx = \frac{\sum (LastPx_i \times LastQty_i)}{CumQty}], rounded (using normal standard rounding) to the instrument's price tick precision. Zero when no fills have occurred (e.g., ExecType (150) = New, ExecType (150) = Rejected, ExecType (150) = Canceled).
+
 | 31 | LastPx | C | Price of this (last) fill. Required if ExecType (150) = Trade
 
 | 32 | LastQty | C | Quantity bought/sold on this (last) fill. Required if ExecType (150) = Trade
+
+| 38 | OrderQty | Y | Total quantity of the order (LeavesQty + CumQty).
+
+| 44 | Price | C | Limit price of the order. Required for OrdType (40) = Limit.
 
 | 54 | Side | Y a| Side of order.
 

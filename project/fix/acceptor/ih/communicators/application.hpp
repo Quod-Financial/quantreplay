@@ -7,7 +7,6 @@
 
 #include <functional>
 
-#include "ih/communicators/reply_sender.hpp"
 #include "ih/processors/event_processor.hpp"
 #include "ih/processors/request_processor.hpp"
 
@@ -17,6 +16,8 @@ class Application final : public FIX::NullApplication {
  public:
   Application(const RequestProcessor& request_processor,
               const EventProcessor& event_processor) noexcept;
+
+  auto onLogon(const FIX::SessionID& fix_session) -> void override;
 
   auto onLogout(const FIX::SessionID& fix_session) -> void override;
 
@@ -28,6 +29,10 @@ class Application final : public FIX::NullApplication {
   static auto process_request(const RequestProcessor& request_processor,
                               const FIX::SessionID& fix_session,
                               const FIX::Message& fix_message) -> void;
+
+  static auto emit_session_connection_event(
+      const EventProcessor& event_processor, const FIX::SessionID& fix_session)
+      -> void;
 
   static auto emit_session_disconnection_event(
       const EventProcessor& event_processor, const FIX::SessionID& fix_session)

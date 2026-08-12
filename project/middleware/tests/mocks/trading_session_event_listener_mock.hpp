@@ -7,7 +7,16 @@
 
 namespace simulator::middleware::test {
 
-struct TradingSessionEventListenerMock : public TradingSessionEventListener {
+struct TradingSessionConnectionEventListenerMock
+    : public TradingSessionConnectionEventListener {
+  MOCK_METHOD(void,
+              on_event,
+              (const protocol::SessionConnectedEvent&),
+              (override));
+};
+
+struct TradingSessionTerminationEventListenerMock
+    : public TradingSessionTerminationEventListener {
   MOCK_METHOD(void,
               on_event,
               (const protocol::SessionTerminatedEvent&),

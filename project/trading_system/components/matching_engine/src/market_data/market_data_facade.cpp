@@ -1,5 +1,8 @@
 #include "ih/market_data/market_data_facade.hpp"
 
+#include <vector>
+
+#include "common/trade.hpp"
 #include "ih/market_data/cache/depth_cache.hpp"
 #include "ih/market_data/tools/notification_creators.hpp"
 #include "ih/market_data/validation/market_data_validator.hpp"
@@ -36,13 +39,32 @@ auto MarketDataFacade::handle(OrderBookNotification notification) -> void {
 }
 
 auto MarketDataFacade::publish() -> void {
-  if (cache_manager_.was_updated()) {
-    log::trace("publishing market data");
-    cache_manager_.apply_pending_changes();
-    subscription_manager_.publish();
-  } else {
+  if (!cache_manager_.was_updated()) {
     log::trace("no market data updates to publish");
+    return;
   }
+
+  log::trace("publishing market data");
+  cache_manager_.apply_pending_changes();
+  subscription_manager_.publish();
+}
+
+auto MarketDataFacade::publish_uncrossing() -> void {
+  log::trace("publishing auction uncross market data");
+  const std::vector<Trade> crosses = cache_manager_.pending_trades();
+  try {
+    subscription_manager_.publish_uncrossing(crosses);
+  } catch (...) {
+    cache_manager_.apply_pending_changes();
+    throw;
+  }
+  cache_manager_.apply_pending_changes();
+  subscription_manager_.publish_snapshot();
+}
+
+auto MarketDataFacade::auction_reference_price_provider() const
+    -> const AuctionReferencePriceProvider& {
+  return cache_manager_;
 }
 
 auto MarketDataFacade::process(const protocol::MarketDataRequest& request)

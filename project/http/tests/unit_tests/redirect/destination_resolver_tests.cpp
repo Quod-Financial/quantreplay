@@ -8,6 +8,7 @@
 #include "ih/redirect/destination_resolver.hpp"
 #include "ih/redirect/resolver.hpp"
 #include "mocks/venue_accessor.hpp"
+#include "test_utils/matchers.hpp"
 
 namespace simulator::http::redirect::test {
 namespace {
@@ -17,7 +18,7 @@ using namespace ::testing;
 class HttpRedirectDestinationResolver : public testing::Test {
  public:
   auto resolve(const std::string& venue_id)
-      -> DestinationResolver::ResolvingResult {
+      -> tl::expected<Destination, Resolver::Error> {
     return make_resolver().resolve_by_venue_id(venue_id);
   }
 
@@ -41,9 +42,18 @@ class HttpRedirectDestinationResolver : public testing::Test {
   std::shared_ptr<mock::VenueAccessor> venue_accessor =
       std::make_shared<mock::VenueAccessor>();
 
+ protected:
+  static constexpr std::string Localhost = "localhost";
+  static constexpr std::string CurrentVenueId = "XLSE";
+  static constexpr std::string DifferentVenueId = "LSE";
+  static constexpr std::uint16_t CurrentVenuePort = 9000;
+  static constexpr std::uint16_t DifferentVenuePort = 9001;
+
  private:
   auto make_resolver() -> redirect::DestinationResolver {
     return redirect::DestinationResolver(venue_accessor,
+                                         CurrentVenueId,
+                                         CurrentVenuePort,
                                          resolve_hostname_as_venue_id_);
   }
 
@@ -52,74 +62,88 @@ class HttpRedirectDestinationResolver : public testing::Test {
 
 TEST_F(HttpRedirectDestinationResolver,
        DoesNotResolveByVenueIDOfNonexistentVenue) {
-  const std::string venue_id = "XLSE";
   const mock::VenueAccessor::VenueResult accessor_reply{
       tl::unexpected(data_bridge::Failure::ResponseCardinalityError)};
 
-  EXPECT_CALL(*venue_accessor, select_single(Eq(venue_id)))
+  EXPECT_CALL(*venue_accessor, select_single(Eq(DifferentVenueId)))
       .Times(1)
       .WillOnce(Return(accessor_reply));
 
-  auto [destination, status] = resolve(venue_id);
+  auto result = resolve(DifferentVenueId);
 
-  ASSERT_EQ(status, Resolver::Status::NonexistentInstance);
-  ASSERT_FALSE(destination.has_value());
+  ASSERT_THAT(result, IsUnexpected(Resolver::Error::NonexistentInstance));
 }
 
 TEST_F(HttpRedirectDestinationResolver,
        DoesNotResolveByVenueIDIfRestPortIsAbsent) {
-  const std::string venue_id = "XLSE";
-  const auto venue = make_venue(venue_id);
+  const auto venue = make_venue(CurrentVenueId);
 
   const mock::VenueAccessor::VenueResult accessor_reply{venue};
-  EXPECT_CALL(*venue_accessor, select_single(Eq(venue_id)))
+  EXPECT_CALL(*venue_accessor, select_single(Eq(CurrentVenueId)))
       .Times(1)
       .WillOnce(Return(accessor_reply));
 
-  auto [destination, status] = resolve(venue_id);
+  auto result = resolve(CurrentVenueId);
 
-  ASSERT_EQ(status, Resolver::Status::ResolvingFailed);
-  ASSERT_FALSE(destination.has_value());
+  ASSERT_THAT(result, IsUnexpected(Resolver::Error::ResolvingFailed));
 }
 
 TEST_F(HttpRedirectDestinationResolver, ResolvesByVenueIDIfRestPortIsPresent) {
-  const std::string venue_id = "XLSE";
-  const std::string venue_host = "localhost";
-  constexpr std::uint16_t venue_port = 9001;
-  const auto venue = make_venue(venue_id, venue_port);
+  resolve_hostname_as_venue_id(false);
+  const auto venue = make_venue(DifferentVenueId, DifferentVenuePort);
 
   const mock::VenueAccessor::VenueResult accessor_reply{venue};
-  EXPECT_CALL(*venue_accessor, select_single(Eq(venue_id)))
+  EXPECT_CALL(*venue_accessor, select_single(Eq(DifferentVenueId)))
       .Times(1)
       .WillOnce(Return(accessor_reply));
 
-  auto [destination, status] = resolve(venue_id);
+  auto result = resolve(DifferentVenueId);
 
-  ASSERT_EQ(status, Resolver::Status::Success);
-
-  // NOLINTBEGIN bugprone-unchecked-optional-access
-  ASSERT_TRUE(destination.has_value());
-  ASSERT_EQ(destination->host(), venue_host);
-  ASSERT_EQ(destination->port(), venue_port);
-  // NOLINTEND
+  ASSERT_THAT(result, IsExpected(Localhost, DifferentVenuePort));
 }
 
 TEST_F(HttpRedirectDestinationResolver, ResolvesByHostnameIfItIsUsedAsVenueId) {
   resolve_hostname_as_venue_id(true);
-  const auto venue = make_venue("XLSE", 9000);
+  const auto venue = make_venue(DifferentVenueId, DifferentVenuePort);
 
   const mock::VenueAccessor::VenueResult accessor_reply{venue};
-  EXPECT_CALL(*venue_accessor, select_single(Eq("XLSE")))
+  EXPECT_CALL(*venue_accessor, select_single(Eq(DifferentVenueId)))
       .Times(1)
       .WillOnce(Return(accessor_reply));
 
-  auto [destination, status] = resolve("XLSE");
+  auto result = resolve(DifferentVenueId);
 
-  ASSERT_EQ(status, Resolver::Status::Success);
+  ASSERT_THAT(result, IsExpected(DifferentVenueId, DifferentVenuePort));
+}
 
-  ASSERT_TRUE(destination.has_value());
-  ASSERT_EQ(destination->host(), "XLSE");
-  ASSERT_EQ(destination->port(), 9000);
+TEST_F(HttpRedirectDestinationResolver,
+       DoesNotResolveByVenueIDIfRedirectPointsToLocalhostAndCurrentPort) {
+  resolve_hostname_as_venue_id(false);
+  const auto venue = make_venue(CurrentVenueId, CurrentVenuePort);
+
+  const mock::VenueAccessor::VenueResult accessor_reply{venue};
+  EXPECT_CALL(*venue_accessor, select_single(Eq(CurrentVenueId)))
+      .Times(1)
+      .WillOnce(Return(accessor_reply));
+
+  auto result = resolve(CurrentVenueId);
+
+  ASSERT_THAT(result, IsUnexpected(Resolver::Error::SelfRedirect));
+}
+
+TEST_F(HttpRedirectDestinationResolver,
+       DoesNotResolveByVenueIDIfRedirectPointsToCurrentVenueAndCurrentPort) {
+  resolve_hostname_as_venue_id(true);
+  const auto venue = make_venue(CurrentVenueId, CurrentVenuePort);
+
+  const mock::VenueAccessor::VenueResult accessor_reply{venue};
+  EXPECT_CALL(*venue_accessor, select_single(Eq(std::string{CurrentVenueId})))
+      .Times(1)
+      .WillOnce(Return(accessor_reply));
+
+  auto result = resolve(std::string{CurrentVenueId});
+
+  ASSERT_THAT(result, IsUnexpected(Resolver::Error::SelfRedirect));
 }
 
 }  // namespace

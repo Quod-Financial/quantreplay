@@ -23,10 +23,13 @@ struct OrderCancellationConfirmation {
   std::optional<ClientOrderId> client_order_id;
   std::optional<VenueOrderId> venue_order_id;
   std::optional<ExecutionId> execution_id;
+  std::optional<CancellationText> cancellation_text;
   std::optional<ExpireTime> expire_time;
   std::optional<ExpireDate> expire_date;
   std::optional<LeavesQuantity> leaving_quantity;
   std::optional<CumExecutedQuantity> cum_executed_quantity;
+  std::optional<OrderQuantity> order_quantity;
+  std::optional<AveragePrice> average_price;
   std::optional<OrderPrice> order_price;
   std::optional<ShortSaleExemptionReason> short_sale_exempt_reason;
   std::optional<OrderStatus> order_status;

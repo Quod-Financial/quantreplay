@@ -205,18 +205,24 @@ auto PlacementInterpreter::interpret_as_market_order(
 // region ModificationInterpreter
 
 auto ModificationInterpreter::interpret(
-    const protocol::OrderModificationRequest& request) const
-    -> UpdateInterpretation {
+    const protocol::OrderModificationRequest& request,
+    bool allow_market_amendment) const -> UpdateInterpretation {
   const auto order_type = detail::interpret_order_type(request.order_type);
   if (!order_type.has_value()) {
     return order_type.error();
   }
-  if (order_type->value() != OrderType::Option::Limit) {
-    // Non-limit orders can not be amended in the matching engine
-    return OrderRequestError::OrderTypeInvalid;
+
+  switch (order_type->value()) {
+    case OrderType::Option::Limit:
+      return interpret_as_limit_update(request);
+    case OrderType::Option::Market:
+      if (!allow_market_amendment) {
+        return OrderRequestError::OrderTypeInvalid;
+      }
+      return interpret_as_market_update(request);
   }
 
-  return interpret_as_limit_update(request);
+  core::unreachable();
 }
 
 auto ModificationInterpreter::interpret_as_limit_update(
@@ -249,6 +255,44 @@ auto ModificationInterpreter::interpret_as_limit_update(
                      LimitOrder::Update{.price = *request.order_price,
                                         .quantity = *request.order_quantity,
                                         .attributes = std::move(*attributes)}};
+
+  update.order_id = order_id.value();
+  update.client_order_id = request.client_order_id;
+  update.orig_client_order_id = request.orig_client_order_id;
+
+  return update;
+}
+
+auto ModificationInterpreter::interpret_as_market_update(
+    const protocol::OrderModificationRequest& request) const
+    -> UpdateInterpretation {
+  const auto side = detail::interpret_side(request.side);
+  if (!side.has_value()) {
+    return side.error();
+  }
+
+  const auto order_id = detail::interpret_order_id(request.venue_order_id);
+  if (!order_id.has_value()) {
+    return order_id.error();
+  }
+
+  auto attributes = detail::OrderAttributesCreator::create_from(request);
+  if (!attributes.has_value()) {
+    return attributes.error();
+  }
+  // Market orders are interpreted as IoC internally, mirroring placement, so a
+  // resting market order keeps that time in force across an amendment.
+  attributes->set_time_in_force(TimeInForce::Option::ImmediateOrCancel);
+
+  if (!request.order_quantity.has_value()) {
+    return OrderRequestError::QuantityMissing;
+  }
+
+  MarketUpdate update{
+      request.session,
+      side.value(),
+      MarketOrder::Update{.quantity = *request.order_quantity,
+                          .attributes = std::move(*attributes)}};
 
   update.order_id = order_id.value();
   update.client_order_id = request.client_order_id;

@@ -474,7 +474,7 @@ TEST_F(AcceptorFromFixMarketDataRequestMapping, MapsMarketDataEntriesTypes) {
 TEST_F(AcceptorFromFixMarketDataRequestMapping, IgnoresUnknownMarketDataEntry) {
   fix_message.addGroup([]() {
     FIX50SP2::MarketDataRequest::NoMDEntryTypes entry;
-    set_field(FIX::MDEntryType('e'), entry);
+    set_field(FIX::MDEntryType('m'), entry);
     return entry;
   }());
 

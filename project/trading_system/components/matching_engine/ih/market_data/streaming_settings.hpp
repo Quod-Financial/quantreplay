@@ -59,10 +59,20 @@ class StreamingSettings {
     report_top_of_book_only_flag,
     stream_bid_data_flag,
     stream_offer_data_flag,
+    stream_market_bid_flag,
+    stream_market_offer_flag,
     stream_trades_data_flag,
     stream_low_price_flag,
     stream_high_price_flag,
     stream_mid_price_flag,
+    stream_opening_price_flag,
+    stream_closing_price_flag,
+    stream_auction_clearing_price_flag,
+    stream_early_price_flag,
+    stream_previous_closing_price_flag,
+    stream_trade_volume_flag,
+    stream_settlement_price_flag,
+    stream_imbalance_flag,
     flags_count
   };
 
@@ -80,6 +90,26 @@ class StreamingSettings {
         return stream_mid_price_flag;
       case MdEntryType::Option::HighPrice:
         return stream_high_price_flag;
+      case MdEntryType::Option::OpeningPrice:
+        return stream_opening_price_flag;
+      case MdEntryType::Option::ClosingPrice:
+        return stream_closing_price_flag;
+      case MdEntryType::Option::AuctionClearingPrice:
+        return stream_auction_clearing_price_flag;
+      case MdEntryType::Option::EarlyPrice:
+        return stream_early_price_flag;
+      case MdEntryType::Option::PreviousClosingPrice:
+        return stream_previous_closing_price_flag;
+      case MdEntryType::Option::MarketBid:
+        return stream_market_bid_flag;
+      case MdEntryType::Option::MarketOffer:
+        return stream_market_offer_flag;
+      case MdEntryType::Option::TradeVolume:
+        return stream_trade_volume_flag;
+      case MdEntryType::Option::SettlementPrice:
+        return stream_settlement_price_flag;
+      case MdEntryType::Option::Imbalance:
+        return stream_imbalance_flag;
     }
     return flags_count;
   }

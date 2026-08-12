@@ -28,6 +28,7 @@ constexpr std::string_view OpeningAuction{"PreOpen"};
 constexpr std::string_view ClosingAuction{"PreClose"};
 constexpr std::string_view IntradayAuction{"Auction"};
 constexpr std::string_view Halted{"Halted"};
+constexpr std::string_view TradeAtLast{"TradeAtLast"};
 
 }  // namespace market_phase_type
 
@@ -125,6 +126,8 @@ auto EnumerationResolver::resolve(data_layer::MarketPhase::Phase value)
       return market_phase_type::IntradayAuction;
     case data_layer::MarketPhase::Phase::Halted:
       return market_phase_type::Halted;
+    case data_layer::MarketPhase::Phase::TradeAtLast:
+      return market_phase_type::TradeAtLast;
   }
 
   raise_bad_enumeration_error("MarketPhase::Phase", value);
@@ -145,6 +148,8 @@ auto EnumerationResolver::resolve(const std::string& value,
     result = data_layer::MarketPhase::Phase::IntradayAuction;
   } else if (value == market_phase_type::Halted) {
     result = data_layer::MarketPhase::Phase::Halted;
+  } else if (value == market_phase_type::TradeAtLast) {
+    result = data_layer::MarketPhase::Phase::TradeAtLast;
   } else {
     raise_bad_value_error("MarketPhase::Phase", value);
   }

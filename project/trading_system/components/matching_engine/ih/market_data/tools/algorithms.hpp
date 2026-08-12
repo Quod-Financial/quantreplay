@@ -2,6 +2,7 @@
 #define SIMULATOR_MATCHING_ENGINE_IH_MARKET_DATA_TOOLS_ALGORITHMS_HPP_
 
 #include <algorithm>
+#include <optional>
 
 #include "core/common/unreachable.hpp"
 #include "core/domain/attributes.hpp"
@@ -38,14 +39,15 @@ constexpr auto contains(const std::optional<auto>& collection,
 }
 
 [[nodiscard]]
-constexpr auto to_entry_type(const Side side) -> MdEntryType {
-  switch (static_cast<Side::Option>(side)) {
-    case Side::Option::Buy:
-      return MdEntryType::Option::Bid;
-    case Side::Option::Sell:
-    case Side::Option::SellShort:
-    case Side::Option::SellShortExempt:
-      return MdEntryType::Option::Offer;
+constexpr auto to_entry_type(const Side side, const OrderType order_type)
+    -> MdEntryType {
+  const bool is_buy = side == Side::Option::Buy;
+  switch (static_cast<OrderType::Option>(order_type)) {
+    case OrderType::Option::Limit:
+      return is_buy ? MdEntryType::Option::Bid : MdEntryType::Option::Offer;
+    case OrderType::Option::Market:
+      return is_buy ? MdEntryType::Option::MarketBid
+                    : MdEntryType::Option::MarketOffer;
   }
   core::unreachable();
 }

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="ac.draw.io" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0.1 Safari/605.1.15">
+  <diagram name="Page-1" id="2YBvvXClWsGukQMizWep">
+    <mxGraphModel dx="1380" dy="919" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="06-VTjz0fpfULGc9lPgr-1" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};fillColor=#dae8fc;strokeColor=#000000;" value="Client App" vertex="1">
+          <mxGeometry height="280" width="100" x="100" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="06-VTjz0fpfULGc9lPgr-2" parent="06-VTjz0fpfULGc9lPgr-1" style="html=1;points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};fillColor=#dae8fc;strokeColor=default;" value="" vertex="1">
+          <mxGeometry height="180" width="10" x="45" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="06-VTjz0fpfULGc9lPgr-3" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};fillColor=#dae8fc;strokeColor=#000000;" value="Market Simulator" vertex="1">
+          <mxGeometry height="280" width="100" x="500" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="06-VTjz0fpfULGc9lPgr-4" parent="06-VTjz0fpfULGc9lPgr-3" style="html=1;points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};fillColor=#dae8fc;strokeColor=default;" value="" vertex="1">
+          <mxGeometry height="180" width="10" x="45" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="06-VTjz0fpfULGc9lPgr-5" edge="1" parent="1" source="06-VTjz0fpfULGc9lPgr-2" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" target="06-VTjz0fpfULGc9lPgr-4" value="MarketDataRequest (35=V)&lt;div&gt;SubscriptionRequestType=Subscribe (263=1)&lt;/div&gt;&lt;div&gt;MDUpdateType=FullRefresh (265=0)&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.0051" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="290" y="190" />
+            </Array>
+            <mxPoint x="305" y="200" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="06-VTjz0fpfULGc9lPgr-6" edge="1" parent="1" source="06-VTjz0fpfULGc9lPgr-4" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;dashed=1;" target="06-VTjz0fpfULGc9lPgr-2" value="MarketDataSnapshotFullRefresh (35=W)">
+          <mxGeometry relative="1" x="0.0012" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="435" y="294.5" />
+              <mxPoint x="305" y="284.5" />
+            </Array>
+            <mxPoint x="540" y="290" as="sourcePoint" />
+            <mxPoint x="160" y="294.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="06-VTjz0fpfULGc9lPgr-8" parent="1" style="shape=umlFrame;whiteSpace=wrap;html=1;pointerEvents=0;fillColor=#dae8fc;strokeColor=default;" value="loop" vertex="1">
+          <mxGeometry height="50" width="520" x="70" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="06-VTjz0fpfULGc9lPgr-9" edge="1" parent="1" source="06-VTjz0fpfULGc9lPgr-2" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" target="06-VTjz0fpfULGc9lPgr-4" value="MarketDataRequest (35=V)&lt;div&gt;SubscriptionRequestType=Unsubscribe (263=2)&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.0051" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="267.5" y="370" />
+            </Array>
+            <mxPoint x="182.5" y="370" as="sourcePoint" />
+            <mxPoint x="507.5" y="370" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="YIk4eRz9dgpkraBDRsQq-1" edge="1" parent="1" source="06-VTjz0fpfULGc9lPgr-4" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" target="06-VTjz0fpfULGc9lPgr-2" value="MarketDataSnapshotFullRefresh (35=W)">
+          <mxGeometry relative="1" x="0.0012" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="435" y="230" />
+              <mxPoint x="305" y="220" />
+            </Array>
+            <mxPoint x="530" y="230" as="sourcePoint" />
+            <mxPoint x="160" y="230" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

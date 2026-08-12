@@ -2,10 +2,10 @@ add_target_tests(
   TARGET ${COMPONENT_NAME}
   HEADERS
     actions/save_copy_constructible.hpp
+    mocks/auction_reference_price_provider_mock.hpp
     mocks/event_listener_mock.hpp
     mocks/market_data_publisher_mock.hpp
     mocks/client_notification_listener_mock.hpp
-    mocks/execution_reports_listener_mock.hpp
     mocks/market_entry_id_generator_mock.hpp
     mocks/order_id_generator_mock.hpp
     mocks/order_event_handler_mock.hpp
@@ -24,10 +24,13 @@ add_target_tests(
     unit_tests/common/validation/conclusion_tests.cpp
     unit_tests/common/validation/validation_tests.cpp
     unit_tests/dispatching/event_dispatcher_tests.cpp
+    unit_tests/implementation_tests.cpp
     unit_tests/market_data/actions/market_data_recover_tests.cpp
     unit_tests/market_data/validation/checkers_tests.cpp
     unit_tests/market_data/validation/errors_tests.cpp
     unit_tests/market_data/validation/market_data_validator_tests.cpp
+    unit_tests/market_data/algorithms_tests.cpp
+    unit_tests/market_data/cache_manager_tests.cpp
     unit_tests/market_data/depth_cache_tests.cpp
     unit_tests/market_data/depth_node_comparator_tests.cpp
     unit_tests/market_data/depth_node_tests.cpp
@@ -37,18 +40,37 @@ add_target_tests(
     unit_tests/market_data/full_depth_update_tests.cpp
     unit_tests/market_data/incremental_depth_update_tests.cpp
     unit_tests/market_data/instrument_info_cache_tests.cpp
-    unit_tests/market_data/instrument_px_tests.cpp
+    unit_tests/market_data/market_data_facade_tests.cpp
+    unit_tests/market_data/md_entry_value_tests.cpp
     unit_tests/market_data/streaming_settings_tests.cpp
     unit_tests/market_data/trade_cache_tests.cpp
     unit_tests/orders/actions/all_orders_elimination_tests.cpp
+    unit_tests/orders/actions/auction_indicative_reporter_tests.cpp
+    unit_tests/orders/actions/auction_placement_tests.cpp
+    unit_tests/orders/actions/auction_uncross_tests.cpp
+    unit_tests/orders/actions/cancellation_tests.cpp
+    unit_tests/orders/actions/closed_phase_elimination_tests.cpp
+    unit_tests/orders/actions/early_price_reporter_tests.cpp
     unit_tests/orders/actions/limit_order_recover_tests.cpp
+    unit_tests/orders/actions/on_disconnect_elimination_tests.cpp
+    unit_tests/orders/actions/market_amendment_tests.cpp
+    unit_tests/orders/actions/order_actions_tests.cpp
+    unit_tests/orders/actions/regular_amendment_tests.cpp
     unit_tests/orders/actions/regular_placement_tests.cpp
     unit_tests/orders/actions/system_elimination_tests.cpp
+    unit_tests/orders/actions/time_reporter_tests.cpp
+    unit_tests/orders/actions/trade_at_last_amendment_tests.cpp
+    unit_tests/orders/actions/trade_at_last_elimination_tests.cpp
+    unit_tests/orders/actions/trade_at_last_placement_tests.cpp
+    unit_tests/orders/order_system_facade_tests.cpp
+    unit_tests/orders/phase_handler_tests.cpp
     unit_tests/orders/book/better_order_comparator_tests.cpp
     unit_tests/orders/book/limit_order_tests.cpp
     unit_tests/orders/book/market_order_tests.cpp
     unit_tests/orders/book/order_algorithms_tests.cpp
     unit_tests/orders/book/order_book_tests.cpp
+    unit_tests/orders/matchers/auction_price_calculator_tests.cpp
+    unit_tests/orders/matchers/no_cross_matcher_tests.cpp
     unit_tests/orders/matchers/regular_order_matcher_tests.cpp
     unit_tests/orders/replies/cancellation_reply_builders_tests.cpp
     unit_tests/orders/replies/client_reject_reporter_tests.cpp

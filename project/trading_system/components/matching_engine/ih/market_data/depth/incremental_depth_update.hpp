@@ -31,15 +31,14 @@ class IncrementalDepthUpdateBuilder {
  public:
   explicit IncrementalDepthUpdateBuilder(IncrementalDepthUpdate destination);
 
-  auto build(const std::ranges::forward_range auto& depth) -> void {
+  auto build(std::ranges::forward_range auto&& depth) -> void {
     static_assert(
         std::same_as<DepthLevel, std::ranges::range_value_t<decltype(depth)>>,
         "cannot build incremental depth update from a depth range "
         "which does not contain DepthLevel type");
 
-    constexpr auto filter = std::views::filter([](const DepthLevel& level) {
-      return level.is_added() || level.is_changed() || level.is_removed();
-    });
+    constexpr auto filter = std::views::filter(
+        [](const DepthLevel& level) { return level.is_updated(); });
 
     std::ranges::for_each(depth | filter, [this](const auto& level) {
       add_updated_level(level);
@@ -67,7 +66,7 @@ class LimitedIncrementalDepthUpdateBuilder {
   explicit LimitedIncrementalDepthUpdateBuilder(
       IncrementalDepthUpdate destination, std::uint32_t limit);
 
-  auto build(const std::ranges::forward_range auto& depth) -> void {
+  auto build(std::ranges::forward_range auto&& depth) -> void {
     static_assert(
         std::same_as<DepthLevel, std::ranges::range_value_t<decltype(depth)>>,
         "cannot build limited incremental depth update from a depth range "

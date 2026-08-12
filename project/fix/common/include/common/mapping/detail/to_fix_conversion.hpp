@@ -217,6 +217,11 @@ struct ToFixConverter<FIX::TradingSessionSubID> {
 };
 
 template <>
+struct ToFixConverter<FIX::TradeCondition> {
+  static auto convert(core::enumerators::TradeCondition) -> std::string;
+};
+
+template <>
 struct ToFixConverter<FIX::SecurityTradingStatus> {
   static auto convert(core::enumerators::TradingStatus) -> int;
 };

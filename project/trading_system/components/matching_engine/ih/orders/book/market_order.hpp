@@ -14,6 +14,11 @@ namespace simulator::trading_system::matching_engine {
 
 class MarketOrder {
  public:
+  struct Update {
+    OrderQuantity quantity;
+    OrderAttributes attributes{};
+  };
+
   MarketOrder(OrderQuantity quantity, OrderRecord record);
 
   [[nodiscard]]
@@ -63,9 +68,17 @@ class MarketOrder {
   auto leaves_quantity() const -> LeavesQuantity;
 
   [[nodiscard]]
+  auto time() const -> OrderTime;
+
+  [[nodiscard]]
   auto executed() const -> bool;
 
-  auto execute(ExecutedQuantity quantity) -> void;
+  [[nodiscard]]
+  auto average_price() const -> std::optional<AveragePrice>;
+
+  auto execute(ExecutedQuantity quantity, ExecutionPrice price) -> void;
+
+  auto amend(Update update) -> void;
 
   auto cancel() -> void;
 
@@ -75,6 +88,7 @@ class MarketOrder {
   std::shared_ptr<OrderRecord> record_;
   OrderQuantity total_quantity_;
   CumExecutedQuantity cum_executed_quantity_;
+  double cum_px_qty_;
 };
 
 }  // namespace simulator::trading_system::matching_engine

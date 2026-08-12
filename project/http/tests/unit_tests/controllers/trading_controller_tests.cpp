@@ -111,6 +111,18 @@ TEST_F(HttpTradingControllerHaltTest, RepliesConflictIfUnableToHalt) {
   ASSERT_EQ(body, format_result_response("Unable to halt the phase."));
 }
 
+TEST_F(HttpTradingControllerHaltTest, RepliesConflictIfAuctionIsInProgress) {
+  bind_channel();
+  set_halt_request_reply(protocol::HaltPhaseReply::Result::AuctionInProgress);
+
+  const auto [code, body] = controller.halt(R"({"allowCancels": true})");
+
+  ASSERT_EQ(code, Pistache::Http::Code::Conflict);
+  ASSERT_EQ(body,
+            format_result_response(
+                "Cannot halt the market while an auction is in progress."));
+}
+
 struct HttpTradingControllerResumeTest : HttpTradingControllerTest {
   auto set_resume_request_reply(protocol::ResumePhaseReply::Result result)
       -> void {
@@ -152,6 +164,19 @@ TEST_F(HttpTradingControllerResumeTest, RepliesConflictIfNoRequestedHalt) {
   ASSERT_EQ(code, Pistache::Http::Code::Conflict);
   ASSERT_EQ(body,
             format_result_response("There is no halt request to terminate."));
+}
+
+TEST_F(HttpTradingControllerResumeTest, RepliesConflictIfAuctionIsInProgress) {
+  bind_channel();
+  set_resume_request_reply(
+      protocol::ResumePhaseReply::Result::AuctionInProgress);
+
+  const auto [code, body] = controller.resume();
+
+  ASSERT_EQ(code, Pistache::Http::Code::Conflict);
+  ASSERT_EQ(body,
+            format_result_response(
+                "Cannot resume the market while an auction is in progress."));
 }
 
 struct HttpTradingControllerStoreMarketStateTest : HttpTradingControllerTest {

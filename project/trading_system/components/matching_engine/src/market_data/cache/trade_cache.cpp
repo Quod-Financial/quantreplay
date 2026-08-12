@@ -33,6 +33,20 @@ auto TradeCache::compose_update(const StreamingSettings& settings,
   }
 }
 
+auto TradeCache::has_update(const StreamingSettings& settings) const -> bool {
+  return settings.is_data_type_requested(MdEntryType::Option::Trade) &&
+         !cached_trades_.empty();
+}
+
+auto TradeCache::compose_trade(const StreamingSettings& settings,
+                               const Trade& trade) const
+    -> std::optional<MarketDataEntry> {
+  if (!settings.is_data_type_requested(MdEntryType::Option::Trade)) {
+    return std::nullopt;
+  }
+  return std::make_optional(compose_market_entry(trade));
+}
+
 auto TradeCache::update(const std::vector<OrderBookNotification>& updates)
     -> void {
   cached_trades_.clear();

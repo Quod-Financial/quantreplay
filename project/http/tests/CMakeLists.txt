@@ -2,9 +2,13 @@ add_target_tests(
   TARGET ${PROJECT_NAME}
   HEADERS
     mocks/app_controller.hpp
+    mocks/config_provider.hpp
     mocks/delete_processor.hpp
+    mocks/fix_session_accessor.hpp
+    mocks/fix_session_controller.hpp
     mocks/generator_admin_receiver.hpp
     mocks/get_processor.hpp
+    mocks/head_processor.hpp
     mocks/post_processor.hpp
     mocks/put_processor.hpp
     mocks/redirection_processor.hpp
@@ -18,23 +22,33 @@ add_target_tests(
     test_utils/test_server.hpp
     test_utils/utils.hpp
   UNIT_TESTS
+    unit_tests/config_provider_tests.cpp
     unit_tests/controllers/app_controller_tests.cpp
+    unit_tests/controllers/fix_session_controller_tests.cpp
     unit_tests/controllers/trading_controller_tests.cpp
+    unit_tests/headers/content_disposition_attachment_tests.cpp
     unit_tests/headers/x_api_version_tests.cpp
     unit_tests/marshalling/json/detail/enumeration_resolver_tests.cpp
     unit_tests/marshalling/json/detail/key_resolver_tests.cpp
     unit_tests/marshalling/json/detail/marshaller_tests.cpp
     unit_tests/marshalling/json/detail/unmarshaller_tests.cpp
+    unit_tests/marshalling/json/generator_unmarshalling_tests.cpp
     unit_tests/marshalling/json/halt_unmarshalling_tests.cpp
     unit_tests/marshalling/json/datasource_marshalling_tests.cpp
+    unit_tests/marshalling/json/fix_session_marshalling_tests.cpp
     unit_tests/marshalling/json/listing_marshalling_tests.cpp
     unit_tests/marshalling/json/price_seed_marshalling_tests.cpp
     unit_tests/marshalling/json/setting_marshalling_tests.cpp
     unit_tests/marshalling/json/venue_marshalling_tests.cpp
     unit_tests/processors/get_processor_tests.cpp
+    unit_tests/processors/head_processor_tests.cpp
     unit_tests/processors/post_processor_tests.cpp
     unit_tests/redirect/destination_resolver_tests.cpp
     unit_tests/redirect/redirection_processor_tests.cpp
     unit_tests/redirect/request_redirector_tests.cpp
     unit_tests/redirect/result_tests.cpp
+    unit_tests/utils/compression_tests.cpp
+    unit_tests/utils/host_resolver_tests.cpp
+    unit_tests/utils/path_tests.cpp
+    unit_tests/utils/response_formatters_tests.cpp
     unit_tests/router_tests.cpp)

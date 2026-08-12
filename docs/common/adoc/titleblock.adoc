@@ -12,6 +12,8 @@ endif::[]
 :attribute-missing: drop
 :favicon:
 :stem: latexmath
+:mathematical-format: svg
+:imagesdir: images
 :icons: font
 :tab: {nbsp}{nbsp}{nbsp}{nbsp}
 ifndef::hide-overview[]

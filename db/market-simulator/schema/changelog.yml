@@ -20,6 +20,9 @@ databaseChangeLog:
   - include:
       file: tables/column_mapping.yml
       relativeToChangelogFile: true
+  - include:
+      file: tables/fix_session.yml
+      relativeToChangelogFile: true
 
   - include:
       file: keys/venue.yml
@@ -41,6 +44,9 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: keys/column_mapping.yml
+      relativeToChangelogFile: true
+  - include:
+      file: keys/fix_session.yml
       relativeToChangelogFile: true
 
   - include:

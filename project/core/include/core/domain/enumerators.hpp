@@ -238,9 +238,24 @@ enum class MdEntryType : std::uint8_t {
   Bid,
   Offer,
   Trade,
+  OpeningPrice,
+  ClosingPrice,
+  SettlementPrice,
+  HighPrice,
   LowPrice,
+  Imbalance,
+  TradeVolume,
   MidPrice,
-  HighPrice
+  EarlyPrice,
+  AuctionClearingPrice,
+  MarketBid,
+  MarketOffer,
+  PreviousClosingPrice
+};
+
+enum class TradeCondition : std::uint8_t {
+  ImbalanceMoreBuyers,
+  ImbalanceMoreSellers
 };
 
 enum class MdSubscriptionRequestType : std::uint8_t {
@@ -322,6 +337,9 @@ auto operator<<(std::ostream& stream, MarketDataUpdateType type)
     -> std::ostream&;
 
 auto operator<<(std::ostream& stream, TradingPhase phase) -> std::ostream&;
+
+auto operator<<(std::ostream& stream, TradeCondition trade_condition)
+    -> std::ostream&;
 
 auto operator<<(std::ostream& stream, TradingStatus status) -> std::ostream&;
 
@@ -420,6 +438,15 @@ struct fmt::formatter<simulator::core::enumerators::MdEntryType>
   using formattable = simulator::core::enumerators::MdEntryType;
 
   auto format(formattable md_entry_type, format_context& context) const
+      -> decltype(context.out());
+};
+
+template <>
+struct fmt::formatter<simulator::core::enumerators::TradeCondition>
+    : formatter<std::string_view> {
+  using formattable = simulator::core::enumerators::TradeCondition;
+
+  auto format(formattable trade_condition, format_context& context) const
       -> decltype(context.out());
 };
 

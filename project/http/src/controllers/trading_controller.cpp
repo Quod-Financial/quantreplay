@@ -32,6 +32,10 @@ auto response_attributes(protocol::HaltPhaseReply reply)
       code = Pistache::Http::Code::Conflict;
       message = "Unable to halt the phase.";
       break;
+    case protocol::HaltPhaseReply::Result::AuctionInProgress:
+      code = Pistache::Http::Code::Conflict;
+      message = "Cannot halt the market while an auction is in progress.";
+      break;
   }
   return std::make_pair(code, message);
 }
@@ -48,6 +52,10 @@ auto response_attributes(protocol::ResumePhaseReply reply)
     case protocol::ResumePhaseReply::Result::NoRequestedHalt:
       code = Pistache::Http::Code::Conflict;
       message = "There is no halt request to terminate.";
+      break;
+    case protocol::ResumePhaseReply::Result::AuctionInProgress:
+      code = Pistache::Http::Code::Conflict;
+      message = "Cannot resume the market while an auction is in progress.";
       break;
   }
   return std::make_pair(code, message);

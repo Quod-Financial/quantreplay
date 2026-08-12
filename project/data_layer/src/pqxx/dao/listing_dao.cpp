@@ -74,8 +74,7 @@ auto ListingDao::insert(const Listing::Patch& snapshot,
     try {
       return transaction_handler.exec1(query);
     } catch (const std::exception& exception) {
-      log::warn("listing insertion failed, error: `{}'",
-                           exception.what());
+      log::warn("listing insertion failed, error: `{}'", exception.what());
       throw;
     }
   }();
@@ -83,8 +82,7 @@ auto ListingDao::insert(const Listing::Patch& snapshot,
 
   log::debug("decoding an inserted listing record identifier");
   const std::uint64_t inserted_id = ListingParser::parse_identifier(result);
-  log::debug("inserted listing identifier was decoded - `{}'",
-                        inserted_id);
+  log::debug("inserted listing identifier was decoded - `{}'", inserted_id);
 
   return select_single(inserted_id, transaction_handler);
 }
@@ -117,8 +115,7 @@ auto ListingDao::select_single(std::uint64_t listing_id,
   log::debug("listing selection query executed");
 
   Listing selected_listing = decode_listing(selected);
-  log::info("selected listing record with `{}' identifier",
-                       listing_id);
+  log::info("selected listing record with `{}' identifier", listing_id);
   return selected_listing;
 }
 
@@ -136,9 +133,8 @@ auto ListingDao::select_all(const std::optional<Predicate>& predicate,
 
   log::debug("executing `{}'", query);
   const pqxx::result selected = transaction_handler.exec(query);
-  log::debug(
-      "listing selection query executed, {} records retrieved",
-      selected.size());
+  log::debug("listing selection query executed, {} records retrieved",
+             selected.size());
 
   std::vector<Listing> selected_listings{};
   selected_listings.reserve(static_cast<std::size_t>(selected.size()));
@@ -166,8 +162,7 @@ auto ListingDao::update(const Listing::Patch& patch,
 
   log::debug("decoding an updated listing record identifier");
   const std::uint64_t updated_id = ListingParser::parse_identifier(result);
-  log::debug("updated listing identifier was decoded - `{}'",
-                        updated_id);
+  log::debug("updated listing identifier was decoded - `{}'", updated_id);
 
   return select_single(updated_id, transaction_handler);
 }

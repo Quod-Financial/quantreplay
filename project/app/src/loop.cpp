@@ -14,9 +14,14 @@ static Loop::State state{};
 auto Loop::suspend_main_thread() -> State {
   log::info("blocking main thread");
   std::unique_lock app_main_lock{loop_mutex};
-  loop_cv.wait(app_main_lock);
+  loop_cv.wait(app_main_lock, [] { return state != State{}; });
 
   return std::exchange(state, State{});
+}
+
+auto Loop::termination_requested() -> bool {
+  const std::lock_guard lock{loop_mutex};
+  return state == State::Terminate;
 }
 
 auto Loop::terminate() -> void {

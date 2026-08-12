@@ -32,9 +32,13 @@ auto HighPriceRespectsTick::operator()(
 auto LowPriceIsLessThanOrEqualToHighPrice::operator()(
     const market_state::InstrumentInfo& instrument_info) const
     -> std::optional<ValidationError> {
+  if (!instrument_info.low_price.has_value() ||
+      !instrument_info.high_price.has_value()) {
+    return std::nullopt;
+  }
   return fields_respect_order(
-      instrument_info.low_price,
-      instrument_info.high_price,
+      *instrument_info.low_price,
+      *instrument_info.high_price,
       std::less_equal{},
       ValidationError::LowPriceIsLessThanOrEqualToHighPriceViolated);
 };

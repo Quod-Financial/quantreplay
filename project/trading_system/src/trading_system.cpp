@@ -3,6 +3,7 @@
 #include <cstdlib>
 
 #include "data_layer/api/data_access_layer.hpp"
+#include "data_layer/api/exceptions/exceptions.hpp"
 #include "ih/config/config.hpp"
 #include "ih/tools/loaders.hpp"
 #include "instruments/cache.hpp"
@@ -47,6 +48,9 @@ auto create_trading_system_implementation(
     return std::make_unique<System::Implementation>(
         read_system_configuration(database),
         create_instruments_cache(database));
+  } catch (const data_layer::ConnectionFailure&) {
+    // preserve the type for retry
+    throw;
   } catch (const std::exception& exception) {
     log::err(
         "failed to create a trading system implementation, an error occurred: "

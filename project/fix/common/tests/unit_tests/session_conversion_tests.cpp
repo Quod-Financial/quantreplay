@@ -25,6 +25,28 @@ TEST(FixSessionConversion, DecodesFixSessionAttributes) {
                   protocol::fix::TargetCompId{"Target"}})));
 }
 
+TEST(FixSessionConversion, DecodesSessionQualifierWhenPresent) {
+  const FIX::SessionID fix_session{"FIXT.1.1", "Sender", "Target", "Qualifier"};
+
+  const auto internal_session = decode_session(fix_session);
+
+  ASSERT_THAT(internal_session.value,
+              VariantWith<protocol::fix::Session>(Field(
+                  &protocol::fix::Session::session_qualifier,
+                  Optional(Eq(protocol::fix::SessionQualifier{"Qualifier"})))));
+}
+
+TEST(FixSessionConversion, DecodesNoSessionQualifierWhenAbsent) {
+  const FIX::SessionID fix_session{"FIXT.1.1", "Sender", "Target"};
+
+  const auto internal_session = decode_session(fix_session);
+
+  ASSERT_THAT(
+      internal_session.value,
+      VariantWith<protocol::fix::Session>(
+          Field(&protocol::fix::Session::session_qualifier, Eq(std::nullopt))));
+}
+
 TEST(FixSessionConversion, EncodesFixSessionFromInternalFixSession) {
   const protocol::fix::Session internal_session{
       protocol::fix::BeginString{"FIXT.1.1"},

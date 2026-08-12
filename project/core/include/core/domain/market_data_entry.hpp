@@ -24,6 +24,7 @@ struct MarketDataEntry {
   std::optional<AggressorSide> aggressor_side;
   std::optional<MarketEntryAction> action;
   std::optional<MdEntryType> type;
+  std::optional<TradeCondition> trade_condition;
 
   [[nodiscard]]
   consteval static auto name() {

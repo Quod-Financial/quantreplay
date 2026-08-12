@@ -4,8 +4,11 @@
 #include <algorithm>
 #include <initializer_list>
 
+#include "cfg/api/cfg.hpp"
 #include "common/instrument.hpp"
 #include "core/domain/instrument_descriptor.hpp"
+#include "data_layer/api/data_access_layer.hpp"
+#include "data_layer/api/exceptions/exceptions.hpp"
 #include "instruments/cache.hpp"
 #include "instruments/lookup_error.hpp"
 #include "instruments/sources.hpp"
@@ -254,6 +257,25 @@ TEST_F(Instruments,
 
   ASSERT_FALSE(view.has_value());
   EXPECT_EQ(view.error(), instrument::LookupError::InstrumentNotFound);
+}
+
+struct InstrumentsCacheDatabaseLoad : public Test {
+  [[nodiscard]] static auto unreachable_source() -> DatabaseSource {
+    cfg::DbConfiguration configuration;
+    configuration.host = "127.0.0.1";
+    configuration.port = "1";
+    configuration.user = "user";
+    configuration.password = "password";
+    configuration.name = "database";
+    return DatabaseSource{data_layer::database::setup(configuration)};
+  }
+
+  Cache cache = Cache::create();
+};
+
+TEST_F(InstrumentsCacheDatabaseLoad,
+       RethrowsConnectionFailureWhenDatabaseUnreachable) {
+  EXPECT_THROW(cache.load(unreachable_source()), data_layer::ConnectionFailure);
 }
 
 // NOLINTEND(*-magic-numbers)

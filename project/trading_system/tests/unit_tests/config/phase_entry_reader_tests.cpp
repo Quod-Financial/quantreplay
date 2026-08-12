@@ -59,11 +59,11 @@ TEST_F(TradingSystemPhaseEntryReader,
           .begin = 11h, .end = 12h, .phase = TradingPhase::Option::Closed}));
 }
 
-TEST_F(TradingSystemPhaseEntryReader, SetsEndRangeToZeroSecondIfNotSet) {
+TEST_F(TradingSystemPhaseEntryReader, SetsEndRangeToZeroMinuteIfNotSet) {
   patch.with_start_time("11:00").with_end_time("12:00").with_phase(
       MarketPhase::Phase::Closed);
   reader(create_phase(patch));
-  ASSERT_EQ(config.trading_phases_schedule().phase_records()[0].end_range, 0s);
+  ASSERT_EQ(config.trading_phases_schedule().phase_records()[0].end_range, 0min);
 }
 
 TEST_F(TradingSystemPhaseEntryReader, SetsEndRange) {
@@ -72,7 +72,8 @@ TEST_F(TradingSystemPhaseEntryReader, SetsEndRange) {
       .with_phase(MarketPhase::Phase::Closed)
       .with_end_time_range(30);
   reader(create_phase(patch));
-  ASSERT_EQ(config.trading_phases_schedule().phase_records()[0].end_range, 30s);
+  ASSERT_EQ(config.trading_phases_schedule().phase_records()[0].end_range,
+            30min);
 }
 
 TEST_F(TradingSystemPhaseEntryReader, SetsAllowCancelsToFalseIfNotSet) {

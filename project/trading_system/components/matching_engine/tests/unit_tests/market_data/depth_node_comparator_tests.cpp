@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <optional>
+
 #include "core/domain/attributes.hpp"
 #include "ih/market_data/depth/depth_node.hpp"
 #include "ih/market_data/depth/depth_node_comparator.hpp"
@@ -55,14 +57,14 @@ TEST_F(BidComparatorTest, ReturnsFalseWhenRightNodeHasNoPriceLeftHas) {
   const auto left = make_node(Price(50));
   const auto right = make_node(NoPrice);
 
-  ASSERT_TRUE(cmp(left, right));
+  ASSERT_FALSE(cmp(left, right));
 }
 
-TEST_F(BidComparatorTest, ReturnsFalseWhenBothNodesHaveNoPrice) {
+TEST_F(BidComparatorTest, ReturnsTrueWhenBothNodesHaveNoPrice) {
   const auto left = make_node(NoPrice);
   const auto right = make_node(NoPrice);
 
-  ASSERT_FALSE(cmp(left, right));
+  ASSERT_TRUE(cmp(left, right));
 }
 
 struct OfferComparatorTest : DepthNodeComparatorTest {
@@ -101,14 +103,14 @@ TEST_F(OfferComparatorTest, ReturnsFalseWhenRightNodeHasNoPriceLeftHas) {
   const auto left = make_node(Price(50));
   const auto right = make_node(NoPrice);
 
-  ASSERT_TRUE(cmp(left, right));
+  ASSERT_FALSE(cmp(left, right));
 }
 
-TEST_F(OfferComparatorTest, ReturnsFalseWhenBothNodesHaveNoPrice) {
+TEST_F(OfferComparatorTest, ReturnsTrueWhenBothNodesHaveNoPrice) {
   const auto left = make_node(NoPrice);
   const auto right = make_node(NoPrice);
 
-  ASSERT_FALSE(cmp(left, right));
+  ASSERT_TRUE(cmp(left, right));
 }
 
 }  // namespace

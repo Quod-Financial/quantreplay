@@ -34,6 +34,8 @@ class ValueGenerator {
  public:
   virtual ~ValueGenerator() = default;
 
+  virtual auto reseed(std::uint64_t seed) -> void = 0;
+
   template <typename T, std::enable_if_t<is_signed_integer_v<T>>* = nullptr>
   auto generate_uniform_value(T min, T max) -> T {
     assert(min <= max);

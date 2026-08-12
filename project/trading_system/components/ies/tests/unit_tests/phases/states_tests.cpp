@@ -1,11 +1,16 @@
 #include <gmock/gmock.h>
 
+#include <chrono>
+#include <optional>
+
+#include "core/tools/time.hpp"
 #include "ih/phases/states.hpp"
 
 namespace simulator::trading_system::ies::test {
 namespace {
 
 using namespace ::testing;  // NOLINT
+using namespace std::chrono_literals;
 
 struct TradingSystemIesState : public Test {
   template <typename StateT>
@@ -212,6 +217,138 @@ TEST_F(TradingSystemIesClosedState, TransformsToOpenState) {
 
   ASSERT_THAT(new_state, IsState<OpenState>());
   ASSERT_EQ(get_open(new_state).phase(), open_phase);
+}
+
+struct TradingSystemIesAuctionState : public TradingSystemIesState {
+  static auto instant(std::chrono::microseconds time) -> core::local_us {
+    return core::local_us{} + time;
+  }
+
+  AuctionState auction{
+      TradingPhase::Option::OpeningAuction,
+      AuctionActivation{.end = instant(10h), .uncross_at = instant(10h)}};
+};
+
+TEST_F(TradingSystemIesAuctionState, IsNotDueBeforeUncrossingTime) {
+  EXPECT_FALSE(auction.uncrossing_due(instant(10h) - 1us));
+}
+
+TEST_F(TradingSystemIesAuctionState, BecomesDueWhenUncrossingTimeIsReached) {
+  EXPECT_TRUE(auction.uncrossing_due(instant(10h)));
+  EXPECT_TRUE(auction.uncrossing_due(instant(10h) + 1us));
+}
+
+TEST_F(TradingSystemIesAuctionState, StopsBeingDueOnceUncrossingHasBegun) {
+  const auto uncrossing = auction.begin_uncrossing();
+
+  EXPECT_FALSE(uncrossing.uncrossing_due(instant(10h) + 1us));
+}
+
+TEST_F(TradingSystemIesAuctionState, RejectsHaltRequest) {
+  const auto new_state = auction.halt(halt_request, halt_reply);
+
+  ASSERT_EQ(new_state, std::nullopt);
+  ASSERT_EQ(halt_reply.result,
+            protocol::HaltPhaseReply::Result::AuctionInProgress);
+}
+
+TEST_F(TradingSystemIesAuctionState, RejectsResumeRequest) {
+  const auto new_state = auction.resume(resume_request, resume_reply);
+
+  ASSERT_EQ(new_state, std::nullopt);
+  ASSERT_EQ(resume_reply.result,
+            protocol::ResumePhaseReply::Result::AuctionInProgress);
+}
+
+TEST_F(TradingSystemIesAuctionState, RejectsHaltRequestDuringUncrossing) {
+  const auto new_state =
+      auction.begin_uncrossing().halt(halt_request, halt_reply);
+
+  ASSERT_EQ(new_state, std::nullopt);
+  ASSERT_EQ(halt_reply.result,
+            protocol::HaltPhaseReply::Result::AuctionInProgress);
+}
+
+TEST_F(TradingSystemIesAuctionState, RejectsResumeRequestDuringUncrossing) {
+  const auto new_state =
+      auction.begin_uncrossing().resume(resume_request, resume_reply);
+
+  ASSERT_EQ(new_state, std::nullopt);
+  ASSERT_EQ(resume_reply.result,
+            protocol::ResumePhaseReply::Result::AuctionInProgress);
+}
+
+TEST_F(TradingSystemIesAuctionState, IgnoresScheduledPhaseUpdate) {
+  const auto new_state = auction.update(
+      {TradingPhase::Option::Closed, TradingStatus::Option::Halt, {}});
+
+  ASSERT_EQ(new_state, std::nullopt);
+}
+
+struct TradingSystemIesAuctionPhaseReporting
+    : public TestWithParam<TradingPhase::Option> {
+  static auto instant(std::chrono::microseconds time) -> core::local_us {
+    return core::local_us{} + time;
+  }
+
+  AuctionState auction{
+      TradingPhase{GetParam()},
+      AuctionActivation{.end = instant(10h), .uncross_at = instant(10h)}};
+};
+
+TEST_P(TradingSystemIesAuctionPhaseReporting, CallSubPhaseResumesAuctionPhase) {
+  ASSERT_EQ(auction.phase(),
+            Phase(TradingPhase{GetParam()}, TradingStatus::Option::Resume, {}));
+}
+
+TEST_P(TradingSystemIesAuctionPhaseReporting,
+       UncrossingSubPhaseHaltsAuctionPhase) {
+  ASSERT_EQ(auction.begin_uncrossing().phase(),
+            Phase(TradingPhase{GetParam()}, TradingStatus::Option::Halt, {}));
+}
+
+INSTANTIATE_TEST_SUITE_P(AuctionPhases,
+                         TradingSystemIesAuctionPhaseReporting,
+                         Values(TradingPhase::Option::OpeningAuction,
+                                TradingPhase::Option::IntradayAuction,
+                                TradingPhase::Option::ClosingAuction));
+
+struct TradingSystemIesStateCreation : public TradingSystemIesState {
+  static auto instant(std::chrono::microseconds time) -> core::local_us {
+    return core::local_us{} + time;
+  }
+
+  AuctionActivation activation{.end = instant(10h), .uncross_at = instant(10h)};
+};
+
+TEST_F(TradingSystemIesStateCreation,
+       CreatesAuctionStateForAuctionPhaseWithActivation) {
+  const auto state = create_state(
+      {TradingPhase::Option::OpeningAuction, TradingStatus::Option::Resume, {}},
+      activation);
+
+  ASSERT_THAT(state, IsState<AuctionState>());
+  EXPECT_EQ(std::get<AuctionState>(*state).phase(),
+            Phase(TradingPhase::Option::OpeningAuction,
+                  TradingStatus::Option::Resume,
+                  {}));
+}
+
+TEST_F(TradingSystemIesStateCreation,
+       ReturnsNoStateForAuctionPhaseWithoutActivation) {
+  const auto state = create_state({TradingPhase::Option::OpeningAuction,
+                                   TradingStatus::Option::Resume,
+                                   {}});
+
+  ASSERT_EQ(state, std::nullopt);
+}
+
+TEST_F(TradingSystemIesStateCreation,
+       CreatesTradeAtLastStateForPostTradingPhase) {
+  const auto state = create_state(
+      {TradingPhase::Option::PostTrading, TradingStatus::Option::Resume, {}});
+
+  ASSERT_THAT(state, IsState<TradeAtLastState>());
 }
 
 }  // namespace

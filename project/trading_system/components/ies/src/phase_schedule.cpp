@@ -2,6 +2,8 @@
 
 #include <ranges>
 
+#include "ih/phases/states.hpp"
+
 namespace simulator::trading_system::ies {
 
 namespace {
@@ -23,23 +25,29 @@ auto select_current_phase_record(auto& candidates,
 }
 
 auto select_current_phase(auto& candidates, std::chrono::seconds sched_time)
-    -> Phase {
+    -> ScheduledPhase {
   auto is_trading_phase = [](const PhaseRecord& record) {
     return std::holds_alternative<TradingPhase>(record.phase);
   };
 
-  auto selected_record =
+  const auto selected_record =
       select_current_phase_record(candidates, sched_time, is_trading_phase);
 
   if (selected_record) {
     const auto trading_phase = std::get<TradingPhase>(selected_record->phase);
-    if (trading_phase == TradingPhase::Option::Closed) {
-      return {trading_phase, TradingStatus::Option::Halt, {}};
+    const auto status = trading_phase == TradingPhase::Option::Closed
+                            ? TradingStatus::Option::Halt
+                            : TradingStatus::Option::Resume;
+    ScheduledPhase scheduled{.phase = {trading_phase, status, {}}};
+    if (is_auction_phase(trading_phase)) {
+      scheduled.auction = AuctionTiming{
+          .end = selected_record->end, .end_range = selected_record->end_range};
     }
-    return {trading_phase, TradingStatus::Option::Resume, {}};
+    return scheduled;
   }
 
-  return {TradingPhase::Option::Open, TradingStatus::Option::Resume, {}};
+  return {
+      .phase = {TradingPhase::Option::Open, TradingStatus::Option::Resume, {}}};
 }
 
 auto select_current_halt(auto& candidates, std::chrono::seconds sched_time)
@@ -59,7 +67,8 @@ auto select_current_halt(auto& candidates, std::chrono::seconds sched_time)
 auto halts_phase(const Phase& selected_phase, const PhaseRecord& halt_record)
     -> Phase {
   const auto trading_phase = selected_phase.phase();
-  if (trading_phase == TradingPhase::Option::Open) {
+  if (trading_phase == TradingPhase::Option::Open ||
+      trading_phase == TradingPhase::Option::PostTrading) {
     return {selected_phase.phase(),
             TradingStatus::Option::Halt,
             {halt_record.allow_cancels_on_halt}};
@@ -83,22 +92,30 @@ auto PhaseSchedule::phase_records() const -> std::vector<PhaseRecord> {
   return phase_records_;
 }
 
+auto PhaseSchedule::has_phase(TradingPhase phase) const -> bool {
+  return std::ranges::any_of(
+      phase_records_, [phase](const ies::PhaseRecord& record) {
+        const auto* scheduled = std::get_if<TradingPhase>(&record.phase);
+        return scheduled != nullptr && *scheduled == phase;
+      });
+}
+
 auto PhaseSchedule::select_sched_phase(std::chrono::seconds sched_time) const
-    -> Phase {
+    -> ScheduledPhase {
   // filter all phase records scheduled at the given time
   auto candidates =
       std::views::filter(phase_records_, [&](const auto& candidate) {
         return candidate.begin <= sched_time && sched_time < candidate.end;
       });
 
-  auto phase = select_current_phase(candidates, sched_time);
+  auto scheduled = select_current_phase(candidates, sched_time);
 
   if (const auto selected_halt_record =
           select_current_halt(candidates, sched_time)) {
-    phase = halts_phase(phase, *selected_halt_record);
+    scheduled.phase = halts_phase(scheduled.phase, *selected_halt_record);
   }
 
-  return phase;
+  return scheduled;
 }
 
 }  // namespace simulator::trading_system::ies

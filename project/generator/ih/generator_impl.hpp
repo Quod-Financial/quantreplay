@@ -2,6 +2,8 @@
 #define SIMULATOR_GENERATOR_IH_GENERATOR_IMPL_HPP_
 
 #include <memory>
+#include <optional>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -10,6 +12,7 @@
 #include "ih/context/instrument_context.hpp"
 #include "ih/factory/executable_factory.hpp"
 #include "ih/random/instrument_generator.hpp"
+#include "ih/random/seed_hasher.hpp"
 #include "ih/utils/executor.hpp"
 
 namespace simulator::generator {
@@ -33,7 +36,7 @@ class GeneratorImpl final {
 
   auto suspend() -> void;
 
-  auto resume() -> void;
+  auto resume(const std::optional<std::string>& user_seed) -> void;
 
   auto start() -> void;
 
@@ -43,6 +46,12 @@ class GeneratorImpl final {
       -> void;
 
  private:
+  struct RandomGenerationEntry {
+    std::unique_ptr<Executor> executor;
+    random::OrderGenerator* random_root;
+    random::ListingSeedHasher seed_hasher;
+  };
+
   auto initialize_instruments() -> void;
 
   auto initialize_instrument(const data_layer::Listing& listing) -> void;
@@ -53,7 +62,7 @@ class GeneratorImpl final {
 
   auto terminate_generator() noexcept -> void;
 
-  std::vector<std::unique_ptr<Executor>> listings_random_generators_;
+  std::vector<RandomGenerationEntry> listings_random_generators_;
   std::vector<std::shared_ptr<OrderInstrumentContext>> order_listings_contexts_;
   std::unordered_map<std::uint64_t, std::shared_ptr<OrderInstrumentContext>>
       context_lookup_;

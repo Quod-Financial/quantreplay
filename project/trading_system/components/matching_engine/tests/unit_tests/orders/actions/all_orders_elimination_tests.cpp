@@ -11,68 +11,135 @@ namespace {
 
 using namespace ::testing;  // NOLINT
 
+// NOLINTBEGIN(*magic-numbers*)
+
 struct MatchingEngineAllOrdersElimination : public Test {
+  MatchingEngineAllOrdersElimination() {
+    EXPECT_CALL(event_listener, on(_)).Times(AnyNumber());
+  }
+
+  static auto make_builder(OrderId identifier, Side side) -> OrderBuilder {
+    OrderBuilder builder;
+    builder.with_order_id(identifier)
+        .with_side(side)
+        .with_client_order_id(ClientOrderId{"client-123"});
+    return builder;
+  }
+
+  auto rest_limit_order(OrderId identifier, Side side) -> void {
+    order_book.take_page(side).limit_orders().emplace(
+        make_builder(identifier, side).build_limit_order());
+  }
+
+  auto rest_trade_at_last_order(OrderId identifier, Side side) -> void {
+    order_book.take_page(side).trade_at_last_orders().emplace(
+        make_builder(identifier, side).build_limit_order());
+  }
+
+  auto rest_market_order(OrderId identifier, Side side) -> void {
+    order_book.take_page(side).market_orders().emplace(
+        make_builder(identifier, side).build_market_order());
+  }
+
   NiceMock<EventListenerMock> event_listener;
-  OrderBuilder builder;
   OrderBook order_book;
 
   AllOrdersElimination eliminator{event_listener};
 };
 
-TEST_F(MatchingEngineAllOrdersElimination, DeletesBuySideOrdersFromOrderBook) {
-  const auto order1 =
-      builder.with_side(Side{Side::Option::Buy}).build_limit_order();
-  const auto order2 =
-      builder.with_side(Side{Side::Option::Buy}).build_limit_order();
-
-  order_book.buy_page().limit_orders().emplace(order1);
-  order_book.buy_page().limit_orders().emplace(order2);
+TEST_F(MatchingEngineAllOrdersElimination, DeletesLimitOrdersFromOrderBook) {
+  rest_limit_order(OrderId{1}, Side::Option::Buy);
+  rest_limit_order(OrderId{2}, Side::Option::Buy);
+  rest_limit_order(OrderId{3}, Side::Option::Sell);
+  rest_limit_order(OrderId{4}, Side::Option::Sell);
 
   eliminator(order_book);
 
-  ASSERT_TRUE(order_book.buy_page().limit_orders().empty());
+  EXPECT_THAT(order_book.buy_page().limit_orders(), IsEmpty());
+  EXPECT_THAT(order_book.sell_page().limit_orders(), IsEmpty());
 }
 
 TEST_F(MatchingEngineAllOrdersElimination,
-       EmitsOrderRemovedNotificationOnEliminationBuySideOrderFromOrderBook) {
-  const auto order = builder.with_order_id(OrderId{123})
-                         .with_side(Side{Side::Option::Buy})
-                         .build_limit_order();
-  order_book.buy_page().limit_orders().emplace(order);
-
-  EXPECT_CALL(event_listener,
-              on(IsOrderBookNotification(VariantWith<OrderRemoved>(
-                  Field(&OrderRemoved::order_id, Eq(OrderId{123}))))));
-
-  eliminator(order_book);
-}
-
-TEST_F(MatchingEngineAllOrdersElimination, DeletesSellSideOrdersFromOrderBook) {
-  const auto order1 =
-      builder.with_side(Side{Side::Option::Sell}).build_limit_order();
-  const auto order2 =
-      builder.with_side(Side{Side::Option::Sell}).build_limit_order();
-  order_book.sell_page().limit_orders().emplace(order1);
-  order_book.sell_page().limit_orders().emplace(order2);
+       DeletesTradeAtLastOrdersFromOrderBook) {
+  rest_trade_at_last_order(OrderId{1}, Side::Option::Buy);
+  rest_trade_at_last_order(OrderId{2}, Side::Option::Buy);
+  rest_trade_at_last_order(OrderId{3}, Side::Option::Sell);
+  rest_trade_at_last_order(OrderId{4}, Side::Option::Sell);
 
   eliminator(order_book);
 
-  ASSERT_TRUE(order_book.sell_page().limit_orders().empty());
+  EXPECT_THAT(order_book.buy_page().trade_at_last_orders(), IsEmpty());
+  EXPECT_THAT(order_book.sell_page().trade_at_last_orders(), IsEmpty());
 }
 
 TEST_F(MatchingEngineAllOrdersElimination,
-       EmitsOrderRemovedNotificationOnEliminationSellSideOrderFromOrderBook) {
-  const auto order = builder.with_order_id(OrderId{123})
-                         .with_side(Side{Side::Option::Sell})
-                         .build_limit_order();
-  order_book.sell_page().limit_orders().emplace(order);
+       DeletesRestingMarketOrdersFromOrderBook) {
+  rest_market_order(OrderId{1}, Side::Option::Buy);
+  rest_market_order(OrderId{2}, Side::Option::Sell);
+
+  eliminator(order_book);
+
+  EXPECT_THAT(order_book.buy_page().market_orders(), IsEmpty());
+  EXPECT_THAT(order_book.sell_page().market_orders(), IsEmpty());
+}
+
+TEST_F(MatchingEngineAllOrdersElimination,
+       EmitsOrderRemovedNotificationForEliminatedLimitOrder) {
+  rest_limit_order(OrderId{1}, Side::Option::Buy);
+  rest_limit_order(OrderId{2}, Side::Option::Sell);
 
   EXPECT_CALL(event_listener,
               on(IsOrderBookNotification(VariantWith<OrderRemoved>(
-                  Field(&OrderRemoved::order_id, Eq(OrderId{123}))))));
+                  Field(&OrderRemoved::order_id, Eq(OrderId{1}))))));
+  EXPECT_CALL(event_listener,
+              on(IsOrderBookNotification(VariantWith<OrderRemoved>(
+                  Field(&OrderRemoved::order_id, Eq(OrderId{2}))))));
 
   eliminator(order_book);
 }
+
+TEST_F(MatchingEngineAllOrdersElimination,
+       EmitsOrderRemovedNotificationForEliminatedTradeAtLastOrder) {
+  rest_trade_at_last_order(OrderId{1}, Side::Option::Buy);
+  rest_trade_at_last_order(OrderId{2}, Side::Option::Sell);
+
+  EXPECT_CALL(event_listener,
+              on(IsOrderBookNotification(VariantWith<OrderRemoved>(
+                  Field(&OrderRemoved::order_id, Eq(OrderId{1}))))));
+  EXPECT_CALL(event_listener,
+              on(IsOrderBookNotification(VariantWith<OrderRemoved>(
+                  Field(&OrderRemoved::order_id, Eq(OrderId{2}))))));
+
+  eliminator(order_book);
+}
+
+TEST_F(MatchingEngineAllOrdersElimination,
+       EmitsOrderRemovedNotificationForEliminatedRestingMarketOrder) {
+  rest_market_order(OrderId{1}, Side::Option::Buy);
+  rest_market_order(OrderId{2}, Side::Option::Sell);
+
+  EXPECT_CALL(event_listener,
+              on(IsOrderBookNotification(VariantWith<OrderRemoved>(
+                  Field(&OrderRemoved::order_id, Eq(OrderId{1}))))));
+  EXPECT_CALL(event_listener,
+              on(IsOrderBookNotification(VariantWith<OrderRemoved>(
+                  Field(&OrderRemoved::order_id, Eq(OrderId{2}))))));
+
+  eliminator(order_book);
+}
+
+TEST_F(MatchingEngineAllOrdersElimination,
+       DoesNotReportEliminatedOrdersToClients) {
+  rest_limit_order(OrderId{1}, Side::Option::Buy);
+  rest_trade_at_last_order(OrderId{2}, Side::Option::Buy);
+  rest_market_order(OrderId{3}, Side::Option::Sell);
+
+  EXPECT_CALL(event_listener, on(IsClientNotification(_))).Times(0);
+
+  eliminator(order_book);
+}
+
+// NOLINTEND(*magic-numbers*)
 
 }  // namespace
 }  // namespace simulator::trading_system::matching_engine::order::test

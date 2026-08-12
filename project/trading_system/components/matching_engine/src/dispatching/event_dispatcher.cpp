@@ -23,6 +23,18 @@ auto EventDispatcher::on_client_notification(ClientNotificationHandler handler)
       "an uninitialized ClientNotificationHandler");
 }
 
+auto EventDispatcher::on_client_notification_flush(
+    ClientNotificationFlushHandler handler) -> EventDispatcher& {
+  if (handler) [[likely]] {
+    client_notification_flush_handler_ = std::move(handler);
+    return *this;
+  }
+
+  throw std::invalid_argument(
+      "EventDispatcher can not accept "
+      "an uninitialized ClientNotificationFlushHandler");
+}
+
 auto EventDispatcher::on_order_book_notification(
     OrderBookNotificationHandler handler) -> EventDispatcher& {
   if (handler) [[likely]] {
@@ -52,6 +64,19 @@ auto EventDispatcher::dispatch(ClientNotification notification) -> void {
 
   log::warn(
       "cannot dispatch a ClientNotification, no handler is registered to "
+      "handle such events");
+}
+
+auto EventDispatcher::dispatch(ClientNotificationFlush /*flush*/) -> void {
+  log::debug("dispatching a ClientNotificationFlush");
+
+  if (client_notification_flush_handler_) [[likely]] {
+    client_notification_flush_handler_();
+    return;
+  }
+
+  log::warn(
+      "cannot dispatch a ClientNotificationFlush, no handler is registered to "
       "handle such events");
 }
 

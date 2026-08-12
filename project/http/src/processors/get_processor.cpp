@@ -1,15 +1,24 @@
 #include "ih/processors/get_processor.hpp"
 
 #include <fmt/format.h>
+#include <httplib.h>
 #include <pistache/http_defs.h>
 #include <pistache/router.h>
 
 #include <cassert>
+#include <filesystem>
+#include <memory>
+#include <optional>
 #include <regex>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "ih/endpoint.hpp"
+#include "ih/headers/content_disposition_attachment.hpp"
 #include "ih/marshalling/json/venue.hpp"
+#include "ih/utils/compression.hpp"
+#include "ih/utils/path.hpp"
 #include "ih/utils/response_formatters.hpp"
 #include "log/logging.hpp"
 #include "middleware/routing/generator_admin_channel.hpp"
@@ -25,7 +34,8 @@ GetProcessorImpl::GetProcessorImpl(
     std::shared_ptr<PriceSeedController> price_seed_controller,
     std::shared_ptr<SettingController> setting_controller,
     std::shared_ptr<VenueController> venue_controller,
-    std::string venue_name)
+    std::shared_ptr<ConfigProvider> config_provider,
+    std::shared_ptr<FixSessionController> fix_session_controller)
     : redirector_{std::move(redirector)},
       venue_accessor_{std::move(venue_accessor)},
       datasource_controller_{std::move(datasource_controller)},
@@ -33,7 +43,8 @@ GetProcessorImpl::GetProcessorImpl(
       price_seed_controller_{std::move(price_seed_controller)},
       setting_controller_{std::move(setting_controller)},
       venue_controller_{std::move(venue_controller)},
-      venue_id_{std::move(venue_name)} {}
+      config_provider_{std::move(config_provider)},
+      fix_session_controller_{std::move(fix_session_controller)} {}
 
 auto GetProcessorImpl::get_venue(const Pistache::Rest::Request& request,
                                  Pistache::Http::ResponseWriter response)
@@ -52,6 +63,59 @@ auto GetProcessorImpl::get_venues(const Pistache::Rest::Request& request,
 
   auto [code, body] = venue_controller_->select_all_venues();
   respond(request, response, code, body);
+}
+
+auto GetProcessorImpl::get_data_dictionaries(
+    const Pistache::Rest::Request& request,
+    Pistache::Http::ResponseWriter response) -> void {
+  const auto venue_id = httplib::detail::decode_url(
+      request.param(":venueId").as<std::string>(), false);
+  const auto session_id = httplib::detail::decode_url(
+      request.param(":sessionId").as<std::string>(), false);
+  log::info("requested data dictionaries for venue '{}' session '{}'",
+            venue_id,
+            session_id);
+
+  if (venue_id != config_provider_->venue_id()) {
+    const auto redirect_response = redirect(request, venue_id);
+    relay_data_dictionaries(response, redirect_response, venue_id, session_id);
+    return;
+  }
+
+  const auto dictionaries = collect_session_dictionaries(
+      config_provider_->session_settings(), session_id);
+  if (!dictionaries.has_value()) {
+    respond(request,
+            response,
+            Pistache::Http::Code::Not_Found,
+            format_result_response(
+                "Can not resolve a single session by a given session ID"));
+    return;
+  }
+
+  try {
+    const auto archive =
+        compress_files_to_zip(build_zip_entries(dictionaries.value()));
+
+    response.headers().add(std::make_shared<ContentDispositionAttachment>(
+        make_dictionaries_filename(venue_id, session_id)));
+    response.send(
+        Pistache::Http::Code::Ok,
+        archive,
+        Pistache::Http::Mime::MediaType::fromString("application/zip"));
+  } catch (const std::exception& exception) {
+    log::err(
+        "failed to build data dictionaries archive for venue '{}' session "
+        "'{}': {}",
+        venue_id,
+        session_id,
+        exception.what());
+    respond(
+        request,
+        response,
+        Pistache::Http::Code::Internal_Server_Error,
+        format_result_response("Failed to build data dictionaries archive"));
+  }
 }
 
 auto GetProcessorImpl::get_listing(const Pistache::Rest::Request& request,
@@ -120,7 +184,7 @@ auto GetProcessorImpl::get_venue_status(const Pistache::Rest::Request& request,
                       : std::string{};
 
   if (venue_id.empty()) {
-    venue_id = venue_id_;
+    venue_id = config_provider_->venue_id();
     log::info("requested status of current venue - {}", venue_id);
   } else {
     log::info("requested status of venue - {}", venue_id);
@@ -131,10 +195,8 @@ auto GetProcessorImpl::get_venue_status(const Pistache::Rest::Request& request,
 
   const auto result = venue_accessor_->select_single(venue_id);
   if (result) {
-    bool available = false;
-    response_body = get_venue_status_str(result.value(), true, available);
-    response_code = available ? Pistache::Http::Code::Ok
-                              : Pistache::Http::Code::Service_Unavailable;
+    response_body = get_venue_status_str(result.value());
+    response_code = Pistache::Http::Code::Ok;
   } else {
     response_code = Pistache::Http::Code::Service_Unavailable;
     response_body = format_result_response("failed to select venue");
@@ -150,7 +212,6 @@ auto GetProcessorImpl::get_all_venues_status(
 
   Pistache::Http::Code response_code{};
   std::string response_body;
-  bool available = false;
 
   const auto result = venue_accessor_->select_all();
   if (!result) {
@@ -164,7 +225,7 @@ auto GetProcessorImpl::get_all_venues_status(
     if (!response_body.empty()) {
       response_body.append(",");
     }
-    response_body.append(get_venue_status_str(venue, true, available));
+    response_body.append(get_venue_status_str(venue));
   }
 
   response_code = Pistache::Http::Code::Ok;
@@ -174,28 +235,28 @@ auto GetProcessorImpl::get_all_venues_status(
   respond(request, response, response_code, response_body);
 }
 
-auto GetProcessorImpl::get_venue_status_str(const data_layer::Venue& venue,
-                                            bool send_response_code,
-                                            bool& available) const
-    -> std::string {
-  available = false;
+auto GetProcessorImpl::get_venue_status_str(
+    const data_layer::Venue& venue) const -> std::string {
   const auto& venue_id = venue.venue_id();
 
-  if (venue_id == venue_id_) {
-    available = true;
-  } else {
-    auto result = redirector_->redirect_to_venue(
-        venue_id,
-        Pistache::Http::Method::Get,
-        fmt::format(endpoint::VenueStatusByVenueIdFmt, venue_id));
-    available = result.http_code() == Pistache::Http::Code::Ok;
+  if (venue_id == config_provider_->venue_id()) {
+    return format_current_venue_status(venue,
+                                       Pistache::Http::Code::Ok,
+                                       *config_provider_,
+                                       fix_session_controller_->sessions());
   }
 
-  const auto response_code = available
-                                 ? Pistache::Http::Code::Ok
-                                 : Pistache::Http::Code::Service_Unavailable;
-  return format_venue_status(
-      venue, send_response_code ? static_cast<int>(response_code) : 0);
+  auto result = redirector_->redirect_to_venue(
+      venue_id,
+      Pistache::Http::Method::Get,
+      fmt::format(endpoint::VenueStatusByVenueIdFmt, venue_id),
+      std::nullopt);
+  const auto& response_code = result.http_code();
+  if (response_code != Pistache::Http::Code::Ok) {
+    return format_venue_status(venue, response_code);
+  }
+
+  return result.body_content();
 }
 
 auto GetProcessorImpl::get_settings(
@@ -215,7 +276,7 @@ auto GetProcessorImpl::get_order_gen_status(
                       : std::string{};
 
   if (venue_id.empty()) {
-    venue_id = venue_id_;
+    venue_id = config_provider_->venue_id();
     log::info(
         "received request to retrieve random order generator status for "
         "current venue - {}",
@@ -227,7 +288,7 @@ auto GetProcessorImpl::get_order_gen_status(
         venue_id);
   }
 
-  if (venue_id == venue_id_) {
+  if (venue_id == config_provider_->venue_id()) {
     handle_generation_status_request(request, std::move(response));
   } else {
     const auto redirect_response = redirect(request, venue_id);
@@ -282,12 +343,32 @@ auto GetProcessorImpl::respond(const Pistache::Rest::Request& request,
   response.send(code, body);
 }
 
+auto GetProcessorImpl::relay_data_dictionaries(
+    Pistache::Http::ResponseWriter& response,
+    const redirect::Result& result,
+    const std::string& venue_id,
+    const std::string& session_id) -> void {
+  const auto code = result.http_code();
+
+  if (code != Pistache::Http::Code::Ok) {
+    response.send(code, result.body_content());
+    return;
+  }
+
+  // redirection does not transfer HTTP headers
+  response.headers().add(std::make_shared<ContentDispositionAttachment>(
+      make_dictionaries_filename(venue_id, session_id)));
+  response.send(code,
+                result.body_content(),
+                Pistache::Http::Mime::MediaType::fromString("application/zip"));
+}
+
 auto GetProcessorImpl::redirect(const Pistache::Rest::Request& request,
                                 const std::string& instance_id) const
     -> redirect::Result {
   assert(redirector_);
   return redirector_->redirect_to_venue(
-      instance_id, request.method(), request.resource());
+      instance_id, request.method(), request.resource(), std::nullopt);
 }
 
 }  // namespace simulator::http
