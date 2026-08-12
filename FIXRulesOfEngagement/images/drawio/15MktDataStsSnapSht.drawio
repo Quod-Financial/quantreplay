@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="ac.draw.io" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0.1 Safari/605.1.15">
+  <diagram id="wuMlxbyARwVTjqI8oPoa" name="Page-1">
+    <mxGraphModel dx="1380" dy="919" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="EhkauCSR625KtvPma76S-1" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};fillColor=#dae8fc;strokeColor=#000000;" value="Client App" vertex="1">
+          <mxGeometry height="140" width="100" x="170" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="EhkauCSR625KtvPma76S-2" parent="EhkauCSR625KtvPma76S-1" style="html=1;points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};fillColor=#dae8fc;strokeColor=default;" value="" vertex="1">
+          <mxGeometry height="40" width="10" x="45" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="EhkauCSR625KtvPma76S-3" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};fillColor=#dae8fc;strokeColor=#000000;" value="Market Simulator" vertex="1">
+          <mxGeometry height="140" width="100" x="570" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="EhkauCSR625KtvPma76S-4" parent="EhkauCSR625KtvPma76S-3" style="html=1;points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};fillColor=#dae8fc;strokeColor=default;" value="" vertex="1">
+          <mxGeometry height="40" width="10" x="45" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="EhkauCSR625KtvPma76S-5" edge="1" parent="1" source="EhkauCSR625KtvPma76S-2" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" target="EhkauCSR625KtvPma76S-4" value="SecurityStatusRequest (35=e)&lt;div&gt;SubscriptionRequestType=Snapshot (263=0)&lt;/div&gt;">
+          <mxGeometry relative="1" x="0.0051" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="360" y="170" />
+            </Array>
+            <mxPoint x="375" y="180" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="EhkauCSR625KtvPma76S-6" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" value="SecurityStatus (35=f)">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="500" y="210" />
+              <mxPoint x="370" y="200" />
+            </Array>
+            <mxPoint x="615" y="210" as="sourcePoint" />
+            <mxPoint x="225" y="210" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
