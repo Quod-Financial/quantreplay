@@ -25,6 +25,7 @@ constexpr std::string_view OpeningAuction{"PreOpen"};
 constexpr std::string_view ClosingAuction{"PreClose"};
 constexpr std::string_view IntradayAuction{"Auction"};
 constexpr std::string_view Halted{"Halted"};
+constexpr std::string_view TradeAtLast{"TradeAtLast"};
 
 }  // namespace market_phase_type
 

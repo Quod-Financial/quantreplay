@@ -94,35 +94,35 @@ auto make_making_order_reduced_notification(const LimitOrder& maker)
 auto make_trade_notification(const LimitOrder& taker,
                              const LimitOrder& maker,
                              ExecutionPrice trade_price,
-                             ExecutedQuantity traded_quantity)
+                             ExecutedQuantity traded_quantity,
+                             MarketPhase market_phase)
     -> OrderBookNotification {
   auto [buyer, seller] = get_buyer_seller(taker, maker);
-  return OrderBookNotification(Trade{
-      .buyer = std::move(buyer),
-      .seller = std::move(seller),
-      .trade_price = static_cast<Price>(trade_price),
-      .traded_quantity = static_cast<Quantity>(traded_quantity),
-      .aggressor_side = AggressorSide{taker.side()},
-      .trade_time = core::get_current_system_time(),
-      .market_phase =
-          MarketPhase::open()});  // The "Open" phase is hardcoded for now.
+  return OrderBookNotification(
+      Trade{.buyer = std::move(buyer),
+            .seller = std::move(seller),
+            .trade_price = static_cast<Price>(trade_price),
+            .traded_quantity = static_cast<Quantity>(traded_quantity),
+            .aggressor_side = AggressorSide{taker.side()},
+            .trade_time = core::get_current_system_time(),
+            .market_phase = market_phase});
 }
 
 auto make_trade_notification(const MarketOrder& taker,
                              const LimitOrder& maker,
                              ExecutionPrice trade_price,
-                             ExecutedQuantity traded_quantity)
+                             ExecutedQuantity traded_quantity,
+                             MarketPhase market_phase)
     -> OrderBookNotification {
   auto [buyer, seller] = get_buyer_seller(taker, maker);
-  return OrderBookNotification(Trade{
-      .buyer = std::move(buyer),
-      .seller = std::move(seller),
-      .trade_price = static_cast<Price>(trade_price),
-      .traded_quantity = static_cast<Quantity>(traded_quantity),
-      .aggressor_side = AggressorSide{taker.side()},
-      .trade_time = core::get_current_system_time(),
-      .market_phase =
-          MarketPhase::open()});  // The "Open" phase is hardcoded for now.
+  return OrderBookNotification(
+      Trade{.buyer = std::move(buyer),
+            .seller = std::move(seller),
+            .trade_price = static_cast<Price>(trade_price),
+            .traded_quantity = static_cast<Quantity>(traded_quantity),
+            .aggressor_side = AggressorSide{taker.side()},
+            .trade_time = core::get_current_system_time(),
+            .market_phase = market_phase});
 }
 
 }  // namespace simulator::trading_system::matching_engine::order

@@ -35,6 +35,18 @@ auto setup_client_request_validator(const Configuration& configuration)
 }
 
 [[nodiscard]]
+auto resolve_action_mode(const order::PhaseHandler& phase_handler)
+    -> OrderActionMode {
+  if (phase_handler.in_auction_call()) {
+    return OrderActionMode::AuctionCall;
+  }
+  if (phase_handler.in_trade_at_last()) {
+    return OrderActionMode::TradeAtLast;
+  }
+  return OrderActionMode::Regular;
+}
+
+[[nodiscard]]
 auto resolve_reference_price(TradingPhase phase,
                              const AuctionReferencePriceProvider& provider)
     -> std::optional<Price> {
@@ -85,23 +97,21 @@ auto OrderSystemFacade::process(const protocol::OrderPlacementRequest& request)
   }
 
   PlacementInterpreter interpreter(std::invoke(*order_id_generator_));
-  const auto mode = phase_handler_.in_auction_call()
-                        ? OrderActionMode::AuctionCall
-                        : OrderActionMode::Regular;
+  const auto context = make_action_context();
   const auto book_dispatcher = core::overload(
       [&](LimitOrder order) -> OrderBookUpdates {
         return place_limit_order(*event_listener_,
                                  *depr_order_book_,
                                  configuration_.order_price_tick,
                                  std::move(order),
-                                 mode);
+                                 context);
       },
       [&](MarketOrder order) -> OrderBookUpdates {
         return place_market_order(*event_listener_,
                                   *depr_order_book_,
                                   configuration_.order_price_tick,
                                   std::move(order),
-                                  mode);
+                                  context);
       },
       [&](OrderRequestError error) -> OrderBookUpdates {
         reject_notifier_->notify_rejected(request, describe(error));
@@ -120,15 +130,14 @@ auto OrderSystemFacade::process(
 
   ModificationInterpreter interpreter;
   const auto in_auction_call = phase_handler_.in_auction_call();
-  const auto mode =
-      in_auction_call ? OrderActionMode::AuctionCall : OrderActionMode::Regular;
+  const auto context = make_action_context();
   const auto dispatcher = core::overload(
       [&](LimitUpdate update) -> OrderBookUpdates {
         return amend_limit_order(*event_listener_,
                                  *depr_order_book_,
                                  configuration_.order_price_tick,
                                  std::move(update),
-                                 mode);
+                                 context);
       },
       [&](MarketUpdate update) -> OrderBookUpdates {
         return amend_market_order(*event_listener_,
@@ -152,12 +161,14 @@ auto OrderSystemFacade::process(
   }
 
   CancellationInterpreter interpreter;
+  const auto context = make_action_context();
   const auto dispatcher = core::overload(
       [&](const OrderCancel& cancel) -> OrderBookUpdates {
         return cancel_order(*event_listener_,
                             *depr_order_book_,
                             configuration_.order_price_tick,
-                            cancel);
+                            cancel,
+                            context);
       },
       [&](OrderRequestError error) -> OrderBookUpdates {
         reject_notifier_->notify_rejected(request, describe(error));
@@ -272,6 +283,15 @@ auto OrderSystemFacade::reject_on_halt(
          !halt_not_closed_phase_setting_.allow_cancels;
 }
 
+auto OrderSystemFacade::make_action_context() const -> OrderActionContext {
+  const auto mode = resolve_action_mode(phase_handler_);
+  return {.mode = mode,
+          .market_phase = phase_handler_.current_phase(),
+          .closing_price = mode == OrderActionMode::TradeAtLast
+                               ? reference_price_provider_->closing_price()
+                               : std::nullopt};
+}
+
 auto OrderSystemFacade::refresh_auction_indicative(
     const OrderBookUpdates& updates) -> void {
   if (!phase_handler_.in_auction_call()) {
@@ -294,9 +314,16 @@ auto OrderSystemFacade::handle(const event::Tick& tick) -> void {
 
 auto OrderSystemFacade::handle(const event::PhaseTransition& phase_transition)
     -> PhaseTransitionOutcome {
+  const bool was_trade_at_last = phase_handler_.in_trade_at_last();
   const bool phase_changed = phase_handler_.handle(phase_transition);
   halt_not_closed_phase_setting_ = phase_transition.phase.settings().value_or(
       Phase::Settings{.allow_cancels = false});
+
+  if (was_trade_at_last && !phase_handler_.in_trade_at_last()) {
+    order::TradeAtLastElimination eliminator(*event_listener_,
+                                             configuration_.order_price_tick);
+    eliminator(*depr_order_book_);
+  }
 
   if (phase_handler_.in_closed_phase()) {
     order::ClosedPhaseElimination eliminator(*event_listener_,

@@ -122,6 +122,9 @@ auto EnumerationResolver::to_string(MarketPhase::Phase value) -> std::string {
     case MarketPhase::Phase::Halted:
       string = internal_pqxx::market_phase_type::Halted;
       break;
+    case MarketPhase::Phase::TradeAtLast:
+      string = internal_pqxx::market_phase_type::TradeAtLast;
+      break;
   }
 
   if (!string.empty()) {
@@ -144,6 +147,8 @@ auto EnumerationResolver::from_string(std::string_view string,
     value = MarketPhase::Phase::IntradayAuction;
   } else if (string == market_phase_type::Halted) {
     value = MarketPhase::Phase::Halted;
+  } else if (string == market_phase_type::TradeAtLast) {
+    value = MarketPhase::Phase::TradeAtLast;
   } else {
     throw EnumDecodingError("MarketPhase::Phase", string);
   }

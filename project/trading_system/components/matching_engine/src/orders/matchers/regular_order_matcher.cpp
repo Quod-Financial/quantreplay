@@ -16,10 +16,14 @@ namespace simulator::trading_system::matching_engine {
 
 RegularOrderMatcher::RegularOrderMatcher(EventListener& event_listener,
                                          OrderBook& order_book,
-                                         std::optional<PriceTick> price_tick)
+                                         std::optional<PriceTick> price_tick,
+                                         MarketPhase market_phase,
+                                         LimitOrderQueue queue)
     : EventReporter{event_listener},
       order_book_{order_book},
-      price_tick_{price_tick} {}
+      price_tick_{price_tick},
+      market_phase_{market_phase},
+      queue_{queue} {}
 
 auto RegularOrderMatcher::match(LimitOrder& taker) -> void {
   log::debug("matching: {}", taker);
@@ -123,7 +127,8 @@ auto RegularOrderMatcher::trade_taker(LimitOrder& taker,
             .build()));
 
     emit(order::make_making_order_reduced_notification(*maker));
-    emit(order::make_trade_notification(taker, *maker, trade_px, trade_qty));
+    emit(order::make_trade_notification(
+        taker, *maker, trade_px, trade_qty, market_phase_));
   }
 }
 
@@ -168,7 +173,8 @@ auto RegularOrderMatcher::trade_ioc_taker(
             .build()));
 
     emit(order::make_making_order_reduced_notification(*maker));
-    emit(order::make_trade_notification(taker, *maker, trade_px, trade_qty));
+    emit(order::make_trade_notification(
+        taker, *maker, trade_px, trade_qty, market_phase_));
   }
 
   if (!taker.executed()) {
@@ -226,7 +232,8 @@ auto RegularOrderMatcher::trade_market_taker(
             .build()));
 
     emit(order::make_making_order_reduced_notification(*maker));
-    emit(order::make_trade_notification(taker, *maker, trade_px, trade_qty));
+    emit(order::make_trade_notification(
+        taker, *maker, trade_px, trade_qty, market_phase_));
   }
 
   if (!taker.executed()) {
@@ -246,11 +253,11 @@ auto RegularOrderMatcher::take_opposite_limit_orders(Side aggressor_side)
     -> LimitOrdersContainer& {
   switch (static_cast<Side::Option>(aggressor_side)) {
     case Side::Option::Buy:
-      return order_book_.sell_page().limit_orders();
+      return select_limit_orders(order_book_.sell_page(), queue_);
     case Side::Option::Sell:
     case Side::Option::SellShort:
     case Side::Option::SellShortExempt:
-      return order_book_.buy_page().limit_orders();
+      return select_limit_orders(order_book_.buy_page(), queue_);
   }
 
   core::unreachable();

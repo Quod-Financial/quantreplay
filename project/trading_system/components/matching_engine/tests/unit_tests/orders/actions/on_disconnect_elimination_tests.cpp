@@ -95,6 +95,21 @@ TEST_F(MatchingEngineOnDisconnectElimination,
 }
 
 TEST_F(MatchingEngineOnDisconnectElimination,
+       DoesNotEliminateTradeAtLastOrderFromConnectedSession) {
+  order_book.buy_page().trade_at_last_orders().emplace(
+      builder.with_side(Side{Side::Option::Buy})
+          .with_time_in_force(TimeInForce::Option::Day)
+          .with_client_session(ConnectedSession)
+          .build_limit_order());
+
+  const auto eliminator = make_eliminator();
+
+  eliminator(order_book);
+
+  ASSERT_FALSE(order_book.buy_page().trade_at_last_orders().empty());
+}
+
+TEST_F(MatchingEngineOnDisconnectElimination,
        EliminatesBuyDayOrdersFromDisconnectedSession) {
   order_book.buy_page().limit_orders().emplace(
       builder.with_side(Side{Side::Option::Buy})
@@ -122,6 +137,36 @@ TEST_F(MatchingEngineOnDisconnectElimination,
   eliminator(order_book);
 
   ASSERT_TRUE(order_book.sell_page().limit_orders().empty());
+}
+
+TEST_F(MatchingEngineOnDisconnectElimination,
+       EliminatesBuyTradeAtLastOrdersFromDisconnectedSession) {
+  order_book.buy_page().trade_at_last_orders().emplace(
+      builder.with_side(Side{Side::Option::Buy})
+          .with_time_in_force(TimeInForce::Option::Day)
+          .with_client_session(DisconnectedSession)
+          .build_limit_order());
+
+  const auto eliminator = make_eliminator();
+
+  eliminator(order_book);
+
+  ASSERT_TRUE(order_book.buy_page().trade_at_last_orders().empty());
+}
+
+TEST_F(MatchingEngineOnDisconnectElimination,
+       EliminatesSellTradeAtLastOrdersFromDisconnectedSession) {
+  order_book.sell_page().trade_at_last_orders().emplace(
+      builder.with_side(Side{Side::Option::Sell})
+          .with_time_in_force(TimeInForce::Option::Day)
+          .with_client_session(DisconnectedSession)
+          .build_limit_order());
+
+  const auto eliminator = make_eliminator();
+
+  eliminator(order_book);
+
+  ASSERT_TRUE(order_book.sell_page().trade_at_last_orders().empty());
 }
 
 TEST_F(MatchingEngineOnDisconnectElimination,

@@ -33,6 +33,16 @@ auto fallback_open_phase() -> Phase {
   return {TradingPhase::Option::Open, TradingStatus::Option::Resume, {}};
 }
 
+auto has_requested_halt(const State& state) -> bool {
+  if (const auto* open = std::get_if<OpenState>(&state)) {
+    return open->halted_by_request();
+  }
+  if (const auto* trade_at_last = std::get_if<TradeAtLastState>(&state)) {
+    return trade_at_last->halted_by_request();
+  }
+  return false;
+}
+
 }  // namespace
 
 auto TradingPhaseController::set_tz_clock(const core::TzClock& tz_clock)
@@ -187,9 +197,7 @@ auto TradingPhaseController::activate_auction(const ScheduledPhase& scheduled,
   }
   const auto& timing = *scheduled.auction;
 
-  if (const auto* open =
-          active_state_ ? std::get_if<OpenState>(&*active_state_) : nullptr;
-      open != nullptr && open->halted_by_request()) {
+  if (active_state_ && has_requested_halt(*active_state_)) {
     log::info(
         "overriding an active request-initiated halt to start the '{}' auction "
         "phase",

@@ -25,7 +25,8 @@ struct MatchingEngineCancellation : public Test {
   NiceMock<EventListenerMock> event_listener;
   OrderBuilder builder;
   OrderBook order_book;
-  Cancellation cancellation{event_listener, order_book, std::nullopt};
+  Cancellation cancellation{
+      event_listener, order_book, std::nullopt, LimitOrderQueue::Regular};
 
   const protocol::Session client_session{protocol::generator::Session{}};
 
@@ -333,6 +334,119 @@ TEST_F(MatchingEngineCancellation, ReturnsRemoveUpdateForCancelledLimitOrder) {
                                   .action = OrderBookUpdate::Action::Remove,
                                   .price = order.price(),
                                   .quantity = order.leaves_quantity()}));
+}
+
+TEST_F(MatchingEngineCancellation,
+       RejectsCancellationOfAnOrderRestingInTheTradeAtLastQueue) {
+  order_book.take_page(Side::Option::Buy)
+      .trade_at_last_orders()
+      .emplace(builder.with_order_id(OrderId{123})
+                   .with_side(Side::Option::Buy)
+                   .build_limit_order());
+
+  EXPECT_CALL(
+      event_listener,
+      on(IsClientNotification(VariantWith<protocol::OrderCancellationReject>(
+          Field(&protocol::OrderCancellationReject::reject_text,
+                Optional(Eq(RejectText{"order not found"})))))));
+
+  cancellation(cancel_by_order_id(Side::Option::Buy, OrderId{123}));
+
+  ASSERT_THAT(order_book.buy_page().trade_at_last_orders(), SizeIs(1));
+}
+
+struct MatchingEngineTradeAtLastCancellation : public Test {
+  MatchingEngineTradeAtLastCancellation() {
+    EXPECT_CALL(event_listener, on(_)).Times(AnyNumber());
+  }
+
+  auto rest_trade_at_last(const LimitOrder& order) -> void {
+    order_book.take_page(order.side()).trade_at_last_orders().emplace(order);
+  }
+
+  auto rest_regular(const LimitOrder& order) -> void {
+    order_book.take_page(order.side()).limit_orders().emplace(order);
+  }
+
+  auto identifiable_order() const -> OrderBuilder {
+    return OrderBuilder{}
+        .with_order_id(OrderId{123})
+        .with_side(Side::Option::Buy)
+        .with_client_session(client_session)
+        .with_client_order_id(ClientOrderId{"CL-1"});
+  }
+
+  auto make_cancel() const -> OrderCancel {
+    OrderCancel cancel{client_session, Side::Option::Buy};
+    cancel.order_id = OrderId{123};
+    return cancel;
+  }
+
+  NiceMock<EventListenerMock> event_listener;
+  OrderBook order_book;
+  Cancellation cancellation{
+      event_listener, order_book, std::nullopt, LimitOrderQueue::TradeAtLast};
+
+  const protocol::Session client_session{protocol::generator::Session{}};
+};
+
+TEST_F(MatchingEngineTradeAtLastCancellation,
+       RejectsCancellationOfAnOrderRestingInTheRegularQueue) {
+  rest_regular(identifiable_order().build_limit_order());
+
+  EXPECT_CALL(
+      event_listener,
+      on(IsClientNotification(VariantWith<protocol::OrderCancellationReject>(
+          Field(&protocol::OrderCancellationReject::reject_text,
+                Optional(Eq(RejectText{"order not found"})))))));
+
+  cancellation(make_cancel());
+
+  ASSERT_THAT(order_book.buy_page().limit_orders(), SizeIs(1));
+}
+
+TEST_F(MatchingEngineTradeAtLastCancellation,
+       EmitsCancellationConfirmationForTradeAtLastOrder) {
+  rest_trade_at_last(identifiable_order().build_limit_order());
+
+  EXPECT_CALL(event_listener,
+              on(IsClientNotification(
+                  VariantWith<protocol::OrderCancellationConfirmation>(Field(
+                      &protocol::OrderCancellationConfirmation::order_status,
+                      Optional(Eq(OrderStatus::Option::Cancelled)))))));
+
+  cancellation(make_cancel());
+}
+
+TEST_F(MatchingEngineTradeAtLastCancellation,
+       RemovesTradeAtLastOrderResolvedByOrderId) {
+  rest_trade_at_last(identifiable_order().build_limit_order());
+
+  cancellation(make_cancel());
+
+  ASSERT_THAT(order_book.buy_page().trade_at_last_orders(), IsEmpty());
+}
+
+TEST_F(MatchingEngineTradeAtLastCancellation,
+       RemovesTradeAtLastOrderResolvedByClientOrderId) {
+  rest_trade_at_last(identifiable_order().build_limit_order());
+
+  OrderCancel cancel{client_session, Side::Option::Buy};
+  cancel.client_order_id = ClientOrderId{"CL-1"};
+  cancellation(cancel);
+
+  ASSERT_THAT(order_book.buy_page().trade_at_last_orders(), IsEmpty());
+}
+
+TEST_F(MatchingEngineTradeAtLastCancellation,
+       RemovesTradeAtLastOrderResolvedByOrigClientOrderId) {
+  rest_trade_at_last(identifiable_order().build_limit_order());
+
+  OrderCancel cancel{client_session, Side::Option::Buy};
+  cancel.orig_client_order_id = OrigClientOrderId{"CL-1"};
+  cancellation(cancel);
+
+  ASSERT_THAT(order_book.buy_page().trade_at_last_orders(), IsEmpty());
 }
 
 // NOLINTEND(*magic-numbers*)

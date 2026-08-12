@@ -16,7 +16,8 @@ class Cancellation : private EventReporter {
  public:
   Cancellation(EventListener& event_listener,
                OrderBook& order_book,
-               std::optional<PriceTick> price_tick);
+               std::optional<PriceTick> price_tick,
+               LimitOrderQueue queue);
 
   Cancellation(const Cancellation&) = default;
   Cancellation(Cancellation&&) = default;
@@ -31,12 +32,13 @@ class Cancellation : private EventReporter {
   auto cancel_order(const OrderCancel& cancel, OrderPage& page)
       -> OrderBookUpdates;
 
-  template <typename Order>
-  auto try_cancel(const OrderCancel& cancel, OrderPage& page)
+  template <typename Container>
+  auto try_cancel(const OrderCancel& cancel, Container& orders)
       -> std::optional<OrderBookUpdate>;
 
   OrderBook& order_book_;
   std::optional<PriceTick> price_tick_;
+  LimitOrderQueue queue_;
 };
 
 }  // namespace simulator::trading_system::matching_engine

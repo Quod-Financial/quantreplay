@@ -221,8 +221,11 @@ TEST_F(OrderBookNotificationTradeFromLimitOrdersCreation,
   const auto taker = builder.build_limit_order();
   const auto maker = builder.build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   ASSERT_THAT(notification.value, VariantWith<Trade>(_));
 }
@@ -236,8 +239,11 @@ TEST_F(OrderBookNotificationTradeFromLimitOrdersCreation,
                          .with_side(Side::Option::Sell)
                          .build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_EQ(trade.buyer->value(), taker_party.party_id().value());
@@ -252,8 +258,11 @@ TEST_F(OrderBookNotificationTradeFromLimitOrdersCreation,
                          .with_side(Side::Option::Buy)
                          .build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_EQ(trade.buyer->value(), maker_party.party_id().value());
@@ -268,8 +277,11 @@ TEST_F(OrderBookNotificationTradeFromLimitOrdersCreation,
                          .with_side(Side::Option::Sell)
                          .build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_EQ(trade.seller->value(), maker_party.party_id().value());
@@ -284,8 +296,11 @@ TEST_F(OrderBookNotificationTradeFromLimitOrdersCreation,
                          .with_side(Side::Option::Buy)
                          .build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_EQ(trade.seller->value(), taker_party.party_id().value());
@@ -303,8 +318,11 @@ TEST_F(OrderBookNotificationTradeFromLimitOrdersCreation,
                          .with_side(Side::Option::Sell)
                          .build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_FALSE(trade.buyer.has_value());
@@ -322,8 +340,11 @@ TEST_F(OrderBookNotificationTradeFromLimitOrdersCreation,
                          .with_side(Side::Option::Buy)
                          .build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_FALSE(trade.buyer.has_value());
@@ -341,8 +362,11 @@ TEST_F(OrderBookNotificationTradeFromLimitOrdersCreation,
                          .with_side(Side::Option::Buy)
                          .build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_FALSE(trade.seller.has_value());
@@ -360,8 +384,11 @@ TEST_F(OrderBookNotificationTradeFromLimitOrdersCreation,
                          .with_side(Side::Option::Sell)
                          .build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_FALSE(trade.seller.has_value());
@@ -372,8 +399,11 @@ TEST_F(OrderBookNotificationTradeFromLimitOrdersCreation,
   const auto taker = builder.build_limit_order();
   const auto maker = builder.build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_EQ(trade.trade_price, Price{100});
@@ -384,8 +414,11 @@ TEST_F(OrderBookNotificationTradeFromLimitOrdersCreation,
   const auto taker = builder.build_limit_order();
   const auto maker = builder.build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_EQ(trade.traded_quantity, Quantity{50});
@@ -396,8 +429,11 @@ TEST_F(OrderBookNotificationTradeFromLimitOrdersCreation,
   const auto taker = builder.with_side(Side::Option::Buy).build_limit_order();
   const auto maker = builder.with_side(Side::Option::Sell).build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_EQ(trade.aggressor_side, AggressorSide::Option::Buy);
@@ -407,22 +443,28 @@ TEST_F(OrderBookNotificationTradeFromLimitOrdersCreation, SetsTradeTime) {
   const auto taker = builder.build_limit_order();
   const auto maker = builder.build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_GT(trade.trade_time.time_since_epoch().count(), 0);
 }
 
-TEST_F(OrderBookNotificationTradeFromLimitOrdersCreation, SetsOpenMarketPhase) {
+TEST_F(OrderBookNotificationTradeFromLimitOrdersCreation,
+       SetsGivenMarketPhase) {
+  constexpr MarketPhase phase{TradingPhase::Option::PostTrading,
+                              TradingStatus::Option::Resume};
   const auto taker = builder.build_limit_order();
   const auto maker = builder.build_limit_order();
 
   const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50}, phase);
 
   const auto& trade = std::get<Trade>(notification.value);
-  ASSERT_EQ(trade.market_phase, MarketPhase::open());
+  ASSERT_EQ(trade.market_phase, phase);
 }
 
 struct OrderBookNotificationTradeFromMarketLimitOrdersCreation : public Test {
@@ -441,8 +483,11 @@ TEST_F(OrderBookNotificationTradeFromMarketLimitOrdersCreation,
   const auto taker = builder.build_market_order();
   const auto maker = builder.build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   ASSERT_THAT(notification.value, VariantWith<Trade>(_));
 }
@@ -456,8 +501,11 @@ TEST_F(OrderBookNotificationTradeFromMarketLimitOrdersCreation,
                          .with_side(Side::Option::Sell)
                          .build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_EQ(trade.buyer->value(), taker_party.party_id().value());
@@ -472,8 +520,11 @@ TEST_F(OrderBookNotificationTradeFromMarketLimitOrdersCreation,
                          .with_side(Side::Option::Buy)
                          .build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_EQ(trade.buyer->value(), maker_party.party_id().value());
@@ -488,8 +539,11 @@ TEST_F(OrderBookNotificationTradeFromMarketLimitOrdersCreation,
                          .with_side(Side::Option::Sell)
                          .build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_EQ(trade.seller->value(), maker_party.party_id().value());
@@ -504,8 +558,11 @@ TEST_F(OrderBookNotificationTradeFromMarketLimitOrdersCreation,
                          .with_side(Side::Option::Buy)
                          .build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_EQ(trade.seller->value(), taker_party.party_id().value());
@@ -523,8 +580,11 @@ TEST_F(OrderBookNotificationTradeFromMarketLimitOrdersCreation,
                          .with_side(Side::Option::Sell)
                          .build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_FALSE(trade.buyer.has_value());
@@ -542,8 +602,11 @@ TEST_F(OrderBookNotificationTradeFromMarketLimitOrdersCreation,
                          .with_side(Side::Option::Buy)
                          .build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_FALSE(trade.buyer.has_value());
@@ -561,8 +624,11 @@ TEST_F(OrderBookNotificationTradeFromMarketLimitOrdersCreation,
                          .with_side(Side::Option::Buy)
                          .build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_FALSE(trade.seller.has_value());
@@ -580,8 +646,11 @@ TEST_F(OrderBookNotificationTradeFromMarketLimitOrdersCreation,
                          .with_side(Side::Option::Sell)
                          .build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_FALSE(trade.seller.has_value());
@@ -592,8 +661,11 @@ TEST_F(OrderBookNotificationTradeFromMarketLimitOrdersCreation,
   const auto taker = builder.build_market_order();
   const auto maker = builder.build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_EQ(trade.trade_price, Price{100});
@@ -604,8 +676,11 @@ TEST_F(OrderBookNotificationTradeFromMarketLimitOrdersCreation,
   const auto taker = builder.build_market_order();
   const auto maker = builder.build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_EQ(trade.traded_quantity, Quantity{50});
@@ -616,8 +691,11 @@ TEST_F(OrderBookNotificationTradeFromMarketLimitOrdersCreation,
   const auto taker = builder.with_side(Side::Option::Buy).build_market_order();
   const auto maker = builder.with_side(Side::Option::Sell).build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_EQ(trade.aggressor_side, AggressorSide::Option::Buy);
@@ -627,23 +705,28 @@ TEST_F(OrderBookNotificationTradeFromMarketLimitOrdersCreation, SetsTradeTime) {
   const auto taker = builder.build_market_order();
   const auto maker = builder.build_limit_order();
 
-  const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+  const auto notification = make_trade_notification(taker,
+                                                    maker,
+                                                    ExecutionPrice{100},
+                                                    ExecutedQuantity{50},
+                                                    MarketPhase::open());
 
   const auto& trade = std::get<Trade>(notification.value);
   ASSERT_GT(trade.trade_time.time_since_epoch().count(), 0);
 }
 
 TEST_F(OrderBookNotificationTradeFromMarketLimitOrdersCreation,
-       SetsOpenMarketPhase) {
-  const auto taker = builder.build_limit_order();
+       SetsGivenMarketPhase) {
+  constexpr MarketPhase phase{TradingPhase::Option::PostTrading,
+                              TradingStatus::Option::Resume};
+  const auto taker = builder.build_market_order();
   const auto maker = builder.build_limit_order();
 
   const auto notification = make_trade_notification(
-      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50});
+      taker, maker, ExecutionPrice{100}, ExecutedQuantity{50}, phase);
 
   const auto& trade = std::get<Trade>(notification.value);
-  ASSERT_EQ(trade.market_phase, MarketPhase::open());
+  ASSERT_EQ(trade.market_phase, phase);
 }
 
 struct OrderBookNotificationMarketOrderAddedCreation : public Test {

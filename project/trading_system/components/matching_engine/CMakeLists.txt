@@ -62,6 +62,7 @@ add_static_library(
     ih/orders/actions/regular_amendment.hpp
     ih/orders/actions/regular_placement.hpp
     ih/orders/actions/time_reporter.hpp
+    ih/orders/actions/trade_at_last_actions.hpp
     ih/orders/book/limit_order.hpp
     ih/orders/book/market_order.hpp
     ih/orders/book/order_algorithms.hpp
@@ -128,6 +129,7 @@ add_static_library(
     src/orders/actions/regular_amendment.cpp
     src/orders/actions/regular_placement.cpp
     src/orders/actions/time_reporter.cpp
+    src/orders/actions/trade_at_last_actions.cpp
     src/orders/book/order_book.cpp
     src/orders/book/orders.cpp
     src/orders/matchers/auction_price_calculator.cpp

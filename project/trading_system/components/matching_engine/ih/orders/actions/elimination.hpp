@@ -41,9 +41,10 @@ class AllOrdersElimination : EventReporter {
   auto operator()(OrderBook& book) const -> void;
 
  private:
-  auto eliminate(LimitOrdersContainer& orders) const -> void;
+  auto eliminate(OrderPage& page) const -> void;
 
-  auto eliminate(LimitOrder& order) const -> void;
+  template <typename OrdersContainer>
+  auto eliminate_orders(OrdersContainer& orders) const -> void;
 };
 
 class ClosedPhaseElimination : EventReporter {
@@ -62,6 +63,21 @@ class ClosedPhaseElimination : EventReporter {
   auto eliminate(LimitOrder& order) const -> void;
 
   core::local_days phase_start_date_;
+  std::optional<PriceTick> price_tick_;
+};
+
+class TradeAtLastElimination : EventReporter {
+ public:
+  TradeAtLastElimination(EventListener& event_listener,
+                         std::optional<PriceTick> price_tick);
+
+  auto operator()(OrderBook& book) const -> void;
+
+ private:
+  auto eliminate(LimitOrdersContainer& orders) const -> void;
+
+  auto eliminate(LimitOrder& order) const -> void;
+
   std::optional<PriceTick> price_tick_;
 };
 

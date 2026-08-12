@@ -1,6 +1,7 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_BOOK_ORDER_BOOK_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_BOOK_ORDER_BOOK_HPP_
 
+#include <cstdint>
 #include <vector>
 
 #include "core/domain/attributes.hpp"
@@ -8,6 +9,8 @@
 #include "ih/orders/book/market_order.hpp"
 
 namespace simulator::trading_system::matching_engine {
+
+enum class LimitOrderQueue : std::uint8_t { Regular, TradeAtLast };
 
 class BetterOrderComparator {
  public:
@@ -106,10 +109,21 @@ class OrderPage {
   [[nodiscard]]
   auto market_orders() const -> const MarketOrdersContainer&;
 
+  [[nodiscard]]
+  auto trade_at_last_orders() -> LimitOrdersContainer&;
+
+  [[nodiscard]]
+  auto trade_at_last_orders() const -> const LimitOrdersContainer&;
+
  private:
   LimitOrdersContainer limit_orders_;
+  LimitOrdersContainer trade_at_last_orders_;
   MarketOrdersContainer market_orders_;
 };
+
+[[nodiscard]]
+auto select_limit_orders(OrderPage& page,
+                         LimitOrderQueue queue) -> LimitOrdersContainer&;
 
 class OrderBook {
  public:

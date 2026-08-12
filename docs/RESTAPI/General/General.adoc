@@ -653,6 +653,28 @@ While an auction phase is active (in either sub-phase), halt and resume requests
 
 The precise FIX trading-status and market-data reporting for each sub-phase is described in the FIX Rules of Engagement.
 
+[[general-mktphs-tal]]
+==== Trade At Last Phase
+The TradeAtLast phase is typically scheduled immediately after a closing auction (PreClose) and lets a restricted set of orders trade at the price that auction settled.
+It begins and ends at its configured times and does not use the `endTimeRange` setting; when it follows a closing auction it instead begins as soon as that auction's uncrossing completes (see <<general-mktphs-auction,Auction Phase>>).
+
+While the phase is active, only new limit orders with a Time In Force of Day and a price equal to the current closing price are accepted; every other new order is rejected, market orders included.
+The price traded at is the closing price maintained for the listing: the price settled by the most recent closing auction or, on a venue that schedules no closing auction, the price rolled over from the last trade of the previous day.
+If no closing price has ever been determined, no order is accepted for the whole duration of the phase.
+
+Accepted orders are held in a queue of their own, one per side, in the order they were accepted, and are crossed only against the orders accepted during the same phase: an incoming order is matched against the opposite queue in time priority, and whatever is left of it joins its own queue.
+Since both sides are priced at the closing price, every cross happens at that price.
+The orders already resting in the order book are neither matched nor modified, and are still there when the phase ends.
+
+Only the orders accepted during the phase can be amended and cancelled: a request identifying any other order is rejected as not found and leaves that order untouched, and amended values must satisfy the same rules as a new order.
+When the phase ends, every order still resting in its queues is cancelled and reported to its owner, whichever phase follows.
+
+The phase can be halted and resumed like the Open phase, both on demand and through a scheduled halt (see <<general-mktphs-halt,Phase Halt>>).
+While it is halted, new orders and amends are rejected, and cancels are processed only if allowCancels is set — and then still only for the orders accepted during the phase.
+
+Non-order messages are unaffected: sessions, market data and security status subscriptions and their snapshots work as in any other phase.
+Market data is published on every accepted order action, exactly as during normal trading, and the trades of the phase feed the daily traded volume and the session high and low prices; the details are described in the Market Simulator FIX Rules of Engagement.
+
 [[general-mktphs-halt]]
 ==== Phase Halt
 The halting of a phase is not technically a market phase itself, but rather the temporary halt of the currently active market phase. 
@@ -680,6 +702,8 @@ The market simulator may store and recover:
 
 * The order book state for actively traded listings
 * Last known L1 market data values (such as last traded price, open / high / low / close prices, etc)
+
+Orders that do not rest in the regular price/time queues of the order book are neither stored nor recovered, and are discarded when a state is recovered: the orders accepted during a <<general-mktphs-tal,TradeAtLast phase>> and the market orders resting during an <<general-mktphs-auction,auction call>>.
 
 The settings persistenceEnabled and persistenceFilePath are used to configure this feature. If persistenceEnabled is true:
 

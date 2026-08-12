@@ -136,7 +136,7 @@ Usage is determined by market or counterparties.
 * 2 - Opening Auction for PreOpen
 * 3 - Continuous Trading
 * 4 - Closing Auction for PreClose
-* 5 - Post-Trading
+* 5 - Post-Trading for TradeAtLast
 * 6 - Intraday Auction
 * 9 - Unscheduled Intraday Auction
 * 10 - Out Of Main Session Trading
@@ -146,7 +146,7 @@ Required when MDEntryType=Trade.
 | => 326 | SecurityTradingStatus | C a| Identifies the trading status applicable to the transaction.
 
 * 2 - Trading Halt (Uncrossing of the Auction)
-* 3 - Resume (Start of the Auction)
+* 3 - Resume (Continuous Trading or TradeAtLast)
 
 Required when MDEntryType=Trade.
 
@@ -214,7 +214,7 @@ Required when MDEntryType=Trade
 * 2 - Opening Auction for PreOpen
 * 3 - Continuous Trading
 * 4 - Closing Auction for PreClose
-* 5 - Post-Trading
+* 5 - Post-Trading for TradeAtLast
 * 6 - Intraday Auction
 * 9 - Unscheduled Intraday Auction
 * 10 - Out Of Main Session Trading
@@ -224,7 +224,7 @@ Required when MDEntryType=Trade.
 | => 326 | SecurityTradingStatus | C a| Identifies the trading status applicable to the transaction.
 
 * 2 - Trading Halt (Uncrossing of the Auction)
-* 3 - Resume (Start of the Auction)
+* 3 - Resume (Continuous Trading or TradeAtLast)
 
 Required when MDEntryType=Trade.
 

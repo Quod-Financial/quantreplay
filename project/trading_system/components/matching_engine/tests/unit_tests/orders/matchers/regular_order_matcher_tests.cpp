@@ -172,7 +172,11 @@ struct BuyLimitOrderMatching : public Test {
 
  public:
   NiceMock<EventListenerMock> listener;
-  RegularOrderMatcher matcher{listener, book_, std::nullopt};
+  RegularOrderMatcher matcher{listener,
+                              book_,
+                              std::nullopt,
+                              MarketPhase::open(),
+                              LimitOrderQueue::Regular};
 };
 
 TEST_F(BuyLimitOrderMatching, DoesNotDetectFacingOrdersInEmptyPage) {
@@ -995,7 +999,11 @@ struct SellLimitOrderMatching : public Test {
 
  public:
   NiceMock<EventListenerMock> listener;
-  RegularOrderMatcher matcher{listener, book_, std::nullopt};
+  RegularOrderMatcher matcher{listener,
+                              book_,
+                              std::nullopt,
+                              MarketPhase::open(),
+                              LimitOrderQueue::Regular};
 };
 
 TEST_F(SellLimitOrderMatching, DoesNotDetectFacingOrdersInEmptyPage) {
@@ -1787,7 +1795,11 @@ struct BuyMarketOrderMatching : public Test {
 
  public:
   NiceMock<EventListenerMock> listener;
-  RegularOrderMatcher matcher{listener, book_, std::nullopt};
+  RegularOrderMatcher matcher{listener,
+                              book_,
+                              std::nullopt,
+                              MarketPhase::open(),
+                              LimitOrderQueue::Regular};
 };
 
 TEST_F(BuyMarketOrderMatching, DoesNotDetectFacingOrdersInEmptyPage) {
@@ -2140,7 +2152,11 @@ struct SellMarketOrderMatching : public Test {
 
  public:
   NiceMock<EventListenerMock> listener;
-  RegularOrderMatcher matcher{listener, book_, std::nullopt};
+  RegularOrderMatcher matcher{listener,
+                              book_,
+                              std::nullopt,
+                              MarketPhase::open(),
+                              LimitOrderQueue::Regular};
 };
 
 TEST_F(SellMarketOrderMatching, DoesNotDetectFacingOrdersInEmptyPage) {

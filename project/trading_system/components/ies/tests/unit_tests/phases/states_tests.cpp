@@ -343,11 +343,12 @@ TEST_F(TradingSystemIesStateCreation,
   ASSERT_EQ(state, std::nullopt);
 }
 
-TEST_F(TradingSystemIesStateCreation, ReturnsNoStateForPostTradingPhase) {
+TEST_F(TradingSystemIesStateCreation,
+       CreatesTradeAtLastStateForPostTradingPhase) {
   const auto state = create_state(
       {TradingPhase::Option::PostTrading, TradingStatus::Option::Resume, {}});
 
-  ASSERT_EQ(state, std::nullopt);
+  ASSERT_THAT(state, IsState<TradeAtLastState>());
 }
 
 }  // namespace

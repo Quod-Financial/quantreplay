@@ -6,6 +6,8 @@
 
 #include "common/attributes.hpp"
 #include "common/instrument_state.hpp"
+#include "core/domain/attributes.hpp"
+#include "core/domain/market_phase.hpp"
 #include "ih/common/abstractions/event_listener.hpp"
 #include "ih/orders/book/limit_order.hpp"
 #include "ih/orders/book/market_order.hpp"
@@ -15,25 +17,31 @@
 
 namespace simulator::trading_system::matching_engine {
 
-enum class OrderActionMode : std::uint8_t { Regular, AuctionCall };
+enum class OrderActionMode : std::uint8_t { Regular, AuctionCall, TradeAtLast };
+
+struct OrderActionContext {
+  OrderActionMode mode;
+  MarketPhase market_phase;
+  std::optional<Price> closing_price;
+};
 
 auto place_limit_order(EventListener& event_listener,
                        OrderBook& order_book,
                        std::optional<PriceTick> price_tick,
                        LimitOrder order,
-                       OrderActionMode mode) -> OrderBookUpdates;
+                       const OrderActionContext& context) -> OrderBookUpdates;
 
 auto place_market_order(EventListener& event_listener,
                         OrderBook& order_book,
                         std::optional<PriceTick> price_tick,
                         MarketOrder order,
-                        OrderActionMode mode) -> OrderBookUpdates;
+                        const OrderActionContext& context) -> OrderBookUpdates;
 
 auto amend_limit_order(EventListener& event_listener,
                        OrderBook& order_book,
                        std::optional<PriceTick> price_tick,
                        LimitUpdate update,
-                       OrderActionMode mode) -> OrderBookUpdates;
+                       const OrderActionContext& context) -> OrderBookUpdates;
 
 auto amend_market_order(EventListener& event_listener,
                         OrderBook& order_book,
@@ -43,7 +51,8 @@ auto amend_market_order(EventListener& event_listener,
 auto cancel_order(EventListener& event_listener,
                   OrderBook& order_book,
                   std::optional<PriceTick> price_tick,
-                  const OrderCancel& cancel) -> OrderBookUpdates;
+                  const OrderCancel& cancel,
+                  const OrderActionContext& context) -> OrderBookUpdates;
 
 auto recover_order(EventListener& event_listener,
                    OrderBook& order_book,

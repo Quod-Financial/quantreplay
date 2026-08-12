@@ -1,7 +1,6 @@
 #include "ih/orders/actions/regular_amendment.hpp"
 
 #include "ih/common/events/client_notification.hpp"
-#include "ih/orders/book/order_algorithms.hpp"
 #include "ih/orders/replies/modification_reply_builders.hpp"
 #include "ih/orders/tools/notification_creators.hpp"
 #include "ih/orders/tools/order_lookup.hpp"
@@ -12,23 +11,27 @@ namespace simulator::trading_system::matching_engine {
 RegularAmendment::RegularAmendment(EventListener& event_listener,
                                    OrderBook& order_book,
                                    RegularMatcher& matcher,
-                                   std::optional<PriceTick> price_tick)
+                                   std::optional<PriceTick> price_tick,
+                                   LimitOrderQueue queue)
     : EventReporter{event_listener},
       order_book_{order_book},
       matcher_{matcher},
-      price_tick_{price_tick} {}
+      price_tick_{price_tick},
+      queue_{queue} {}
 
 auto RegularAmendment::operator()(LimitUpdate update) -> OrderBookUpdates {
   log::debug("running regular limit order amendment operation");
 
   const Side side = update.order_side;
-  return amend_order(std::move(update), order_book_.take_page(side));
+  return amend_order(std::move(update),
+                     select_limit_orders(order_book_.take_page(side), queue_));
 }
 
-auto RegularAmendment::amend_order(LimitUpdate update, OrderPage& page)
+auto RegularAmendment::amend_order(LimitUpdate update,
+                                   LimitOrdersContainer& orders)
     -> OrderBookUpdates {
-  const auto order_it = find_target_limit_order(page, update);
-  if (order_it == limit_orders_end(page)) {
+  const auto order_it = find_target_limit_order(orders, update);
+  if (order_it == orders.end()) {
     emit(ClientNotification(prepare_modification_reject(update)
                                 .with_reason(RejectText{"order not found"})
                                 .build()));
@@ -60,7 +63,7 @@ auto RegularAmendment::amend_order(LimitUpdate update, OrderPage& page)
                                 .quantity = order_it->leaves_quantity()};
 
   LimitOrder order = *order_it;
-  page.limit_orders().erase(order_it);
+  orders.erase(order_it);
   emit(order::make_making_order_removed_from_book_notification(order));
 
   order.amend(std::move(update.order_diff));
@@ -76,7 +79,7 @@ auto RegularAmendment::amend_order(LimitUpdate update, OrderPage& page)
     return {removal};
   }
 
-  page.limit_orders().emplace(order);
+  orders.emplace(order);
   emit(order::make_making_order_added_to_book_notification(order));
 
   return {removal,

@@ -23,8 +23,10 @@ struct AuctionActivation {
 class OpenState;
 class ClosedState;
 class AuctionState;
+class TradeAtLastState;
 
-using State = std::variant<OpenState, ClosedState, AuctionState>;
+using State =
+    std::variant<OpenState, ClosedState, AuctionState, TradeAtLastState>;
 
 class OpenState {
  public:
@@ -107,6 +109,32 @@ class AuctionState {
   SubPhase sub_phase_;
   core::local_us end_;
   core::local_us uncross_at_;
+};
+
+class TradeAtLastState {
+ public:
+  explicit TradeAtLastState(const Phase& phase);
+
+  auto halt(const protocol::HaltPhaseRequest& request,
+            protocol::HaltPhaseReply& reply) const -> std::optional<State>;
+
+  auto resume(const protocol::ResumePhaseRequest& request,
+              protocol::ResumePhaseReply& reply) const -> std::optional<State>;
+
+  auto update(const Phase& scheduled_phase) const -> std::optional<State>;
+
+  auto phase() const -> Phase;
+
+  [[nodiscard]]
+  auto halted_by_request() const -> bool;
+
+  auto operator==(const TradeAtLastState& state) const -> bool = default;
+
+ private:
+  TradeAtLastState(const Phase& phase, bool halted_by_request);
+
+  Phase phase_;
+  bool halted_by_request_{false};
 };
 
 [[nodiscard]]

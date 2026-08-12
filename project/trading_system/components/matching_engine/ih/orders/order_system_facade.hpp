@@ -13,6 +13,7 @@
 #include "ih/common/abstractions/order_request_processor.hpp"
 #include "ih/orders/actions/auction_indicative_reporter.hpp"
 #include "ih/orders/actions/early_price_reporter.hpp"
+#include "ih/orders/actions/order_actions.hpp"
 #include "ih/orders/book/order_book.hpp"
 #include "ih/orders/book/order_book_update.hpp"
 #include "ih/orders/matchers/auction_price_calculator.hpp"
@@ -78,6 +79,9 @@ class OrderSystemFacade : public OrderRequestProcessor,
 
   template <typename RequestType>
   auto reject_on_halt(const RequestType& request) -> bool;
+
+  [[nodiscard]]
+  auto make_action_context() const -> OrderActionContext;
 
   auto refresh_auction_indicative(const OrderBookUpdates& updates) -> void;
 

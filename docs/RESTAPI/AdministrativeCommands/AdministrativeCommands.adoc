@@ -706,6 +706,8 @@ Halt or resume current market phase for a single market simulator venue instance
 
 Halt and resume requests are rejected while an auction phase is active (see <<general-mktphs-auction,Auction Phase>>); both return a 409 Conflict, as shown in the auction examples below.
 
+A <<general-mktphs-tal,TradeAtLast phase>> is halted and resumed like the Open phase; while it is halted, the cancels allowed by allowCancels still apply only to the orders accepted during that phase.
+
 _Request Properties_
 
 [cols="25,15,60"]

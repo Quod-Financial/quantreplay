@@ -174,7 +174,8 @@ auto MarketOrdersContainer::erase(iterator begin, iterator end) -> void {
   orders_.erase(begin, end);
 }
 
-OrderPage::OrderPage(Side side) : limit_orders_(side) {}
+OrderPage::OrderPage(Side side)
+    : limit_orders_(side), trade_at_last_orders_(side) {}
 
 auto OrderPage::limit_orders() -> LimitOrdersContainer& {
   return limit_orders_;
@@ -190,6 +191,26 @@ auto OrderPage::market_orders() -> MarketOrdersContainer& {
 
 auto OrderPage::market_orders() const -> const MarketOrdersContainer& {
   return market_orders_;
+}
+
+auto OrderPage::trade_at_last_orders() -> LimitOrdersContainer& {
+  return trade_at_last_orders_;
+}
+
+auto OrderPage::trade_at_last_orders() const -> const LimitOrdersContainer& {
+  return trade_at_last_orders_;
+}
+
+auto select_limit_orders(OrderPage& page,
+                         LimitOrderQueue queue) -> LimitOrdersContainer& {
+  switch (queue) {
+    case LimitOrderQueue::Regular:
+      return page.limit_orders();
+    case LimitOrderQueue::TradeAtLast:
+      return page.trade_at_last_orders();
+  }
+
+  core::unreachable();
 }
 
 auto OrderBook::buy_page() -> OrderPage& { return buy_page_; }

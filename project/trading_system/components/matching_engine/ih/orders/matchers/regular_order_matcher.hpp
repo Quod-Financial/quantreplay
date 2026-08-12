@@ -5,6 +5,7 @@
 #include <optional>
 
 #include "common/attributes.hpp"
+#include "core/domain/market_phase.hpp"
 #include "ih/common/abstractions/event_listener.hpp"
 #include "ih/common/events/event_reporter.hpp"
 #include "ih/orders/book/order_book.hpp"
@@ -16,7 +17,9 @@ class RegularOrderMatcher : public RegularMatcher, private EventReporter {
  public:
   RegularOrderMatcher(EventListener& event_listener,
                       OrderBook& order_book,
-                      std::optional<PriceTick> price_tick);
+                      std::optional<PriceTick> price_tick,
+                      MarketPhase market_phase,
+                      LimitOrderQueue queue);
 
   RegularOrderMatcher(const RegularOrderMatcher&) = default;
   RegularOrderMatcher(RegularOrderMatcher&&) = default;
@@ -69,6 +72,8 @@ class RegularOrderMatcher : public RegularMatcher, private EventReporter {
 
   OrderBook& order_book_;
   std::optional<PriceTick> price_tick_;
+  MarketPhase market_phase_;
+  LimitOrderQueue queue_;
 };
 
 }  // namespace simulator::trading_system::matching_engine

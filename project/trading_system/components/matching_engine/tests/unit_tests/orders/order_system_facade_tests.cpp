@@ -1,17 +1,26 @@
 #include <gmock/gmock.h>
 
 #include <chrono>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <utility>
 
 #include "common/events.hpp"
 #include "common/instrument.hpp"
+#include "core/domain/market_phase.hpp"
 #include "core/tools/time.hpp"
 #include "ih/common/data/market_data_updates.hpp"
+#include "ih/orders/actions/trade_at_last_actions.hpp"
 #include "ih/orders/order_system_facade.hpp"
 #include "matching_engine/configuration.hpp"
+#include "protocol/app/order_cancellation_confirmation.hpp"
 #include "protocol/app/order_cancellation_reject.hpp"
 #include "protocol/app/order_cancellation_request.hpp"
+#include "protocol/app/order_modification_confirmation.hpp"
 #include "protocol/app/order_modification_reject.hpp"
 #include "protocol/app/order_modification_request.hpp"
+#include "protocol/app/order_placement_confirmation.hpp"
 #include "protocol/app/order_placement_reject.hpp"
 #include "protocol/app/order_placement_request.hpp"
 #include "protocol/app/security_status.hpp"
@@ -246,6 +255,21 @@ TEST_F(MatchingEngineOrderSystemFacadePlacementRouting,
   EXPECT_CALL(event_listener,
               on(IsOrderBookNotification(VariantWith<Trade>(_))))
       .Times(AtLeast(1));
+
+  facade.process(
+      limit_placement(Side::Option::Sell, OrderPrice{40}, OrderQuantity{100}));
+  facade.process(
+      limit_placement(Side::Option::Buy, OrderPrice{50}, OrderQuantity{100}));
+}
+
+TEST_F(MatchingEngineOrderSystemFacadePlacementRouting,
+       StampsTradesWithTheOngoingOpenPhase) {
+  facade.handle(
+      transition(TradingPhase::Option::Open, TradingStatus::Option::Resume));
+
+  EXPECT_CALL(event_listener,
+              on(IsOrderBookNotification(VariantWith<Trade>(
+                  Field(&Trade::market_phase, Eq(MarketPhase::open()))))));
 
   facade.process(
       limit_placement(Side::Option::Sell, OrderPrice{40}, OrderQuantity{100}));
@@ -780,6 +804,390 @@ TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
 
   enter_uncrossing();
 }
+
+struct MatchingEngineOrderSystemFacadeTradeAtLast
+    : public MatchingEngineOrderSystemFacade {
+  MatchingEngineOrderSystemFacadeTradeAtLast() {
+    EXPECT_CALL(event_listener, on(_)).Times(AnyNumber());
+    ON_CALL(reference_price_provider, closing_price())
+        .WillByDefault(Return(ClosingPrice));
+  }
+
+  constexpr static Price ClosingPrice{100};
+  constexpr static MarketPhase TradeAtLastPhase{
+      TradingPhase::Option::PostTrading, TradingStatus::Option::Resume};
+
+  auto enter_trade_at_last() -> void {
+    facade.handle(transition(TradingPhase::Option::PostTrading,
+                             TradingStatus::Option::Resume));
+  }
+
+  auto enter_open() -> void {
+    facade.handle(
+        transition(TradingPhase::Option::Open, TradingStatus::Option::Resume));
+  }
+
+  auto place_at_closing_price(Side side) -> void {
+    place_limit(side, OrderPrice{ClosingPrice.value()}, OrderQuantity{100});
+  }
+
+  auto place_with_time_in_force(TimeInForce time_in_force) -> void {
+    auto request = make_message<protocol::OrderPlacementRequest>();
+    request.order_type = OrderType::Option::Limit;
+    request.side = Side::Option::Buy;
+    request.order_price = OrderPrice{ClosingPrice.value()};
+    request.order_quantity = OrderQuantity{100};
+    request.time_in_force = time_in_force;
+    facade.process(request);
+  }
+
+  auto place_without_price() -> void {
+    auto request = make_message<protocol::OrderPlacementRequest>();
+    request.order_type = OrderType::Option::Limit;
+    request.side = Side::Option::Buy;
+    request.order_quantity = OrderQuantity{100};
+    facade.process(request);
+  }
+
+  auto place_identifiable_at_closing_price(Side side, ClientOrderId id)
+      -> void {
+    place_identifiable_limit(
+        side, id, OrderPrice{ClosingPrice.value()}, OrderQuantity{100});
+  }
+
+  auto amend_at_closing_price(OrigClientOrderId id, OrderQuantity quantity)
+      -> void {
+    amend(Side::Option::Buy, id, OrderPrice{ClosingPrice.value()}, quantity);
+  }
+
+  auto amend_market(OrigClientOrderId id) -> void {
+    auto request = make_message<protocol::OrderModificationRequest>();
+    request.order_type = OrderType::Option::Market;
+    request.side = Side::Option::Buy;
+    request.order_quantity = OrderQuantity{100};
+    request.orig_client_order_id = id;
+    facade.process(request);
+  }
+
+  static auto RejectedWith(std::string_view reason) {
+    return IsClientNotification(VariantWith<protocol::OrderPlacementReject>(
+        Field(&protocol::OrderPlacementReject::reject_text,
+              Optional(Eq(RejectText{std::string{reason}})))));
+  }
+
+  static auto ModificationRejectedWith(std::string_view reason) {
+    return IsClientNotification(VariantWith<protocol::OrderModificationReject>(
+        Field(&protocol::OrderModificationReject::reject_text,
+              Optional(Eq(RejectText{std::string{reason}})))));
+  }
+
+  static auto CancellationRejectedWith(std::string_view reason) {
+    return IsClientNotification(VariantWith<protocol::OrderCancellationReject>(
+        Field(&protocol::OrderCancellationReject::reject_text,
+              Optional(Eq(RejectText{std::string{reason}})))));
+  }
+};
+
+TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast, RejectsMarketOrder) {
+  enter_trade_at_last();
+
+  EXPECT_CALL(event_listener,
+              on(RejectedWith(trade_at_last::LimitOrdersOnlyReject)));
+
+  place_market(Side::Option::Buy, OrderQuantity{100});
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
+       RejectsImmediateOrCancelOrder) {
+  enter_trade_at_last();
+
+  EXPECT_CALL(event_listener,
+              on(RejectedWith(trade_at_last::DayOrdersOnlyReject)));
+
+  place_with_time_in_force(TimeInForce::Option::ImmediateOrCancel);
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
+       RejectsOrderPricedAwayFromTheClosingPrice) {
+  enter_trade_at_last();
+
+  EXPECT_CALL(event_listener,
+              on(RejectedWith(trade_at_last::PriceNotAtClosingPriceReject)));
+
+  place_limit(Side::Option::Buy, OrderPrice{101}, OrderQuantity{100});
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
+       RejectsOrderWhenNoClosingPriceIsAvailable) {
+  ON_CALL(reference_price_provider, closing_price())
+      .WillByDefault(Return(std::nullopt));
+  enter_trade_at_last();
+
+  EXPECT_CALL(event_listener,
+              on(RejectedWith(trade_at_last::ClosingPriceUnavailableReject)));
+
+  place_at_closing_price(Side::Option::Buy);
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
+       RejectsOrderWithoutPriceWithTheGenericReason) {
+  enter_trade_at_last();
+
+  EXPECT_CALL(event_listener, on(RejectedWith("order price missing")));
+
+  place_without_price();
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
+       RejectsOrderWhileTheTradeAtLastPhaseIsHalted) {
+  facade.handle(transition(TradingPhase::Option::PostTrading,
+                           TradingStatus::Option::Halt));
+
+  EXPECT_CALL(event_listener,
+              on(RejectedWith(
+                  "request cannot be processed during halted trading status")));
+
+  place_at_closing_price(Side::Option::Buy);
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
+       AcceptsDayLimitOrderAtTheClosingPrice) {
+  enter_trade_at_last();
+
+  EXPECT_CALL(
+      event_listener,
+      on(IsClientNotification(VariantWith<protocol::OrderPlacementReject>(_))))
+      .Times(0);
+  EXPECT_CALL(event_listener,
+              on(IsClientNotification(
+                  VariantWith<protocol::OrderPlacementConfirmation>(_))));
+
+  place_at_closing_price(Side::Option::Buy);
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
+       DoesNotCrossTradeAtLastOrdersWithOrdersRestingFromTheOpenPhase) {
+  enter_open();
+  place_at_closing_price(Side::Option::Sell);
+  enter_trade_at_last();
+
+  EXPECT_CALL(event_listener,
+              on(IsOrderBookNotification(VariantWith<Trade>(_))))
+      .Times(0);
+
+  place_at_closing_price(Side::Option::Buy);
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
+       StampsTradesWithTheTradeAtLastPhase) {
+  enter_trade_at_last();
+  place_at_closing_price(Side::Option::Sell);
+
+  EXPECT_CALL(event_listener,
+              on(IsOrderBookNotification(VariantWith<Trade>(
+                  Field(&Trade::market_phase, Eq(TradeAtLastPhase))))));
+
+  place_at_closing_price(Side::Option::Buy);
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
+       RejectsAmendmentOfAnOrderPlacedBeforeThePhase) {
+  enter_open();
+  place_identifiable_at_closing_price(Side::Option::Buy, ClientOrderId{"bid"});
+  enter_trade_at_last();
+
+  EXPECT_CALL(event_listener, on(ModificationRejectedWith("order not found")));
+
+  amend_at_closing_price(OrigClientOrderId{"bid"}, OrderQuantity{50});
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
+       RejectsAmendmentPricedAwayFromTheClosingPrice) {
+  enter_trade_at_last();
+  place_identifiable_at_closing_price(Side::Option::Buy, ClientOrderId{"bid"});
+
+  EXPECT_CALL(event_listener,
+              on(ModificationRejectedWith(
+                  trade_at_last::PriceNotAtClosingPriceReject)));
+
+  amend(Side::Option::Buy,
+        OrigClientOrderId{"bid"},
+        OrderPrice{101},
+        OrderQuantity{50});
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
+       RejectsAmendmentOfAMarketOrder) {
+  enter_trade_at_last();
+
+  EXPECT_CALL(event_listener,
+              on(ModificationRejectedWith("unknown order type")));
+
+  amend_market(OrigClientOrderId{"bid"});
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast, AmendsTradeAtLastOrder) {
+  enter_trade_at_last();
+  place_identifiable_at_closing_price(Side::Option::Buy, ClientOrderId{"bid"});
+
+  EXPECT_CALL(event_listener,
+              on(IsClientNotification(
+                  VariantWith<protocol::OrderModificationConfirmation>(_))));
+
+  amend_at_closing_price(OrigClientOrderId{"bid"}, OrderQuantity{50});
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
+       RejectsCancellationOfAnOrderPlacedBeforeThePhase) {
+  enter_open();
+  place_identifiable_at_closing_price(Side::Option::Buy, ClientOrderId{"bid"});
+  enter_trade_at_last();
+
+  EXPECT_CALL(event_listener, on(CancellationRejectedWith("order not found")));
+
+  cancel(Side::Option::Buy, OrigClientOrderId{"bid"});
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast, CancelsTradeAtLastOrder) {
+  enter_trade_at_last();
+  place_identifiable_at_closing_price(Side::Option::Buy, ClientOrderId{"bid"});
+
+  EXPECT_CALL(event_listener,
+              on(IsClientNotification(
+                  VariantWith<protocol::OrderCancellationConfirmation>(_))));
+
+  cancel(Side::Option::Buy, OrigClientOrderId{"bid"});
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
+       CancelsTradeAtLastOrderWhileHaltedWhenCancelsAreAllowed) {
+  enter_trade_at_last();
+  place_identifiable_at_closing_price(Side::Option::Buy, ClientOrderId{"bid"});
+  facade.handle(transition(TradingPhase::Option::PostTrading,
+                           TradingStatus::Option::Halt,
+                           /*allow_cancels=*/true));
+
+  EXPECT_CALL(event_listener,
+              on(IsClientNotification(
+                  VariantWith<protocol::OrderCancellationConfirmation>(_))));
+
+  cancel(Side::Option::Buy, OrigClientOrderId{"bid"});
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
+       CancelsAnOrderPlacedBeforeThePhaseOnceThePhaseEnds) {
+  enter_open();
+  place_identifiable_at_closing_price(Side::Option::Buy, ClientOrderId{"bid"});
+  enter_trade_at_last();
+  enter_open();
+
+  EXPECT_CALL(event_listener,
+              on(IsClientNotification(
+                  VariantWith<protocol::OrderCancellationConfirmation>(_))));
+
+  cancel(Side::Option::Buy, OrigClientOrderId{"bid"});
+}
+
+struct MatchingEngineOrderSystemFacadeTradeAtLastExpiry
+    : public MatchingEngineOrderSystemFacadeTradeAtLast {
+  auto enter_closed() -> void {
+    facade.handle(
+        transition(TradingPhase::Option::Closed, TradingStatus::Option::Halt));
+  }
+
+  auto halt_trade_at_last() -> void {
+    facade.handle(transition(TradingPhase::Option::PostTrading,
+                             TradingStatus::Option::Halt));
+  }
+
+  static auto CancellationConfirmationFor(ClientOrderId id) {
+    return IsClientNotification(
+        VariantWith<protocol::OrderCancellationConfirmation>(
+            Field(&protocol::OrderCancellationConfirmation::client_order_id,
+                  Optional(Eq(id)))));
+  }
+
+  static auto AnyCancellationConfirmation() {
+    return IsClientNotification(
+        VariantWith<protocol::OrderCancellationConfirmation>(_));
+  }
+};
+
+TEST_F(MatchingEngineOrderSystemFacadeTradeAtLastExpiry,
+       DoesNotExpireOrdersOnRedeliveredTradeAtLastTransition) {
+  enter_trade_at_last();
+  place_identifiable_at_closing_price(Side::Option::Buy, ClientOrderId{"bid"});
+
+  EXPECT_CALL(event_listener, on(AnyCancellationConfirmation())).Times(0);
+
+  enter_trade_at_last();
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeTradeAtLastExpiry,
+       DoesNotExpireOrdersWhenTheTradeAtLastPhaseBecomesHalted) {
+  enter_trade_at_last();
+  place_identifiable_at_closing_price(Side::Option::Buy, ClientOrderId{"bid"});
+
+  EXPECT_CALL(event_listener, on(AnyCancellationConfirmation())).Times(0);
+
+  halt_trade_at_last();
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeTradeAtLastExpiry,
+       ExpiresRestingDayOrdersOfTheRegularBookOnTheClosedTransitionAsWell) {
+  enter_open();
+  place_identifiable_at_closing_price(Side::Option::Buy,
+                                      ClientOrderId{"regular"});
+  enter_trade_at_last();
+  place_identifiable_at_closing_price(Side::Option::Buy, ClientOrderId{"bid"});
+
+  EXPECT_CALL(event_listener,
+              on(CancellationConfirmationFor(ClientOrderId{"bid"})));
+  EXPECT_CALL(event_listener,
+              on(CancellationConfirmationFor(ClientOrderId{"regular"})));
+
+  enter_closed();
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeTradeAtLastExpiry,
+       LeavesNoOrdersBehindForTheNextTradeAtLastPhase) {
+  enter_trade_at_last();
+  place_at_closing_price(Side::Option::Buy);
+  enter_open();
+  enter_trade_at_last();
+
+  EXPECT_CALL(event_listener,
+              on(IsOrderBookNotification(VariantWith<Trade>(_))))
+      .Times(0);
+
+  place_at_closing_price(Side::Option::Sell);
+}
+
+struct MatchingEngineOrderSystemFacadeTradeAtLastNextPhase
+    : public MatchingEngineOrderSystemFacadeTradeAtLastExpiry,
+      public WithParamInterface<
+          std::pair<TradingPhase::Option, TradingStatus::Option>> {};
+
+TEST_P(MatchingEngineOrderSystemFacadeTradeAtLastNextPhase,
+       ExpiresRemainingOrdersWhateverPhaseFollows) {
+  enter_trade_at_last();
+  place_identifiable_at_closing_price(Side::Option::Buy, ClientOrderId{"bid"});
+
+  EXPECT_CALL(event_listener,
+              on(CancellationConfirmationFor(ClientOrderId{"bid"})));
+
+  facade.handle(transition(GetParam().first, GetParam().second));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    NextPhase,
+    MatchingEngineOrderSystemFacadeTradeAtLastNextPhase,
+    Values(std::make_pair(TradingPhase::Option::Closed,
+                          TradingStatus::Option::Halt),
+           std::make_pair(TradingPhase::Option::Open,
+                          TradingStatus::Option::Resume),
+           std::make_pair(TradingPhase::Option::ClosingAuction,
+                          TradingStatus::Option::Resume)));
 
 // NOLINTEND(*magic-numbers*)
 

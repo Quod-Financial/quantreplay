@@ -179,6 +179,21 @@ TEST_F(PhaseScheduleTest, CopiesPhaseSettingFromCurrentHaltPhase) {
               Optional(Field(&Phase::Settings::allow_cancels, Eq(false))));
 }
 
+TEST_F(PhaseScheduleTest, HaltsPostTradingPhaseWithSetting) {
+  schedule = {
+      {.begin = 11h, .end = 14h, .phase = TradingPhase::Option::PostTrading},
+      {.begin = 12h,
+       .end = 13h,
+       .phase = TradingStatus::Option::Halt,
+       .allow_cancels_on_halt = true}};
+
+  const auto scheduled = schedule.get_scheduled_phase(daytime(12h));
+  EXPECT_EQ(scheduled.phase.phase(), TradingPhase::Option::PostTrading);
+  EXPECT_EQ(scheduled.phase.status(), TradingStatus::Option::Halt);
+  EXPECT_THAT(scheduled.phase.settings(),
+              Optional(Field(&Phase::Settings::allow_cancels, Eq(true))));
+}
+
 TEST_F(PhaseScheduleTest, SurfacesConfiguredEndAndRangeForAuctionPhase) {
   schedule = {{.begin = 12h,
                .end = 13h,

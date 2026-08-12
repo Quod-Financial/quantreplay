@@ -14,6 +14,8 @@ This means if a phase change happens across the venue, a separate SecurityStatus
 
 Auction phases are reported through the same workflow. When an auction's call sub-phase begins, the simulator reports SecurityTradingStatus (326) = 3 (Resume) together with the TradingSessionSubID (625) of the auction variant — 2 for an opening auction (PreOpen), 4 for a closing auction (PreClose) or 6 for an intraday auction (Auction). When the auction's uncrossing sub-phase begins, it reports SecurityTradingStatus (326) = 2 (Trading Halt) with the same TradingSessionSubID. The phase scheduled to follow the auction is then reported as usual.
 
+The TradeAtLast phase is reported in a single step, like the Open and the Closed phases: SecurityTradingStatus (326) = 3 (Resume) together with TradingSessionSubID (625) = 5 (Post-Trading) when the phase begins. A halt of the phase is reported as SecurityTradingStatus (326) = 2 (Trading Halt) with the same TradingSessionSubID.
+
 If there are any application-layer problems handling the SecurityStatusRequest, the simulator responds with a BusinessMessageReject (35=j) message,
 indicating the rejection details in Text and BusinessRejectReason tags, and considers the request invalid and terminated.
 
@@ -76,13 +78,14 @@ Required when SecurityIDSource = ISIN in the Instrument component.
 * 2 - Opening Auction (PreOpen phase)
 * 3 - Open
 * 4 - Closing Auction (PreClose phase)
+* 5 - Post-Trading (TradeAtLast phase)
 * 6 - Intraday Auction (Auction phase)
 * 10 - Closed
 
 | 326 | SecurityTradingStatus | N a| Trading status.
 
 * 2 - Trading Halt - reported at the start of an auction's uncrossing sub-phase, while the active phase is halted, and during the Closed phase
-* 3 - Resume - reported at the start of an auction's call sub-phase, and during normal Open trading
+* 3 - Resume - reported at the start of an auction's call sub-phase, during normal Open trading, and during the TradeAtLast phase
  
 | Component | <<common-components-std-trailer>> | Y | 
 |===

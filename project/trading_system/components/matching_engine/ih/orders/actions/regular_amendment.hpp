@@ -18,7 +18,8 @@ class RegularAmendment : private EventReporter {
   RegularAmendment(EventListener& event_listener,
                    OrderBook& order_book,
                    RegularMatcher& matcher,
-                   std::optional<PriceTick> price_tick);
+                   std::optional<PriceTick> price_tick,
+                   LimitOrderQueue queue);
 
   RegularAmendment(const RegularAmendment&) = default;
   RegularAmendment(RegularAmendment&&) = default;
@@ -30,11 +31,13 @@ class RegularAmendment : private EventReporter {
   auto operator()(LimitUpdate update) -> OrderBookUpdates;
 
  private:
-  auto amend_order(LimitUpdate update, OrderPage& page) -> OrderBookUpdates;
+  auto amend_order(LimitUpdate update, LimitOrdersContainer& orders)
+      -> OrderBookUpdates;
 
   OrderBook& order_book_;
   RegularMatcher& matcher_;
   std::optional<PriceTick> price_tick_;
+  LimitOrderQueue queue_;
 };
 
 }  // namespace simulator::trading_system::matching_engine

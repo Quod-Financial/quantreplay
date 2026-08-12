@@ -12,21 +12,16 @@ namespace simulator::trading_system::matching_engine {
 
 namespace {
 
-template <typename Order>
-auto& page_orders(OrderPage& page) {
-  if constexpr (std::is_same_v<Order, LimitOrder>) {
-    return page.limit_orders();
-  } else {
-    return page.market_orders();
-  }
-}
+template <typename Container>
+constexpr bool holds_limit_orders =
+    std::is_same_v<Container, LimitOrdersContainer>;
 
-template <typename Order>
-auto find_target(OrderPage& page, const OrderCancel& cancel) {
-  if constexpr (std::is_same_v<Order, LimitOrder>) {
-    return find_target_limit_order(page, cancel);
+template <typename Container>
+auto find_target(Container& orders, const OrderCancel& cancel) {
+  if constexpr (holds_limit_orders<Container>) {
+    return find_target_limit_order(orders, cancel);
   } else {
-    return find_target_market_order(page, cancel);
+    return find_target_market_order(orders, cancel);
   }
 }
 
@@ -34,10 +29,12 @@ auto find_target(OrderPage& page, const OrderCancel& cancel) {
 
 Cancellation::Cancellation(EventListener& event_listener,
                            OrderBook& order_book,
-                           std::optional<PriceTick> price_tick)
+                           std::optional<PriceTick> price_tick,
+                           LimitOrderQueue queue)
     : EventReporter{event_listener},
       order_book_{order_book},
-      price_tick_{price_tick} {}
+      price_tick_{price_tick},
+      queue_{queue} {}
 
 auto Cancellation::operator()(const OrderCancel& cancel) -> OrderBookUpdates {
   log::debug("running order cancellation operation");
@@ -46,21 +43,19 @@ auto Cancellation::operator()(const OrderCancel& cancel) -> OrderBookUpdates {
   return cancel_order(cancel, order_book_.take_page(side));
 }
 
-template <typename Order>
-auto Cancellation::try_cancel(const OrderCancel& cancel, OrderPage& page)
+template <typename Container>
+auto Cancellation::try_cancel(const OrderCancel& cancel, Container& orders)
     -> std::optional<OrderBookUpdate> {
-  auto& orders = page_orders<Order>(page);
-
-  const auto order_it = find_target<Order>(page, cancel);
+  const auto order_it = find_target(orders, cancel);
   if (order_it == orders.end()) {
     return std::nullopt;
   }
 
-  Order order = *order_it;
+  typename Container::value_type order = *order_it;
   orders.erase(order_it);
 
   std::optional<OrderPrice> price;
-  if constexpr (std::is_same_v<Order, LimitOrder>) {
+  if constexpr (holds_limit_orders<Container>) {
     price = order.price();
   }
   const OrderBookUpdate removal{.side = order.side(),
@@ -83,10 +78,11 @@ auto Cancellation::try_cancel(const OrderCancel& cancel, OrderPage& page)
 
 auto Cancellation::cancel_order(const OrderCancel& cancel, OrderPage& page)
     -> OrderBookUpdates {
-  if (const auto removal = try_cancel<LimitOrder>(cancel, page)) {
+  if (const auto removal =
+          try_cancel(cancel, select_limit_orders(page, queue_))) {
     return {*removal};
   }
-  if (const auto removal = try_cancel<MarketOrder>(cancel, page)) {
+  if (const auto removal = try_cancel(cancel, page.market_orders())) {
     return {*removal};
   }
 

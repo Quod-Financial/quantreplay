@@ -51,6 +51,13 @@ auto clear_slot(T& actual, T& last_update) -> void {
   actual = T{};
 }
 
+// Continuous trading and trade-at-last both feed the daily traded volume.
+constexpr auto contributes_to_trade_volume(const Trade& trade) -> bool {
+  const auto phase = trade.market_phase.trading_phase();
+  return phase == TradingPhase::Option::Open ||
+         phase == TradingPhase::Option::PostTrading;
+}
+
 auto for_each_md_entry(const auto& data, const auto& visit) -> void {
   visit(data.low_price);
   visit(data.high_price);
@@ -139,7 +146,8 @@ auto InstrumentInfoCache::update(
 
       const bool open_phase =
           trade->market_phase.trading_phase() == TradingPhase::Option::Open;
-      if (!update_on_first_trade(*trade) && open_phase) {
+      if (!update_on_first_trade(*trade) &&
+          contributes_to_trade_volume(*trade)) {
         add_to_trade_volume(trade->traded_quantity);
       }
       update_closing_price(*trade);
@@ -269,7 +277,7 @@ auto InstrumentInfoCache::update_on_first_trade(const Trade& trade) -> bool {
   }
 
   set_opening_price(trade.trade_price, trade.trade_time);
-  if (trade.market_phase.trading_phase() == TradingPhase::Option::Open) {
+  if (contributes_to_trade_volume(trade)) {
     assign(actual_data_.trade_volume,
            last_update_.trade_volume,
            trade.traded_quantity);

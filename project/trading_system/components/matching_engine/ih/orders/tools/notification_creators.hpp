@@ -38,15 +38,15 @@ auto make_making_order_reduced_notification(const LimitOrder& maker)
 auto make_trade_notification(const LimitOrder& taker,
                              const LimitOrder& maker,
                              ExecutionPrice trade_price,
-                             ExecutedQuantity traded_quantity)
-    -> OrderBookNotification;
+                             ExecutedQuantity traded_quantity,
+                             MarketPhase market_phase) -> OrderBookNotification;
 
 [[nodiscard]]
 auto make_trade_notification(const MarketOrder& taker,
                              const LimitOrder& maker,
                              ExecutionPrice trade_price,
-                             ExecutedQuantity traded_quantity)
-    -> OrderBookNotification;
+                             ExecutedQuantity traded_quantity,
+                             MarketPhase market_phase) -> OrderBookNotification;
 
 [[nodiscard]]
 auto make_buyer_id(const std::optional<Party>& owner) -> std::optional<BuyerId>;

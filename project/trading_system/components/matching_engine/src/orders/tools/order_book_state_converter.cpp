@@ -58,6 +58,17 @@ auto store(OrderPage& page,
         "state, in-auction state recovery is not supported",
         resting_market_orders);
   }
+
+  if (const auto trade_at_last_orders = page.trade_at_last_orders().size();
+      trade_at_last_orders > 0) {
+    // Trade-at-last orders are not part of the persisted book state;
+    // recovering an in-progress trade-at-last phase is intentionally
+    // unsupported.
+    log::warn(
+        "skipping {} trade-at-last order(s) while persisting the order book "
+        "state, trade-at-last state recovery is not supported",
+        trade_at_last_orders);
+  }
 }
 
 }  // namespace

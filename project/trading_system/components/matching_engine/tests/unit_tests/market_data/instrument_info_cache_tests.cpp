@@ -1633,6 +1633,24 @@ struct InstrumentInfoCacheTradeVolume : InstrumentInfoCache {
         .create();
   }
 
+  static auto trade_at_last_trade(const Quantity quantity) -> Trade {
+    return NewTrade()
+        .with_traded_quantity(quantity)
+        .with_market_phase(
+            {TradingPhase::Option::PostTrading, TradingStatus::Option::Resume})
+        .create();
+  }
+
+  static auto trade_at_last_trade_on(core::sys_us time,
+                                     const Quantity quantity) -> Trade {
+    return NewTrade()
+        .with_traded_quantity(quantity)
+        .with_trade_time(time)
+        .with_market_phase(
+            {TradingPhase::Option::PostTrading, TradingStatus::Option::Resume})
+        .create();
+  }
+
   static auto auction_trade_on(core::sys_us time,
                                const Quantity quantity,
                                const TradingPhase::Option phase) -> Trade {
@@ -1727,6 +1745,18 @@ TEST_F(InstrumentInfoCacheTradeVolume,
 }
 
 TEST_F(InstrumentInfoCacheTradeVolume,
+       ResetsToFirstTradeQuantityWhenTheFirstDailyTradeIsOnTradeAtLastPhase) {
+  cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
+                   .opening_auction_scheduled = false});
+  cache.update(make_update(open_trade_on(yesterday(), Quantity{200})));
+  cache.update(make_update(trade_at_last_trade_on(today(), Quantity{80})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries, ElementsAre(VolumeEntryHas(Quantity{80}, NoAction)));
+}
+
+TEST_F(InstrumentInfoCacheTradeVolume,
        AddsClearingQuantityWhenIntradayAuctionCrossed) {
   cache.update(make_update(make_auction_cross(
       TradingPhase::Option::OpeningAuction, Price{110}, Quantity{500})));
@@ -1776,6 +1806,34 @@ TEST_F(InstrumentInfoCacheTradeVolume,
   cache.compose_initial(settings, entries);
 
   ASSERT_THAT(entries, ElementsAre(VolumeEntryHas(Quantity{140}, NoAction)));
+}
+
+TEST_F(InstrumentInfoCacheTradeVolume, AddsTradeQuantityOnTradeAtLastPhase) {
+  cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
+                   .opening_auction_scheduled = true});
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::OpeningAuction, Price{110}, Quantity{500})));
+  cache.update(make_update(trade_at_last_trade(Quantity{40})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries, ElementsAre(VolumeEntryHas(Quantity{540}, NoAction)));
+}
+
+TEST_F(InstrumentInfoCacheTradeVolume,
+       AddsTradeAtLastQuantityOnTopOfClosingAuctionClearingQuantity) {
+  cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
+                   .opening_auction_scheduled = true,
+                   .closing_auction_scheduled = true});
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::OpeningAuction, Price{110}, Quantity{500})));
+  cache.update(make_update(make_auction_cross(
+      TradingPhase::Option::ClosingAuction, Price{120}, Quantity{300})));
+  cache.update(make_update(trade_at_last_trade(Quantity{40})));
+
+  cache.compose_initial(settings, entries);
+
+  ASSERT_THAT(entries, ElementsAre(VolumeEntryHas(Quantity{840}, NoAction)));
 }
 
 TEST_F(InstrumentInfoCache, TracksLastOpenPhaseTradedPrice) {

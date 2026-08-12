@@ -192,9 +192,11 @@ For reference: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 *	PreOpen - opening auction
 *	PreClose - closing auction
 *	Auction - intraday auction
+*	TradeAtLast - trading at the closing price
 *	Halted
 
 The three auction phase types (PreOpen, PreClose, Auction) behave identically and differ only in the trading-session values reported over the FIX interface; see <<general-mktphs-auction,Auction Phase>>.
+The TradeAtLast phase accepts only day limit orders priced at the closing price and crosses them only against one another; see <<general-mktphs-tal,Trade At Last Phase>>.
 
 | startTime	| Text	| The time a phase should begin set in corresponding venue timezone, specified to the granularity of minutes
 | endTime	| Text	| The time a phase should end set in corresponding venue timezone, specified to the granularity of minutes

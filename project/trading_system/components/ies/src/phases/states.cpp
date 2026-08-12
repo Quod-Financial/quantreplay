@@ -51,6 +51,10 @@ auto OpenState::update(const Phase& scheduled_phase) const
     return ClosedState{};
   }
 
+  if (scheduled_phase.phase() == TradingPhase::Option::PostTrading) {
+    return TradeAtLastState{scheduled_phase};
+  }
+
   return OpenState{scheduled_phase};
 }
 
@@ -74,6 +78,9 @@ auto ClosedState::update(const Phase& scheduled_phase) const
     -> std::optional<State> {
   if (scheduled_phase.phase() == TradingPhase::Option::Open) {
     return OpenState{scheduled_phase};
+  }
+  if (scheduled_phase.phase() == TradingPhase::Option::PostTrading) {
+    return TradeAtLastState{scheduled_phase};
   }
   return std::nullopt;
 }
@@ -135,6 +142,67 @@ auto AuctionState::begin_uncrossing() const -> AuctionState {
   return {phase_, SubPhase::Uncrossing, end_, uncross_at_};
 }
 
+TradeAtLastState::TradeAtLastState(const Phase& phase) : phase_{phase} {}
+
+TradeAtLastState::TradeAtLastState(const Phase& phase, bool halted_by_request)
+    : phase_{phase}, halted_by_request_{halted_by_request} {}
+
+auto TradeAtLastState::halt(const protocol::HaltPhaseRequest& request,
+                            protocol::HaltPhaseReply& reply) const
+    -> std::optional<State> {
+  if (phase_.status() == TradingStatus::Option::Resume) {
+    reply.result = protocol::HaltPhaseReply::Result::Halted;
+    return TradeAtLastState{{TradingPhase::Option::PostTrading,
+                             TradingStatus::Option::Halt,
+                             {.allow_cancels = request.allow_cancels}},
+                            true};
+  }
+
+  if (halted_by_request_) {
+    reply.result = protocol::HaltPhaseReply::Result::AlreadyHaltedByRequest;
+  } else {
+    reply.result = protocol::HaltPhaseReply::Result::UnableToHalt;
+  }
+  return std::nullopt;
+}
+
+auto TradeAtLastState::resume(
+    [[maybe_unused]] const protocol::ResumePhaseRequest& request,
+    protocol::ResumePhaseReply& reply) const -> std::optional<State> {
+  if (halted_by_request_ && phase_.status() == TradingStatus::Option::Halt) {
+    reply.result = protocol::ResumePhaseReply::Result::Resumed;
+    return TradeAtLastState{
+        {TradingPhase::Option::PostTrading, TradingStatus::Option::Resume, {}},
+        false};
+  }
+
+  reply.result = protocol::ResumePhaseReply::Result::NoRequestedHalt;
+  return std::nullopt;
+}
+
+auto TradeAtLastState::update(const Phase& scheduled_phase) const
+    -> std::optional<State> {
+  if (phase_ == scheduled_phase && !halted_by_request_) {
+    return std::nullopt;
+  }
+
+  if (scheduled_phase.phase() == TradingPhase::Option::Closed) {
+    return ClosedState{};
+  }
+
+  if (scheduled_phase.phase() == TradingPhase::Option::PostTrading) {
+    return TradeAtLastState{scheduled_phase};
+  }
+
+  return OpenState{scheduled_phase};
+}
+
+auto TradeAtLastState::phase() const -> Phase { return phase_; }
+
+auto TradeAtLastState::halted_by_request() const -> bool {
+  return halted_by_request_;
+}
+
 auto is_auction_phase(TradingPhase phase) -> bool {
   switch (phase) {
     case TradingPhase::Option::OpeningAuction:
@@ -165,7 +233,7 @@ auto create_state(const Phase& phase,
       }
       return std::nullopt;
     case TradingPhase::Option::PostTrading:
-      return std::nullopt;
+      return TradeAtLastState{phase};
   }
   return std::nullopt;
 }

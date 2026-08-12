@@ -58,6 +58,11 @@ class PhaseHandler : EventReporter {
   }
 
   [[nodiscard]]
+  auto in_trade_at_last() const -> bool {
+    return current_state_.trading_phase() == TradingPhase::Option::PostTrading;
+  }
+
+  [[nodiscard]]
   auto current_phase() const -> MarketPhase {
     return current_state_;
   }

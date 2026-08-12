@@ -46,6 +46,8 @@ auto determine_trading_phase(data_layer::MarketPhase::Phase value)
       return TradingPhase::Option::IntradayAuction;
     case data_layer::MarketPhase::Phase::Halted:
       return TradingStatus::Option::Halt;
+    case data_layer::MarketPhase::Phase::TradeAtLast:
+      return TradingPhase::Option::PostTrading;
   }
   return std::nullopt;
 }

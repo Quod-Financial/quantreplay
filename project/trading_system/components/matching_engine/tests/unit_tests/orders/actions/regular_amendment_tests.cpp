@@ -45,7 +45,11 @@ struct MatchingEngineRegularAmendment : public Test {
   NiceMock<EventListenerMock> event_listener;
   OrderBook order_book;
   NiceMock<RegularMatcherMock> matcher;
-  RegularAmendment amendment{event_listener, order_book, matcher, std::nullopt};
+  RegularAmendment amendment{event_listener,
+                             order_book,
+                             matcher,
+                             std::nullopt,
+                             LimitOrderQueue::Regular};
 
   auto rest_limit_order(OrderId order_id,
                         OrderPrice price,
@@ -334,8 +338,11 @@ TEST_F(MatchingEngineRegularAmendment,
   order.execute(ExecutedQuantity{4}, ExecutionPrice{10.2});
   order_book.take_page(Side::Option::Buy).limit_orders().emplace(order);
 
-  RegularAmendment amendment_with_tick{
-      event_listener, order_book, matcher, PriceTick{0.5}};
+  RegularAmendment amendment_with_tick{event_listener,
+                                       order_book,
+                                       matcher,
+                                       PriceTick{0.5},
+                                       LimitOrderQueue::Regular};
 
   EXPECT_CALL(event_listener,
               on(IsClientNotification(
@@ -344,6 +351,54 @@ TEST_F(MatchingEngineRegularAmendment,
                       Optional(Eq(AveragePrice{10.0})))))));
 
   amendment_with_tick(amend_to(OrderId{42}, OrderPrice{10}, OrderQuantity{20}));
+}
+
+struct MatchingEngineRegularAmendmentOnTradeAtLastQueue
+    : public MatchingEngineRegularAmendment {
+  auto rest_trade_at_last_order(OrderId order_id,
+                                OrderQuantity quantity) -> void {
+    order_book.take_page(Side::Option::Buy)
+        .trade_at_last_orders()
+        .emplace(OrderBuilder{}
+                     .with_order_id(order_id)
+                     .with_side(Side::Option::Buy)
+                     .with_order_price(OrderPrice{10})
+                     .with_order_quantity(quantity)
+                     .with_time_in_force(TimeInForce::Option::GoodTillCancel)
+                     .build_limit_order());
+  }
+
+  RegularAmendment trade_at_last_amendment{event_listener,
+                                           order_book,
+                                           matcher,
+                                           std::nullopt,
+                                           LimitOrderQueue::TradeAtLast};
+};
+
+TEST_F(MatchingEngineRegularAmendmentOnTradeAtLastQueue,
+       ReportsOrderNotFoundWhenTheOrderRestsInTheRegularQueue) {
+  rest_limit_order(OrderId{42}, OrderPrice{10}, OrderQuantity{10});
+
+  EXPECT_CALL(
+      event_listener,
+      on(IsClientNotification(VariantWith<protocol::OrderModificationReject>(
+          Field(&protocol::OrderModificationReject::reject_text,
+                Optional(Eq(RejectText{"order not found"})))))));
+
+  trade_at_last_amendment(
+      amend_to(OrderId{42}, OrderPrice{10}, OrderQuantity{20}));
+}
+
+TEST_F(MatchingEngineRegularAmendmentOnTradeAtLastQueue,
+       AmendsOrderRestingInTheTradeAtLastQueue) {
+  rest_trade_at_last_order(OrderId{42}, OrderQuantity{10});
+
+  trade_at_last_amendment(
+      amend_to(OrderId{42}, OrderPrice{10}, OrderQuantity{20}));
+
+  EXPECT_THAT(order_book.buy_page().trade_at_last_orders(),
+              ElementsAre(Property(&LimitOrder::total_quantity,
+                                   Eq(OrderQuantity{20}))));
 }
 
 // NOLINTEND(*magic-numbers*)

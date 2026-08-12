@@ -67,7 +67,8 @@ auto select_current_halt(auto& candidates, std::chrono::seconds sched_time)
 auto halts_phase(const Phase& selected_phase, const PhaseRecord& halt_record)
     -> Phase {
   const auto trading_phase = selected_phase.phase();
-  if (trading_phase == TradingPhase::Option::Open) {
+  if (trading_phase == TradingPhase::Option::Open ||
+      trading_phase == TradingPhase::Option::PostTrading) {
     return {selected_phase.phase(),
             TradingStatus::Option::Halt,
             {halt_record.allow_cancels_on_halt}};

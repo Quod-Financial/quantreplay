@@ -221,6 +221,75 @@ TEST_F(TradingSystemIesTradingPhaseController, ResumesRequestedHalt) {
   ASSERT_THAT(phase, TradingStatusIs(TradingStatus::Option::Resume));
 }
 
+TEST_F(TradingSystemIesTradingPhaseController,
+       PassesScheduledTradeAtLastPhase) {
+  schedule(
+      {{.begin = 12h, .end = 15h, .phase = TradingPhase::Option::PostTrading}});
+
+  tick(12h);
+
+  ASSERT_THAT(phase, TradingPhaseIs(TradingPhase::Option::PostTrading));
+  ASSERT_THAT(phase, TradingStatusIs(TradingStatus::Option::Resume));
+}
+
+TEST_F(TradingSystemIesTradingPhaseController,
+       EntersTradeAtLastPhaseFromClosedPhase) {
+  schedule({{.begin = 11h, .end = 12h, .phase = TradingPhase::Option::Closed},
+            {.begin = 12h,
+             .end = 15h,
+             .phase = TradingPhase::Option::PostTrading}});
+  tick(11h);
+
+  tick(12h);
+
+  ASSERT_THAT(phase, TradingPhaseIs(TradingPhase::Option::PostTrading));
+}
+
+TEST_F(TradingSystemIesTradingPhaseController,
+       LeavesTradeAtLastPhaseAtItsEndTimeIgnoringEndTimeRange) {
+  schedule({{.begin = 12h,
+             .end = 15h,
+             .end_range = 5min,
+             .phase = TradingPhase::Option::PostTrading},
+            {.begin = 15h, .end = 16h, .phase = TradingPhase::Option::Closed}});
+  tick(12h);
+
+  tick(15h);
+
+  ASSERT_THAT(phase, TradingPhaseIs(TradingPhase::Option::Closed));
+}
+
+TEST_F(TradingSystemIesTradingPhaseController,
+       HaltsTradeAtLastPhaseEnteredFromOpenPhase) {
+  schedule({{.begin = 11h, .end = 12h, .phase = TradingPhase::Option::Open},
+            {.begin = 12h,
+             .end = 15h,
+             .phase = TradingPhase::Option::PostTrading}});
+  tick(11h);
+  tick(12h);
+
+  const auto reply = send_halt_request();
+
+  ASSERT_THAT(reply.result,
+              Optional(Eq(protocol::HaltPhaseReply::Result::Halted)));
+  ASSERT_THAT(phase, TradingPhaseIs(TradingPhase::Option::PostTrading));
+  ASSERT_THAT(phase, TradingStatusIs(TradingStatus::Option::Halt));
+}
+
+TEST_F(TradingSystemIesTradingPhaseController,
+       ResumesRequestedHaltOnTradeAtLastPhase) {
+  schedule(
+      {{.begin = 12h, .end = 15h, .phase = TradingPhase::Option::PostTrading}});
+  tick(12h);
+  send_halt_request();
+
+  const auto reply = send_resume_request();
+
+  ASSERT_THAT(reply.result, Eq(protocol::ResumePhaseReply::Result::Resumed));
+  ASSERT_THAT(phase, TradingPhaseIs(TradingPhase::Option::PostTrading));
+  ASSERT_THAT(phase, TradingStatusIs(TradingStatus::Option::Resume));
+}
+
 struct TradingSystemIesAuctionController : public Test {
   std::vector<Phase> reported_phases;
   std::chrono::seconds captured_low{0};
@@ -280,6 +349,11 @@ struct TradingSystemIesAuctionController : public Test {
 
   static auto closed_phase() -> Phase {
     return {TradingPhase::Option::Closed, TradingStatus::Option::Halt, {}};
+  }
+
+  static auto trade_at_last_phase() -> Phase {
+    return {
+        TradingPhase::Option::PostTrading, TradingStatus::Option::Resume, {}};
   }
 
  private:
@@ -431,6 +505,27 @@ TEST_F(TradingSystemIesAuctionController,
   ASSERT_THAT(reported_phases,
               ElementsAre(call_of(TradingPhase::Option::OpeningAuction),
                           uncrossing_of(TradingPhase::Option::OpeningAuction),
+                          closed_phase()));
+}
+
+TEST_F(TradingSystemIesAuctionController,
+       JumpsToTradeAtLastScheduledAfterClosingAuction) {
+  set_uncross_offset(0s);
+  schedule(
+      {{.begin = 16h,
+        .end = 17h,
+        .phase = TradingPhase::Option::ClosingAuction},
+       {.begin = 17h, .end = 18h, .phase = TradingPhase::Option::PostTrading},
+       {.begin = 18h, .end = 19h, .phase = TradingPhase::Option::Closed}});
+
+  tick(16h);
+  tick(17h);
+  tick(18h);
+
+  ASSERT_THAT(reported_phases,
+              ElementsAre(call_of(TradingPhase::Option::ClosingAuction),
+                          uncrossing_of(TradingPhase::Option::ClosingAuction),
+                          trade_at_last_phase(),
                           closed_phase()));
 }
 
