@@ -2,28 +2,15 @@ ifndef::imagesDir[]
 :imagesDir: images
 endif::[]
 
-[[phase-reporting-msg]]
-== Phase Reporting Messages
+[[general-application-msg]]
+== General Application Messages
 
-Support subscriptions to phase changes reported per security using SecurityStatus workflows when the phase change happens.
-The SecurityStatusRequest and SecurityStatus messages are both expected to be sent in the context of a specific indicated listing. 
-Changes to phase occur across the entire venue. 
-In any case, the phase will always be reported by listing. 
-This means if a phase change happens across the venue, a separate SecurityStatus message is sent for every listing on that venue 
-(but, of course, only for the client-subscribed listings).
-
-Auction phases are reported through the same workflow. When an auction's call sub-phase begins, the simulator reports SecurityTradingStatus (326) = 3 (Resume) together with the TradingSessionSubID (625) of the auction variant — 2 for an opening auction (PreOpen), 4 for a closing auction (PreClose) or 6 for an intraday auction (Auction). When the auction's uncrossing sub-phase begins, it reports SecurityTradingStatus (326) = 2 (Trading Halt) with the same TradingSessionSubID. The phase scheduled to follow the auction is then reported as usual.
-
-The TradeAtLast phase is reported in a single step, like the Open and the Closed phases: SecurityTradingStatus (326) = 3 (Resume) together with TradingSessionSubID (625) = 5 (Post-Trading) when the phase begins. A halt of the phase is reported as SecurityTradingStatus (326) = 2 (Trading Halt) with the same TradingSessionSubID.
-
-If there are any application-layer problems handling the SecurityStatusRequest, the simulator responds with a BusinessMessageReject (35=j) message,
-indicating the rejection details in Text and BusinessRejectReason tags, and considers the request invalid and terminated.
-
-[[phase-reporting-msg-sec-sts-req]]
+[[general-application-msg-sec-sts-req]]
 === SecurityStatusRequest request (35=e)
 
-[cols="10,25,10,55"]
+Support subscriptions to phase changes reported per security using SecurityStatus workflows when the phase change happens.
 
+[cols="10,25,10,55"]
 |===
 | Tag | Field Name | Req’d | Comments
 
@@ -48,11 +35,19 @@ Required when SecurityIDSource = ISIN in the Instrument component.
 | Component | <<common-components-std-trailer>> | Y | 
 |===
 
-[[phase-reporting-msg-sec-sts-resp]]
+[[general-application-msg-sec-sts-resp]]
 === SecurityStatus response (35=f)
 
-[cols="10,25,10,55"]
+The SecurityStatusRequest and SecurityStatus messages are both expected to be sent in the context of a specific indicated listing. 
+Changes to phase occurs across the entire venue. In any case, the phase will always be reported by listing. 
+This means if a phase change happens across the venue, a separate SecurityStatus message is sent for every listing on that venue 
+(but, of course, only for the client-subscribed listings).
 
+Auction phases are reported through the same workflow. When an auction's call sub-phase begins, the simulator reports SecurityTradingStatus (326) = 3 (Resume) together with the TradingSessionSubID (625) of the auction variant — 2 for an opening auction (PreOpen), 4 for a closing auction (PreClose) or 6 for an intraday auction (Auction). When the auction's uncrossing sub-phase begins, it reports SecurityTradingStatus (326) = 2 (Trading Halt) with the same TradingSessionSubID. The phase scheduled to follow the auction is then reported as usual.
+
+The TradeAtLast phase is reported in a single step, like the Open and the Closed phases: SecurityTradingStatus (326) = 3 (Resume) together with TradingSessionSubID (625) = 5 (Post-Trading) when the phase begins. A halt of the phase is reported as SecurityTradingStatus (326) = 2 (Trading Halt) with the same TradingSessionSubID.
+
+[cols="10,25,10,55"]
 |===
 | Tag | Field Name | Req’d | Comments
 
@@ -90,11 +85,13 @@ Required when SecurityIDSource = ISIN in the Instrument component.
 | Component | <<common-components-std-trailer>> | Y | 
 |===
 
-[[phase-reporting-msg-bus-msg-rej]]
+[[general-application-msg-bus-msg-rej]]
 === BusinessMessageReject (35=j)
 
-[cols="10,25,10,55"]
+If there are any application-layer problems handling the SecurityStatusRequest, the simulator responds with a BusinessMessageReject (35=j) message,
+indicating the rejection details in Text and BusinessRejectReason tags, and considers the request invalid and terminated.
 
+[cols="10,25,10,55"]
 |===
 | Tag | Field Name | Req’d | Comments
 

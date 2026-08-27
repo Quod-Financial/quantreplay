@@ -10,7 +10,7 @@ endif::[]
 
 Manage general settings across all market simulator instances.
 
-[1,1,1]
+[cols="1,1,1"]
 |===
 | Path | Type |Description
 
@@ -20,7 +20,7 @@ Manage general settings across all market simulator instances.
 
 A list of settings, currently defined in the Market Simulator backend:
 
-[1,1,1]
+[cols="1,1,1"]
 |===
 | Setting | Key | Meaning
 
@@ -62,8 +62,8 @@ Content-Length: XXX
 {
     "settings" : [
         {
-            "key":"DisplayName",
-            "value":"SITE NAME"
+            "key" : "DisplayName",
+            "value" : "SITE NAME"
         },
         {
             "key" : "SeedPriceDatabaseConnection",
@@ -98,8 +98,8 @@ Host: localhost
 {
     "settings" : [
       {
-        "key":"DisplayName",
-        "value":"MKTSIMULATOR-DEV"
+        "key" : "DisplayName",
+        "value" : "MKTSIMULATOR-DEV"
       },
       {
         "key" : "SeedPriceDatabaseConnection",
@@ -145,8 +145,7 @@ Manage settings for each market simulator venue entity.
 
 _Resource Properties_
 
-
-[1,1,1]
+[cols="1,1,1"]
 |===
 | Path | Type | Description
 
@@ -176,12 +175,12 @@ For reference: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 * True - any of the live resting orders that were placed through that COMPID should be cancelled, the rejection messages the next time that COMPID reconnects should be sent.
 | persistenceEnabled	| Boolean	| Whether a matching engine persisted state functionality should be enabled
 | persistenceFilePath	| Text	| A file path to the persistence file where matching engine state should be stored/recovered
+| phases | Array | Scheduled phase changes
 |=== 
 
-[[adminsets-venues-mktphasessublist]]
-==== Market Phases Sub-List
+_Phases Sub-List_
 
-[1,1,1]
+[cols="1,1,1"]
 |===
 | Path | Type |Description
 
@@ -242,7 +241,7 @@ Content-Length: XXX
     "supportTifFok" : true,
     "supportTifDay" : true,
     "includeOwnOrders" : true,
-    "restPort":9184,
+    "restPort" :9184,
     "orderOnStartup" : false,
     "randomPartyCount" : 10,
     "timeAndSalesEnabled" : true,
@@ -252,7 +251,7 @@ Content-Length: XXX
     "timezone" : "America/Los_Angeles",
     "cancelOnDisconnect" : false,
     "persistenceEnabled" : true,
-    "persistenceFilePath" : "/path/to/LSE-state.json"
+    "persistenceFilePath" : "/path/to/LSE-state.json",
     "phases" : [
         {
              "phase" : "Open",
@@ -311,26 +310,26 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "venues": [
+    "venues" : [
         {
-            "id": "FASTMATCH",
-            "name": "FASTMATCH",
-            "engineType": "Quoting",
-            "supportTifIoc": true,
-            "supportTifFok": true,
-            "supportTifDay": true,
-            "includeOwnOrders": true,
-            "restPort": 9182,
-            "orderOnStartup": false,
-            "randomPartyCount": 10,
-            "timeAndSalesEnabled": true,
-            "timeAndSalesQuantityEnabled": true,
-            "timeAndSalesSideEnabled": true,
-            "timeAndSalesPartiesEnabled": true,
+            "id" : "FASTMATCH",
+            "name" : "FASTMATCH",
+            "engineType" : "Quoting",
+            "supportTifIoc" : true,
+            "supportTifFok" : true,
+            "supportTifDay" : true,
+            "includeOwnOrders" : true,
+            "restPort" : 9182,
+            "orderOnStartup" : false,
+            "randomPartyCount" : 10,
+            "timeAndSalesEnabled" : true,
+            "timeAndSalesQuantityEnabled" : true,
+            "timeAndSalesSideEnabled" : true,
+            "timeAndSalesPartiesEnabled" : true,
             "timezone" : "America/Los_Angeles",
-            "cancelOnDisconnect": false,
+            "cancelOnDisconnect" : false,
             "persistenceEnabled" : false,
-            "phases": []
+            "phases" : []
         },
         {
             "id" : "LSE",
@@ -340,7 +339,7 @@ Content-Length: XXX
             "supportTifFok" : true,
             "supportTifDay" : true,
             "includeOwnOrders" : true,
-            "restPort":9184,
+            "restPort" :9184,
             "orderOnStartup" : false,
             "randomPartyCount" : 10,
             "timeAndSalesEnabled" : true,
@@ -350,7 +349,7 @@ Content-Length: XXX
             "timezone" : "America/Los_Angeles",
             "cancelOnDisconnect" : false,
             "persistenceEnabled" : true,
-            "persistenceFilePath" : "/path/to/LSE-state.json"
+            "persistenceFilePath" : "/path/to/LSE-state.json",
             "phases" : [
                 {
                    "phase" : "Open",
@@ -367,95 +366,6 @@ Content-Length: XXX
             ]
         }
     ]
-}
-----
-
-
-[[adminsets-venues-data-dictionaries]]
-==== Download Session Data Dictionaries
-Download a ZIP archive of all QuickFIX data dictionary files associated with a single
-configured session of a venue.
-
-The `sessionId` - session identifier in the format: `+{BeginString}:{SenderCompID}->{TargetCompID}:{SessionQualifier}+`.
-`+:{SessionQualifier}+` is only added if SessionQualifier is configured.
-
-The archive gathers a unique list of every data dictionary referenced by the
-session, taken from the following settings:
-
-* `DataDictionary`
-* `TransportDataDictionary`
-* `AppDataDictionary` (including granular `AppDataDictionary.<BeginString>` overrides)
-
-These settings are resolved from both the session and the `DEFAULT` sections of
-the QuickFIX configuration. Files are stored under a directory structure rooted
-at the common base of all referenced paths.
-
-A `HEAD` request to the same resource applies the same resolution logic but
-returns no body — only the status code — so a client can determine whether any
-files are available before initiating the download.
-
-_Resource URI_
-
-----
-GET  /api/venues/{venueId}/sessions/{sessionId}/dataDictionaries
-----
-
-_Example_: Request the data dictionaries of session `+FIX.4.4:MDSERVER->MDCLIENT+` on venue `LSE`
-
-[,http]
-----
-GET /api/venues/LSE/sessions/FIX.4.4%3AMDSERVER-%3EMDCLIENT/dataDictionaries HTTP/1.1
-Host: localhost
-----
-
-_Example_: Positive reply
-
-[,http]
-----
-HTTP/1.1 200 OK
-Content-Type: application/zip
-Content-Disposition: attachment; filename="LSE_FIX44-MDSERVER--MDCLIENT_Dictionaries.zip"
-Content-Length: XXX
-
-<binary ZIP archive>
-----
-
-_Example_: The session cannot be resolved on the venue
-
-[,http]
-----
-HTTP/1.1 404 Not Found
-Connection: Close
-Content-Length: XXX
-
-{
-    "result" : "Can not resolve a single session by a given session ID"
-}
-----
-
-_Example_: The destination venue cannot be resolved
-
-[,http]
-----
-HTTP/1.1 502 Bad Gateway
-Connection: Close
-Content-Length: XXX
-
-{
-    "result" : "Could not resolve destination instance with LSE identifier"
-}
-----
-
-_Example_: The destination venue is known but not running
-
-[,http]
-----
-HTTP/1.1 502 Bad Gateway
-Connection: Close
-Content-Length: XXX
-
-{
-    "result" : "Could not access an instance with LSE identifier"
 }
 ----
 
@@ -502,7 +412,7 @@ Connection: Keep-Alive
 Content-Length: XXX
 
 {
-    "result":"Successfully inserted a new Venue"
+    "result" : "Successfully inserted a new Venue"
 }
 ----
 
@@ -515,7 +425,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result":"Requested operation violates data integrity constraints"
+    "result" : "Requested operation violates data integrity constraints"
 }
 ----
 
@@ -566,7 +476,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result":"No such venue"
+    "result" : "No such venue"
 }
 ----
 
@@ -770,70 +680,70 @@ Content-Type: application/json;charset=UTF-8
 Content-Length: XXX
 
 {
-    "listings": [
+    "listings" : [
         {
-            "id": 1,
-            "symbol": "DE0007664005",
-            "venueId": "XETRA",
-            "securityType": "CS",
-            "priceCurrency": "EUR",
-            "fxBaseCurrency": "",
-            "instrSymbol": "DE0007664005",
-            "securityExchange": "XETR",
-            "partyId": "",
-            "partyRole": "",
-            "cusipId": "",
-            "sedolId": "",
-            "isinId": "DE0007664005",
-            "ricId": "",
-            "exchangeSymbolId": "",
-            "bloombergSymbolId": "",
-            "qtyMinimum": 1,
-            "qtyMaximum": 1000000,
-            "qtyMultiple": 1,
-            "priceTickSize": 0.001,
-            "randomQtyMinimum": 1,
-            "randomQtyMaximum": 1000,
-            "randomAmtMinimum": 0,
-            "randomAmtMaximum": 0,
-            "randomDepthLevels": 10,
-            "randomOrdersSpread": 1,
-            "randomOrdersRate": 1,
-            "randomTickRange": 10,
+            "id" : 1,
+            "symbol" : "DE0007664005",
+            "venueId" : "XETRA",
+            "securityType" : "CS",
+            "priceCurrency" : "EUR",
+            "fxBaseCurrency" : "",
+            "instrSymbol" : "DE0007664005",
+            "securityExchange" : "XETR",
+            "partyId" : "",
+            "partyRole" : "",
+            "cusipId" : "",
+            "sedolId" : "",
+            "isinId" : "DE0007664005",
+            "ricId" : "",
+            "exchangeSymbolId" : "",
+            "bloombergSymbolId" : "",
+            "qtyMinimum" : 1,
+            "qtyMaximum" : 1000000,
+            "qtyMultiple" : 1,
+            "priceTickSize" : 0.001,
+            "randomQtyMinimum" : 1,
+            "randomQtyMaximum" : 1000,
+            "randomAmtMinimum" : 0,
+            "randomAmtMaximum" : 0,
+            "randomDepthLevels" : 10,
+            "randomOrdersSpread" : 1,
+            "randomOrdersRate" : 1,
+            "randomTickRange" : 10,
             "randomAggQtyMinimum" : 2.0,
             "randomAggQtyMaximum" : 200.0,
             "randomAggAmtMinimum" : 1000.0,
             "randomAggAmtMaximum" : 3000.0
         },
         {
-            "id": 3,
-            "symbol": "EUR/USD",
-            "venueId": "FASTMATCH",
-            "securityType": "FXSPOT",
-            "priceCurrency": "USD",
-            "fxBaseCurrency": "EUR",
-            "instrSymbol": "EUR/USD",
-            "securityExchange": "FASTMATCH",
-            "partyId": "",
-            "partyRole": "",
-            "cusipId": "",
-            "sedolId": "",
-            "isinId": "",
-            "ricId": "",
-            "exchangeSymbolId": "",
-            "bloombergSymbolId": "",
-            "qtyMinimum": 1,
-            "qtyMaximum": 1.0E8,
-            "qtyMultiple": 1,
-            "priceTickSize": 0.001,
-            "randomQtyMinimum": 1,
-            "randomQtyMaximum": 1.0E7,
-            "randomAmtMinimum": 0,
-            "randomAmtMaximum": 0,
-            "randomDepthLevels": 3,
-            "randomOrdersSpread": 1.0E-4,
-            "randomOrdersRate": 1,
-            "randomTickRange": 10,
+            "id" : 3,
+            "symbol" : "EUR/USD",
+            "venueId" : "FASTMATCH",
+            "securityType" : "FXSPOT",
+            "priceCurrency" : "USD",
+            "fxBaseCurrency" : "EUR",
+            "instrSymbol" : "EUR/USD",
+            "securityExchange" : "FASTMATCH",
+            "partyId" : "",
+            "partyRole" : "",
+            "cusipId" : "",
+            "sedolId" : "",
+            "isinId" : "",
+            "ricId" : "",
+            "exchangeSymbolId" : "",
+            "bloombergSymbolId" : "",
+            "qtyMinimum" : 1,
+            "qtyMaximum" : 1.0E8,
+            "qtyMultiple" : 1,
+            "priceTickSize" : 0.001,
+            "randomQtyMinimum" : 1,
+            "randomQtyMaximum" : 1.0E7,
+            "randomAmtMinimum" : 0,
+            "randomAmtMaximum" : 0,
+            "randomDepthLevels" : 3,
+            "randomOrdersSpread" : 1.0E-4,
+            "randomOrdersRate" : 1,
+            "randomTickRange" : 10,
             "randomAggQtyMinimum" : 2.0,
             "randomAggQtyMaximum" : 200.0,
             "randomAggAmtMinimum" : 1000.0,
@@ -887,7 +797,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result":"Successfully inserted a new Listing"
+    "result" : "Successfully inserted a new Listing"
 }
 ----
 
@@ -999,7 +909,7 @@ See <<general-datasource,this section>> for more information about playback of d
 
 _Resource Properties_
 
-[1,1,1]
+[cols="1,1,1"]
 |===
 | Path | Type |Description
 
@@ -1106,8 +1016,8 @@ Content-Length: XXX
     "textDelimeter" : "|",
     "textHeaderRow" : 0,
     "textDataRow" : 1,
-    "maxDepthLevels": 3,
-    "columnMapping": [
+    "maxDepthLevels" : 3,
+    "columnMapping" : [
         {
             "dataSourceId" : 1,
             "columnFrom" : "ReceivedTimeStamp",
@@ -1167,7 +1077,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "dataSources": [
+    "dataSources" : [
         {
             "id" : 1,
             "enabled" : true,
@@ -1178,7 +1088,7 @@ Content-Length: XXX
             "type" : "OrderBook",
             "repeat" : true,
             "tableName" : "historical_data",
-            "columnMapping": [
+            "columnMapping" : [
                 {
                     "dataSourceId" : 1,
                     "columnFrom" : "ReceivedTimeStamp",
@@ -1237,7 +1147,7 @@ Host: localhost
     "textDelimiter" : ",",
     "textHeaderRow" : 0,
     "textDataRow" : 100,
-    "columnMapping": [
+    "columnMapping" : [
         {
             "columnFrom" : "ReceivedTimeStamp",
             "columnTo" : "ActionTime"
@@ -1255,7 +1165,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result":"Successfully inserted a new datasource"
+    "result" : "Successfully inserted a new datasource"
 }
 ----
 
@@ -1268,7 +1178,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result":"Requested operation violates data integrity constraints"
+    "result" : "Requested operation violates data integrity constraints"
 }
 ----
 
@@ -1525,7 +1435,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result":"Successfully inserted new price seed"
+    "result" : "Successfully inserted new price seed"
 }
 ----
 

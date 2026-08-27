@@ -6,8 +6,8 @@ if [ ! -d "output" ]; then
 fi
 rm -f output/*.html
 
-asciidoctor "RESTAPI.adoc" -a imagesDir="../images" -D "output"
+asciidoctor "RESTAPI.adoc" -v -a imagesDir="../images" -D "output"
 echo HTML Done
 
-asciidoctor-pdf -a allow-uri-read -a pdf-theme="../common/pdf/PDFTheme.yml" "RESTAPI.adoc" -D "output"
+asciidoctor-pdf -a allow-uri-read -a pdf-theme="../common/pdf/PDFTheme.yml" "RESTAPI.adoc" -v -D "output"
 echo PDF Done

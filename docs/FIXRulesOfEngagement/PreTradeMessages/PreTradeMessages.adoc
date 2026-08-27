@@ -253,23 +253,23 @@ The MDEntryType (269) values below are requested in a MarketDataRequest (35=V) a
 
 | 2 | Trade |
 
-| 4 | Opening Price | During an opening auction call, carries the indicative auction price in MDEntryPx (270) and the indicative auction volume in MDEntrySize (271), see <<message-flows-mkt-data-auction-indicative>>.
+| 4 | Opening Price | During an opening auction call, carries the indicative auction price in MDEntryPx (270) and the indicative auction volume in MDEntrySize (271).
 
-| 5 | Closing Price | During a closing auction call, carries the indicative auction price in MDEntryPx (270) and the indicative auction volume in MDEntrySize (271), see <<message-flows-mkt-data-auction-indicative>>.
+| 5 | Closing Price | During a closing auction call, carries the indicative auction price in MDEntryPx (270) and the indicative auction volume in MDEntrySize (271).
 
-| 6 | Settlement Price | During an intraday auction call, carries the indicative auction price in MDEntryPx (270) and the indicative auction volume in MDEntrySize (271), see <<message-flows-mkt-data-auction-indicative>>.
+| 6 | Settlement Price | During an intraday auction call, carries the indicative auction price in MDEntryPx (270) and the indicative auction volume in MDEntrySize (271).
 
 | 7 | Trading Session High Price |
 
 | 8 | Trading Session Low Price |
 
-| A | Imbalance | Auction imbalance size in MDEntrySize (271) and its side in TradeCondition (277), without MDEntryPx (270), see <<message-flows-mkt-data-auction-indicative>>.
+| A | Imbalance | Auction imbalance size in MDEntrySize (271) and its side in TradeCondition (277), without MDEntryPx (270),
 
-| B | Trade Volume | Daily traded volume in MDEntrySize (271), without MDEntryPx (270), see <<message-flows-mkt-data-daily-reset>>.
+| B | Trade Volume | Daily traded volume in MDEntrySize (271), without MDEntryPx (270).
 
 | H | Mid Price |
 
-| P | Early Price | Price in MDEntryPx (270) with its volume in MDEntrySize (271), see <<message-flows-mkt-data-auction>>.
+| P | Early Price | Price in MDEntryPx (270) with its volume in MDEntrySize (271).
 
 | Q | Auction Clearing Price | Price in MDEntryPx (270) with its volume in MDEntrySize (271).
 

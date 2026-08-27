@@ -6,8 +6,8 @@ if [ ! -d "output" ]; then
 fi
 rm -f output/*.html
 
-asciidoctor "Overview.adoc" -D "output"
+asciidoctor "Overview.adoc" -v -D "output"
 echo HTML Done
 
-asciidoctor-pdf -a allow-uri-read -a pdf-theme="../common/pdf/PDFTheme.yml" "Overview.adoc" -D "output"
+asciidoctor-pdf -a allow-uri-read -a pdf-theme="../common/pdf/PDFTheme.yml" "Overview.adoc" -v -D "output"
 echo PDF Done

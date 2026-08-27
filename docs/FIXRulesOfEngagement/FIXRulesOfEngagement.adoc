@@ -19,12 +19,15 @@ include::Introduction/Introduction.adoc[]
 
 <<<
 
+include::General/General.adoc[]
+
+<<<
+
 include::CommonComponents/CommonComponents.adoc[]
 
 <<<
 
 include::AdminMessages/AdminMessages.adoc[]
-
 
 <<<
 
@@ -36,7 +39,7 @@ include::TradeMessages/TradeMessages.adoc[]
 
 <<<
 
-include::PhaseReportingMessages/PhaseReportingMessages.adoc[]
+include::GeneralMessages/GeneralMessages.adoc[]
 
 <<<
 
