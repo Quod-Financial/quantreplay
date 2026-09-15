@@ -142,7 +142,7 @@ TEST_F(
 }
 
 TEST_F(GeneratorRandomQuantityParamsSelector,
-       SelectsListingMinQtyAsMinimalQtyIfThePriceIsZero) {
+       SelectsListingMinQtyAsMinimalQtyIfPriceIsZero) {
   constexpr double zero_price = 0.0;
   constexpr double random_min_amount_qty = 12000.0;
   constexpr double listing_min_qty = 1000.998;
@@ -276,7 +276,7 @@ TEST_F(
 }
 
 TEST_F(GeneratorRandomQuantityParamsSelector,
-       SelectsListingMinQtyAsMinimalQtyForAggressiveOrdersIfThePriceIsZero) {
+       SelectsListingMinQtyAsMinimalQtyForAggressiveOrdersIfPriceIsZero) {
   constexpr double zero_price = 0.0;
   constexpr double random_aggressive_min_qty = 4500.0;
   constexpr double random_aggressive_min_amount_qty = 12000.0;

@@ -91,10 +91,6 @@ auto CacheManager::compose_trade(const StreamingSettings& settings,
   return trade_cache_.compose_trade(settings, trade);
 }
 
-auto CacheManager::capture(protocol::InstrumentState& state) const -> void {
-  depth_cache_.capture(state);
-}
-
 auto CacheManager::store_state(
     std::optional<Trade>& last_trade,
     std::optional<market_state::InstrumentInfo>& info) -> void {

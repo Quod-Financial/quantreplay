@@ -8,6 +8,7 @@
 
 #include "api/converters/column_mapping.hpp"
 #include "api/validations/column_mapping.hpp"
+#include "core/tools/fix_session_id.hpp"
 #include "core/tools/numeric.hpp"
 
 namespace simulator::data_layer::validation {
@@ -230,6 +231,20 @@ auto all_level_columns_are_variable_depth(
                    *std::begin(level_columns))};
 }
 
+[[nodiscard]]
+auto fix_connection_is_session_id(Datasource::Format format,
+                                  const std::string& connection)
+    -> tl::expected<void, std::string> {
+  if (format == Datasource::Format::Fix &&
+      !core::parse_fix_session_id(connection).has_value()) {
+    return tl::unexpected<std::string>{
+        "connection must be a FIX session identifier in the form "
+        "BeginString:SenderCompID->TargetCompID[:SessionQualifier] if the "
+        "format is FIX."};
+  }
+  return {};
+}
+
 }  // namespace
 
 [[nodiscard]]
@@ -237,6 +252,12 @@ auto valid(const Datasource& datasource) -> tl::expected<void, std::string> {
   const auto& columns_mapping = datasource.columns_mapping();
   const auto format = datasource.format();
   const auto text_header_row = datasource.text_header_row();
+
+  if (const auto result =
+          fix_connection_is_session_id(format, datasource.connection());
+      !result.has_value()) {
+    return tl::unexpected<std::string>{result.error()};
+  }
 
   if (text_header_row.has_value()) {
     const auto result = csv_no_header_numeric_column_to(
@@ -278,6 +299,14 @@ auto valid(const Datasource& datasource) -> tl::expected<void, std::string> {
 
 auto valid(const Datasource::Patch& datasource)
     -> tl::expected<void, std::string> {
+  if (datasource.format().has_value() && datasource.connection().has_value()) {
+    if (const auto result = fix_connection_is_session_id(
+            *datasource.format(), *datasource.connection());
+        !result.has_value()) {
+      return tl::unexpected<std::string>{result.error()};
+    }
+  }
+
   const auto& columns_mapping = datasource.columns_mapping();
   if (columns_mapping.has_value()) {
     const auto format = datasource.format();

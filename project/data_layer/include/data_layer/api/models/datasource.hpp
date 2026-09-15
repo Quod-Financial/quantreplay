@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "data_layer/api/models/column_mapping.hpp"
+#include "data_layer/api/models/datasource_listing.hpp"
 #include "data_layer/api/models/patch_field.hpp"
 #include "data_layer/api/predicate/definitions.hpp"
 
@@ -31,10 +32,11 @@ class Datasource {
     TextHeaderRow,
     TextDataRow,
     TableName,
-    MaxDepthLevels
+    MaxDepthLevels,
+    RandomPriceOnly
   };
 
-  enum class Format { Csv, Postgres };
+  enum class Format { Csv, Postgres, Fix };
 
   enum class Type { OrderBook };
 
@@ -43,6 +45,7 @@ class Datasource {
   static constexpr std::uint64_t NoTextHeaderRow{0};
   static constexpr bool DefaultEnabledFlag{true};
   static constexpr bool DefaultRepeatFlag{false};
+  static constexpr bool DefaultRandomPriceOnlyFlag{false};
   static constexpr char DefaultTextDelimiter{','};
   static constexpr std::uint64_t DefaultTextDataRow{1};
 
@@ -90,7 +93,13 @@ class Datasource {
   auto columns_mapping() const noexcept -> const std::vector<ColumnMapping>&;
 
   [[nodiscard]]
+  auto listings() const noexcept -> const std::vector<DatasourceListing>&;
+
+  [[nodiscard]]
   auto max_depth_levels() const noexcept -> std::optional<std::uint32_t>;
+
+  [[nodiscard]]
+  auto random_price_only_flag() const noexcept -> std::optional<bool>;
 
  private:
   Datasource() = default;
@@ -102,6 +111,7 @@ class Datasource {
   std::string connection_;
 
   std::vector<ColumnMapping> columns_mapping_;
+  std::vector<DatasourceListing> listings_;
 
   std::optional<std::uint64_t> text_header_row_;
   std::optional<std::uint64_t> text_data_row_;
@@ -115,6 +125,7 @@ class Datasource {
   std::optional<char> text_delimiter_;
   std::optional<bool> enabled_flag_;
   std::optional<bool> repeat_flag_;
+  std::optional<bool> random_price_only_flag_;
 };
 
 class Datasource::Patch {
@@ -176,9 +187,19 @@ class Datasource::Patch {
   auto without_column_mapping() noexcept -> Patch&;
 
   [[nodiscard]]
+  auto listings() const noexcept
+      -> const std::optional<std::vector<DatasourceListing::Patch>>&;
+  auto with_listing(DatasourceListing::Patch patch_snapshot) -> Patch&;
+  auto without_listings() noexcept -> Patch&;
+
+  [[nodiscard]]
   auto max_depth_levels() const noexcept -> const PatchField<std::uint32_t>&;
   auto with_max_depth_levels(std::optional<std::uint32_t> levels) noexcept
       -> Patch&;
+
+  [[nodiscard]]
+  auto random_price_only_flag() const noexcept -> const PatchField<bool>&;
+  auto with_random_price_only_flag(std::optional<bool> flag) noexcept -> Patch&;
 
  private:
   PatchField<std::string> table_name_;
@@ -187,6 +208,7 @@ class Datasource::Patch {
   std::optional<std::string> connection_;
 
   std::optional<std::vector<ColumnMapping::Patch>> columns_mapping_;
+  std::optional<std::vector<DatasourceListing::Patch>> listings_;
 
   PatchField<std::uint64_t> text_header_row_;
   PatchField<std::uint64_t> text_data_row_;
@@ -198,6 +220,7 @@ class Datasource::Patch {
   PatchField<char> text_delimiter_;
   PatchField<bool> enabled_flag_;
   PatchField<bool> repeat_flag_;
+  PatchField<bool> random_price_only_flag_;
 };
 
 }  // namespace simulator::data_layer

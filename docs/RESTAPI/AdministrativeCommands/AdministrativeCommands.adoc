@@ -19,8 +19,8 @@ _Response Properties_
 | name | Text | Venue full name
 | startTime | DateTime | Time when the instance started
 | version | Text | Version of MktSimulator
-| sessionSettings | Array | QuickFIX session settings configured for this venue instance, as parsed by the venue
-| sessions | Array | QuickFIX session details for this venue instance, as parsed by the venue
+| sessionSettings | Array | QuickFIX session settings configured for this venue instance, as parsed by the venue. Every section of the configuration is listed, including both acceptor and initiator sessions.
+| sessions | Array | QuickFIX acceptor session details for this venue instance, as parsed by the venue. Only acceptor sessions for connecting to the simulator are listed, and any initiator sessions used by configured FIX datasources) are not included.
 | statusCode | Integer | HTTP code received in response to venue status request
 |===
 
@@ -45,8 +45,7 @@ _Sessions Sub-List_
 
 | id | Text | Session identifier in the format `+{BeginString}:{SenderCompID}->{TargetCompID}:{SessionQualifier}+`.
 `+:{SessionQualifier}+` is only added if SessionQualifier is configured.
-| host | Text | The IP address and port (same as SocketAcceptPort defined in the QuickFIX configuration).
-I.e., `"172.18.0.5:9001"`.
+| host | Text | The endpoint of the session: the IP address of the venue instance and the `SocketAcceptPort` value defined in the QuickFIX configuration, i.e. `"172.18.0.5:9001"`.
 | lastConnectedTime | DateTime | Time when the FIX Logon (35=A) message was received last time
 | connected | Boolean a| Indicates whether a client is currently connected to the session:
 
@@ -431,6 +430,7 @@ configured session of a venue.
 
 The `sessionId` - session identifier in the format: `+{BeginString}:{SenderCompID}->{TargetCompID}:{SessionQualifier}+`.
 `+:{SessionQualifier}+` is only added if SessionQualifier is configured.
+Only acceptor sessions are returned in this call and any initiator or unedfined sessions are excluded.
 
 The archive gathers a unique list of every data dictionary referenced by the
 session, taken from the following settings:

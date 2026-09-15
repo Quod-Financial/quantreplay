@@ -3,8 +3,10 @@
 
 #include "api/models/column_mapping.hpp"
 #include "api/models/datasource.hpp"
+#include "api/models/datasource_listing.hpp"
 #include "api/models/fix_session.hpp"
 #include "api/models/listing.hpp"
+#include "api/models/listing_random_price_source.hpp"
 #include "api/models/market_phase.hpp"
 #include "api/models/price_seed.hpp"
 #include "api/models/setting.hpp"
@@ -18,9 +20,14 @@ class ColumnResolver {
 
   auto operator()(Datasource::Attribute attribute) const -> std::string;
 
+  auto operator()(DatasourceListing::Attribute attribute) const -> std::string;
+
   auto operator()(FixSession::Attribute attribute) const -> std::string;
 
   auto operator()(Listing::Attribute attribute) const -> std::string;
+
+  auto operator()(ListingRandomPriceSource::Attribute attribute) const
+      -> std::string;
 
   auto operator()(MarketPhase::Attribute attribute) const -> std::string;
 
@@ -35,9 +42,15 @@ class ColumnResolver {
 
   static auto to_column_name(Datasource::Attribute attribute) -> std::string;
 
+  static auto to_column_name(DatasourceListing::Attribute attribute)
+      -> std::string;
+
   static auto to_column_name(FixSession::Attribute attribute) -> std::string;
 
   static auto to_column_name(Listing::Attribute attribute) -> std::string;
+
+  static auto to_column_name(ListingRandomPriceSource::Attribute attribute)
+      -> std::string;
 
   static auto to_column_name(MarketPhase::Attribute attribute) -> std::string;
 

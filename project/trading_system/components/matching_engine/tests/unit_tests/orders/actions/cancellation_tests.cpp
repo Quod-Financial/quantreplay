@@ -337,7 +337,7 @@ TEST_F(MatchingEngineCancellation, ReturnsRemoveUpdateForCancelledLimitOrder) {
 }
 
 TEST_F(MatchingEngineCancellation,
-       RejectsCancellationOfAnOrderRestingInTheTradeAtLastQueue) {
+       RejectsCancellationOfOrderRestingInTradeAtLastQueue) {
   order_book.take_page(Side::Option::Buy)
       .trade_at_last_orders()
       .emplace(builder.with_order_id(OrderId{123})
@@ -391,7 +391,7 @@ struct MatchingEngineTradeAtLastCancellation : public Test {
 };
 
 TEST_F(MatchingEngineTradeAtLastCancellation,
-       RejectsCancellationOfAnOrderRestingInTheRegularQueue) {
+       RejectsCancellationOfOrderRestingInRegularQueue) {
   rest_regular(identifiable_order().build_limit_order());
 
   EXPECT_CALL(

@@ -318,6 +318,23 @@ TEST_F(DataLayerValidationDatasourcePatchValid,
   ASSERT_TRUE(valid(patch).has_value());
 }
 
+TEST_F(DataLayerValidationDatasourcePatchValid,
+       ReturnsErrorMessageIfFixConnectionIsNotSessionId) {
+  patch.with_format(Datasource::Format::Fix)
+      .with_connection("/data/market_data.csv");
+  ASSERT_THAT(
+      valid(patch),
+      IsUnexpected("connection must be a FIX session identifier in the form "
+                   "BeginString:SenderCompID->TargetCompID[:SessionQualifier] "
+                   "if the format is FIX."));
+}
+
+TEST_F(DataLayerValidationDatasourcePatchValid,
+       ReturnsVoidIfConnectionIsNotSessionIdWhenFormatIsNotSpecified) {
+  patch.with_connection("/data/market_data.csv");
+  ASSERT_TRUE(valid(patch).has_value());
+}
+
 struct DataLayerValidationDatasourceValid : public testing::Test {
   DataLayerValidationDatasourceValid() {
     patch.with_name("TestDatasource")
@@ -581,6 +598,17 @@ TEST_F(DataLayerValidationDatasourceValid,
       .with_column_mapping(c_m_patch("AskPrice3", "askprice3"));
 
   ASSERT_TRUE(valid(create_datasource(patch)).has_value());
+}
+
+TEST_F(DataLayerValidationDatasourceValid,
+       ReturnsErrorMessageIfFixConnectionIsNotSessionId) {
+  patch.with_format(Datasource::Format::Fix)
+      .with_connection("/data/market_data.csv");
+  ASSERT_THAT(
+      valid(create_datasource(patch)),
+      IsUnexpected("connection must be a FIX session identifier in the form "
+                   "BeginString:SenderCompID->TargetCompID[:SessionQualifier] "
+                   "if the format is FIX."));
 }
 
 }  // namespace

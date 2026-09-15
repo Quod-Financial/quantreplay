@@ -4,6 +4,7 @@
 #include <string>
 
 #include "api/models/listing.hpp"
+#include "api/models/listing_random_price_source.hpp"
 #include "ih/common/exceptions.hpp"
 #include "tests/test_utils/matchers.hpp"
 
@@ -496,6 +497,28 @@ TEST_F(DataLayerListingPatch, SetsRandomAggressiveAmtMaximum) {
   patch.with_random_aggressive_amt_maximum(42.42);
   EXPECT_THAT(patch.random_aggressive_amt_maximum(),
               IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
+}
+
+TEST_F(DataLayerListingPatch, SetsRandomPriceSources) {
+  ASSERT_FALSE(patch.random_price_sources().has_value());
+
+  ListingRandomPriceSource::Patch first;
+  first.with_datasource_id(7).with_symbol("AAPL.OQ");
+  ListingRandomPriceSource::Patch second;
+  second.with_datasource_id(8).with_symbol("AAPL.N");
+
+  patch.with_random_price_source(first).with_random_price_source(second);
+  EXPECT_THAT(patch.random_price_sources(),
+              Optional(ElementsAre(Eq(first), Eq(second))));
+}
+
+TEST_F(DataLayerListingPatch, SetsWithoutRandomPriceSources) {
+  ListingRandomPriceSource::Patch source;
+  source.with_datasource_id(7).with_symbol("AAPL.OQ");
+  patch.with_random_price_source(source);
+
+  patch.without_random_price_sources();
+  EXPECT_THAT(patch.random_price_sources(), Optional(IsEmpty()));
 }
 
 struct DataLayerListing : public Test {
@@ -1004,6 +1027,36 @@ TEST_F(DataLayerListing, GetsRandomAggressiveAmtMaximumSpecified) {
   Listing listing = Listing::create(patch, 42);
   EXPECT_THAT(listing.random_aggressive_amt_maximum(),
               Optional(DoubleEq(42.42)));
+}
+
+TEST_F(DataLayerListing, StoresNoRandomPriceSourcesIfNotSet) {
+  patch.with_venue_id("NASDAQ");
+
+  Listing listing = Listing::create(patch, 42);
+  EXPECT_THAT(listing.random_price_sources(), IsEmpty());
+}
+
+TEST_F(DataLayerListing, StoresEmptyRandomPriceSourcesIfEmpty) {
+  patch.with_venue_id("NASDAQ");
+  patch.without_random_price_sources();
+
+  Listing listing = Listing::create(patch, 42);
+  EXPECT_THAT(listing.random_price_sources(), IsEmpty());
+}
+
+TEST_F(DataLayerListing, StoresRandomPriceSources) {
+  patch.with_venue_id("NASDAQ");
+
+  ListingRandomPriceSource::Patch first;
+  first.with_datasource_id(7).with_symbol("AAPL.OQ");
+  ListingRandomPriceSource::Patch second;
+  second.with_datasource_id(8).with_symbol("AAPL.N");
+  patch.with_random_price_source(first).with_random_price_source(second);
+
+  Listing listing = Listing::create(patch, 42);
+  EXPECT_THAT(listing.random_price_sources(),
+              ElementsAre(Eq(ListingRandomPriceSource::create(first, 42)),
+                          Eq(ListingRandomPriceSource::create(second, 42))));
 }
 
 // NOLINTEND(*magic-numbers*)

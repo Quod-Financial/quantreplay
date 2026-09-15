@@ -5,6 +5,7 @@
 
 #include "core/domain/instrument_descriptor.hpp"
 #include "ih/lookup/currency_category.hpp"
+#include "test_utils/utils.hpp"
 
 namespace simulator::trading_system::instrument::test {
 namespace {
@@ -40,7 +41,7 @@ TEST_P(InstrumentsCurrencyCategory, DetermineFromInstrument) {
 INSTANTIATE_TEST_SUITE_P(CurrencyCategory, InstrumentsCurrencyCategory,
   Values(
     std::make_pair(std::nullopt, std::nullopt),
-    std::make_pair(static_cast<SecurityType::Option>(0xFF), std::nullopt),
+    std::make_pair(invalid_enum_value<SecurityType::Option>(), std::nullopt),
 
     std::make_pair(SecurityType::Option::CommonStock, CurrencyCategory::PriceCurrency),
     std::make_pair(SecurityType::Option::Future, CurrencyCategory::PriceCurrency),

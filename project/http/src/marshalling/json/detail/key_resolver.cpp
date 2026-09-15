@@ -42,6 +42,18 @@ auto KeyResolver::resolve_key(data_layer::ColumnMapping::Attribute attribute)
   raise_bad_attribute_error("ColumnMapping", attribute);
 }
 
+auto KeyResolver::resolve_key(
+    data_layer::DatasourceListing::Attribute attribute) -> std::string_view {
+  switch (attribute) {
+    case data_layer::DatasourceListing::Attribute::Symbol:
+      return datasource_listing_key::Symbol;
+    case data_layer::DatasourceListing::Attribute::DatasourceId:
+      return datasource_listing_key::DatasourceId;
+  }
+
+  raise_bad_attribute_error("DatasourceListing", attribute);
+}
+
 auto KeyResolver::resolve_key(data_layer::Datasource::Attribute attribute)
     -> std::string_view {
   switch (attribute) {
@@ -71,6 +83,8 @@ auto KeyResolver::resolve_key(data_layer::Datasource::Attribute attribute)
       return datasource_key::TableName;
     case data_layer::Datasource::Attribute::MaxDepthLevels:
       return datasource_key::MaxDepthLevels;
+    case data_layer::Datasource::Attribute::RandomPriceOnly:
+      return datasource_key::RandomPriceOnly;
   }
 
   raise_bad_attribute_error("Datasource", attribute);
@@ -150,6 +164,21 @@ auto KeyResolver::resolve_key(data_layer::Listing::Attribute attribute)
   }
 
   raise_bad_attribute_error("Listing", attribute);
+}
+
+auto KeyResolver::resolve_key(
+    data_layer::ListingRandomPriceSource::Attribute attribute)
+    -> std::string_view {
+  switch (attribute) {
+    case data_layer::ListingRandomPriceSource::Attribute::ListingId:
+      return listing_random_price_source_key::ListingId;
+    case data_layer::ListingRandomPriceSource::Attribute::DatasourceId:
+      return listing_random_price_source_key::DatasourceId;
+    case data_layer::ListingRandomPriceSource::Attribute::Symbol:
+      return listing_random_price_source_key::Symbol;
+  }
+
+  raise_bad_attribute_error("ListingRandomPriceSource", attribute);
 }
 
 auto KeyResolver::resolve_key(data_layer::MarketPhase::Attribute attribute)

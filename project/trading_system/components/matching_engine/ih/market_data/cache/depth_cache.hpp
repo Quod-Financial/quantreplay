@@ -6,7 +6,6 @@
 #include "ih/market_data/depth/depth_sheet.hpp"
 #include "ih/market_data/streaming_settings.hpp"
 #include "ih/market_data/tools/market_entry_id_generator.hpp"
-#include "protocol/app/instrument_state_request.hpp"
 
 namespace simulator::trading_system::matching_engine::mdata {
 
@@ -28,8 +27,6 @@ class DepthCache {
 
   [[nodiscard]]
   auto has_update(const StreamingSettings& settings) const -> bool;
-
-  auto capture(protocol::InstrumentState& state) const -> void;
 
   auto update(const std::vector<OrderBookNotification>& updates) -> void;
 

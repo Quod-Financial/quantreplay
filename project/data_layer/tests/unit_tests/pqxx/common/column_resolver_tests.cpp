@@ -2,7 +2,9 @@
 
 #include "api/models/column_mapping.hpp"
 #include "api/models/datasource.hpp"
+#include "api/models/datasource_listing.hpp"
 #include "api/models/fix_session.hpp"
+#include "api/models/listing_random_price_source.hpp"
 #include "api/models/market_phase.hpp"
 #include "api/models/price_seed.hpp"
 #include "api/models/venue.hpp"
@@ -22,7 +24,8 @@ struct DataLayerColumnMappingResolver : public ::testing::Test {
 };
 
 TEST_F(DataLayerColumnMappingResolver, ResolvesUndefined) {
-  EXPECT_THROW(resolver(static_cast<Column>(-1)), ColumnNameEncodingError);
+  EXPECT_THROW(resolver(data_layer::test::invalid_enum_value<Column>()),
+               ColumnNameEncodingError);
 }
 
 TEST_F(DataLayerColumnMappingResolver, ResolvesColumnFrom) {
@@ -44,7 +47,8 @@ struct DataLayerDatasourceResolver : public ::testing::Test {
 };
 
 TEST_F(DataLayerDatasourceResolver, ResolvesUndefined) {
-  EXPECT_THROW(resolver(static_cast<Column>(-1)), ColumnNameEncodingError);
+  EXPECT_THROW(resolver(data_layer::test::invalid_enum_value<Column>()),
+               ColumnNameEncodingError);
 }
 
 TEST_F(DataLayerDatasourceResolver, ResolvesDatasourceId) {
@@ -99,6 +103,29 @@ TEST_F(DataLayerDatasourceResolver, ResolvesMaxDepthLevels) {
   EXPECT_EQ(resolver(Column::MaxDepthLevels), "max_depth_levels");
 }
 
+TEST_F(DataLayerDatasourceResolver, ResolvesRandomPriceOnly) {
+  EXPECT_EQ(resolver(Column::RandomPriceOnly), "random_price_only");
+}
+
+struct DataLayerDatasourceListingResolver : public ::testing::Test {
+  using Column = DatasourceListing::Attribute;
+
+  const ColumnResolver resolver{};
+};
+
+TEST_F(DataLayerDatasourceListingResolver, ResolvesUndefined) {
+  EXPECT_THROW(resolver(data_layer::test::invalid_enum_value<Column>()),
+               ColumnNameEncodingError);
+}
+
+TEST_F(DataLayerDatasourceListingResolver, ResolvesDatasourceId) {
+  EXPECT_EQ(resolver(Column::DatasourceId), "data_source_id");
+}
+
+TEST_F(DataLayerDatasourceListingResolver, ResolvesSymbol) {
+  EXPECT_EQ(resolver(Column::Symbol), "symbol");
+}
+
 struct DataLayerFixSessionResolver : public ::testing::Test {
   using Column = FixSession::Attribute;
 
@@ -129,7 +156,8 @@ struct DataLayerListingResolver : public ::testing::Test {
 };
 
 TEST_F(DataLayerListingResolver, ResolvesUndefined) {
-  EXPECT_THROW(resolver(static_cast<Column>(-1)), ColumnNameEncodingError);
+  EXPECT_THROW(resolver(data_layer::test::invalid_enum_value<Column>()),
+               ColumnNameEncodingError);
 }
 
 TEST_F(DataLayerListingResolver, ResolvesListingID) {
@@ -272,6 +300,29 @@ TEST_F(DataLayerListingResolver, ResolvesRandomAggressiveAmtMaximum) {
             "random_aggressive_amt_maximum");
 }
 
+struct DataLayerListingRandomPriceSourceResolver : public ::testing::Test {
+  using Column = ListingRandomPriceSource::Attribute;
+
+  const ColumnResolver resolver{};
+};
+
+TEST_F(DataLayerListingRandomPriceSourceResolver, ResolvesUndefined) {
+  EXPECT_THROW(resolver(data_layer::test::invalid_enum_value<Column>()),
+               ColumnNameEncodingError);
+}
+
+TEST_F(DataLayerListingRandomPriceSourceResolver, ResolvesListingId) {
+  EXPECT_EQ(resolver(Column::ListingId), "listing_id");
+}
+
+TEST_F(DataLayerListingRandomPriceSourceResolver, ResolvesDatasourceId) {
+  EXPECT_EQ(resolver(Column::DatasourceId), "data_source_id");
+}
+
+TEST_F(DataLayerListingRandomPriceSourceResolver, ResolvesSymbol) {
+  EXPECT_EQ(resolver(Column::Symbol), "symbol");
+}
+
 struct DataLayerMarketPhaseResolver : public ::testing::Test {
   using Column = MarketPhase::Attribute;
 
@@ -314,7 +365,8 @@ struct DataLayerPriceSeedResolver : public ::testing::Test {
 };
 
 TEST_F(DataLayerPriceSeedResolver, ResolvesUndefined) {
-  EXPECT_THROW(resolver(static_cast<Column>(-1)), ColumnNameEncodingError);
+  EXPECT_THROW(resolver(data_layer::test::invalid_enum_value<Column>()),
+               ColumnNameEncodingError);
 }
 
 TEST_F(DataLayerPriceSeedResolver, ResolvesPriceSeedId) {
@@ -368,7 +420,8 @@ struct DataLayerSettingResolver : public ::testing::Test {
 };
 
 TEST_F(DataLayerSettingResolver, Resolve_Undefined) {
-  EXPECT_THROW(resolver(static_cast<Column>(-1)), ColumnNameEncodingError);
+  EXPECT_THROW(resolver(data_layer::test::invalid_enum_value<Column>()),
+               ColumnNameEncodingError);
 }
 
 TEST_F(DataLayerSettingResolver, Resolve_Key) {
@@ -386,7 +439,8 @@ struct DataLayerVenueResolver : public ::testing::Test {
 };
 
 TEST_F(DataLayerVenueResolver, ResolvesUndefined) {
-  EXPECT_THROW(resolver(static_cast<Column>(-1)), ColumnNameEncodingError);
+  EXPECT_THROW(resolver(data_layer::test::invalid_enum_value<Column>()),
+               ColumnNameEncodingError);
 }
 
 TEST_F(DataLayerVenueResolver, ResolvesVenueId) {

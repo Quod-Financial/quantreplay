@@ -115,7 +115,7 @@ struct MatchingEngineTradeAtLastPlacementWithClosingPrice
 };
 
 TEST_F(MatchingEngineTradeAtLastPlacementWithClosingPrice,
-       RejectsLimitOrderPricedAboveTheClosingPrice) {
+       RejectsLimitOrderPricedAboveClosingPrice) {
   EXPECT_CALL(event_listener,
               on(RejectedWith(trade_at_last::PriceNotAtClosingPriceReject)));
 
@@ -123,7 +123,7 @@ TEST_F(MatchingEngineTradeAtLastPlacementWithClosingPrice,
 }
 
 TEST_F(MatchingEngineTradeAtLastPlacementWithClosingPrice,
-       RejectsLimitOrderPricedBelowTheClosingPrice) {
+       RejectsLimitOrderPricedBelowClosingPrice) {
   EXPECT_CALL(event_listener,
               on(RejectedWith(trade_at_last::PriceNotAtClosingPriceReject)));
 
@@ -138,7 +138,7 @@ TEST_F(MatchingEngineTradeAtLastPlacementWithClosingPrice,
 }
 
 TEST_F(MatchingEngineTradeAtLastPlacementWithClosingPrice,
-       ConfirmsDayLimitOrderAtTheClosingPrice) {
+       ConfirmsDayLimitOrderAtClosingPrice) {
   EXPECT_CALL(event_listener,
               on(IsClientNotification(
                   VariantWith<protocol::OrderPlacementConfirmation>(_))));
@@ -147,7 +147,7 @@ TEST_F(MatchingEngineTradeAtLastPlacementWithClosingPrice,
 }
 
 TEST_F(MatchingEngineTradeAtLastPlacementWithClosingPrice,
-       RestsAcceptedOrderInTheTradeAtLastQueue) {
+       RestsAcceptedOrderInTradeAtLastQueue) {
   placement(order(Side::Option::Buy, OrderId{1}));
 
   EXPECT_THAT(trade_at_last_orders(Side::Option::Buy),
@@ -156,7 +156,7 @@ TEST_F(MatchingEngineTradeAtLastPlacementWithClosingPrice,
 }
 
 TEST_F(MatchingEngineTradeAtLastPlacementWithClosingPrice,
-       CrossesIncomingOrderAgainstTheOppositeTradeAtLastQueue) {
+       CrossesIncomingOrderAgainstOppositeTradeAtLastQueue) {
   placement(order(Side::Option::Sell, OrderId{1}));
 
   EXPECT_CALL(event_listener,
@@ -169,7 +169,7 @@ TEST_F(MatchingEngineTradeAtLastPlacementWithClosingPrice,
 }
 
 TEST_F(MatchingEngineTradeAtLastPlacementWithClosingPrice,
-       LeavesBothQueuesEmptyAfterAFullCross) {
+       LeavesBothQueuesEmptyAfterFullCross) {
   placement(order(Side::Option::Sell, OrderId{1}));
   placement(
       order(Side::Option::Buy, OrderId{2}, OrderQuantity{100}, arrival(2)));
@@ -179,7 +179,7 @@ TEST_F(MatchingEngineTradeAtLastPlacementWithClosingPrice,
 }
 
 TEST_F(MatchingEngineTradeAtLastPlacementWithClosingPrice,
-       StampsCrossTradesWithTheTradeAtLastPhase) {
+       StampsCrossTradesWithTradeAtLastPhase) {
   placement(order(Side::Option::Sell, OrderId{1}));
 
   EXPECT_CALL(event_listener,
@@ -191,7 +191,7 @@ TEST_F(MatchingEngineTradeAtLastPlacementWithClosingPrice,
 }
 
 TEST_F(MatchingEngineTradeAtLastPlacementWithClosingPrice,
-       RestsTheRemainderWhenTheOppositeQueueIsExhausted) {
+       RestsRemainderWhenOppositeQueueIsExhausted) {
   placement(order(Side::Option::Sell, OrderId{1}, OrderQuantity{40}));
 
   placement(
@@ -204,7 +204,7 @@ TEST_F(MatchingEngineTradeAtLastPlacementWithClosingPrice,
 }
 
 TEST_F(MatchingEngineTradeAtLastPlacementWithClosingPrice,
-       FillsTheOldestRestingOrderFirst) {
+       FillsOldestRestingOrderFirst) {
   placement(
       order(Side::Option::Buy, OrderId{1}, OrderQuantity{100}, arrival(1)));
   placement(
@@ -218,7 +218,7 @@ TEST_F(MatchingEngineTradeAtLastPlacementWithClosingPrice,
 }
 
 TEST_F(MatchingEngineTradeAtLastPlacementWithClosingPrice,
-       DoesNotCrossOrdersRestingInTheRegularQueue) {
+       DoesNotCrossOrdersRestingInRegularQueue) {
   rest_in_regular_queue(Side::Option::Sell, OrderPrice{ClosingPrice.value()});
 
   EXPECT_CALL(event_listener,
@@ -236,7 +236,7 @@ struct MatchingEngineTradeAtLastPlacementTimeInForce
       public WithParamInterface<TimeInForce::Option> {};
 
 TEST_P(MatchingEngineTradeAtLastPlacementTimeInForce,
-       RejectsLimitOrderThatIsNotADayOrder) {
+       RejectsLimitOrderThatIsNotDayOrder) {
   EXPECT_CALL(event_listener,
               on(RejectedWith(trade_at_last::DayOrdersOnlyReject)));
 
@@ -272,7 +272,7 @@ TEST_F(MatchingEngineTradeAtLastPlacementWithoutClosingPrice,
 }
 
 TEST_F(MatchingEngineTradeAtLastPlacementWithoutClosingPrice,
-       ReportsTheTimeInForceViolationOfANonDayOrderFirst) {
+       ReportsTimeInForceViolationOfNonDayOrderFirst) {
   EXPECT_CALL(event_listener,
               on(RejectedWith(trade_at_last::DayOrdersOnlyReject)));
 

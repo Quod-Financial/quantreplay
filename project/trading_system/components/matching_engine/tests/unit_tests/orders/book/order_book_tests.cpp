@@ -10,6 +10,7 @@
 #include "ih/orders/book/market_order.hpp"
 #include "ih/orders/book/order_book.hpp"
 #include "tools/order_builder.hpp"
+#include "tools/utils.hpp"
 
 namespace simulator::trading_system::matching_engine::test {
 namespace {
@@ -259,7 +260,7 @@ TEST_F(OrderBook, TakesSellPage) {
 }
 
 TEST_F(OrderBook, ReportsErrorOnTakingPageForInvalidSide) {
-  ASSERT_THROW((void)book.take_page(static_cast<Side::Option>(0xFF)),
+  ASSERT_THROW((void)book.take_page(invalid_enum_value<Side::Option>()),
                std::invalid_argument);
 }
 

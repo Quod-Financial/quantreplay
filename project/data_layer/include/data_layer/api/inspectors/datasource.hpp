@@ -23,7 +23,7 @@ class DatasourceReader final {
 
  public:
   explicit DatasourceReader(Marshaller& marshaller) noexcept
-      : marshaller_(marshaller) {}
+      : marshaller_{marshaller} {}
 
   auto read(const Datasource& datasource) -> void;
 
@@ -43,7 +43,7 @@ class DatasourcePatchReader final {
 
  public:
   explicit DatasourcePatchReader(Marshaller& marshaller) noexcept
-      : marshaller_(marshaller) {}
+      : marshaller_{marshaller} {}
 
   auto read(const Datasource::Patch& patch) -> void;
 
@@ -64,7 +64,7 @@ class DatasourcePatchWriter final {
 
  public:
   explicit DatasourcePatchWriter(Unmarshaller& unmarshaller) noexcept
-      : unmarshaller_(unmarshaller) {}
+      : unmarshaller_{unmarshaller} {}
 
   auto write(Datasource::Patch& target_patch) -> void;
 
@@ -132,6 +132,11 @@ inline auto DatasourceReader<Marshaller>::read(const Datasource& datasource)
   if (const auto& value = datasource.max_depth_levels()) {
     static_assert(can_marshall_v<decltype(*value)>);
     marshaller_(Attribute::MaxDepthLevels, *value);
+  }
+
+  if (const auto value = datasource.random_price_only_flag()) {
+    static_assert(can_marshall_v<decltype(*value)>);
+    marshaller_(Attribute::RandomPriceOnly, *value);
   }
 }
 
@@ -206,6 +211,13 @@ inline auto DatasourcePatchReader<Marshaller>::read(
   if (const auto& value = patch.max_depth_levels()) {
     static_assert(can_marshall_v<decltype(*value)>);
     marshaller_(Attribute::MaxDepthLevels, *value);
+  }
+
+  if (const auto& value = patch.random_price_only_flag()) {
+    static_assert(
+        can_marshall_v<std::remove_cvref_t<decltype(value)>::value_type>);
+    marshaller_(Attribute::RandomPriceOnly,
+                value.inner_value_or(Datasource::DefaultRandomPriceOnlyFlag));
   }
 }
 
@@ -282,6 +294,12 @@ inline auto DatasourcePatchWriter<Unmarshaller>::write(
   static_assert(can_unmarshall_v<decltype(max_depth_levels)>);
   if (unmarshaller_(Attribute::MaxDepthLevels, max_depth_levels)) {
     target_patch.with_max_depth_levels(max_depth_levels);
+  }
+
+  std::optional<bool> random_price_only_flag;
+  static_assert(can_unmarshall_v<decltype(random_price_only_flag)>);
+  if (unmarshaller_(Attribute::RandomPriceOnly, random_price_only_flag)) {
+    target_patch.with_random_price_only_flag(random_price_only_flag);
   }
 }
 

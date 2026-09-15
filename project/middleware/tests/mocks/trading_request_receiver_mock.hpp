@@ -15,7 +15,6 @@ struct TradingRequestReceiverMock : public TradingRequestReceiver {
   MOCK_METHOD(void, process, (protocol::MarketDataRequest), (override));
   MOCK_METHOD(void, process, (protocol::SecurityStatusRequest), (override));
 
-  MOCK_METHOD(void, process, (const protocol::InstrumentStateRequest&, protocol::InstrumentState&), (override));
   // clang-format on
 };
 

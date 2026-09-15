@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 
 #include "ih/orders/validation/errors.hpp"
+#include "tools/utils.hpp"
 
 namespace simulator::trading_system::matching_engine::order::test {
 namespace {
@@ -22,7 +23,7 @@ INSTANTIATE_TEST_SUITE_P(
     Description,
     OrderValidationErrorsDescription,
     Values(
-        std::make_pair(static_cast<ValidationError>(0xFF), "unknown order validation error"),
+        std::make_pair(matching_engine::test::invalid_enum_value<ValidationError>(), "unknown order validation error"),
         std::make_pair(ValidationError::SideMissing, "side missing"),
         std::make_pair(ValidationError::SideUnknown, "unsupported side value"),
         std::make_pair(ValidationError::SideInvalid, "invalid side value"),
@@ -62,7 +63,7 @@ INSTANTIATE_TEST_SUITE_P(
     Formatting,
     OrderValidationErrorsFormatting,
     Values(
-        std::make_pair(static_cast<ValidationError>(0xFF), "UnknownOrderValidationError"),
+        std::make_pair(matching_engine::test::invalid_enum_value<ValidationError>(), "UnknownOrderValidationError"),
         std::make_pair(ValidationError::SideMissing, "SideMissing"),
         std::make_pair(ValidationError::SideUnknown, "SideUnknown"),
         std::make_pair(ValidationError::SideInvalid, "SideInvalid"),

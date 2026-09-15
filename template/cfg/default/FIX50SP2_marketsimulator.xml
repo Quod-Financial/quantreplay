@@ -862,6 +862,7 @@
    <field name='FinancialStatus' required='N' />
    <field name='CorporateAction' required='N' />
    <field name='NetChgPrevDay' required='N' />
+   <field name='LastUpdateTime' required='N' />
    <component name='MDFullGrp' required='Y' />
    <field name='ApplQueueDepth' required='N' />
    <field name='ApplQueueResolution' required='N' />

@@ -87,3 +87,23 @@ databaseChangeLog:
               - column:
                   name: max_depth_levels
                   type: int
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_table_data_source_4
+      labels: schema,v13
+      comment: Add random_price_only column
+      preConditions:
+        - tableExists:
+            tableName: data_source
+        - not:
+            - columnExists:
+                tableName: data_source
+                columnName: random_price_only
+      changes:
+        - addColumn:
+            tableName: data_source
+            columns:
+              - column:
+                  name: random_price_only
+                  type: bool

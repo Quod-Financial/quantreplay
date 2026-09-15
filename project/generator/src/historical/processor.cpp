@@ -72,7 +72,7 @@ auto ActionProcessor::process(historical::Action action) -> void {
       [this](historical::Record record) { process(std::move(record)); });
 }
 
-auto ActionProcessor::process(historical::Record record) const -> void {
+auto ActionProcessor::process(historical::Record record) -> void {
   const ContextPointer context = ctx_registry_.resolve_context(record);
   if (!context) {
     log::warn(

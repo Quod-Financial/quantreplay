@@ -40,7 +40,7 @@ auto HeadProcessorImpl::get_data_dictionaries(
     return;
   }
 
-  if (!has_session(session_id)) {
+  if (!has_acceptor_session(config_provider_->session_settings(), session_id)) {
     respond(request, response, Pistache::Http::Code::Not_Found);
     return;
   }
@@ -49,17 +49,6 @@ auto HeadProcessorImpl::get_data_dictionaries(
              response,
              {std::make_shared<ContentDispositionAttachment>(
                  make_dictionaries_filename(venue_id, session_id))});
-}
-
-auto HeadProcessorImpl::has_session(const std::string& session_id) const
-    -> bool {
-  const auto& sessions = config_provider_->session_settings();
-  for (const auto& session : sessions) {
-    if (session.id.has_value() && session.id.value() == session_id) {
-      return true;
-    }
-  }
-  return false;
 }
 
 auto HeadProcessorImpl::relay_data_dictionaries(

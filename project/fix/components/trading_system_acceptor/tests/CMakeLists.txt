@@ -1,0 +1,16 @@
+add_target_tests(
+  TARGET ${COMPONENT_NAME}
+  HEADERS
+    mocks/from_fix_mapper_stub.hpp
+    mocks/message_sender_mock.hpp
+    mocks/to_fix_mapper_stub.hpp
+    mocks/trading_request_receiver_mock.hpp
+    test_utils/utils.hpp
+  UNIT_TESTS
+    unit_tests/mapping/from_fix_conversion_tests.cpp
+    unit_tests/mapping/from_fix_mapping_tests.cpp
+    unit_tests/mapping/from_fix_mapper_tests.cpp
+    unit_tests/mapping/to_fix_conversion_tests.cpp
+    unit_tests/mapping/to_fix_mapper_tests.cpp
+    unit_tests/processors/app_reply_processor_tests.cpp
+    unit_tests/processors/app_request_processor_tests.cpp)

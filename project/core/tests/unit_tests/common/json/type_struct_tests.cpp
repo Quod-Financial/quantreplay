@@ -60,7 +60,7 @@ TEST_F(CoreJsonStructReader, ThrowsExceptionIfJsonDoesNotContainAllFields) {
 
 TEST_F(
     CoreJsonStructReader,
-    ThrowsMeaningfulExceptionMessageIfJsonContainsTheWrongTypeForInnerStructField) {
+    ThrowsMeaningfulExceptionMessageIfJsonContainsWrongTypeForInnerStructField) {
   inner_value.AddMember(
       "double_field", "the value must be double", doc.GetAllocator());
 

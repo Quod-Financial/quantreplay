@@ -45,6 +45,9 @@ auto DataAccessAdapterFactoryImpl::create_data_adapter(
       return create_csv_reader(datasource);
     case Format::Postgres:
       return create_postgres_db_reader(datasource);
+    case Format::Fix:
+      throw std::runtime_error{
+          "FIX format is not supported for static historical replay"};
   }
 
   throw std::runtime_error{"unable to determine datasource format"};

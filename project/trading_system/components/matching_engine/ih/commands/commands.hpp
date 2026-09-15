@@ -173,30 +173,6 @@ class ProcessSecurityStatusRequest : public detail::ReplyingCommand {
   OrderRequestProcessor& request_processor_;
 };
 
-class CaptureInstrumentState : public detail::ActionCommand {
- public:
-  CaptureInstrumentState(protocol::InstrumentState& state,
-                         MarketDataRequestProcessor& request_processor);
-
-  CaptureInstrumentState(const CaptureInstrumentState&) = delete;
-  CaptureInstrumentState(CaptureInstrumentState&&) = default;
-  ~CaptureInstrumentState() override = default;
-
-  // clang-format off
-  auto operator=(const CaptureInstrumentState&)
-      -> CaptureInstrumentState& = delete;
-  auto operator=(CaptureInstrumentState&&)
-      -> CaptureInstrumentState& = delete;
-  // clang-format on
-
- private:
-  auto execute() const -> void override;
-  auto name() const -> std::string_view override;
-
-  protocol::InstrumentState& state_;
-  MarketDataRequestProcessor& request_processor_;
-};
-
 class StoreState : public detail::ActionCommand {
  public:
   StoreState(market_state::InstrumentState& state,

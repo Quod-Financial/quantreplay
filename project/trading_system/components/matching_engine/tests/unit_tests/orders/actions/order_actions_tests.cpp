@@ -91,9 +91,8 @@ struct MatchingEngineOrderActions : public Test {
             .build_limit_order());
   }
 
-  static auto limit_order(Side side,
-                          OrderPrice price,
-                          OrderId order_id) -> LimitOrder {
+  static auto limit_order(Side side, OrderPrice price, OrderId order_id)
+      -> LimitOrder {
     return OrderBuilder{}
         .with_order_id(order_id)
         .with_side(side)
@@ -108,9 +107,8 @@ struct MatchingEngineOrderActions : public Test {
         .build_market_order();
   }
 
-  static auto reprice_limit(Side side,
-                            OrderPrice price,
-                            OrderId order_id) -> LimitUpdate {
+  static auto reprice_limit(Side side, OrderPrice price, OrderId order_id)
+      -> LimitUpdate {
     OrderAttributes attributes;
     attributes.set_time_in_force(TimeInForce::Option::Day);
     LimitUpdate update{protocol::Session{protocol::generator::Session{}},
@@ -122,9 +120,8 @@ struct MatchingEngineOrderActions : public Test {
     return update;
   }
 
-  static auto resize_limit(Side side,
-                           OrderQuantity quantity,
-                           OrderId order_id) -> LimitUpdate {
+  static auto resize_limit(Side side, OrderQuantity quantity, OrderId order_id)
+      -> LimitUpdate {
     OrderAttributes attributes;
     attributes.set_time_in_force(TimeInForce::Option::Day);
     LimitUpdate update{
@@ -254,7 +251,7 @@ TEST_F(MatchingEngineOrderActions, RejectsPlacedMarketOrderInTradeAtLastMode) {
 }
 
 TEST_F(MatchingEngineOrderActions,
-       AmendsOrderRestingInTheTradeAtLastQueueInTradeAtLastMode) {
+       AmendsOrderRestingInTradeAtLastQueueInTradeAtLastMode) {
   rest_trade_at_last(Side::Option::Buy, OrderId{1});
 
   amend_limit(resize_limit(Side::Option::Buy, OrderQuantity{50}, OrderId{1}),
@@ -266,7 +263,7 @@ TEST_F(MatchingEngineOrderActions,
 }
 
 TEST_F(MatchingEngineOrderActions,
-       CancelsOrderRestingInTheTradeAtLastQueueInTradeAtLastMode) {
+       CancelsOrderRestingInTradeAtLastQueueInTradeAtLastMode) {
   rest_trade_at_last(Side::Option::Buy, OrderId{1});
 
   cancel(Side::Option::Buy, OrderId{1}, OrderActionMode::TradeAtLast);

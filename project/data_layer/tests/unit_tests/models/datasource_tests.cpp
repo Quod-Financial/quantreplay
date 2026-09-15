@@ -36,6 +36,8 @@ TEST_F(DataLayerModelsDatasourcePatch, DoesNotContainDefaultValues) {
   ASSERT_FALSE(patch.text_data_row().has_value());
   ASSERT_FALSE(patch.table_name().has_value());
   ASSERT_FALSE(patch.columns_mapping().has_value());
+  ASSERT_FALSE(patch.listings().has_value());
+  ASSERT_FALSE(patch.random_price_only_flag().has_value());
 }
 
 TEST_F(DataLayerModelsDatasourcePatch, SetsEnabledFlagNull) {
@@ -156,6 +158,36 @@ TEST_F(DataLayerModelsDatasourcePatch, SetsMaxDepthLevels) {
   patch.with_max_depth_levels(42);
   EXPECT_THAT(patch.max_depth_levels(),
               IsPatchFieldWithValue(Optional(Eq(42))));
+}
+
+TEST_F(DataLayerModelsDatasourcePatch, SetsListings) {
+  DatasourceListing::Patch listing_patch0;
+  listing_patch0.with_symbol("AAPL");
+
+  DatasourceListing::Patch listing_patch1;
+  listing_patch1.with_symbol("MSFT");
+
+  patch.with_listing(listing_patch0).with_listing(listing_patch1);
+
+  ASSERT_THAT(patch.listings(),
+              Optional(ElementsAre(listing_patch0, listing_patch1)));
+}
+
+TEST_F(DataLayerModelsDatasourcePatch, SetsWithoutListings) {
+  patch.without_listings();
+  ASSERT_THAT(patch.listings(), Optional(IsEmpty()));
+}
+
+TEST_F(DataLayerModelsDatasourcePatch, SetsRandomPriceOnlyFlagNull) {
+  patch.with_random_price_only_flag(std::nullopt);
+  EXPECT_THAT(patch.random_price_only_flag(),
+              IsPatchFieldWithValue(std::nullopt));
+}
+
+TEST_F(DataLayerModelsDatasourcePatch, SetsRandomPriceOnlyFlag) {
+  patch.with_random_price_only_flag(true);
+  EXPECT_THAT(patch.random_price_only_flag(),
+              IsPatchFieldWithValue(Optional(Eq(true))));
 }
 
 struct DataLayerModelsDatasource : public Test {
@@ -392,6 +424,52 @@ TEST_F(DataLayerModelsDatasource, StoresMaxDepthLevel) {
 
   const auto datasource = Datasource::create(patch, 42);
   EXPECT_EQ(datasource.max_depth_levels(), 11);
+}
+
+TEST_F(DataLayerModelsDatasource, StoresNoListingsIfNotSet) {
+  fill_required_fields(patch);
+
+  const auto datasource = Datasource::create(patch, 42);
+  EXPECT_TRUE(datasource.listings().empty());
+}
+
+TEST_F(DataLayerModelsDatasource, StoresEmptyListingsIfEmpty) {
+  fill_required_fields(patch);
+  patch.without_listings();
+
+  const auto datasource = Datasource::create(patch, 42);
+  EXPECT_TRUE(datasource.listings().empty());
+}
+
+TEST_F(DataLayerModelsDatasource, StoresListings) {
+  fill_required_fields(patch);
+
+  DatasourceListing::Patch aapl_patch;
+  aapl_patch.with_symbol("AAPL");
+  DatasourceListing::Patch msft_patch;
+  msft_patch.with_symbol("MSFT");
+  patch.with_listing(aapl_patch).with_listing(msft_patch);
+
+  const auto datasource = Datasource::create(patch, 42);
+  const auto aapl_listing = DatasourceListing::create(aapl_patch, 42);
+  const auto msft_listing = DatasourceListing::create(msft_patch, 42);
+  ASSERT_THAT(datasource.listings(), ElementsAre(aapl_listing, msft_listing));
+}
+
+TEST_F(DataLayerModelsDatasource,
+       StoresNullOptionalRandomPriceOnlyFlagIfNotSet) {
+  fill_required_fields(patch);
+
+  const auto datasource = Datasource::create(patch, 42);
+  EXPECT_EQ(datasource.random_price_only_flag(), std::nullopt);
+}
+
+TEST_F(DataLayerModelsDatasource, StoresRandomPriceOnlyFlag) {
+  fill_required_fields(patch);
+  patch.with_random_price_only_flag(true);
+
+  const auto datasource = Datasource::create(patch, 42);
+  EXPECT_EQ(datasource.random_price_only_flag(), true);
 }
 
 // NOLINTEND(*magic-numbers*)

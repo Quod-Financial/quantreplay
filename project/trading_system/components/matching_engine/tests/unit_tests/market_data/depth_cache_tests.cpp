@@ -76,7 +76,6 @@ struct DepthCacheTest : Test {
 
   StreamingSettings settings;
   std::vector<MarketDataEntry> data;
-  protocol::InstrumentState state;
   NiceMock<MarketEntryIdGeneratorMock> id_generator;
   DepthCache cache{id_generator};
 
@@ -404,39 +403,6 @@ TEST_F(DepthCacheTest, ReportsUpdateWithExcludedOrders) {
   ASSERT_THAT(data,
               ElementsAre(BidEntryWith(
                   Price(100), Quantity(500), MarketEntryAction::Option::New)));
-}
-
-TEST_F(DepthCacheTest, CapturesEmptyStateWhenNoUpdatesApplied) {
-  cache.capture(state);
-
-  EXPECT_THAT(state.best_bid_price, Eq(std::nullopt));
-  EXPECT_THAT(state.best_offer_price, Eq(std::nullopt));
-  EXPECT_THAT(state.current_bid_depth, Eq(CurrentBidDepth(0)));
-  EXPECT_THAT(state.current_offer_depth, Eq(CurrentOfferDepth(0)));
-}
-
-TEST_F(DepthCacheTest, CapturesBidState) {
-  cache.update(
-      make_update(buy_order_added(OrderId(1), Price(20), Quantity(100)),
-                  buy_order_added(OrderId(2), Price(20), Quantity(200)),
-                  buy_order_added(OrderId(3), Price(10), Quantity(500))));
-
-  cache.capture(state);
-
-  EXPECT_THAT(state.best_bid_price, Eq(Price(20)));
-  EXPECT_THAT(state.current_bid_depth, Eq(CurrentBidDepth(2)));
-}
-
-TEST_F(DepthCacheTest, CapturesOfferState) {
-  cache.update(
-      make_update(sell_order_added(OrderId(1), Price(10), Quantity(100)),
-                  sell_order_added(OrderId(2), Price(10), Quantity(200)),
-                  sell_order_added(OrderId(3), Price(20), Quantity(500))));
-
-  cache.capture(state);
-
-  EXPECT_THAT(state.best_offer_price, Eq(Price(10)));
-  EXPECT_THAT(state.current_offer_depth, Eq(CurrentOfferDepth(2)));
 }
 
 TEST_F(DepthCacheTest, HasNoUpdateWhenNoChangesApplied) {

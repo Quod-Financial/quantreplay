@@ -36,6 +36,14 @@ class HttpCollectSessionDictionaries : public Test {
                                     .settings = std::move(settings)};
   }
 
+  [[nodiscard]]
+  static auto make_initiator_session(
+      std::string_view id, std::map<std::string, std::string> settings)
+      -> core::FixSessionSettings {
+    settings.emplace("CONNECTIONTYPE", "initiator");
+    return make_session(id, std::move(settings));
+  }
+
   static constexpr std::string_view SessionId{
       "BeginString:Sender->Target:Qualifier"};
   static constexpr std::string_view OtherSessionId{"Other:Other->Other:Other"};
@@ -109,6 +117,72 @@ TEST_F(HttpCollectSessionDictionaries, WorksWithoutDefaultSection) {
 
   ASSERT_THAT(collect_session_dictionaries(sessions, SessionId),
               Optional(UnorderedElementsAre(Path{"session.xml"})));
+}
+
+TEST_F(HttpCollectSessionDictionaries,
+       ReturnsNulloptWhenMatchingSessionIsInitiator) {
+  const std::vector sessions{
+      make_initiator_session(SessionId, {{"DATADICTIONARY", "session.xml"}})};
+
+  ASSERT_FALSE(collect_session_dictionaries(sessions, SessionId).has_value());
+}
+
+TEST_F(HttpCollectSessionDictionaries,
+       ReturnsNulloptWhenSessionInheritsInitiatorConnectionTypeFromDefault) {
+  const std::vector sessions{
+      make_default({{"CONNECTIONTYPE", "initiator"}}),
+      make_session(SessionId, {{"DATADICTIONARY", "session.xml"}})};
+
+  ASSERT_FALSE(collect_session_dictionaries(sessions, SessionId).has_value());
+}
+
+TEST_F(HttpCollectSessionDictionaries,
+       ReturnsDictionaryPathsWhenSessionOverridesInitiatorDefaultWithAcceptor) {
+  const std::vector sessions{make_default({{"CONNECTIONTYPE", "initiator"}}),
+                             make_session(SessionId,
+                                          {{"CONNECTIONTYPE", "acceptor"},
+                                           {"DATADICTIONARY", "session.xml"}})};
+
+  ASSERT_THAT(collect_session_dictionaries(sessions, SessionId),
+              Optional(UnorderedElementsAre(Path{"session.xml"})));
+}
+
+class HttpHasAcceptorSession : public HttpCollectSessionDictionaries {};
+
+TEST_F(HttpHasAcceptorSession, ReturnsFalseWhenNoSessionMatchesId) {
+  const std::vector sessions{make_session(OtherSessionId, {})};
+
+  ASSERT_FALSE(has_acceptor_session(sessions, SessionId));
+}
+
+TEST_F(HttpHasAcceptorSession, ReturnsTrueWhenMatchingSessionIsAcceptor) {
+  const std::vector sessions{
+      make_session(SessionId, {{"CONNECTIONTYPE", "acceptor"}})};
+
+  ASSERT_TRUE(has_acceptor_session(sessions, SessionId));
+}
+
+TEST_F(HttpHasAcceptorSession, ReturnsFalseWhenMatchingSessionIsInitiator) {
+  const std::vector sessions{make_initiator_session(SessionId, {})};
+
+  ASSERT_FALSE(has_acceptor_session(sessions, SessionId));
+}
+
+TEST_F(HttpHasAcceptorSession,
+       ReturnsFalseWhenSessionInheritsInitiatorConnectionTypeFromDefault) {
+  const std::vector sessions{make_default({{"CONNECTIONTYPE", "initiator"}}),
+                             make_session(SessionId, {})};
+
+  ASSERT_FALSE(has_acceptor_session(sessions, SessionId));
+}
+
+TEST_F(HttpHasAcceptorSession,
+       ReturnsTrueWhenSessionOverridesInitiatorDefaultWithAcceptor) {
+  const std::vector sessions{
+      make_default({{"CONNECTIONTYPE", "initiator"}}),
+      make_session(SessionId, {{"CONNECTIONTYPE", "acceptor"}})};
+
+  ASSERT_TRUE(has_acceptor_session(sessions, SessionId));
 }
 
 }  // namespace

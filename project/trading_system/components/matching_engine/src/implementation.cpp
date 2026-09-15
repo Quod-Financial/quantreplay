@@ -58,11 +58,6 @@ auto MatchingEngine::Implementation::dispatch_client_disconnected_cmd(
   execute(create_notify_client_disconnected_command(client_session));
 }
 
-auto MatchingEngine::Implementation::dispatch_instrument_state_capture_cmd(
-    protocol::InstrumentState& reply) -> void {
-  execute(create_capture_instrument_state_command(reply));
-}
-
 auto MatchingEngine::Implementation::dispatch_store_state_cmd(
     market_state::InstrumentState& state) -> void {
   execute(create_store_state_command(state));
@@ -132,11 +127,6 @@ auto MatchingEngine::Implementation::create_process_market_data_request_command(
     protocol::MarketDataRequest request) -> command::ProcessMarketDataRequest {
   return {
       std::move(request), market_data_facade_, cached_client_notifications_};
-}
-
-auto MatchingEngine::Implementation::create_capture_instrument_state_command(
-    protocol::InstrumentState& reply) -> command::CaptureInstrumentState {
-  return {reply, market_data_facade_};
 }
 
 auto MatchingEngine::Implementation::create_store_state_command(

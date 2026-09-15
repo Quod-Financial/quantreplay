@@ -28,6 +28,22 @@ class RecordApplier {
       -> std::vector<GeneratedMessage>;
 
  private:
+  /// Prices that decide whether updating one side of the book before the
+  /// other leaves the book transiently crossed.
+  struct BookBoundaries {
+    auto account_requested(Side side, double price) -> void;
+
+    auto account_stale(Side side, double price) -> void;
+
+    [[nodiscard]]
+    auto side_to_update_last() const -> std::optional<Side>;
+
+    std::optional<double> max_requested_bid;
+    std::optional<double> min_requested_offer;
+    std::optional<double> max_stale_bid;
+    std::optional<double> min_stale_offer;
+  };
+
   explicit RecordApplier(ContextPointer context) noexcept;
 
   auto process(historical::Record record) -> void;
@@ -54,7 +70,9 @@ class RecordApplier {
 
   auto cancel_not_placed_orders() -> void;
 
-  /// Sorts messages in order: Cancel → New → Modify
+  /// Sorts messages in order: Cancel → New → Modify, deferring the side that
+  /// would otherwise cross the book with orders the other side has not
+  /// updated yet.
   auto sort_messages() -> void;
 
   auto next_party_id() -> std::string;
@@ -66,6 +84,8 @@ class RecordApplier {
   /// processing. This prevents the same existing order from being reused
   /// when the same counterparty appears multiple times in the data.
   std::unordered_set<std::string> matched_order_ids_;
+
+  BookBoundaries boundaries_;
 
   ContextPointer context_;
 

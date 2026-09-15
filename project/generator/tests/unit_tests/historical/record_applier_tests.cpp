@@ -2265,5 +2265,152 @@ TEST_F(GeneratorHistoricalRecordApplier,
   EXPECT_EQ(messages[2].client_order_id->value(), order_id_mod);
 }
 
+TEST_F(GeneratorHistoricalRecordApplier,
+       SendsBidModificationAfterOfferModificationToAvoidCrossingStaleOffer) {
+  const PartyId counterparty{"Counterparty1"};
+  registry().add(make_registered_order(ClientOrderId{"RestingBid"},
+                                       OrderPrice{10.0},
+                                       Side::Option::Buy,
+                                       Quantity{100.0},
+                                       counterparty));
+  registry().add(make_registered_order(ClientOrderId{"RestingOffer"},
+                                       OrderPrice{10.02},
+                                       Side::Option::Sell,
+                                       Quantity{100.0},
+                                       counterparty));
+
+  const auto record = make_record({make_level(11.0,
+                                              200.0,
+                                              counterparty.value(),
+                                              11.04,
+                                              150.0,
+                                              counterparty.value())});
+
+  const std::vector<GeneratedMessage> messages = apply(record);
+
+  ASSERT_EQ(messages.size(), 2);
+  EXPECT_THAT(messages[0],
+              IsModificationRequest(Side::Option::Sell,
+                                    ClientOrderId{"RestingOffer"},
+                                    11.04,
+                                    150.0,
+                                    counterparty));
+  EXPECT_THAT(messages[1],
+              IsModificationRequest(Side::Option::Buy,
+                                    ClientOrderId{"RestingBid"},
+                                    11.0,
+                                    200.0,
+                                    counterparty));
+}
+
+TEST_F(GeneratorHistoricalRecordApplier,
+       SendsNewOfferAfterBidModificationToAvoidCrossingStaleBid) {
+  const PartyId bid_counterparty{"Counterparty1"};
+  const PartyId offer_counterparty{"Counterparty2"};
+  const std::string new_offer_id{"NewOffer"};
+
+  registry().add(make_registered_order(ClientOrderId{"RestingBid"},
+                                       OrderPrice{10.0},
+                                       Side::Option::Buy,
+                                       Quantity{100.0},
+                                       bid_counterparty));
+
+  const auto record = make_record({make_level(9.0,
+                                              100.0,
+                                              bid_counterparty.value(),
+                                              9.02,
+                                              50.0,
+                                              offer_counterparty.value())});
+
+  EXPECT_CALL(context(), get_synthetic_identifier)
+      .WillOnce(Return(new_offer_id));
+
+  const std::vector<GeneratedMessage> messages = apply(record);
+
+  ASSERT_EQ(messages.size(), 2);
+  EXPECT_THAT(messages[0],
+              IsModificationRequest(Side::Option::Buy,
+                                    ClientOrderId{"RestingBid"},
+                                    9.0,
+                                    100.0,
+                                    bid_counterparty));
+  EXPECT_THAT(messages[1],
+              IsNewOrderRequest(Side::Option::Sell,
+                                ClientOrderId{new_offer_id},
+                                9.02,
+                                50.0,
+                                offer_counterparty));
+}
+
+TEST_F(GeneratorHistoricalRecordApplier,
+       KeepsCancelNewModifyOrderWhenNeitherSideReachesTheOther) {
+  const PartyId bid_counterparty{"Counterparty1"};
+  const PartyId offer_counterparty{"Counterparty2"};
+  const PartyId absent_counterparty{"Counterparty3"};
+  const PartyId added_counterparty{"Counterparty4"};
+  const std::string added_bid_id{"AddedBid"};
+
+  registry().add(make_registered_order(ClientOrderId{"RestingBid"},
+                                       OrderPrice{10.0},
+                                       Side::Option::Buy,
+                                       Quantity{100.0},
+                                       bid_counterparty));
+  registry().add(make_registered_order(ClientOrderId{"RestingOffer"},
+                                       OrderPrice{10.02},
+                                       Side::Option::Sell,
+                                       Quantity{100.0},
+                                       offer_counterparty));
+  registry().add(make_registered_order(ClientOrderId{"AbsentBid"},
+                                       OrderPrice{9.5},
+                                       Side::Option::Buy,
+                                       Quantity{70.0},
+                                       absent_counterparty));
+
+  const auto top_level = make_level(10.01,
+                                    100.0,
+                                    bid_counterparty.value(),
+                                    10.03,
+                                    100.0,
+                                    offer_counterparty.value());
+  const auto second_level = make_level(9.99,
+                                       50.0,
+                                       added_counterparty.value(),
+                                       std::nullopt,
+                                       std::nullopt,
+                                       std::nullopt);
+  const auto record = make_record({top_level, second_level});
+
+  EXPECT_CALL(context(), get_synthetic_identifier)
+      .WillOnce(Return(added_bid_id));
+
+  const std::vector<GeneratedMessage> messages = apply(record);
+
+  ASSERT_EQ(messages.size(), 4);
+  EXPECT_THAT(messages[0],
+              IsCancelRequest(Side::Option::Buy,
+                              ClientOrderId{"AbsentBid"},
+                              9.5,
+                              70.0,
+                              absent_counterparty));
+  EXPECT_THAT(messages[1],
+              IsNewOrderRequest(Side::Option::Buy,
+                                ClientOrderId{added_bid_id},
+                                9.99,
+                                50.0,
+                                added_counterparty));
+  EXPECT_THAT(messages[2],
+              IsModificationRequest(Side::Option::Buy,
+                                    ClientOrderId{"RestingBid"},
+                                    10.01,
+                                    100.0,
+                                    bid_counterparty));
+  EXPECT_THAT(messages[3],
+              IsModificationRequest(Side::Option::Sell,
+                                    ClientOrderId{"RestingOffer"},
+                                    10.03,
+                                    100.0,
+                                    offer_counterparty));
+}
+
 }  // namespace
 }  // namespace simulator::generator::historical::test

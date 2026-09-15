@@ -10,12 +10,11 @@ namespace simulator::generator::mock {
 struct TradingRequestReceiver
     : public simulator::middleware::TradingRequestReceiver {
   // clang-format off
-  MOCK_METHOD(void, process, (simulator::protocol::OrderPlacementRequest));
-  MOCK_METHOD(void, process, (simulator::protocol::OrderModificationRequest));
-  MOCK_METHOD(void, process, (simulator::protocol::OrderCancellationRequest));
-  MOCK_METHOD(void, process, (simulator::protocol::MarketDataRequest));
-  MOCK_METHOD(void, process, (simulator::protocol::SecurityStatusRequest));
-  MOCK_METHOD(void, process, (const simulator::protocol::InstrumentStateRequest&, simulator::protocol::InstrumentState&));
+  MOCK_METHOD(void, process, (simulator::protocol::OrderPlacementRequest), (override));
+  MOCK_METHOD(void, process, (simulator::protocol::OrderModificationRequest), (override));
+  MOCK_METHOD(void, process, (simulator::protocol::OrderCancellationRequest), (override));
+  MOCK_METHOD(void, process, (simulator::protocol::MarketDataRequest), (override));
+  MOCK_METHOD(void, process, (simulator::protocol::SecurityStatusRequest), (override));
   // clang-format on
 };
 

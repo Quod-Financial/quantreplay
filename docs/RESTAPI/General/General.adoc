@@ -38,13 +38,13 @@ It is possible to compare the Database and GET REST request.
 
 Through REST it is possible to:
 
-* see some specific listing / venue / data sources
+* see some specific listing / venue / datasources
 * see all listings / venues / price seed
 * see venue / multiple venues status
 * see order generation status
 * start / stop order generation
-* update some listing / venue / price seed / data sources /settings
-* add listing / venue / price seed / data sources / settings
+* update some listing / venue / price seed / datasources /settings
+* add listing / venue / price seed / datasources / settings
 * send order
 
 Market Simulator gets data from the Database at its start, as a result, Market Simulator provides only *_current_* data to REST.
@@ -403,17 +403,17 @@ rounded to the nearest multiple of the setting Listings → qtyMultiple.
 Documentation TBC (controlling high volatility, spikes, market impact, etc.).
 
 [[general-datasource]]
-=== Data Source Playback
+=== Datasource Playback
 
-The market simulator can read data from an external data source and play it back through the main order book of the simulator to allow clients to consume this as 
+The market simulator can read data from an external datasource and play it back through the main order book of the simulator to allow clients to consume this as 
 tradable market data. 
-For instance, a data source with bid/ask market data is turned into orders that are sent into the simulator’s matching engine, 
+For instance, a datasource with bid/ask market data is turned into orders that are sent into the simulator’s matching engine, 
 which then results in published market data and the ability for other clients to send orders into the same matching engine’s order book.
 
-The market simulator currently supports either CSV file format or databases such as PostgreSQL and TimescaleDB. 
+The market simulator currently supports CSV file format, databases such as PostgreSQL and TimescaleDB, and a market data feed received over a FIX connection.
 The simulator can read market data in the form of multiple bid/ask order book levels.
 
-See <<adminsets-data,this section>> for specific details of configuring data sources.
+See <<adminsets-data,this section>> for specific details of configuring datasources.
 
 [[general-datasource-formatconfig]]
 ==== Format Specific Configuration
@@ -432,14 +432,14 @@ Following usual CSV standards:
 
 An additional point is that currently all Date/Time strings are expected to be specified in the format: "YYYY-MM-DD HH:MM:SS.MMM"
 
-The following data source properties can be configured to indicate aspects specific to the format of a CSV file:
+The following datasource properties can be configured to indicate aspects specific to the format of a CSV file:
 
-* textDelimeter - delimiter used to separate values ("," by default if not specified)
+* textDelimiter - delimiter used to separate values ("," by default if not specified)
 * textHeaderRow - 1-based row index of where header row is located (0 indicates no header row)
 * textDataRow - 1-based row index of where the first row of data is located. Cannot be 0, and must be greater than `textHeaderRow`
 
-Specifically for CSV format files, and only when textHeaderRow is 0 or not specified, the column mapping properties of the data source can be used to map columns by index number. 
-The columnTo property of the column mapping can be used to specify a 1-based column number to map to in the data source. 
+Specifically for CSV format files, and only when textHeaderRow is 0 or not specified, the column mapping properties of the datasource can be used to map columns by index number. 
+The columnTo property of the column mapping can be used to specify a 1-based column number to map to in the datasource. 
 In this case, if no column mappings are indicated, the following default order of columns is expected:
 
  ReceivedTimeStamp, MessageTimeStamp, Instrument, BidParty, BidQuantity, BidPrice, AskPrice, AskQuantity, AskParty
@@ -450,7 +450,7 @@ If at least one of the columns for a depth level is defined (BidParty, BidPrice,
 
 Specifically, one of ReceivedTimeStamp or MessageTimeStamp must be mapped either explicitly or implicitly. If only one is specified, its value is used for the other.
 
-The following examples show sample generic CSV formats using these data source properties:
+The following examples show sample generic CSV formats using these datasource properties:
 
 _textDelimiter absent / textHeaderRow=1 / textDataRow=2_
 
@@ -482,44 +482,98 @@ _textDelimiter absent / textHeaderRow=0 / textDataRow=1_
 The connection string for a database is the URL containing the IP, port, authentication details, and database name required to connect to the database instance. 
 For example: “postgresql://myuser:mypassword@10.0.1.1:5432/mydatabasename”
 
-The following data source properties can be configured to indicate aspects specific to the format of a database:
+The following datasource properties can be configured to indicate aspects specific to the format of a database:
 
 * tableName - name of table containing data in the database
 
+[[general-datasource-formatconfig-fix]]
+===== FIX Market Data Feed
+For the FIX format, the datasource is not a static set of records — market data is received over a FIX session from an external market data feed subscription.
+
+identifier of the initiator session through which the simulator reaches the market data feed, in the format 
+`+{BeginString}:{SenderCompID}->{TargetCompID}:{SessionQualifier}+` (`+:{SessionQualifier}+` is only added if SessionQualifier is configured). 
+For example: “FIXT.1.1:SIMULATOR->FEED”. 
+The session itself is configured as an initiator session in the QuickFIX configuration file of the simulator instance.
+
+The following datasource properties can be configured to indicate aspects specific to the FIX format:
+
+* maxDepthLevels - the market depth (tag 264) requested from the feed; 0 or unspecified requests the full book
+* listings - the symbols to subscribe to on the feed, one market data subscription per entry; an empty list makes no subscription
+* randomPriceOnly - when set, the feed is not turned into orders in the book and serves only as a price source for random order generation, in which case each subscription only requests the top of the book (264 = 1).
+
+The file and database properties and the column mappings do not apply to the FIX format and are ignored.
+
+_Subscriptions_
+
+While order generation is running (see <<general-datasource-basicsgl,Basic Single Level Order Book>>), the simulator keeps one market data subscription 
+per distinct session and symbol across the enabled FIX datasources of the venue, requested with a MarketDataRequest (35=V) using the following values:
+
+* Symbol (55) as configured for each listing configured on a datasource
+* MDReqID (262) generated by the simulator
+* SubscriptionRequestType (263) = 1
+* MarketDepth (264) as configured
+* MDUpdateType (265) = 0 (Full Refresh)
+* MDEntryType (269) 0 (Bid) and 1 (Offer)
+
+A subscription is requested when order generation starts and again each time its session logs on while generation is running; it is cancelled (263 = 2) when order generation is stopped, and dropped without any message when the session disconnects. 
+A subscription rejected by the feed (35=Y) is disabled until order generation is restarted or its session logs on again. 
+Whenever a subscription ends this way, the prices received from it are discarded. 
+Note that when a market simulator itself is used as the source of a market data feed, the simulator currently only accepts MarketDepth (264) values 0 and 1 and rejects any other maxDepthLevels value.
+
+Only MarketDataSnapshotFullRefresh (35=W) messages are currently processed; a MarketDataIncrementalRefresh (35=X) is logged and ignored.
+
+_Deriving orders_
+
+Unless randomPriceOnly is set, every full refresh received for a symbol that equals the symbol of an enabled listing of the venue is applied to the matching engine of that listing as one bid/ask order book, with the same logic as a row of a CSV or database datasource (see <<general-datasource-basicsgl,Basic Single Level Order Book>> and <<general-datasource-multi,Multiple Level Order Book>>):
+
+* the bid entries (269=0) form the bid levels 1, 2, etc in the order they appear in the message, and the offer entries (269=1) the ask levels; 
+entries of any other type and entries beyond maxDepthLevels are ignored;
+* the price and quantity of a level are MDEntryPx (270) and MDEntrySize (271);
+* the party of a level is MDEntryBuyer (288) for a bid and MDEntrySeller (289) for an offer when present; otherwise every level derived from the datasource carries 
+the party “DS” followed by the datasource id (for instance DS3), so that a level unchanged between two refreshes keeps matching its resting order and a shifted book 
+costs one new order rather than one amendment per level;
+* a full refresh without bid or offer entries cancels every order the simulator has generated for that listing.
+
+A symbol matching no enabled listing of the venue is still subscribed to, so that it can serve as a price source, but derives no orders.
+
+Each full refresh is applied as soon as it is received, with no delay between refreshes; the repeat property has no meaning for a feed. Refreshes received while order generation is stopped are discarded, and the orders already derived stay in the matching engine until the next refresh is applied.
+
+A FIX datasource, with either value of randomPriceOnly, can also provide the top of the book that random order generation of a listing bases its prices on, when the listing is configured to use it as a random price source.
+
 [[general-datasource-basicsgl]]
 ==== Basic Single Level Order Book
-For a simple data source where each row contains only a single level bid/ask order book, the simulator starts reading the single level of depth from 
+For a simple datasource where each row contains only a single level bid/ask order book, the simulator starts reading the single level of depth from 
 the first row of the datasource, and then proceeds to read each subsequent row after that. 
-The trigger for playing back the content of a data source follows the same logic as the configuration used to indicate whether or not to generate random orders. 
-The orderOnStartup property of a venue determines whether to play back any configured data sources when the simulator starts, and the genstart REST API can be used to start play back on demand. 
-If the randomOrdersEnabled property of a listing is true, then both random order generation and playback from a configured data source will begin and continue to run simultaneously.
+The trigger for playing back the content of a datasource follows the same logic as the configuration used to indicate whether or not to generate random orders. 
+The orderOnStartup property of a venue determines whether to play back any configured datasources when the simulator starts, and the genstart REST API can be used to start play back on demand. 
+If the randomOrdersEnabled property of a listing is true, then both random order generation and playback from a configured datasource will begin and continue to run simultaneously.
 
-In processing each data source row, the simulator compares the current state of the matching engine for the given listing of each row, and generates a series of order actions 
-(new orders, amends, cancels) to modify the current state of the matching engine to change to a state that matches the values from the current data source row being processed. 
+In processing each datasource row, the simulator compares the current state of the matching engine for the given listing of each row, and generates a series of order actions 
+(new orders, amends, cancels) to modify the current state of the matching engine to change to a state that matches the values from the current datasource row being processed. 
 Multiple orders for the same counter party are supported on either one or both sides of the order book.
 When applying changes from a new order book snapshot, the actions are performed in a specific sequence: first all necessary cancels, then new orders, and finally amends.
 
-The following logic is applied to derive order actions from each row of a data source:
+The following logic is applied to derive order actions from each row of a datasource:
 
-* Any existing orders from counter parties that do not match the party of the data source row being processed are canceled.
-* Any existing orders for the same party as the data source row being processed without a corresponding bid or ask entry in the data source are canceled.
-* Any existing orders for the same party and side as the data source row, but with a different price or quantity, are amended to the same price and quantity as the corresponding bid or ask entry in the data source.
-* Any bid or ask entries in the data source without a corresponding existing order for the same party results in a new order with the properties of that bid or ask entry 
-in the data source.
+* Any existing orders from counter parties that do not match the party of the datasource row being processed are canceled.
+* Any existing orders for the same party as the datasource row being processed without a corresponding bid or ask entry in the datasource are canceled.
+* Any existing orders for the same party and side as the datasource row, but with a different price or quantity, are amended to the same price and quantity as the corresponding bid or ask entry in the datasource.
+* Any bid or ask entries in the datasource without a corresponding existing order for the same party results in a new order with the properties of that bid or ask entry 
+in the datasource.
 
 This will result in all of the usual market data updates generated when any order actions are sent into the matching engine. 
 Each row of the datasource is played back into the matching engine at a rate that corresponds with the ReceivedTimeStamp property of the row. 
 The first row will be played back immediately, the second row will be played back with a delay of the difference between the ReceivedTimeStamp of the second and first rows, 
 and so on. 
-This continues until the last row of the data source, at which point if the repeat property of the venue is false, then play back will stop, 
-otherwise if it is true the simulator will continue to play back the content of the data source restarting from the first row.
+This continues until the last row of the datasource, at which point if the repeat property of the datasource is false, then play back will stop, 
+otherwise if it is true the simulator will continue to play back the content of the datasource restarting from the first row.
 
-The order actions derived from each data source row processed by the simulator use the bid and ask party, quantity, and price values to update the state of the matching engine. 
+The order actions derived from each datasource row processed by the simulator use the bid and ask party, quantity, and price values to update the state of the matching engine. 
 While ReceivedTimeStamp is used only to determine when the order actions are played back into the matching engine, the MessageTimeStamp is used to set the timestamp property 
 (generally set by the sender) of each order action. 
 The MessageTimeStamp property value used to set the timestamp on each order action is adjusted with the difference between the ReceivedTimeStamp of the first row and the current time of day at that moment.
 
-For example, if the following 2 first rows from a data source were being played back at a current time of day of 14:30:00.500 :
+For example, if the following 2 first rows from a datasource were being played back at a current time of day of 14:30:00.500 :
 
 ----
 ReceivedTimeStamp,MessageTimeStamp,...
@@ -536,7 +590,7 @@ ReceivedTimeStamp,MessageTimeStamp,...
 NOTE: Note that the simulator will play back order actions with at least the same delay between values of ReceivedTimeStamp for each row, 
 though the actual delay may be longer if the simulator is unable to play back the order actions for each row for too small of a specified delay.
 
-For database format and CSV file format with a non-zero textHeaderRow value, the column mapping properties of the data source can be used to map columns by name.
+For database format and CSV file format with a non-zero textHeaderRow value, the column mapping properties of the datasource can be used to map columns by name.
 The columnFrom property of the column mapping is used to select the internal simulator field that will be mapped from, and the columnTo property indicates the data
 source column that the simulator field will be mapped to. 
 
@@ -546,13 +600,13 @@ If at least one of the columns for a depth level is defined (BidParty, BidPrice,
 
 Specifically, one of ReceivedTimeStamp or MessageTimeStamp must be mapped either explicitly or implicitly. If only one is specified, its value is used for the other.
 
-See the section <<adminsets-data-colmapping,Market Simulator REST API | Column Mapping Sub List>> for descriptions of all possible fields that can be mapped from a data source as configured using the 
-columnFrom property of a data source column mapping. 
+See the section <<adminsets-data-colmapping,Market Simulator REST API | Column Mapping Sub List>> for descriptions of all possible fields that can be mapped from a datasource as configured using the 
+columnFrom property of a datasource column mapping. 
 If any bid or ask level is missing a price or quantity value, that bid or ask entry is considered to be empty and removed from the state of the matching engine. 
 If the party value for a bid
-or ask level is missing, a default value of “CP1” is used for data sources with a single level bid/ask order book.
+or ask level is missing, a default value of “CP1” is used for datasources with a single level bid/ask order book.
 
-The following shows a sample data source list of single level bid/ask order books, which can be interpreted either as a CSV or database format.
+The following shows a sample datasource list of single level bid/ask order books, which can be interpreted either as a CSV or database format.
 
 ----
 ReceivedTimeStamp,MessageTimeStamp,Instrument,BidParty,BidQuantity,BidPrice,AskPrice,AskQuantity,AskParty
@@ -563,29 +617,29 @@ ReceivedTimeStamp,MessageTimeStamp,Instrument,BidParty,BidQuantity,BidPrice,AskP
 
 [[general-datasource-multi]]
 ==== Multiple Level Order Book
-For a more complex data source where each row contains a bid/ask order book with more than one level, the simulator processes each row much like as described above
-for a single level order book, but changing the state of the matching engine to have the multiple bid/ask levels indicated by each row of the data source.
+For a more complex datasource where each row contains a bid/ask order book with more than one level, the simulator processes each row much like as described above
+for a single level order book, but changing the state of the matching engine to have the multiple bid/ask levels indicated by each row of the datasource.
 
-The column mapping properties of the data source can be used to map to multiple simulator fields corresponding to the columnFrom values of BidParty, BidQuantity, 
+The column mapping properties of the datasource can be used to map to multiple simulator fields corresponding to the columnFrom values of BidParty, BidQuantity, 
 BidPrice, AskPrice, AskQuantity, AskParty. 
 For each of these columnFrom values, a 1-based index can be appended to indicate which bid or ask level that value should be applied to, for example BidParty1 
 for the first bid level, BidParty2 for the second bid level, and so on. 
 In this case, the columnTo property still works the same way, indicating either the name or (for a CSV file format when textHeaderRow is 0 or not specified) the index 
-position of the data source column to map to.
+position of the datasource column to map to.
 
 If any bid or ask level is missing a price or quantity value, that particular bid or ask entry, along with all subsequent entries on that side, will be considered empty. These entries will be removed from the state of the matching engine.
-If the party value for a bid or ask level is missing for data sources with multiple bid/ask levels, a default value of “CP#” is used, where # is the index for each level 
+If the party value for a bid or ask level is missing for datasources with multiple bid/ask levels, a default value of “CP#” is used, where # is the index for each level 
 (e.g. level 1 would use CP1, etc).
 
-Note that the # character can also be appended to either the columnFrom or columnTo data source column mappings to indicate that all available depth levels can be mapped. 
+Note that the # character can also be appended to either the columnFrom or columnTo datasource column mappings to indicate that all available depth levels can be mapped. 
 For instance a column mapping of columnFrom=BidPrice# and columnTo=bidpx# indicates that a simulator field of BidPrice for level 1 of bids would be mapped to a column name 
-in the data source of bidpx1, and a simulator field of BidPrice for level 2 of bids would be mapped to a column name in the data source of bidpx2, and so on.
+in the datasource of bidpx1, and a simulator field of BidPrice for level 2 of bids would be mapped to a column name in the datasource of bidpx2, and so on.
 
-It is also possible to limit the number of depth levels processed from a data source using the maxDepthLevels property of a venue. 
-This value can optionally be used to indicate the maximum number of bid/ask levels that will be processed by the simulator in the data source, after which the remaining 
+It is also possible to limit the number of depth levels processed from a datasource using the maxDepthLevels property of a datasource. 
+This value can optionally be used to indicate the maximum number of bid/ask levels that will be processed by the simulator in the datasource, after which the remaining 
 levels will be ignored and treated as empty.
 
-The following shows a sample data source list of bid/ask order books with multiple (5) levels, some with empty entries, which can be interpreted either as a CSV or database format.
+The following shows a sample datasource list of bid/ask order books with multiple (5) levels, some with empty entries, which can be interpreted either as a CSV or database format.
 
 ----
 ReceivedTimeStamp,MessageTimeStamp,Instrument,BidParty1,BidQuantity1,BidPrice1,BidParty2,BidQuantity2,BidPrice2,BidParty3,BidQuantity3,BidPrice3,BidParty4,BidQuantity4,BidPrice4,BidParty5,BidQuantity5,BidPrice5,AskPrice1,AskQuantity1,AskParty1,AskPrice2,AskQuantity2,AskParty2,AskPrice3,AskQuantity3,AskParty3,AskPrice4,AskQuantity4,AskParty4,AskPrice5,AskQuantity5,AskParty5

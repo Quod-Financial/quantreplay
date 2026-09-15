@@ -18,12 +18,18 @@ add_static_library(
     ih/channels.hpp
     include/middleware/channels/detail/receiver.hpp
     include/middleware/channels/generator_admin_channel.hpp
+    include/middleware/channels/generator_initiator_event_channel.hpp
+    include/middleware/channels/market_data_reply_channel.hpp
+    include/middleware/channels/market_data_request_channel.hpp
     include/middleware/channels/trading_admin_channel.hpp
     include/middleware/channels/trading_reply_channel.hpp
     include/middleware/channels/trading_request_channel.hpp
     include/middleware/channels/trading_session_event_channel.hpp
     include/middleware/routing/errors.hpp
     include/middleware/routing/generator_admin_channel.hpp
+    include/middleware/routing/generator_initiator_event_channel.hpp
+    include/middleware/routing/market_data_reply_channel.hpp
+    include/middleware/routing/market_data_request_channel.hpp
     include/middleware/routing/trading_admin_channel.hpp
     include/middleware/routing/trading_reply_channel.hpp
     include/middleware/routing/trading_request_channel.hpp

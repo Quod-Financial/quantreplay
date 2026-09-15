@@ -8,10 +8,15 @@
 #include "ih/generator_impl.hpp"
 #include "log/logging.hpp"
 #include "protocol/app/execution_report.hpp"
+#include "protocol/app/market_data_reject.hpp"
+#include "protocol/app/market_data_snapshot.hpp"
+#include "protocol/app/market_data_update.hpp"
 #include "protocol/app/order_cancellation_confirmation.hpp"
 #include "protocol/app/order_modification_confirmation.hpp"
 #include "protocol/app/order_placement_confirmation.hpp"
 #include "protocol/app/order_placement_reject.hpp"
+#include "protocol/app/session_connected_event.hpp"
+#include "protocol/app/session_terminated_event.hpp"
 
 namespace simulator::generator {
 
@@ -51,6 +56,25 @@ struct Generator::Implementation {
 
   auto enrich(const protocol::ExecutionReport& reply) -> void {
     handle_reply(reply);
+  }
+
+  auto process_market_data(const protocol::MarketDataSnapshot& snapshot)
+      -> void {
+    generator_->process_market_data(snapshot);
+  }
+
+  auto process_market_data(const protocol::MarketDataReject& reject) -> void {
+    generator_->process_market_data(reject);
+  }
+
+  auto process_session_connection(const protocol::SessionConnectedEvent& event)
+      -> void {
+    generator_->process_session_connection(event);
+  }
+
+  auto process_session_disconnection(
+      const protocol::SessionTerminatedEvent& event) -> void {
+    generator_->process_session_disconnection(event);
   }
 
  private:

@@ -8,6 +8,7 @@
 
 #include "data_layer/api/models/column_mapping.hpp"
 #include "data_layer/api/models/datasource.hpp"
+#include "data_layer/api/models/datasource_listing.hpp"
 #include "ih/marshalling/json/datasource.hpp"
 #include "tests/test_utils/matchers.hpp"
 
@@ -64,7 +65,8 @@ TEST_F(HttpJsonDatasourceMarshaller, MarshallsRequiredAttributes) {
     R"("connection":"Connection",)"
     R"("format":"PSQL",)"
     R"("type":"OrderBook",)"
-    R"("columnMapping":[])"
+    R"("columnMapping":[],)"
+    R"("listings":[])"
   "}"};
   // clang-format on
 
@@ -85,7 +87,8 @@ TEST_F(HttpJsonDatasourceMarshaller, MarshallsEnabledFlag) {
     R"("format":"CSV",)"
     R"("type":"OrderBook",)"
     R"("enabled":true,)"
-    R"("columnMapping":[])"
+    R"("columnMapping":[],)"
+    R"("listings":[])"
   "}"};
   // clang-format on
 
@@ -106,7 +109,8 @@ TEST_F(HttpJsonDatasourceMarshaller, MarshallsRepeatFlag) {
     R"("format":"CSV",)"
     R"("type":"OrderBook",)"
     R"("repeat":false,)"
-    R"("columnMapping":[])"
+    R"("columnMapping":[],)"
+    R"("listings":[])"
   "}"};
   // clang-format on
 
@@ -127,7 +131,8 @@ TEST_F(HttpJsonDatasourceMarshaller, MarshallsTextDelimiter) {
     R"("format":"CSV",)"
     R"("type":"OrderBook",)"
     R"("textDelimiter":",",)"
-    R"("columnMapping":[])"
+    R"("columnMapping":[],)"
+    R"("listings":[])"
   "}"};
   // clang-format on
 
@@ -148,7 +153,8 @@ TEST_F(HttpJsonDatasourceMarshaller, MarshallsTextHeaderRow) {
     R"("format":"CSV",)"
     R"("type":"OrderBook",)"
     R"("textHeaderRow":42,)"
-    R"("columnMapping":[])"
+    R"("columnMapping":[],)"
+    R"("listings":[])"
   "}"};
   // clang-format on
 
@@ -169,7 +175,8 @@ TEST_F(HttpJsonDatasourceMarshaller, MarshallsTextDataRow) {
     R"("format":"CSV",)"
     R"("type":"OrderBook",)"
     R"("textDataRow":42,)"
-    R"("columnMapping":[])"
+    R"("columnMapping":[],)"
+    R"("listings":[])"
   "}"};
   // clang-format on
 
@@ -190,7 +197,8 @@ TEST_F(HttpJsonDatasourceMarshaller, MarshallsTableName) {
     R"("format":"CSV",)"
     R"("type":"OrderBook",)"
     R"("tableName":"my_table",)"
-    R"("columnMapping":[])"
+    R"("columnMapping":[],)"
+    R"("listings":[])"
   "}"};
   // clang-format on
 
@@ -230,7 +238,8 @@ TEST_F(HttpJsonDatasourceMarshaller, MarshallsColumnMapping) {
         R"("columnFrom":"FromColumn2",)"
         R"("columnTo":"ToColumn2")"
       "}"
-    "]"
+    "],"
+    R"("listings":[])"
   "}"};
   // clang-format on
 
@@ -252,7 +261,8 @@ TEST_F(HttpJsonDatasourceMarshaller, MarshallsDatasourcesList) {
         R"("connection":"dummy",)"
         R"("format":"CSV",)"
         R"("type":"OrderBook",)"
-        R"("columnMapping":[])"
+        R"("columnMapping":[],)"
+        R"("listings":[])"
       "},"
       "{"
         R"("id":43,)"
@@ -261,7 +271,8 @@ TEST_F(HttpJsonDatasourceMarshaller, MarshallsDatasourcesList) {
         R"("connection":"dummy",)"
         R"("format":"CSV",)"
         R"("type":"OrderBook",)"
-        R"("columnMapping":[])"
+        R"("columnMapping":[],)"
+        R"("listings":[])"
       "}"
     "]"
   "}"};
@@ -284,7 +295,64 @@ TEST_F(HttpJsonDatasourceMarshaller, MarshallsMaxDepthLevels) {
     R"("format":"CSV",)"
     R"("type":"OrderBook",)"
     R"("maxDepthLevels":41,)"
-    R"("columnMapping":[])"
+    R"("columnMapping":[],)"
+    R"("listings":[])"
+  "}"};
+  // clang-format on
+
+  EXPECT_EQ(marshall(datasource), expected_json);
+}
+
+TEST_F(HttpJsonDatasourceMarshaller, MarshallsListings) {
+  auto patch = make_default_patch();
+  data_layer::DatasourceListing::Patch listing1;
+  listing1.with_symbol("AAPL");
+  data_layer::DatasourceListing::Patch listing2;
+  listing2.with_symbol("MSFT");
+  patch.with_listing(listing1).with_listing(listing2);
+  const auto datasource = make_datasource(patch, 42);
+
+  // clang-format off
+  const std::string expected_json{"{"
+    R"("id":42,)"
+    R"("name":"dummy",)"
+    R"("venueId":"dummy",)"
+    R"("connection":"dummy",)"
+    R"("format":"CSV",)"
+    R"("type":"OrderBook",)"
+    R"("columnMapping":[],)"
+    R"("listings":[)"
+      "{"
+        R"("datasourceId":42,)"
+        R"("symbol":"AAPL")"
+      "},"
+      "{"
+        R"("datasourceId":42,)"
+        R"("symbol":"MSFT")"
+      "}"
+    "]"
+  "}"};
+  // clang-format on
+
+  EXPECT_EQ(marshall(datasource), expected_json);
+}
+
+TEST_F(HttpJsonDatasourceMarshaller, MarshallsRandomPriceOnly) {
+  auto patch = make_default_patch();
+  patch.with_random_price_only_flag(true);
+  const auto datasource = make_datasource(patch, 42);
+
+  // clang-format off
+  const std::string expected_json{"{"
+    R"("id":42,)"
+    R"("name":"dummy",)"
+    R"("venueId":"dummy",)"
+    R"("connection":"dummy",)"
+    R"("format":"CSV",)"
+    R"("type":"OrderBook",)"
+    R"("randomPriceOnly":true,)"
+    R"("columnMapping":[],)"
+    R"("listings":[])"
   "}"};
   // clang-format on
 
@@ -475,7 +543,7 @@ TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsNotExistColumnMappingKey) {
 }
 
 TEST_F(HttpJsonDatasourceUnmarshaller,
-       ThrowsExceptionOnUnmarshallingNotAnArrayColumnMappingValue) {
+       ThrowsExceptionOnUnmarshallingNotArrayColumnMappingValue) {
   constexpr std::string_view json{R"({"columnMapping":{}})"};
 
   EXPECT_THROW(DatasourceUnmarshaller::unmarshall(json, patch),
@@ -535,6 +603,75 @@ TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsMaxDepthLevels) {
   DatasourceUnmarshaller::unmarshall(json, patch);
   EXPECT_THAT(patch.max_depth_levels(),
               IsPatchFieldWithValue(Optional(Eq(42))));
+}
+
+TEST_F(HttpJsonDatasourceUnmarshaller,
+       ThrowsExceptionOnUnmarshallingNotArrayListingsValue) {
+  constexpr std::string_view json{R"({"listings":{}})"};
+
+  EXPECT_THROW(DatasourceUnmarshaller::unmarshall(json, patch),
+               std::runtime_error);
+}
+
+TEST_F(HttpJsonDatasourceUnmarshaller,
+       ThrowsExceptionOnUnmarshallingListingsValueInvalidElemType) {
+  constexpr std::string_view json{R"({"listings":[5, 1, 2]})"};
+
+  EXPECT_THROW(DatasourceUnmarshaller::unmarshall(json, patch),
+               std::runtime_error);
+}
+
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsAbsentListings) {
+  constexpr std::string_view json{R"({})"};
+
+  DatasourceUnmarshaller::unmarshall(json, patch);
+
+  EXPECT_FALSE(patch.listings().has_value());
+}
+
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsListingsEmptyArray) {
+  constexpr std::string_view json{R"({"listings":[]})"};
+
+  DatasourceUnmarshaller::unmarshall(json, patch);
+
+  const auto& listings = patch.listings();
+  ASSERT_TRUE(listings.has_value());
+  ASSERT_TRUE(listings->empty());
+}
+
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsListingsValueIsValidArray) {
+  // clang-format off
+  constexpr std::string_view json{"{"
+    R"("listings":[)"
+      "{"
+        R"("symbol":"AAPL")"
+      "}"
+    "]"
+  "}"};
+  // clang-format on
+
+  DatasourceUnmarshaller::unmarshall(json, patch);
+
+  const auto& listings = patch.listings();
+  ASSERT_TRUE(listings.has_value());
+  ASSERT_EQ(listings->size(), 1);
+  EXPECT_EQ(listings->front().symbol(), "AAPL");
+}
+
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsRandomPriceOnlyNull) {
+  constexpr std::string_view json{R"({"randomPriceOnly":null})"};
+
+  DatasourceUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.random_price_only_flag(),
+              IsPatchFieldWithValue(std::nullopt));
+}
+
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsRandomPriceOnly) {
+  constexpr std::string_view json{R"({"randomPriceOnly":true})"};
+
+  DatasourceUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.random_price_only_flag(),
+              IsPatchFieldWithValue(Optional(Eq(true))));
 }
 
 // NOLINTEND(*magic-numbers*)

@@ -193,6 +193,17 @@ TEST_F(DataLayerInspectorsDatasourceReader, ReadsMaxDepthLevels) {
   make_reader().read(datasource);
 }
 
+TEST_F(DataLayerInspectorsDatasourceReader, ReadsRandomPriceOnlyFlag) {
+  fill_required_fields(patch);
+  patch.with_random_price_only_flag(true);
+  const auto datasource = Datasource::create(patch, 42);
+
+  EXPECT_CALL(marshaller(), boolean(Eq(Attribute::RandomPriceOnly), Eq(true)))
+      .Times(1);
+
+  make_reader().read(datasource);
+}
+
 class DataLayerInspectorsDatasourcePatchReader : public ::testing::Test {
  public:
   using MarshallerType = Marshaller<Datasource>;
@@ -376,6 +387,25 @@ TEST_F(DataLayerInspectorsDatasourcePatchReader, ReadsMaxDepthLevels) {
 
   EXPECT_CALL(marshaller(),
               optional_uint32(Eq(Attribute::MaxDepthLevels), Eq(42)))
+      .Times(1);
+
+  make_reader().read(patch);
+}
+
+TEST_F(DataLayerInspectorsDatasourcePatchReader,
+       SetsRandomPriceOnlyFlagToFalseIfItIsNull) {
+  patch.with_random_price_only_flag(std::nullopt);
+
+  EXPECT_CALL(marshaller(), boolean(Eq(Attribute::RandomPriceOnly), Eq(false)))
+      .Times(1);
+
+  make_reader().read(patch);
+}
+
+TEST_F(DataLayerInspectorsDatasourcePatchReader, ReadsRandomPriceOnlyFlag) {
+  patch.with_random_price_only_flag(true);
+
+  EXPECT_CALL(marshaller(), boolean(Eq(Attribute::RandomPriceOnly), Eq(true)))
       .Times(1);
 
   make_reader().read(patch);
@@ -566,6 +596,16 @@ TEST_F(DataLayerInspectorsDatasourcePatchWriter, WritesMaxDepthLevels) {
   make_writer().write(patch);
   EXPECT_THAT(patch.max_depth_levels(),
               IsPatchFieldWithValue(Optional(Eq(42))));
+}
+
+TEST_F(DataLayerInspectorsDatasourcePatchWriter, WritesRandomPriceOnlyFlag) {
+  EXPECT_CALL(unmarshaller(),
+              optional_boolean(Eq(Attribute::RandomPriceOnly), _))
+      .WillOnce(DoAll(SetArgReferee<1>(true), Return(true)));
+
+  make_writer().write(patch);
+  EXPECT_THAT(patch.random_price_only_flag(),
+              IsPatchFieldWithValue(Optional(Eq(true))));
 }
 
 // NOLINTEND(*magic-numbers*)

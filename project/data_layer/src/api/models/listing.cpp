@@ -1,5 +1,11 @@
 #include "api/models/listing.hpp"
 
+#include <algorithm>
+#include <iterator>
+#include <optional>
+#include <utility>
+#include <vector>
+
 #include "ih/common/exceptions.hpp"
 
 namespace simulator::data_layer {
@@ -61,6 +67,19 @@ auto Listing::create(Listing::Patch snapshot, std::uint64_t id) -> Listing {
   SIM_ASSIGN_FIELD(random_orders_enabled_flag_, random_orders_enabled_flag_);
 
 #undef SIM_ASSIGN_FIELD
+
+  if (auto& random_price_sources = snapshot.random_price_sources_) {
+    listing.random_price_sources_.reserve(random_price_sources->size());
+    std::transform(std::make_move_iterator(random_price_sources->begin()),
+                   std::make_move_iterator(random_price_sources->end()),
+                   std::back_inserter(listing.random_price_sources_),
+                   [id](ListingRandomPriceSource::Patch&& patch)
+                       -> ListingRandomPriceSource {
+                     return ListingRandomPriceSource::create(std::move(patch),
+                                                             id);
+                   });
+  }
+
   return listing;
 }
 
@@ -213,6 +232,11 @@ auto Listing::random_aggressive_amt_minimum() const noexcept
 auto Listing::random_aggressive_amt_maximum() const noexcept
     -> std::optional<double> {
   return random_aggressive_amt_maximum_;
+}
+
+auto Listing::random_price_sources() const noexcept
+    -> const std::vector<ListingRandomPriceSource>& {
+  return random_price_sources_;
 }
 
 auto Listing::Patch::symbol() const noexcept
@@ -563,6 +587,25 @@ auto Listing::Patch::random_aggressive_amt_maximum() const noexcept
 auto Listing::Patch::with_random_aggressive_amt_maximum(
     std::optional<double> amount) noexcept -> Patch& {
   random_aggressive_amt_maximum_ = std::move(amount);
+  return *this;
+}
+
+auto Listing::Patch::random_price_sources() const noexcept
+    -> const std::optional<std::vector<ListingRandomPriceSource::Patch>>& {
+  return random_price_sources_;
+}
+
+auto Listing::Patch::with_random_price_source(
+    ListingRandomPriceSource::Patch patch_snapshot) -> Patch& {
+  if (!random_price_sources_.has_value()) {
+    random_price_sources_ = decltype(random_price_sources_)::value_type{};
+  }
+  random_price_sources_->emplace_back(std::move(patch_snapshot));
+  return *this;
+}
+
+auto Listing::Patch::without_random_price_sources() noexcept -> Patch& {
+  random_price_sources_ = decltype(random_price_sources_)::value_type{};
   return *this;
 }
 

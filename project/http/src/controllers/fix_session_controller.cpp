@@ -22,7 +22,6 @@ namespace simulator::http {
 namespace {
 
 constexpr auto SocketAcceptPortKey = std::string_view{"SOCKETACCEPTPORT"};
-constexpr auto DefaultHeading = std::string_view{"DEFAULT"};
 
 [[nodiscard]]
 auto make_session_id(const protocol::fix::Session& session) -> std::string {
@@ -46,25 +45,21 @@ auto resolve_session_id(const protocol::Session& session)
 }
 
 [[nodiscard]]
-auto find_accept_port(const core::FixSessionSettings& settings)
-    -> std::optional<std::string> {
-  if (const auto it = settings.settings.find(std::string{SocketAcceptPortKey});
-      it != settings.settings.end()) {
-    return it->second;
+auto make_host_port(std::string_view host,
+                    const std::optional<std::string>& port) -> std::string {
+  if (port.has_value()) {
+    return fmt::format("{}:{}", host, *port);
   }
-  return std::nullopt;
+  return std::string{host};
 }
 
 [[nodiscard]]
-auto find_default_accept_port(
-    const std::vector<core::FixSessionSettings>& session_settings)
-    -> std::optional<std::string> {
-  for (const auto& settings : session_settings) {
-    if (settings.heading == DefaultHeading) {
-      return find_accept_port(settings);
-    }
-  }
-  return std::nullopt;
+auto resolve_host_port(const core::FixSessionSettings& settings,
+                       const core::FixSessionSettings* default_section,
+                       std::string_view host_ip) -> std::string {
+  return make_host_port(
+      host_ip,
+      resolve_session_setting(settings, default_section, SocketAcceptPortKey));
 }
 
 }  // namespace
@@ -151,25 +146,18 @@ auto FixSessionControllerImpl::populate_sessions(
   }
 
   const auto& session_settings = config_provider_->session_settings();
-  const auto default_accept_port = find_default_accept_port(session_settings);
+  const auto* default_section = find_default_session_section(session_settings);
 
   const std::lock_guard lock{sessions_mutex_};
   for (const auto& settings : session_settings) {
-    if (!settings.id.has_value()) {
+    if (!settings.id.has_value() ||
+        is_initiator_session(settings, default_section)) {
       continue;
     }
     const auto& session_id = *settings.id;
 
     auto info = FixSessionInfo{};
-    auto port = find_accept_port(settings);
-    if (!port.has_value()) {
-      port = default_accept_port;
-    }
-    if (port.has_value()) {
-      info.host_port = fmt::format("{}:{}", host_ip_, *port);
-    } else {
-      info.host_port = host_ip_;
-    }
+    info.host_port = resolve_host_port(settings, default_section, host_ip_);
     if (const auto iter = last_connected_times.find(session_id);
         iter != last_connected_times.end()) {
       info.last_connected_time = iter->second;

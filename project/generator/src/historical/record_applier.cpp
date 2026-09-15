@@ -147,6 +147,12 @@ auto RecordApplier::apply_orders(std::vector<Order> incoming_orders) -> void {
   for (auto& incoming_order : incoming_orders) {
     auto reusable_order = find_same_party_side_order(incoming_order);
 
+    boundaries_.account_requested(incoming_order.side, incoming_order.price);
+    if (reusable_order.has_value()) {
+      boundaries_.account_stale(reusable_order->get_order_side(),
+                                reusable_order->get_order_px().value());
+    }
+
     RequestBuilder message_builder;
     message_builder.with_resting_attributes()
         .with_price(OrderPrice{incoming_order.price})
@@ -275,28 +281,64 @@ auto RecordApplier::cancel_not_placed_orders() -> void {
 }
 
 auto RecordApplier::sort_messages() -> void {
-  std::ranges::stable_sort(
-      request_messages_,
-      [](const GeneratedMessage& a, const GeneratedMessage& b) {
-        static constexpr int cancel_priority = 0;
-        static constexpr int new_priority = 1;
-        static constexpr int modify_priority = 2;
+  const std::optional<Side> last_side = boundaries_.side_to_update_last();
 
-        auto get_priority = [](const GeneratedMessage& msg) -> int {
-          switch (msg.message_type) {
-            case MessageType::OrderCancelRequest:
-              return cancel_priority;
-            case MessageType::NewOrderSingle:
-              return new_priority;
-            case MessageType::OrderCancelReplaceRequest:
-              return modify_priority;
-            default:
-              return modify_priority;
-          }
-        };
+  auto get_priority = [last_side](const GeneratedMessage& msg) -> int {
+    constexpr int cancel_priority = 0;
+    constexpr int new_priority = 1;
+    constexpr int modify_priority = 2;
+    constexpr int last_side_offset = 2;
 
-        return get_priority(a) < get_priority(b);
-      });
+    if (msg.message_type == MessageType::OrderCancelRequest) {
+      return cancel_priority;
+    }
+
+    const bool updates_last_side = last_side.has_value() &&
+                                   msg.side.has_value() &&
+                                   msg.side->value() == last_side->value();
+    const int type_priority = msg.message_type == MessageType::NewOrderSingle
+                                  ? new_priority
+                                  : modify_priority;
+
+    return updates_last_side ? last_side_offset + type_priority : type_priority;
+  };
+
+  std::ranges::stable_sort(request_messages_,
+                           [&get_priority](const GeneratedMessage& a,
+                                           const GeneratedMessage& b) {
+                             return get_priority(a) < get_priority(b);
+                           });
+}
+
+auto RecordApplier::BookBoundaries::account_requested(Side side, double price)
+    -> void {
+  if (side == Side::Option::Buy) {
+    max_requested_bid = std::max(price, max_requested_bid.value_or(price));
+  } else {
+    min_requested_offer = std::min(price, min_requested_offer.value_or(price));
+  }
+}
+
+auto RecordApplier::BookBoundaries::account_stale(Side side, double price)
+    -> void {
+  if (side == Side::Option::Buy) {
+    max_stale_bid = std::max(price, max_stale_bid.value_or(price));
+  } else {
+    min_stale_offer = std::min(price, min_stale_offer.value_or(price));
+  }
+}
+
+auto RecordApplier::BookBoundaries::side_to_update_last() const
+    -> std::optional<Side> {
+  if (max_requested_bid.has_value() && min_stale_offer.has_value() &&
+      *max_requested_bid >= *min_stale_offer) {
+    return Side{Side::Option::Buy};
+  }
+  if (min_requested_offer.has_value() && max_stale_bid.has_value() &&
+      *min_requested_offer <= *max_stale_bid) {
+    return Side{Side::Option::Sell};
+  }
+  return std::nullopt;
 }
 
 auto RecordApplier::next_party_id() -> std::string {

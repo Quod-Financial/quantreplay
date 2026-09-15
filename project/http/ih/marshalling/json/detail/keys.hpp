@@ -13,6 +13,13 @@ constexpr std::string_view ColumnTo{"columnTo"};
 
 }  // namespace column_mapping_key
 
+namespace datasource_listing_key {
+
+constexpr std::string_view DatasourceId{"datasourceId"};
+constexpr std::string_view Symbol{"symbol"};
+
+}  // namespace datasource_listing_key
+
 namespace datasource_key {
 
 constexpr std::string_view DatasourceId{"id"};
@@ -29,9 +36,19 @@ constexpr std::string_view TextDataRow{"textDataRow"};
 constexpr std::string_view TableName{"tableName"};
 constexpr std::string_view ColumnMapping{"columnMapping"};
 constexpr std::string_view MaxDepthLevels{"maxDepthLevels"};
+constexpr std::string_view Listings{"listings"};
+constexpr std::string_view RandomPriceOnly{"randomPriceOnly"};
 constexpr std::string_view Datasources{"dataSources"};
 
 }  // namespace datasource_key
+
+namespace listing_random_price_source_key {
+
+constexpr std::string_view ListingId{"listingId"};
+constexpr std::string_view DatasourceId{"datasourceId"};
+constexpr std::string_view Symbol{"symbol"};
+
+}  // namespace listing_random_price_source_key
 
 namespace listing_key {
 
@@ -69,6 +86,7 @@ constexpr std::string_view RandomAggressiveAmtMinimum{"randomAggAmtMinimum"};
 constexpr std::string_view RandomAggressiveAmtMaximum{"randomAggAmtMaximum"};
 constexpr std::string_view Enabled{"enabled"};
 constexpr std::string_view RandomOrdersEnabled{"randomOrdersEnabled"};
+constexpr std::string_view RandomPriceSources{"randomPriceSources"};
 constexpr std::string_view Listings{"listings"};
 
 }  // namespace listing_key

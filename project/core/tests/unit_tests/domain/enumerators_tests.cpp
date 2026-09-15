@@ -6,6 +6,7 @@
 
 #include "core/domain/attributes.hpp"
 #include "fixtures/given_expected_fixture.hpp"
+#include "test_utils/utils.hpp"
 
 namespace simulator::core::test {
 namespace {
@@ -213,7 +214,7 @@ TEST_P(CoreExecutionTypeFormatting, StreamFormatting) {
 INSTANTIATE_TEST_SUITE_P(
     Formatting,
     CoreExecutionTypeFormatting,
-    Values(std::make_pair(static_cast<ExecutionType::Option>(0xFF), "undefined"),
+    Values(std::make_pair(invalid_enum_value<ExecutionType::Option>(), "undefined"),
            std::make_pair(ExecutionType::Option::OrderPlaced, "OrderPlaced"),
            std::make_pair(ExecutionType::Option::OrderModified, "OrderModified"),
            std::make_pair(ExecutionType::Option::OrderCancelled, "OrderCancelled"),
@@ -240,7 +241,7 @@ TEST_P(CoreOrderStatusFormatting, StreamFormatting) {
 INSTANTIATE_TEST_SUITE_P(
     Formatting,
     CoreOrderStatusFormatting,
-    Values(std::make_pair(static_cast<OrderStatus::Option>(0xFF), "undefined"),
+    Values(std::make_pair(invalid_enum_value<OrderStatus::Option>(), "undefined"),
            std::make_pair(OrderStatus::Option::New, "New"),
            std::make_pair(OrderStatus::Option::PartiallyFilled, "PartiallyFilled"),
            std::make_pair(OrderStatus::Option::Filled, "Filled"),
@@ -268,7 +269,7 @@ TEST_P(CoreOrderTypeFormatting, StreamFormatting) {
 INSTANTIATE_TEST_SUITE_P(
     Formatting,
     CoreOrderTypeFormatting,
-    Values(std::make_pair(static_cast<OrderType::Option>(0xFF), "undefined"),
+    Values(std::make_pair(invalid_enum_value<OrderType::Option>(), "undefined"),
            std::make_pair(OrderType::Option::Limit, "Limit"),
            std::make_pair(OrderType::Option::Market, "Market")));
 // clang-format on
@@ -292,7 +293,7 @@ TEST_P(CorePartyIdSourceFormatting, StreamFormatting) {
 INSTANTIATE_TEST_SUITE_P(
     Formatting,
     CorePartyIdSourceFormatting,
-    Values(std::make_pair(static_cast<PartyIdSource::Option>(0xFF), "undefined"),
+    Values(std::make_pair(invalid_enum_value<PartyIdSource::Option>(), "undefined"),
            std::make_pair(PartyIdSource::Option::UKNationalInsuranceOrPensionNumber, "UKNationalInsuranceOrPensionNumber"),
            std::make_pair(PartyIdSource::Option::USSocialSecurityNumber, "USSocialSecurityNumber"),
            std::make_pair(PartyIdSource::Option::USEmployerOrTaxIDNumber, "USEmployerOrTaxIDNumber"),
@@ -345,7 +346,7 @@ TEST_P(CorePartyRoleFormatting, StreamFormatting) {
 INSTANTIATE_TEST_SUITE_P(
     Formatting,
     CorePartyRoleFormatting,
-    Values(std::make_pair(static_cast<PartyRole::Option>(0xFF), "undefined"),
+    Values(std::make_pair(invalid_enum_value<PartyRole::Option>(), "undefined"),
            std::make_pair(PartyRole::Option::ExecutingFirm, "ExecutingFirm"),
            std::make_pair(PartyRole::Option::BrokerOfCredit, "BrokerOfCredit"),
            std::make_pair(PartyRole::Option::ClientID, "ClientID"),
@@ -495,7 +496,7 @@ TEST_P(CoreSecurityIdSourceFormatting, StreamFormatting) {
 INSTANTIATE_TEST_SUITE_P(
     Formatting,
     CoreSecurityIdSourceFormatting,
-    Values(std::make_pair(static_cast<SecurityIdSource::Option>(0xFF), "undefined"),
+    Values(std::make_pair(invalid_enum_value<SecurityIdSource::Option>(), "undefined"),
            std::make_pair(SecurityIdSource::Option::Cusip, "CUSIP"),
            std::make_pair(SecurityIdSource::Option::Sedol, "SEDOL"),
            std::make_pair(SecurityIdSource::Option::Isin, "ISIN"),
@@ -523,7 +524,7 @@ TEST_P(CoreSecurityTypeFormatting, StreamFormatting) {
 INSTANTIATE_TEST_SUITE_P(
     Formatting,
     CoreSecurityTypeFormatting,
-    Values(std::make_pair(static_cast<SecurityType::Option>(0xFF), "undefined"),
+    Values(std::make_pair(invalid_enum_value<SecurityType::Option>(), "undefined"),
            std::make_pair(SecurityType::Option::CommonStock, "CommonStock"),
            std::make_pair(SecurityType::Option::Future, "Future"),
            std::make_pair(SecurityType::Option::Option, "Option"),
@@ -564,7 +565,7 @@ TEST_P(CoreSideFormatting, StreamFormatting) {
 INSTANTIATE_TEST_SUITE_P(
     Formatting,
     CoreSideFormatting,
-    Values(std::make_pair(static_cast<Side::Option>(0xFF), "undefined"),
+    Values(std::make_pair(invalid_enum_value<Side::Option>(), "undefined"),
            std::make_pair(Side::Option::Buy, "Buy"),
            std::make_pair(Side::Option::Sell, "Sell"),
            std::make_pair(Side::Option::SellShort, "SellShort"),
@@ -590,7 +591,7 @@ TEST_P(CoreTimeInForceFormatting, StreamFormatting) {
 INSTANTIATE_TEST_SUITE_P(
     Formatting,
     CoreTimeInForceFormatting,
-    Values(std::make_pair(static_cast<TimeInForce::Option>(0xFF), "undefined"),
+    Values(std::make_pair(invalid_enum_value<TimeInForce::Option>(), "undefined"),
            std::make_pair(TimeInForce::Option::Day, "Day"),
            std::make_pair(TimeInForce::Option::ImmediateOrCancel, "ImmediateOrCancel"),
            std::make_pair(TimeInForce::Option::FillOrKill, "FillOrKill"),
@@ -617,7 +618,7 @@ TEST_P(CoreMdEntryTypeFormatting, StreamFormatting) {
 INSTANTIATE_TEST_SUITE_P(
     Formatting,
     CoreMdEntryTypeFormatting,
-    Values(std::make_pair(static_cast<MdEntryType::Option>(0xFF), "undefined"),
+    Values(std::make_pair(invalid_enum_value<MdEntryType::Option>(), "undefined"),
            std::make_pair(MdEntryType::Option::Bid, "Bid"),
            std::make_pair(MdEntryType::Option::Offer, "Offer"),
            std::make_pair(MdEntryType::Option::Trade, "Trade"),
@@ -656,7 +657,7 @@ TEST_P(CoreMdSubscriptionRequestTypeFormatting, StreamFormatting) {
 INSTANTIATE_TEST_SUITE_P(
     Formatting,
     CoreMdSubscriptionRequestTypeFormatting,
-    Values(std::make_pair(static_cast<MdSubscriptionRequestType::Option>(0xFF), "undefined"),
+    Values(std::make_pair(invalid_enum_value<MdSubscriptionRequestType::Option>(), "undefined"),
            std::make_pair(MdSubscriptionRequestType::Option::Subscribe, "Subscribe"),
            std::make_pair(MdSubscriptionRequestType::Option::Unsubscribe, "Unsubscribe"),
            std::make_pair(MdSubscriptionRequestType::Option::Snapshot, "Snapshot")));
@@ -681,7 +682,7 @@ TEST_P(CoreMarketEntryActionFormatting, StreamFormatting) {
 INSTANTIATE_TEST_SUITE_P(
     Formatting,
     CoreMarketEntryActionFormatting,
-    Values(std::make_pair(static_cast<MarketEntryAction::Option>(0xFF), "undefined"),
+    Values(std::make_pair(invalid_enum_value<MarketEntryAction::Option>(), "undefined"),
            std::make_pair(MarketEntryAction::Option::New, "New"),
            std::make_pair(MarketEntryAction::Option::Change, "Change"),
            std::make_pair(MarketEntryAction::Option::Delete, "Delete")));
@@ -706,7 +707,7 @@ TEST_P(CoreMarketDataUpdateTypeFormatting, StreamFormatting) {
 INSTANTIATE_TEST_SUITE_P(
     Formatting,
     CoreMarketDataUpdateTypeFormatting,
-    Values(std::make_pair(static_cast<MarketDataUpdateType::Option>(0xFF), "undefined"),
+    Values(std::make_pair(invalid_enum_value<MarketDataUpdateType::Option>(), "undefined"),
            std::make_pair(MarketDataUpdateType::Option::Snapshot, "Snapshot"),
            std::make_pair(MarketDataUpdateType::Option::Incremental, "Incremental")));
 // clang-format on
@@ -730,7 +731,7 @@ TEST_P(CoreMdRejectReasonFormatting, StreamFormatting) {
 INSTANTIATE_TEST_SUITE_P(
     Formatting,
     CoreMdRejectReasonFormatting,
-    Values(std::make_pair(static_cast<MdRejectReason::Option>(0xFF), "undefined"),
+    Values(std::make_pair(invalid_enum_value<MdRejectReason::Option>(), "undefined"),
            std::make_pair(MdRejectReason::Option::UnknownSymbol, "UnknownSymbol"),
            std::make_pair(MdRejectReason::Option::DuplicateMdReqId, "DuplicateMdReqId")));
 // clang-format on
@@ -754,7 +755,7 @@ TEST_P(CoreTradingPhaseFormatting, StreamFormatting) {
 INSTANTIATE_TEST_SUITE_P(
     Formatting,
     CoreTradingPhaseFormatting,
-    Values(std::make_pair(static_cast<TradingPhase::Option>(0xFF), "undefined"),
+    Values(std::make_pair(invalid_enum_value<TradingPhase::Option>(), "undefined"),
            std::make_pair(TradingPhase::Option::Open, "Open"),
            std::make_pair(TradingPhase::Option::Closed, "Closed"),
            std::make_pair(TradingPhase::Option::PostTrading, "PostTrading"),
@@ -782,7 +783,7 @@ TEST_P(CoreTradingStatusFormatting, StreamFormatting) {
 INSTANTIATE_TEST_SUITE_P(
     Formatting,
     CoreTradingStatusFormatting,
-    Values(std::make_pair(static_cast<TradingStatus::Option>(0xFF), "undefined"),
+    Values(std::make_pair(invalid_enum_value<TradingStatus::Option>(), "undefined"),
            std::make_pair(TradingStatus::Option::Halt, "Halt"),
            std::make_pair(TradingStatus::Option::Resume, "Resume")));
 // clang-format on
@@ -806,7 +807,7 @@ TEST_P(RejectedMessageTypeFormatting, StreamFormatting) {
 INSTANTIATE_TEST_SUITE_P(
     Formatting,
     RejectedMessageTypeFormatting,
-    Values(std::make_pair(static_cast<RejectedMessageType::Option>(0xFF), "undefined"),
+    Values(std::make_pair(invalid_enum_value<RejectedMessageType::Option>(), "undefined"),
            std::make_pair(RejectedMessageType::Option::SecurityStatusRequest, "SecurityStatusRequest")));
 // clang-format on
 
@@ -829,7 +830,7 @@ TEST_P(BusinessRejectReasonFormatting, StreamFormatting) {
 INSTANTIATE_TEST_SUITE_P(
     Formatting,
     BusinessRejectReasonFormatting,
-    Values(std::make_pair(static_cast<BusinessRejectReason::Option>(0xFF), "undefined"),
+    Values(std::make_pair(invalid_enum_value<BusinessRejectReason::Option>(), "undefined"),
            std::make_pair(BusinessRejectReason::Option::Other, "Other"),
            std::make_pair(BusinessRejectReason::Option::UnknownId, "UnknownId"),
            std::make_pair(BusinessRejectReason::Option::UnknownSecurity, "UnknownSecurity")));

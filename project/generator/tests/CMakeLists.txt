@@ -1,8 +1,10 @@
 add_target_tests(
   TARGET ${PROJECT_NAME}
   HEADERS
+    mocks/context/component_context.hpp
     mocks/context/order_context.hpp
     mocks/historical/data_access_adapter.hpp
+    mocks/historical/processor.hpp
     mocks/historical/provider.hpp
     mocks/historical/record.hpp
     mocks/random/algorithm/generation_algorithm.hpp
@@ -12,6 +14,7 @@ add_target_tests(
     mocks/random/random_event_generator.hpp
     mocks/random/resting_order_action_generator.hpp
     mocks/random/value_generator.hpp
+    mocks/market_data_request_channel.hpp
     mocks/registry/generated_orders_registry.hpp
     mocks/trading_request_channel.hpp
     test_utils/generated_message_utils.hpp
@@ -44,6 +47,14 @@ add_target_tests(
     unit_tests/historical/parsing/row_tests.cpp
     unit_tests/historical/record_applier_tests.cpp
     unit_tests/historical/record_checker_tests.cpp
+    unit_tests/market_data/local_subscription_manager_tests.cpp
+    unit_tests/market_data/market_data_provider_tests.cpp
+    unit_tests/market_data/order_book_derivation_tests.cpp
+    unit_tests/market_data/order_derivation_tests.cpp
+    unit_tests/market_data/price_cache_tests.cpp
+    unit_tests/market_data/record_factory_tests.cpp
+    unit_tests/market_data/subscription_manager_tests.cpp
+    unit_tests/market_data/utils_tests.cpp
     unit_tests/random/algorithm/order_generation_algorithm_tests.cpp
     unit_tests/random/algorithm/utils/attributes_setter_tests.cpp
     unit_tests/random/algorithm/utils/max_mktdepth_selector_tests.cpp

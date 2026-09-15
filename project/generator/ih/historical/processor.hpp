@@ -24,6 +24,8 @@ class Processor {
   virtual ~Processor() = default;
 
   virtual auto process(historical::Action action) -> void = 0;
+
+  virtual auto process(historical::Record record) -> void = 0;
 };
 
 class ActionProcessor : public historical::Processor {
@@ -53,8 +55,9 @@ class ActionProcessor : public historical::Processor {
 
   auto process(historical::Action action) -> void override;
 
+  auto process(historical::Record record) -> void override;
+
  private:
-  auto process(historical::Record record) const -> void;
   ContextsRegistry ctx_registry_;
 };
 

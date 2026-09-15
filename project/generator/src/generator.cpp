@@ -111,6 +111,61 @@ auto enrich_reply(const auto& reply, Generator::Implementation& generator)
   }
 }
 
+auto process_market_data(const auto& message,
+                         Generator::Implementation& generator) -> void {
+  try {
+    generator.process_market_data(message);
+  } catch (const std::exception& exception) {
+    log::warn(
+        "failed to handle the market data message, error occurred: {}, "
+        "unable to process {}",
+        exception.what(),
+        message);
+  } catch (...) {
+    log::err(
+        "failed to handle the market data message, unknown error occurred, "
+        "unable to process {}",
+        message);
+  }
+}
+
+auto process_session_connection(const protocol::SessionConnectedEvent& event,
+                                Generator::Implementation& generator) -> void {
+  try {
+    generator.process_session_connection(event);
+  } catch (const std::exception& exception) {
+    log::warn(
+        "failed to handle the session connection event, error occurred: {}, "
+        "unable to process {}",
+        exception.what(),
+        event);
+  } catch (...) {
+    log::err(
+        "failed to handle the session connection event, unknown error "
+        "occurred, unable to process {}",
+        event);
+  }
+}
+
+auto process_session_disconnection(
+    const protocol::SessionTerminatedEvent& event,
+    Generator::Implementation& generator) -> void {
+  try {
+    generator.process_session_disconnection(event);
+  } catch (const std::exception& exception) {
+    log::warn(
+        "failed to handle the session disconnection event, error occurred: {}, "
+        "unable to process {}",
+        exception.what(),
+        event);
+  } catch (...) {
+    log::err(
+        "failed to handle the session disconnection event, unknown error "
+        "occurred, unable to process {}",
+        event);
+  }
+}
+
 }  // namespace
 
 Generator::Generator(std::unique_ptr<Implementation> impl) noexcept
@@ -205,6 +260,38 @@ auto accept_reply(const protocol::OrderCancellationReject& reply,
       "order generator does not handle OrderCancellationReject messages, "
       "skipping {}",
       reply);
+}
+
+auto accept_reply(const protocol::MarketDataSnapshot& reply,
+                  Generator& generator) -> void {
+  log::debug("accepting MarketDataSnapshot sent to the generator instance");
+  process_market_data(reply, generator.implementation());
+}
+
+auto accept_reply(const protocol::MarketDataUpdate& reply,
+                  [[maybe_unused]] Generator& generator) -> void {
+  log::warn(
+      "order generator subscribes for full refreshes only and does not handle "
+      "MarketDataUpdate messages, skipping {}",
+      reply);
+}
+
+auto accept_reply(const protocol::MarketDataReject& reply, Generator& generator)
+    -> void {
+  log::debug("accepting MarketDataReject sent to the generator instance");
+  process_market_data(reply, generator.implementation());
+}
+
+auto react_on(const protocol::SessionConnectedEvent& event,
+              Generator& generator) -> void {
+  log::debug("accepting SessionConnectedEvent sent to the generator instance");
+  process_session_connection(event, generator.implementation());
+}
+
+auto react_on(const protocol::SessionTerminatedEvent& event,
+              Generator& generator) -> void {
+  log::debug("accepting SessionTerminatedEvent sent to the generator instance");
+  process_session_disconnection(event, generator.implementation());
 }
 
 auto process_admin_request(

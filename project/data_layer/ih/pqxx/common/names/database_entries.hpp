@@ -8,8 +8,11 @@ namespace table {
 
 constexpr std::string_view ColumnMapping{"column_mapping"};
 constexpr std::string_view Datasource{"data_source"};
+constexpr std::string_view DatasourceListing{"data_source_listing"};
 constexpr std::string_view FixSession{"fix_session"};
 constexpr std::string_view Listing{"listing"};
+constexpr std::string_view ListingRandomPriceSource{
+    "listing_random_price_source"};
 constexpr std::string_view MarketPhase{"market_phase"};
 constexpr std::string_view PriceSeed{"price_seed"};
 constexpr std::string_view Setting{"setting"};
@@ -40,8 +43,16 @@ constexpr std::string_view TextHeaderRow{"text_header_row"};
 constexpr std::string_view TextDataRow{"text_data_row"};
 constexpr std::string_view TableName{"table_name"};
 constexpr std::string_view MaxDepthLevels{"max_depth_levels"};
+constexpr std::string_view RandomPriceOnly{"random_price_only"};
 
 }  // namespace datasource_column
+
+namespace datasource_listing_column {
+
+constexpr std::string_view DatasourceId{"data_source_id"};
+constexpr std::string_view Symbol{"symbol"};
+
+}  // namespace datasource_listing_column
 
 namespace fix_session_column {
 
@@ -93,6 +104,14 @@ constexpr std::string_view RandomAggressiveAmtMaximum{
     "random_aggressive_amt_maximum"};
 
 }  // namespace listing_column
+
+namespace listing_random_price_source_column {
+
+constexpr std::string_view ListingId{"listing_id"};
+constexpr std::string_view DatasourceId{"data_source_id"};
+constexpr std::string_view Symbol{"symbol"};
+
+}  // namespace listing_random_price_source_column
 
 namespace market_phase_column {
 

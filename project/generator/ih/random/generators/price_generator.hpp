@@ -7,7 +7,7 @@
 #include <utility>
 
 #include "data_layer/api/models/price_seed.hpp"
-#include "ih/context/order_market_data_provider.hpp"
+#include "ih/market_data/market_state.hpp"
 #include "ih/random/generators/value_generator.hpp"
 #include "ih/random/values/event.hpp"
 #include "ih/random/values/price_generation_params.hpp"
@@ -65,7 +65,8 @@ auto PriceGenerator::generate_price(
   trace_input(step, make_value("priceTickSize", params.get_price_tick_size()));
   trace_input(step, make_value("priceSpread", params.get_price_spread()));
   trace_input(
-      step, make_value("bestBuyPrice", actual_prices.best_bid_price.value_or(0)));
+      step,
+      make_value("bestBuyPrice", actual_prices.best_bid_price.value_or(0)));
   trace_input(
       step,
       make_value("bestSellPrice", actual_prices.best_offer_price.value_or(0)));

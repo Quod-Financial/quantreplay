@@ -6,8 +6,10 @@
 #include "api/exceptions/exceptions.hpp"
 #include "api/inspectors/column_mapping.hpp"
 #include "api/inspectors/datasource.hpp"
+#include "api/inspectors/datasource_listing.hpp"
 #include "api/models/column_mapping.hpp"
 #include "api/models/datasource.hpp"
+#include "api/models/datasource_listing.hpp"
 #include "ih/pqxx/result/detail/basic_row_parser.hpp"
 
 namespace simulator::data_layer::internal_pqxx {
@@ -15,7 +17,7 @@ namespace simulator::data_layer::internal_pqxx {
 class ColumnMappingParser {
  public:
   explicit ColumnMappingParser(const pqxx::row& database_row) noexcept
-      : row_parser_(database_row) {}
+      : row_parser_{database_row} {}
 
   auto parse_into(ColumnMapping::Patch& destination_patch) -> void {
     ColumnMappingPatchWriter<decltype(row_parser_)> writer{row_parser_};
@@ -33,10 +35,31 @@ class ColumnMappingParser {
   detail::BasicRowParser row_parser_;
 };
 
+class DatasourceListingParser {
+ public:
+  explicit DatasourceListingParser(const pqxx::row& database_row) noexcept
+      : row_parser_{database_row} {}
+
+  auto parse_into(DatasourceListing::Patch& destination_patch) -> void {
+    DatasourceListingPatchWriter<decltype(row_parser_)> writer{row_parser_};
+    writer.write(destination_patch);
+  }
+
+  static auto parse(const pqxx::row& database_row) -> DatasourceListing::Patch {
+    DatasourceListing::Patch parsed{};
+    DatasourceListingParser parser{database_row};
+    parser.parse_into(parsed);
+    return parsed;
+  }
+
+ private:
+  detail::BasicRowParser row_parser_;
+};
+
 class DatasourceParser {
  public:
   explicit DatasourceParser(const pqxx::row& database_row) noexcept
-      : row_parser_(database_row) {}
+      : row_parser_{database_row} {}
 
   auto parse_into(Datasource::Patch& destination_patch) -> void {
     DatasourcePatchWriter<decltype(row_parser_)> writer{row_parser_};
@@ -58,9 +81,9 @@ class DatasourceParser {
       return datasource_id;
     }
 
-    throw DataDecodingError(
+    throw DataDecodingError{
         "failed to decode a datasource record identifier "
-        " from the database row");
+        " from the database row"};
   }
 
  private:

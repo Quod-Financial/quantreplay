@@ -17,7 +17,7 @@
 #include "data_layer/api/models/price_seed.hpp"
 #include "data_layer/api/models/venue.hpp"
 #include "ih/adaptation/generated_message.hpp"
-#include "ih/context/order_market_data_provider.hpp"
+#include "ih/market_data/market_state.hpp"
 #include "ih/random/algorithm/order_generation_algorithm.hpp"
 #include "ih/random/generators/value_generator_impl.hpp"
 #include "ih/random/values/event.hpp"

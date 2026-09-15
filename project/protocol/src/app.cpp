@@ -4,7 +4,6 @@
 #include "core/tools/format.hpp"
 #include "protocol/app/business_message_reject.hpp"
 #include "protocol/app/execution_report.hpp"
-#include "protocol/app/instrument_state_request.hpp"
 #include "protocol/app/market_data_reject.hpp"
 #include "protocol/app/market_data_request.hpp"
 #include "protocol/app/market_data_snapshot.hpp"
@@ -165,32 +164,6 @@ auto fmt::formatter<simulator::protocol::ExecutionReport>::format(
                    message.instrument,
                    name_of(message.parties),
                    format_collection(message.parties));
-}
-
-auto fmt::formatter<simulator::protocol::InstrumentStateRequest>::format(
-    const formattable& request, format_context& context) const
-    -> decltype(context.out()) {
-  using simulator::core::name_of;
-  return format_to(context.out(),
-                   "InstrumentStateRequest={{ {}={} }}",
-                   name_of(request.instrument),
-                   request.instrument);
-}
-
-auto fmt::formatter<simulator::protocol::InstrumentState>::format(
-    const formattable& state, format_context& context) const
-    -> decltype(context.out()) {
-  using simulator::core::name_of;
-  return format_to(context.out(),
-                   "InstrumentState={{ {}={}, {}={}, {}={}, {}={} }}",
-                   name_of(state.best_bid_price),
-                   state.best_bid_price,
-                   name_of(state.current_bid_depth),
-                   state.current_bid_depth,
-                   name_of(state.best_offer_price),
-                   state.best_offer_price,
-                   name_of(state.current_offer_depth),
-                   state.current_offer_depth);
 }
 
 auto fmt::formatter<simulator::protocol::MarketDataReject>::format(

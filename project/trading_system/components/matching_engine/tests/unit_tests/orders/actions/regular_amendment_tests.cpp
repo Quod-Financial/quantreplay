@@ -355,8 +355,8 @@ TEST_F(MatchingEngineRegularAmendment,
 
 struct MatchingEngineRegularAmendmentOnTradeAtLastQueue
     : public MatchingEngineRegularAmendment {
-  auto rest_trade_at_last_order(OrderId order_id,
-                                OrderQuantity quantity) -> void {
+  auto rest_trade_at_last_order(OrderId order_id, OrderQuantity quantity)
+      -> void {
     order_book.take_page(Side::Option::Buy)
         .trade_at_last_orders()
         .emplace(OrderBuilder{}
@@ -376,7 +376,7 @@ struct MatchingEngineRegularAmendmentOnTradeAtLastQueue
 };
 
 TEST_F(MatchingEngineRegularAmendmentOnTradeAtLastQueue,
-       ReportsOrderNotFoundWhenTheOrderRestsInTheRegularQueue) {
+       ReportsOrderNotFoundWhenOrderRestsInRegularQueue) {
   rest_limit_order(OrderId{42}, OrderPrice{10}, OrderQuantity{10});
 
   EXPECT_CALL(
@@ -390,7 +390,7 @@ TEST_F(MatchingEngineRegularAmendmentOnTradeAtLastQueue,
 }
 
 TEST_F(MatchingEngineRegularAmendmentOnTradeAtLastQueue,
-       AmendsOrderRestingInTheTradeAtLastQueue) {
+       AmendsOrderRestingInTradeAtLastQueue) {
   rest_trade_at_last_order(OrderId{42}, OrderQuantity{10});
 
   trade_at_last_amendment(

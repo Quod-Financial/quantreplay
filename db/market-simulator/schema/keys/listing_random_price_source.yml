@@ -1,0 +1,97 @@
+databaseChangeLog:
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_key_listing_random_price_source_1
+      labels: schema,v13
+      comment: Add listing_random_price_source_pkey (listing_id, data_source_id, symbol) for listing_random_price_source table
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing_random_price_source
+        - columnExists:
+            tableName: listing_random_price_source
+            columnName: listing_id
+        - columnExists:
+            tableName: listing_random_price_source
+            columnName: data_source_id
+        - columnExists:
+            tableName: listing_random_price_source
+            columnName: symbol
+        - not:
+            - primaryKeyExists:
+                tableName: listing_random_price_source
+                primaryKeyName: listing_random_price_source_pkey
+      changes:
+        - addPrimaryKey:
+            constraintName: listing_random_price_source_pkey
+            tableName: listing_random_price_source
+            columnNames: listing_id, data_source_id, symbol
+            validate: true
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_key_listing_random_price_source_2
+      labels: schema,v13
+      comment: Add listing_random_price_source_listing_fkey (listing_random_price_source.listing_id) to (listing.listing_id)
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing_random_price_source
+        - columnExists:
+            tableName: listing_random_price_source
+            columnName: listing_id
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: listing_id
+        - primaryKeyExists:
+            tableName: listing
+            primaryKeyName: listing_pkey
+        - not:
+            - foreignKeyConstraintExists:
+                foreignKeyName: listing_random_price_source_listing_fkey
+      changes:
+        - addForeignKeyConstraint:
+            constraintName: listing_random_price_source_listing_fkey
+            baseTableName: listing_random_price_source
+            baseColumnNames: listing_id
+            referencedTableName: listing
+            referencedColumnNames: listing_id
+            onUpdate: CASCADE
+            onDelete: CASCADE
+            validate: true
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_key_listing_random_price_source_3
+      labels: schema,v13
+      comment: Add listing_random_price_source_data_source_fkey (listing_random_price_source.data_source_id) to (data_source.data_source_id)
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing_random_price_source
+        - columnExists:
+            tableName: listing_random_price_source
+            columnName: data_source_id
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: data_source_id
+        - primaryKeyExists:
+            tableName: data_source
+            primaryKeyName: data_source_pkey
+        - not:
+            - foreignKeyConstraintExists:
+                foreignKeyName: listing_random_price_source_data_source_fkey
+      changes:
+        - addForeignKeyConstraint:
+            constraintName: listing_random_price_source_data_source_fkey
+            baseTableName: listing_random_price_source
+            baseColumnNames: data_source_id
+            referencedTableName: data_source
+            referencedColumnNames: data_source_id
+            onUpdate: CASCADE
+            onDelete: CASCADE
+            validate: true

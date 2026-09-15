@@ -93,7 +93,7 @@ struct MatchingEngineEarlyPriceReporter : public Test {
   }
 };
 
-TEST_F(MatchingEngineEarlyPriceReporter, DoesNotReportOutsideTheAuctionCall) {
+TEST_F(MatchingEngineEarlyPriceReporter, DoesNotReportOutsideAuctionCall) {
   enter_open();
 
   EXPECT_CALL(event_listener, on(EmitsAnyEarlyUpdate())).Times(0);
@@ -120,8 +120,7 @@ TEST_F(MatchingEngineEarlyPriceReporter,
   report_at(std::chrono::seconds{29});
 }
 
-TEST_F(MatchingEngineEarlyPriceReporter,
-       DoesNotReportDuringTheAuctionUncrossing) {
+TEST_F(MatchingEngineEarlyPriceReporter, DoesNotReportDuringAuctionUncrossing) {
   enter_auction_uncross();
   report_at(std::chrono::seconds{0});
 
@@ -151,7 +150,7 @@ TEST_F(MatchingEngineEarlyPriceReporter,
 }
 
 TEST_F(MatchingEngineEarlyPriceReporter,
-       RestartsThe30sIntervalFromTheLastReportedTick) {
+       Restarts30sIntervalFromLastReportedTick) {
   enter_auction_call();
   report_at(std::chrono::seconds{0});
   report_at(std::chrono::seconds{30});
@@ -172,7 +171,7 @@ TEST_F(MatchingEngineEarlyPriceReporter, ReportsOnEveryElapsed30sInterval) {
 }
 
 TEST_F(MatchingEngineEarlyPriceReporter,
-       RestartsThe30sIntervalWhenTheAuctionCallResumes) {
+       Restarts30sIntervalWhenAuctionCallResumes) {
   enter_auction_call();
   report_at(std::chrono::seconds{0});
   enter_open();

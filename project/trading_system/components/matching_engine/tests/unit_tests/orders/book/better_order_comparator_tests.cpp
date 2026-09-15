@@ -7,6 +7,7 @@
 #include "core/tools/time.hpp"
 #include "ih/orders/book/order_book.hpp"
 #include "tools/order_builder.hpp"
+#include "tools/utils.hpp"
 
 namespace simulator::trading_system::matching_engine::test {
 namespace {
@@ -25,7 +26,7 @@ TEST(BetterOrderComparator, CreatesForSellSide) {
 }
 
 TEST(BetterOrderComparator, ThrowsExceptionWhenCreatedForUnknownSide) {
-  ASSERT_THROW(BetterOrderComparator{static_cast<Side::Option>(0xFF)},
+  ASSERT_THROW(BetterOrderComparator{invalid_enum_value<Side::Option>()},
                std::invalid_argument);
 }
 

@@ -18,8 +18,18 @@ auto ColumnResolver::operator()(Datasource::Attribute attribute) const
   return ColumnResolver::to_column_name(attribute);
 }
 
+auto ColumnResolver::operator()(DatasourceListing::Attribute attribute) const
+    -> std::string {
+  return ColumnResolver::to_column_name(attribute);
+}
+
 auto ColumnResolver::operator()(Listing::Attribute attribute) const
     -> std::string {
+  return ColumnResolver::to_column_name(attribute);
+}
+
+auto ColumnResolver::operator()(
+    ListingRandomPriceSource::Attribute attribute) const -> std::string {
   return ColumnResolver::to_column_name(attribute);
 }
 
@@ -66,7 +76,26 @@ auto ColumnResolver::to_column_name(ColumnMapping::Attribute attribute)
   if (!column_name.empty()) {
     return std::string{column_name};
   }
-  throw ColumnNameEncodingError(table::ColumnMapping, attribute);
+  throw ColumnNameEncodingError{table::ColumnMapping, attribute};
+}
+
+auto ColumnResolver::to_column_name(DatasourceListing::Attribute attribute)
+    -> std::string {
+  std::string_view column_name{};
+
+  switch (attribute) {
+    case DatasourceListing::Attribute::DatasourceId:
+      column_name = datasource_listing_column::DatasourceId;
+      break;
+    case DatasourceListing::Attribute::Symbol:
+      column_name = datasource_listing_column::Symbol;
+      break;
+  }
+
+  if (!column_name.empty()) {
+    return std::string{column_name};
+  }
+  throw ColumnNameEncodingError{table::DatasourceListing, attribute};
 }
 
 auto ColumnResolver::to_column_name(Datasource::Attribute attribute)
@@ -113,12 +142,15 @@ auto ColumnResolver::to_column_name(Datasource::Attribute attribute)
     case Datasource::Attribute::MaxDepthLevels:
       column_name = datasource_column::MaxDepthLevels;
       break;
+    case Datasource::Attribute::RandomPriceOnly:
+      column_name = datasource_column::RandomPriceOnly;
+      break;
   }
 
   if (!column_name.empty()) {
     return std::string{column_name};
   }
-  throw ColumnNameEncodingError(table::Datasource, attribute);
+  throw ColumnNameEncodingError{table::Datasource, attribute};
 }
 
 auto ColumnResolver::to_column_name(Listing::Attribute attribute)
@@ -232,7 +264,29 @@ auto ColumnResolver::to_column_name(Listing::Attribute attribute)
   if (!column_name.empty()) {
     return std::string{column_name};
   }
-  throw ColumnNameEncodingError(table::Listing, attribute);
+  throw ColumnNameEncodingError{table::Listing, attribute};
+}
+
+auto ColumnResolver::to_column_name(
+    ListingRandomPriceSource::Attribute attribute) -> std::string {
+  std::string_view column_name{};
+
+  switch (attribute) {
+    case ListingRandomPriceSource::Attribute::ListingId:
+      column_name = listing_random_price_source_column::ListingId;
+      break;
+    case ListingRandomPriceSource::Attribute::DatasourceId:
+      column_name = listing_random_price_source_column::DatasourceId;
+      break;
+    case ListingRandomPriceSource::Attribute::Symbol:
+      column_name = listing_random_price_source_column::Symbol;
+      break;
+  }
+
+  if (!column_name.empty()) {
+    return std::string{column_name};
+  }
+  throw ColumnNameEncodingError{table::ListingRandomPriceSource, attribute};
 }
 
 auto ColumnResolver::to_column_name(MarketPhase::Attribute attribute)
@@ -261,7 +315,7 @@ auto ColumnResolver::to_column_name(MarketPhase::Attribute attribute)
   if (!column_name.empty()) {
     return std::string{column_name};
   }
-  throw ColumnNameEncodingError(table::MarketPhase, attribute);
+  throw ColumnNameEncodingError{table::MarketPhase, attribute};
 }
 
 auto ColumnResolver::to_column_name(PriceSeed::Attribute attribute)
@@ -306,7 +360,7 @@ auto ColumnResolver::to_column_name(PriceSeed::Attribute attribute)
   if (!column_name.empty()) {
     return std::string{column_name};
   }
-  throw ColumnNameEncodingError(table::PriceSeed, attribute);
+  throw ColumnNameEncodingError{table::PriceSeed, attribute};
 }
 
 auto ColumnResolver::to_column_name(Setting::Attribute attribute)
@@ -324,7 +378,7 @@ auto ColumnResolver::to_column_name(Setting::Attribute attribute)
   if (!column_name.empty()) {
     return std::string{column_name};
   }
-  throw ColumnNameEncodingError(table::Setting, attribute);
+  throw ColumnNameEncodingError{table::Setting, attribute};
 }
 
 auto ColumnResolver::to_column_name(FixSession::Attribute attribute)
@@ -345,7 +399,7 @@ auto ColumnResolver::to_column_name(FixSession::Attribute attribute)
   if (!column_name.empty()) {
     return std::string{column_name};
   }
-  throw ColumnNameEncodingError(table::FixSession, attribute);
+  throw ColumnNameEncodingError{table::FixSession, attribute};
 }
 
 auto ColumnResolver::to_column_name(Venue::Attribute attribute) -> std::string {
@@ -410,7 +464,7 @@ auto ColumnResolver::to_column_name(Venue::Attribute attribute) -> std::string {
   if (!column_name.empty()) {
     return std::string{column_name};
   }
-  throw ColumnNameEncodingError(table::Venue, attribute);
+  throw ColumnNameEncodingError{table::Venue, attribute};
 }
 
 }  // namespace simulator::data_layer::internal_pqxx

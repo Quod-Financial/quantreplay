@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_table_data_source_listing_1
+      labels: schema,v13
+      comment: Create data_source_listing table
+      preConditions:
+        - not:
+            - tableExists:
+                tableName: data_source_listing
+      changes:
+        - createTable:
+            tableName: data_source_listing
+            columns:
+              - column:
+                  name: data_source_id
+                  type: int
+              - column:
+                  name: symbol
+                  type: text

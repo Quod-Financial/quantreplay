@@ -12,19 +12,19 @@ namespace simulator::data_layer {
 auto Datasource::create(Datasource::Patch snapshot, std::uint64_t datasource_id)
     -> Datasource {
   if (!snapshot.name_.has_value()) {
-    throw RequiredAttributeMissing("Datasource", "Name");
+    throw RequiredAttributeMissing{"Datasource", "Name"};
   }
   if (!snapshot.venue_id_.has_value()) {
-    throw RequiredAttributeMissing("Datasource", "VenueID");
+    throw RequiredAttributeMissing{"Datasource", "VenueID"};
   }
   if (!snapshot.connection_.has_value()) {
-    throw RequiredAttributeMissing("Datasource", "Connection");
+    throw RequiredAttributeMissing{"Datasource", "Connection"};
   }
   if (!snapshot.format_.has_value()) {
-    throw RequiredAttributeMissing("Datasource", "Format");
+    throw RequiredAttributeMissing{"Datasource", "Format"};
   }
   if (!snapshot.type_.has_value()) {
-    throw RequiredAttributeMissing("Datasource", "Type");
+    throw RequiredAttributeMissing{"Datasource", "Type"};
   }
 
   Datasource datasource{};
@@ -48,6 +48,7 @@ auto Datasource::create(Datasource::Patch snapshot, std::uint64_t datasource_id)
   SIM_ASSIGN_FIELD(enabled_flag_, enabled_flag_);
   SIM_ASSIGN_FIELD(repeat_flag_, repeat_flag_);
   SIM_ASSIGN_FIELD(max_depth_levels_, max_depth_levels_);
+  SIM_ASSIGN_FIELD(random_price_only_flag_, random_price_only_flag_);
 
 #undef SIM_ASSIGN_FIELD
 
@@ -59,6 +60,17 @@ auto Datasource::create(Datasource::Patch snapshot, std::uint64_t datasource_id)
         std::back_inserter(datasource.columns_mapping_),
         [datasource_id](ColumnMapping::Patch&& patch) -> ColumnMapping {
           return ColumnMapping::create(std::move(patch), datasource_id);
+        });
+  }
+
+  if (auto& listings = snapshot.listings_) {
+    datasource.listings_.reserve(listings->size());
+    std::transform(
+        std::make_move_iterator(listings->begin()),
+        std::make_move_iterator(listings->end()),
+        std::back_inserter(datasource.listings_),
+        [datasource_id](DatasourceListing::Patch&& patch) -> DatasourceListing {
+          return DatasourceListing::create(std::move(patch), datasource_id);
         });
   }
 
@@ -115,9 +127,19 @@ auto Datasource::columns_mapping() const noexcept
   return columns_mapping_;
 }
 
+auto Datasource::listings() const noexcept
+    -> const std::vector<DatasourceListing>& {
+  return listings_;
+}
+
 auto Datasource::max_depth_levels() const noexcept
     -> std::optional<std::uint32_t> {
   return max_depth_levels_;
+}
+
+auto Datasource::random_price_only_flag() const noexcept
+    -> std::optional<bool> {
+  return random_price_only_flag_;
 }
 
 auto Datasource::Patch::enabled_flag() const noexcept
@@ -253,6 +275,25 @@ auto Datasource::Patch::without_column_mapping() noexcept -> Patch& {
   return *this;
 }
 
+auto Datasource::Patch::listings() const noexcept
+    -> const std::optional<std::vector<DatasourceListing::Patch>>& {
+  return listings_;
+}
+
+auto Datasource::Patch::with_listing(DatasourceListing::Patch patch_snapshot)
+    -> Patch& {
+  if (!listings_.has_value()) {
+    listings_ = decltype(listings_)::value_type{};
+  }
+  listings_->emplace_back(std::move(patch_snapshot));
+  return *this;
+}
+
+auto Datasource::Patch::without_listings() noexcept -> Patch& {
+  listings_ = decltype(listings_)::value_type{};
+  return *this;
+}
+
 auto Datasource::Patch::max_depth_levels() const noexcept
     -> const PatchField<std::uint32_t>& {
   return max_depth_levels_;
@@ -261,6 +302,17 @@ auto Datasource::Patch::max_depth_levels() const noexcept
 auto Datasource::Patch::with_max_depth_levels(
     std::optional<std::uint32_t> levels) noexcept -> Patch& {
   max_depth_levels_ = std::move(levels);
+  return *this;
+}
+
+auto Datasource::Patch::random_price_only_flag() const noexcept
+    -> const PatchField<bool>& {
+  return random_price_only_flag_;
+}
+
+auto Datasource::Patch::with_random_price_only_flag(
+    std::optional<bool> flag) noexcept -> Patch& {
+  random_price_only_flag_ = std::move(flag);
   return *this;
 }
 

@@ -9,7 +9,6 @@
 #include "matching_engine/configuration.hpp"
 #include "middleware/channels/trading_reply_channel.hpp"
 #include "protocol/app/execution_report.hpp"
-#include "protocol/app/instrument_state_request.hpp"
 #include "protocol/app/order_placement_request.hpp"
 #include "protocol/app/security_status.hpp"
 #include "protocol/app/security_status_request.hpp"
@@ -41,9 +40,8 @@ struct MatchingEngineImplementation : public Test {
             .phase = Phase{phase, status, Phase::Settings{}}};
   }
 
-  auto place_limit(Side side,
-                   OrderPrice price,
-                   OrderQuantity quantity) -> void {
+  auto place_limit(Side side, OrderPrice price, OrderQuantity quantity)
+      -> void {
     auto request = make_message<protocol::OrderPlacementRequest>();
     request.order_type = OrderType::Option::Limit;
     request.side = side;
@@ -104,26 +102,6 @@ TEST_F(MatchingEngineImplementation,
       .Times(AtLeast(1));
 
   enter_uncrossing();
-}
-
-TEST_F(MatchingEngineImplementation,
-       DeliversHaltStatusReportWhilePreUncrossBookStillStands) {
-  enter_auction_call_with_crossed_book();
-  subscribe_to_security_status();
-
-  protocol::InstrumentState book_at_halt_report;
-  EXPECT_CALL(trading_reply_receiver, process(IsHaltStatusReport()))
-      .WillOnce(InvokeWithoutArgs([&] {
-        implementation.dispatch_instrument_state_capture_cmd(
-            book_at_halt_report);
-      }));
-
-  enter_uncrossing();
-
-  EXPECT_THAT(book_at_halt_report.current_bid_depth,
-              Optional(Eq(CurrentBidDepth{1})));
-  EXPECT_THAT(book_at_halt_report.current_offer_depth,
-              Optional(Eq(CurrentOfferDepth{1})));
 }
 
 // NOLINTEND(*magic-numbers*)

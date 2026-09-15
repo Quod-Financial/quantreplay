@@ -188,7 +188,7 @@ TEST_F(Instruments, FailToResolveInstrumentBecauseOfAmbiguity) {
             instrument::LookupError::AmbiguousInstrumentDescriptor);
 }
 
-TEST_F(Instruments, FailToResolvesTheFirstInstrument) {
+TEST_F(Instruments, FailToResolvesFirstInstrument) {
   fill_cache({[] {
                 Instrument instrument;
                 instrument.database_id = DatabaseId{3};

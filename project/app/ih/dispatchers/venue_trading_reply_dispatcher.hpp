@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "core/tools/overload.hpp"
-#include "ih/components/fix_acceptor.hpp"
+#include "ih/components/fix_trading_system_acceptor.hpp"
 #include "ih/components/generator.hpp"
 #include "protocol/types/session.hpp"
 
@@ -13,11 +13,11 @@ namespace simulator {
 struct VenueTradingReplyDispatcher final
     : public middleware::TradingReplyReceiver {
  public:
-  VenueTradingReplyDispatcher(
-      std::shared_ptr<Generator> generator,
-      std::shared_ptr<FixAcceptor> fix_acceptor) noexcept
+  VenueTradingReplyDispatcher(std::shared_ptr<Generator> generator,
+                              std::shared_ptr<FixTradingSystemAcceptor>
+                                  fix_trading_system_acceptor) noexcept
       : generator_(std::move(generator)),
-        fix_acceptor_(std::move(fix_acceptor)) {}
+        fix_trading_system_acceptor_(std::move(fix_trading_system_acceptor)) {}
 
   auto process(protocol::BusinessMessageReject reject) -> void override {
     dispatch_message(std::move(reject));
@@ -75,7 +75,7 @@ struct VenueTradingReplyDispatcher final
   auto dispatch_message(Message message) -> void {
     const auto by_session_type_dispatcher = core::overload(
         [&](const protocol::fix::Session& /*session*/) {
-          fix_acceptor_->process(std::move(message));
+          fix_trading_system_acceptor_->process(std::move(message));
         },
         [&](const protocol::generator::Session& /*session*/) {
           generator_->process(std::move(message));
@@ -85,7 +85,7 @@ struct VenueTradingReplyDispatcher final
   }
 
   std::shared_ptr<Generator> generator_;
-  std::shared_ptr<FixAcceptor> fix_acceptor_;
+  std::shared_ptr<FixTradingSystemAcceptor> fix_trading_system_acceptor_;
 };
 
 }  // namespace simulator

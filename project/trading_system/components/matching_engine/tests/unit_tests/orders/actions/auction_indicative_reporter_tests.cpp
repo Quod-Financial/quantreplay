@@ -99,7 +99,7 @@ struct MatchingEngineAuctionIndicativeReporter : public Test {
 };
 
 TEST_F(MatchingEngineAuctionIndicativeReporter,
-       DoesNotReportOutsideTheAuctionCall) {
+       DoesNotReportOutsideAuctionCall) {
   enter_open();
 
   EXPECT_CALL(event_listener, on(EmitsAnyIndicativeUpdate())).Times(0);
@@ -108,7 +108,7 @@ TEST_F(MatchingEngineAuctionIndicativeReporter,
 }
 
 TEST_F(MatchingEngineAuctionIndicativeReporter,
-       DoesNotReportDuringTheAuctionUncrossing) {
+       DoesNotReportDuringAuctionUncrossing) {
   enter_auction_uncross();
 
   EXPECT_CALL(event_listener, on(EmitsAnyIndicativeUpdate())).Times(0);
@@ -117,7 +117,7 @@ TEST_F(MatchingEngineAuctionIndicativeReporter,
 }
 
 TEST_F(MatchingEngineAuctionIndicativeReporter,
-       ReportsIndicativePriceAndQuantityOfTheAuctionResult) {
+       ReportsIndicativePriceAndQuantityOfAuctionResult) {
   enter_auction_call();
 
   EXPECT_CALL(event_listener, on(ReportsIndicative(Price{100}, Quantity{50})));
@@ -126,7 +126,7 @@ TEST_F(MatchingEngineAuctionIndicativeReporter,
 }
 
 TEST_F(MatchingEngineAuctionIndicativeReporter,
-       ReportsImbalanceSizeAndSideOfTheAuctionResult) {
+       ReportsImbalanceSizeAndSideOfAuctionResult) {
   enter_auction_call();
 
   EXPECT_CALL(event_listener,
@@ -137,7 +137,7 @@ TEST_F(MatchingEngineAuctionIndicativeReporter,
 }
 
 TEST_F(MatchingEngineAuctionIndicativeReporter,
-       ReportsZeroQuantityWithoutPriceAndImbalanceWithoutAnAuctionResult) {
+       ReportsZeroQuantityWithoutPriceAndImbalanceWithoutAuctionResult) {
   enter_auction_call();
 
   EXPECT_CALL(event_listener, on(ReportsNoIndicativePrice()));
@@ -145,7 +145,7 @@ TEST_F(MatchingEngineAuctionIndicativeReporter,
   reporter(std::nullopt);
 }
 
-TEST_F(MatchingEngineAuctionIndicativeReporter, ReportsTheOngoingAuctionPhase) {
+TEST_F(MatchingEngineAuctionIndicativeReporter, ReportsOngoingAuctionPhase) {
   enter_auction_call(TradingPhase::Option::ClosingAuction);
 
   EXPECT_CALL(

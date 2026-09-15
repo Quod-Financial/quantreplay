@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_table_listing_random_price_source_1
+      labels: schema,v13
+      comment: Create listing_random_price_source table
+      preConditions:
+        - not:
+            - tableExists:
+                tableName: listing_random_price_source
+      changes:
+        - createTable:
+            tableName: listing_random_price_source
+            columns:
+              - column:
+                  name: listing_id
+                  type: int
+              - column:
+                  name: data_source_id
+                  type: int
+              - column:
+                  name: symbol
+                  type: text

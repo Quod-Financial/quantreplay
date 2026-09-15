@@ -10,7 +10,9 @@ ensure_project_dependency_exist(simulator::log)
 ensure_project_dependency_exist(simulator::data_layer)
 ensure_project_dependency_exist(simulator::middleware)
 ensure_project_dependency_exist(simulator::trading_system)
-ensure_project_dependency_exist(simulator::fix_acceptor)
+ensure_project_dependency_exist(simulator::fix)
+ensure_project_dependency_exist(simulator::fix_trading_system_acceptor)
+ensure_project_dependency_exist(simulator::fix_generator_initiator)
 ensure_project_dependency_exist(simulator::generator)
 ensure_project_dependency_exist(simulator::http)
 
@@ -20,7 +22,8 @@ add_static_library(
   NAME ${PROJECT_NAME}
   ALIAS simulator::app
   HEADERS
-    ih/components/fix_acceptor.hpp
+    ih/components/fix_generator_initiator.hpp
+    ih/components/fix_trading_system_acceptor.hpp
     ih/components/generator.hpp
     ih/components/http_server.hpp
     ih/components/trading_engine.hpp
@@ -44,7 +47,9 @@ add_static_library(
     fmt::fmt
     simulator::middleware
     simulator::trading_system
-    simulator::fix_acceptor
+    simulator::fix
+    simulator::fix_trading_system_acceptor
+    simulator::fix_generator_initiator
     simulator::generator
     simulator::http
     simulator::cfg

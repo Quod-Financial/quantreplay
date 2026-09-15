@@ -21,6 +21,12 @@ databaseChangeLog:
       file: tables/column_mapping.yml
       relativeToChangelogFile: true
   - include:
+      file: tables/data_source_listing.yml
+      relativeToChangelogFile: true
+  - include:
+      file: tables/listing_random_price_source.yml
+      relativeToChangelogFile: true
+  - include:
       file: tables/fix_session.yml
       relativeToChangelogFile: true
 
@@ -34,16 +40,22 @@ databaseChangeLog:
       file: keys/market_phase.yml
       relativeToChangelogFile: true
   - include:
-      file: keys/listing.yml
-      relativeToChangelogFile: true
-  - include:
       file: keys/price_seed.yml
       relativeToChangelogFile: true
   - include:
       file: keys/data_source.yml
       relativeToChangelogFile: true
   - include:
+      file: keys/listing.yml
+      relativeToChangelogFile: true
+  - include:
       file: keys/column_mapping.yml
+      relativeToChangelogFile: true
+  - include:
+      file: keys/data_source_listing.yml
+      relativeToChangelogFile: true
+  - include:
+      file: keys/listing_random_price_source.yml
       relativeToChangelogFile: true
   - include:
       file: keys/fix_session.yml
@@ -60,6 +72,12 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: constraints/data_source.yml
+      relativeToChangelogFile: true
+  - include:
+      file: constraints/data_source_listing.yml
+      relativeToChangelogFile: true
+  - include:
+      file: constraints/listing_random_price_source.yml
       relativeToChangelogFile: true
 
   - include:

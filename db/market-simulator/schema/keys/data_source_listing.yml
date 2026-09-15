@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_key_data_source_listing_1
+      labels: schema,v13
+      comment: Add data_source_listing_pkey (data_source_id, symbol) for data_source_listing table
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source_listing
+        - columnExists:
+            tableName: data_source_listing
+            columnName: data_source_id
+        - columnExists:
+            tableName: data_source_listing
+            columnName: symbol
+        - not:
+            - primaryKeyExists:
+                tableName: data_source_listing
+                primaryKeyName: data_source_listing_pkey
+      changes:
+        - addPrimaryKey:
+            constraintName: data_source_listing_pkey
+            tableName: data_source_listing
+            columnNames: data_source_id, symbol
+            validate: true
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_key_data_source_listing_2
+      labels: schema,v13
+      comment: Add data_source_listing_data_source_fkey (data_source_listing.data_source_id) to (data_source.data_source_id)
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source_listing
+        - columnExists:
+            tableName: data_source_listing
+            columnName: data_source_id
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: data_source_id
+        - primaryKeyExists:
+            tableName: data_source
+            primaryKeyName: data_source_pkey
+        - not:
+            - foreignKeyConstraintExists:
+                foreignKeyName: data_source_listing_data_source_fkey
+      changes:
+        - addForeignKeyConstraint:
+            constraintName: data_source_listing_data_source_fkey
+            baseTableName: data_source_listing
+            baseColumnNames: data_source_id
+            referencedTableName: data_source
+            referencedColumnNames: data_source_id
+            onUpdate: CASCADE
+            onDelete: CASCADE
+            validate: true

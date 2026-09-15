@@ -1,0 +1,57 @@
+databaseChangeLog:
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_constraint_listing_random_price_source_1
+      labels: schema,v13
+      comment: Add NOT NULL constraint listing_random_price_source_listing_id_idx on listing_random_price_source.listing_id
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing_random_price_source
+        - columnExists:
+            tableName: listing_random_price_source
+            columnName: listing_id
+      changes:
+        - addNotNullConstraint:
+            constraintName: listing_random_price_source_listing_id_idx
+            tableName: listing_random_price_source
+            columnName: listing_id
+            validate: true
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_constraint_listing_random_price_source_2
+      labels: schema,v13
+      comment: Add NOT NULL constraint listing_random_price_source_data_source_id_idx on listing_random_price_source.data_source_id
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing_random_price_source
+        - columnExists:
+            tableName: listing_random_price_source
+            columnName: data_source_id
+      changes:
+        - addNotNullConstraint:
+            constraintName: listing_random_price_source_data_source_id_idx
+            tableName: listing_random_price_source
+            columnName: data_source_id
+            validate: true
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_constraint_listing_random_price_source_3
+      labels: schema,v13
+      comment: Add NOT NULL constraint listing_random_price_source_symbol_idx on listing_random_price_source.symbol
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing_random_price_source
+        - columnExists:
+            tableName: listing_random_price_source
+            columnName: symbol
+      changes:
+        - addNotNullConstraint:
+            constraintName: listing_random_price_source_symbol_idx
+            tableName: listing_random_price_source
+            columnName: symbol
+            validate: true

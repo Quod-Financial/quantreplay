@@ -6,6 +6,7 @@
 #include "data_layer/api/models/price_seed.hpp"
 #include "ih/context/instrument_context.hpp"
 #include "ih/factory/executable_factory.hpp"
+#include "ih/market_data/market_data_provider.hpp"
 #include "ih/utils/executable.hpp"
 
 namespace simulator::generator {
@@ -21,7 +22,8 @@ class InstrumentRandomGeneratorFactoryImpl final
   [[nodiscard]]
   auto create_orders_executable(
       std::shared_ptr<OrderInstrumentContext> instrument_context,
-      const data_layer::PriceSeed& price_seed)
+      const data_layer::PriceSeed& price_seed,
+      std::unique_ptr<mdata::MarketDataProvider> market_data_provider)
       -> std::unique_ptr<random::OrderGenerator> override;
 };
 

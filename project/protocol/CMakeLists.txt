@@ -19,7 +19,6 @@ add_static_library(
     include/protocol/admin/trading_phase.hpp
     include/protocol/app/business_message_reject.hpp
     include/protocol/app/execution_report.hpp
-    include/protocol/app/instrument_state_request.hpp
     include/protocol/app/market_data_reject.hpp
     include/protocol/app/market_data_request.hpp
     include/protocol/app/market_data_snapshot.hpp

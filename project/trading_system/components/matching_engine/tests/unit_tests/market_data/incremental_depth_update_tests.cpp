@@ -226,7 +226,7 @@ TEST_F(LimitedIncrementalDepthBuilderTest,
 }
 
 TEST_F(LimitedIncrementalDepthBuilderTest,
-       AddsNewLevelToTheUpdateInVisibleWindow) {
+       AddsNewLevelToUpdateInVisibleWindow) {
   const std::vector depth = {
       FakeBidNode::added(Price(2), Quantity(2)),
   };
@@ -239,7 +239,7 @@ TEST_F(LimitedIncrementalDepthBuilderTest,
 }
 
 TEST_F(LimitedIncrementalDepthBuilderTest,
-       AddsChangedLevelToTheUpdateInVisibleWindow) {
+       AddsChangedLevelToUpdateInVisibleWindow) {
   const std::vector depth = {
       FakeBidNode::changed(Price(2), Quantity(2)),
   };
@@ -253,7 +253,7 @@ TEST_F(LimitedIncrementalDepthBuilderTest,
 }
 
 TEST_F(LimitedIncrementalDepthBuilderTest,
-       AddsRemovedLevelToTheUpdateInVisibleWindow) {
+       AddsRemovedLevelToUpdateInVisibleWindow) {
   const std::vector depth = {
       FakeBidNode::removed(Price(2)),
   };

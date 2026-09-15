@@ -29,7 +29,6 @@ add_static_library(
     ih/context/instrument_context.hpp
     ih/context/order_generation_context.hpp
     ih/context/order_generation_context_impl.hpp
-    ih/context/order_market_data_provider.hpp
     ih/factory/executable_factory.hpp
     ih/factory/executable_factory_impl.hpp
     ih/historical/adapters/csv_reader.hpp
@@ -50,6 +49,16 @@ add_static_library(
     ih/historical/record_applier.hpp
     ih/historical/replier.hpp
     ih/historical/scheduler.hpp
+    ih/market_data/local_subscription_manager.hpp
+    ih/market_data/market_data_provider.hpp
+    ih/market_data/market_state.hpp
+    ih/market_data/order_book_derivation.hpp
+    ih/market_data/price_cache.hpp
+    ih/market_data/record_factory.hpp
+    ih/market_data/subscription.hpp
+    ih/market_data/subscription_manager.hpp
+    ih/market_data/subscription_requirement.hpp
+    ih/market_data/utils.hpp
     ih/random/algorithm/generation_algorithm.hpp
     ih/random/algorithm/order_generation_algorithm.hpp
     ih/random/algorithm/utils/attributes_setter.hpp
@@ -93,7 +102,6 @@ add_static_library(
     src/adaptation/generated_message.cpp
     src/context/generation_manager.cpp
     src/context/order_generation_context_impl.cpp
-    src/context/order_market_data_provider.cpp
     src/factory/executable_factory_impl.cpp
     src/historical/adapters/csv_reader.cpp
     src/historical/adapters/data_access_adapter.cpp
@@ -111,6 +119,13 @@ add_static_library(
     src/historical/record_applier.cpp
     src/historical/replier.cpp
     src/historical/scheduler.cpp
+    src/market_data/local_subscription_manager.cpp
+    src/market_data/market_data_provider.cpp
+    src/market_data/order_book_derivation.cpp
+    src/market_data/price_cache.cpp
+    src/market_data/record_factory.cpp
+    src/market_data/subscription_manager.cpp
+    src/market_data/utils.cpp
     src/random/algorithm/order_generation_algorithm.cpp
     src/random/algorithm/utils/quantity_params_selector.cpp
     src/random/generators/counterparty_generator.cpp

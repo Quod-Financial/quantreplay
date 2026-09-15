@@ -812,6 +812,10 @@ class DataLayerInspectorsListingPatchWriter : public ::testing::Test {
     EXPECT_CALL(unmarshaller(), optional_string)
         .Times(AnyNumber())
         .WillRepeatedly(Return(false));
+
+    EXPECT_CALL(unmarshaller(), optional_uint64)
+        .Times(AnyNumber())
+        .WillRepeatedly(Return(false));
   }
 
  private:

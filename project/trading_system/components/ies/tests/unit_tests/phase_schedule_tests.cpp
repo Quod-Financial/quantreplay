@@ -132,7 +132,7 @@ TEST_F(PhaseScheduleTest, ReturnsPhaseWithLatestBeginTimeAndEarlierEndTime) {
                   {}));
 }
 
-TEST_F(PhaseScheduleTest, ReturnsHaltStatusWithSettingAtTheHaltBeginTime) {
+TEST_F(PhaseScheduleTest, ReturnsHaltStatusWithSettingAtHaltBeginTime) {
   schedule = {{.begin = 11h, .end = 14h, .phase = TradingPhase::Option::Open},
               {.begin = 12h, .end = 13h, .phase = TradingStatus::Option::Halt}};
 

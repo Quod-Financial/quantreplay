@@ -5,12 +5,12 @@
 namespace simulator::trading_system::instrument::lookup::test {
 namespace {
 
-TEST(InstrumentMatchRate, NoMatchIsTheLowestConstant) {
+TEST(InstrumentMatchRate, NoMatchIsLowestConstant) {
   EXPECT_LT(MatchRate::NoMatch, MatchRate::Match);
   EXPECT_LT(MatchRate::NoMatch, MatchRate::Unmatchable);
 }
 
-TEST(InstrumentMatchRate, MatchIsTheHighestConstant) {
+TEST(InstrumentMatchRate, MatchIsHighestConstant) {
   EXPECT_GT(MatchRate::Match, MatchRate::NoMatch);
   EXPECT_GT(MatchRate::Match, MatchRate::Unmatchable);
 }
@@ -28,7 +28,7 @@ TEST(InstrumentMatchRate, NoMatchValueConvertsResultToNoMatch) {
   EXPECT_EQ(MatchRate::NoMatch + MatchRate::Match, MatchRate::NoMatch);
 }
 
-TEST(InstrumentMatchRate, UnmatchableDoesNotAffectTheResult) {
+TEST(InstrumentMatchRate, UnmatchableDoesNotAffectResult) {
   EXPECT_EQ(MatchRate::Unmatchable + MatchRate::Match, MatchRate::Match);
 }
 

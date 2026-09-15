@@ -11,7 +11,6 @@
 #include "instruments/cache.hpp"
 #include "protocol/admin/market_state.hpp"
 #include "protocol/admin/trading_phase.hpp"
-#include "protocol/app/instrument_state_request.hpp"
 #include "protocol/app/market_data_request.hpp"
 #include "protocol/app/order_cancellation_request.hpp"
 #include "protocol/app/order_modification_request.hpp"
@@ -38,9 +37,6 @@ class TradingSystemFacade {
   auto execute(protocol::MarketDataRequest request) -> void;
 
   auto execute(const protocol::SecurityStatusRequest& request) -> void;
-
-  auto execute(const protocol::InstrumentStateRequest& request,
-               protocol::InstrumentState& reply) -> void;
 
   auto execute(const protocol::HaltPhaseRequest& request,
                protocol::HaltPhaseReply& reply) -> void;

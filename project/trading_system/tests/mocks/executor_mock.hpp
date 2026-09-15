@@ -29,11 +29,6 @@ struct ExecutorMock : public Executor {
               (protocol::SecurityStatusRequest),
               (const, override));
   MOCK_METHOD(void,
-              execute_request,
-              (const protocol::InstrumentStateRequest&,
-               protocol::InstrumentState&),
-              (const, override));
-  MOCK_METHOD(void,
               store_state_request,
               ((const std::vector<
                   std::pair<InstrumentId, market_state::InstrumentState&>>&)),

@@ -178,8 +178,9 @@ auto Server::Implementation::setup_handler(
   auto datasource_controller = std::make_shared<DatasourceController>(
       std::make_unique<data_bridge::DataLayerDatasourceAccessor>(database));
 
-  auto listing_controller =
-      std::make_shared<ListingController>(std::move(listing_accessor));
+  auto listing_controller = std::make_shared<ListingController>(
+      std::move(listing_accessor),
+      std::make_unique<data_bridge::DataLayerDatasourceAccessor>(database));
 
   auto price_seed_controller = std::make_shared<PriceSeedController>(
       std::make_unique<data_bridge::DataLayerPriceSeedAccessor>(database),

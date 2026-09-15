@@ -332,3 +332,42 @@ databaseChangeLog:
             columnDataType: bool
             defaultNullValue: true
             validate: true
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_constraint_data_source_18
+      labels: schema,v13
+      comment: Set `false` default value for data_source.random_price_only column
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: random_price_only
+      changes:
+        - addDefaultValue:
+            tableName: data_source
+            columnName: random_price_only
+            defaultValueBoolean: false
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_constraint_data_source_19
+      labels: schema,v13
+      comment: Add NOT NULL constraint data_source_random_price_only_not_null on data_source.random_price_only
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - columnExists:
+            tableName: data_source
+            columnName: random_price_only
+      changes:
+        - addNotNullConstraint:
+            constraintName: data_source_random_price_only_not_null
+            tableName: data_source
+            columnName: random_price_only
+            columnDataType: bool
+            defaultNullValue: false
+            validate: true

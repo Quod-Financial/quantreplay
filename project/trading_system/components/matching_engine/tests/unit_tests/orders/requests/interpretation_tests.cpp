@@ -13,6 +13,7 @@
 #include "protocol/app/order_modification_request.hpp"
 #include "protocol/app/order_placement_request.hpp"
 #include "protocol/types/session.hpp"
+#include "tools/utils.hpp"
 
 namespace simulator::trading_system::matching_engine {
 namespace {
@@ -35,7 +36,7 @@ TEST(SideInterpretation, ReportsMissingSide) {
 TEST(SideInterpretation, ReportsInvalidSide) {
   const auto result =
       simulator::trading_system::matching_engine::detail::interpret_side(
-          static_cast<Side::Option>(0xFF));
+          matching_engine::test::invalid_enum_value<Side::Option>());
 
   ASSERT_THAT(result.has_value(), IsFalse());
   ASSERT_THAT(result.error(), Eq(OrderRequestError::SideInvalid));
@@ -62,7 +63,7 @@ TEST(OrderTypeInterpretation, ReportsMissingOrderType) {
 TEST(OrderTypeInterpretation, ReportsInvalidOrderType) {
   const auto result =
       simulator::trading_system::matching_engine::detail::interpret_order_type(
-          static_cast<OrderType::Option>(0xFF));
+          matching_engine::test::invalid_enum_value<OrderType::Option>());
 
   ASSERT_THAT(result.has_value(), IsFalse());
   ASSERT_THAT(result.error(), Eq(OrderRequestError::OrderTypeInvalid));
@@ -88,7 +89,8 @@ TEST(OrderTypeInterpretation, InterpretsLimitOrderType) {
 
 TEST(TimeInForceInterpretation, ReportsInvalidTimeInForce) {
   const auto result = simulator::trading_system::matching_engine::detail::
-      interpret_time_in_force(static_cast<TimeInForce::Option>(0xFF));
+      interpret_time_in_force(
+          matching_engine::test::invalid_enum_value<TimeInForce::Option>());
 
   ASSERT_THAT(result.has_value(), IsFalse());
   ASSERT_THAT(result.error(), Eq(OrderRequestError::TimeInForceInvalid));
@@ -276,7 +278,8 @@ namespace test {
 
 TEST(OrderErrorFormatting, ThrowsErrorForUnsupportedErrorEnumValue) {
   ASSERT_THROW(
-      (void)convert_to_reason_text(static_cast<OrderRequestError>(0xFF)),
+      (void)convert_to_reason_text(
+          matching_engine::test::invalid_enum_value<OrderRequestError>()),
       std::invalid_argument);
 }
 
@@ -366,7 +369,8 @@ TEST_F(PlacementInterpretation, ReportsSideInterpretationError) {
 }
 
 TEST_F(PlacementInterpretation, ReportsTimeInForceInterpretationError) {
-  limit_request.time_in_force = static_cast<TimeInForce::Option>(0xFF);
+  limit_request.time_in_force =
+      matching_engine::test::invalid_enum_value<TimeInForce::Option>();
 
   const auto error = interpreter.interpret(limit_request);
 
@@ -621,7 +625,8 @@ TEST_F(ModificationInterpretation, ReportsSideInterpretationError) {
 }
 
 TEST_F(ModificationInterpretation, ReportsTimeInForceInterpretationError) {
-  limit_request.time_in_force = static_cast<TimeInForce::Option>(0xFF);
+  limit_request.time_in_force =
+      matching_engine::test::invalid_enum_value<TimeInForce::Option>();
 
   const auto error = interpreter.interpret(limit_request);
 
@@ -717,7 +722,8 @@ TEST_F(ModificationInterpretation, ForcesIocTimeInForceForMarketUpdate) {
 
 TEST_F(ModificationInterpretation,
        ReportsSideInterpretationErrorForMarketUpdate) {
-  market_request.side = static_cast<Side::Option>(0xFF);
+  market_request.side =
+      matching_engine::test::invalid_enum_value<Side::Option>();
 
   const auto error =
       interpreter.interpret(market_request, /*allow_market_amendment=*/true);
@@ -741,7 +747,8 @@ TEST_F(ModificationInterpretation,
 
 TEST_F(ModificationInterpretation,
        ReportsTimeInForceInterpretationErrorForMarketUpdate) {
-  market_request.time_in_force = static_cast<TimeInForce::Option>(0xFF);
+  market_request.time_in_force =
+      matching_engine::test::invalid_enum_value<TimeInForce::Option>();
 
   const auto error =
       interpreter.interpret(market_request, /*allow_market_amendment=*/true);

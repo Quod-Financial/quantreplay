@@ -9,6 +9,7 @@
 
 #include "data_layer/api/models/column_mapping.hpp"
 #include "data_layer/api/models/datasource.hpp"
+#include "data_layer/api/models/datasource_listing.hpp"
 
 namespace simulator::http::json {
 
@@ -26,6 +27,10 @@ class DatasourceMarshaller {
   static auto marshall(
       const std::vector<data_layer::ColumnMapping>& columns_mapping,
       rapidjson::Document& parent) -> void;
+
+  static auto marshall(
+      const std::vector<data_layer::DatasourceListing>& listings,
+      rapidjson::Document& parent) -> void;
 };
 
 class DatasourceUnmarshaller {
@@ -37,6 +42,9 @@ class DatasourceUnmarshaller {
   static auto unmarshall_column_mapping(
       const rapidjson::Document& datasource_doc,
       data_layer::Datasource::Patch& dest) -> void;
+
+  static auto unmarshall_listings(const rapidjson::Document& datasource_doc,
+                                  data_layer::Datasource::Patch& dest) -> void;
 };
 
 }  // namespace simulator::http::json

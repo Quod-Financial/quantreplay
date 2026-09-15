@@ -4,7 +4,9 @@
 
 #include "data_layer/api/models/column_mapping.hpp"
 #include "data_layer/api/models/datasource.hpp"
+#include "data_layer/api/models/datasource_listing.hpp"
 #include "data_layer/api/models/listing.hpp"
+#include "data_layer/api/models/listing_random_price_source.hpp"
 #include "data_layer/api/models/market_phase.hpp"
 #include "data_layer/api/models/price_seed.hpp"
 #include "data_layer/api/models/setting.hpp"
@@ -21,7 +23,8 @@ struct HttpJsonKeyResolverColumnMapping : public ::testing::Test {
 
 TEST_F(HttpJsonKeyResolverColumnMapping,
        ThrowsExceptionOnResolvingUndefinedKey) {
-  EXPECT_THROW((void)KeyResolver::resolve_key(static_cast<Attribute>(-1)),
+  EXPECT_THROW((void)KeyResolver::resolve_key(
+                   http::test::util::invalid_enum_value<Attribute>()),
                std::logic_error);
 }
 
@@ -42,7 +45,8 @@ struct HttpJsonKeyResolverDatasource : public ::testing::Test {
 };
 
 TEST_F(HttpJsonKeyResolverDatasource, ThrowsExceptionOnResolvingUndefinedKey) {
-  EXPECT_THROW((void)KeyResolver::resolve_key(static_cast<Attribute>(-1)),
+  EXPECT_THROW((void)KeyResolver::resolve_key(
+                   http::test::util::invalid_enum_value<Attribute>()),
                std::logic_error);
 }
 
@@ -101,12 +105,37 @@ TEST_F(HttpJsonKeyResolverDatasource, ResolvesMaxDepthLevels) {
             "maxDepthLevels");
 }
 
+TEST_F(HttpJsonKeyResolverDatasource, ResolvesRandomPriceOnly) {
+  EXPECT_EQ(KeyResolver::resolve_key(Attribute::RandomPriceOnly),
+            "randomPriceOnly");
+}
+
+struct HttpJsonKeyResolverDatasourceListing : public ::testing::Test {
+  using Attribute = data_layer::DatasourceListing::Attribute;
+};
+
+TEST_F(HttpJsonKeyResolverDatasourceListing,
+       ThrowsExceptionOnResolvingUndefinedKey) {
+  EXPECT_THROW((void)KeyResolver::resolve_key(
+                   http::test::util::invalid_enum_value<Attribute>()),
+               std::logic_error);
+}
+
+TEST_F(HttpJsonKeyResolverDatasourceListing, ResolvesDatasourceId) {
+  EXPECT_EQ(KeyResolver::resolve_key(Attribute::DatasourceId), "datasourceId");
+}
+
+TEST_F(HttpJsonKeyResolverDatasourceListing, ResolvesSymbol) {
+  EXPECT_EQ(KeyResolver::resolve_key(Attribute::Symbol), "symbol");
+}
+
 struct HttpJsonKeyResolverListing : public ::testing::Test {
   using Attribute = data_layer::Listing::Attribute;
 };
 
 TEST_F(HttpJsonKeyResolverListing, ThrowsExceptionOnResolvingUndefinedKey) {
-  EXPECT_THROW((void)KeyResolver::resolve_key(static_cast<Attribute>(-1)),
+  EXPECT_THROW((void)KeyResolver::resolve_key(
+                   http::test::util::invalid_enum_value<Attribute>()),
                std::logic_error);
 }
 
@@ -265,6 +294,29 @@ TEST_F(HttpJsonKeyResolverListing, ResolvesRandomAggressiveAmtMaximum) {
             "randomAggAmtMaximum");
 }
 
+struct HttpJsonKeyResolverListingRandomPriceSource : public ::testing::Test {
+  using Attribute = data_layer::ListingRandomPriceSource::Attribute;
+};
+
+TEST_F(HttpJsonKeyResolverListingRandomPriceSource,
+       ThrowsExceptionOnResolvingUndefinedKey) {
+  EXPECT_THROW((void)KeyResolver::resolve_key(
+                   http::test::util::invalid_enum_value<Attribute>()),
+               std::logic_error);
+}
+
+TEST_F(HttpJsonKeyResolverListingRandomPriceSource, ResolvesListingId) {
+  EXPECT_EQ(KeyResolver::resolve_key(Attribute::ListingId), "listingId");
+}
+
+TEST_F(HttpJsonKeyResolverListingRandomPriceSource, ResolvesDatasourceId) {
+  EXPECT_EQ(KeyResolver::resolve_key(Attribute::DatasourceId), "datasourceId");
+}
+
+TEST_F(HttpJsonKeyResolverListingRandomPriceSource, ResolvesSymbol) {
+  EXPECT_EQ(KeyResolver::resolve_key(Attribute::Symbol), "symbol");
+}
+
 struct HttpJsonKeyResolverMarketPhase : public ::testing::Test {
   using Attribute = data_layer::MarketPhase::Attribute;
 };
@@ -304,7 +356,8 @@ struct HttpJsonKeyResolverPriceSeed : public ::testing::Test {
 };
 
 TEST_F(HttpJsonKeyResolverPriceSeed, ThrowsExceptionOnResolvingUndefinedKey) {
-  EXPECT_THROW((void)KeyResolver::resolve_key(static_cast<Attribute>(-1)),
+  EXPECT_THROW((void)KeyResolver::resolve_key(
+                   http::test::util::invalid_enum_value<Attribute>()),
                std::logic_error);
 }
 
@@ -360,7 +413,8 @@ struct HttpJsonKeyResolverSetting : public ::testing::Test {
 };
 
 TEST_F(HttpJsonKeyResolverSetting, ThrowsExceptionOnResolvingUndefinedKey) {
-  EXPECT_THROW((void)KeyResolver::resolve_key(static_cast<Attribute>(-1)),
+  EXPECT_THROW((void)KeyResolver::resolve_key(
+                   http::test::util::invalid_enum_value<Attribute>()),
                std::logic_error);
 }
 
@@ -377,7 +431,8 @@ struct HttpJsonKeyResolverVenue : public ::testing::Test {
 };
 
 TEST_F(HttpJsonKeyResolverVenue, ThrowsExceptionOnResolvingUndefinedKey) {
-  EXPECT_THROW((void)KeyResolver::resolve_key(static_cast<Attribute>(-1)),
+  EXPECT_THROW((void)KeyResolver::resolve_key(
+                   http::test::util::invalid_enum_value<Attribute>()),
                std::logic_error);
 }
 

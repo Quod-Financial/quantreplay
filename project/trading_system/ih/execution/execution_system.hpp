@@ -34,10 +34,6 @@ struct Executor {
   virtual auto execute_request(protocol::SecurityStatusRequest request) const
       -> void = 0;
 
-  virtual auto execute_request(const protocol::InstrumentStateRequest& request,
-                               protocol::InstrumentState& reply) const
-      -> void = 0;
-
   virtual auto store_state_request(
       const std::vector<
           std::pair<InstrumentId, market_state::InstrumentState&>>& instruments)
@@ -74,9 +70,6 @@ class ExecutionSystem : public Executor {
 
   auto execute_request(protocol::SecurityStatusRequest request) const
       -> void override;
-
-  auto execute_request(const protocol::InstrumentStateRequest& request,
-                       protocol::InstrumentState& reply) const -> void override;
 
   auto store_state_request(
       const std::vector<

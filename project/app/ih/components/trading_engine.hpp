@@ -45,11 +45,6 @@ class TradingEngine final
     trading_system::process(std::move(request), trading_system_);
   }
 
-  auto process(const protocol::InstrumentStateRequest& request,
-               protocol::InstrumentState& reply) -> void override {
-    trading_system::process(request, reply, trading_system_);
-  }
-
   auto process(const protocol::HaltPhaseRequest& request,
                protocol::HaltPhaseReply& reply) -> void override {
     trading_system::process(request, reply, trading_system_);

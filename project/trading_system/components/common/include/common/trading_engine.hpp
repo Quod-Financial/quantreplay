@@ -3,7 +3,6 @@
 
 #include "common/events.hpp"
 #include "common/instrument_state.hpp"
-#include "protocol/app/instrument_state_request.hpp"
 #include "protocol/app/market_data_request.hpp"
 #include "protocol/app/order_cancellation_request.hpp"
 #include "protocol/app/order_modification_request.hpp"
@@ -32,8 +31,6 @@ class TradingEngine {
   virtual auto execute(protocol::MarketDataRequest request) -> void = 0;
 
   virtual auto execute(protocol::SecurityStatusRequest request) -> void = 0;
-
-  virtual auto provide_state(protocol::InstrumentState& reply) -> void = 0;
 
   virtual auto store_state(market_state::InstrumentState& state) -> void = 0;
 

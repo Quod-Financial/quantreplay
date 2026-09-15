@@ -902,10 +902,10 @@ The VenueID value is taken from the simulator instance configuration.
 
 
 [[adminsets-data]]
-=== Data Sources
-Manage settings for specific data sources on each market simulator instance.
+=== Datasources
+Manage settings for specific datasources on each market simulator instance.
 
-See <<general-datasource,this section>> for more information about playback of data from data sources.
+See <<general-datasource,this section>> for more information about playback of data from datasources.
 
 _Resource Properties_
 
@@ -914,26 +914,37 @@ _Resource Properties_
 | Path | Type |Description
 
 | id	| Numeric	| Unique primary key
-| enabled	| Boolean	| Whether or not this data source is enabled or disabled
-| name	| Text	| Name for this data source, unique to the venue
-| venueId	| Text	| Unique venue key for a data source
-| connection	| Text	| Connection string for the datasource (eg a file path for CSV files, or a database connection string for database connections).
+| enabled	| Boolean	| Whether or not this datasource is enabled or disabled
+| name	| Text	| Name for this datasource, unique to the venue
+| venueId	| Text	| Unique venue key for a datasource
+| connection	| Text	a| Connection string for the datasource:
+
+* CSV Format - a local server file path
+* PSQL Format - a database connection string
+* FIX Format - the initiator session ID to use to subscribe to market data, as `+{BeginString}:{SenderCompID}->{TargetCompID}:{SessionQualifier}+` (`+:{SessionQualifier}+` only if configured)
+
 | format	| Text	a| Indicates the type of historic data storage. Supported values:
 
 *	CSV - comma-separated value file
 *	PSQL - PostgreSQL (or TimescaleDB) database
+*	FIX - market data feed received over a FIX connection
 
-| type	| Text	a| Indicates the data source format. Supported values:
+| type	| Text	a| Indicates the datasource format. Supported values:
 
 *	OrderBook - L1/L2 market data format
 
-| repeat	| Boolean	| Whether to start reading from the beginning of the data source when the end is reached (supported only for files and databases)
-| textDelimeter	| Char	| Delimiter used to separate values ("," by default if not specified) (supported only for CSV format)
+| repeat	| Boolean	| Whether to start reading from the beginning of the datasource when the end is reached (supported only for files and databases)
+| textDelimiter	| Char	| Delimiter used to separate values ("," by default if not specified) (supported only for CSV format)
 | textHeaderRow	| Integer	| 1-based row index of where header row is located (0 indicates no header row) (supported only for CSV format)
 | textDataRow	| Integer	| 1-based row index of where the first row of data is located. 
 Cannot be 0, and must be greater than `textHeaderRow`, if present (supported only for CSV format)
 | tableName	| Text	| Name of table (supported only for databases)
-| maxDepthLevels	| Integer	| Maximum depth levels to read from the data source. 0 or unspecified indicates to read all levels.
+| maxDepthLevels	| Integer	a| Maximum depth levels to read from the datasource. 0 or unspecified indicates to read all levels. For FIX Format, this value is used in tag MarketDepth (264) of each market data subscription.
+| listings	| Array	| For FIX Format, list of Symbols to subscribe to market data. An empty list results in no subscriptions. See <<adminsets-data-listings,Listings Sub-List>>.
+| randomPriceOnly	| Boolean	a| Whether this datasource is used only as a price source for random order generation (supported only for FIX format)
+
+*   When `false` (the default), orders are derived from the datasource and it can also be used as a random order price source.
+*   When `true`, no orders are derived from it, and it is available only as a random order price source
 
 |=== 
 
@@ -944,7 +955,7 @@ Cannot be 0, and must be greater than `textHeaderRow`, if present (supported onl
 |===
 | Path | Type |Description
 
-| dataSourceId	| Integer	| An identifier of the data source record which has a column mapping config.
+| dataSourceId	| Integer	| An identifier of the datasource record which has a column mapping config.
 Users may omit to send this value in the requests.
 | columnFrom	| Enum	a| Internal simulator field for mapping data. Supported values (part 1, continued on next page):
 
@@ -968,7 +979,7 @@ For example, BidParty1, BidParty2 etc.
 
 The # character can also be used with these fields to indicate reading from whatever index levels are specified in the file or database itself. 
 For example, BidParty#, BidQuantity# etc.
-| columnTo	| Text	| External data source column name for mapping data.
+| columnTo	| Text	| External datasource column name for mapping data.
 
 If the datasource contains several levels, the # character can be used as a placeholder for the level number. 
 For instance, `bidparty#` instead of `bidparty1`, `bidparty2`, etc.
@@ -978,20 +989,35 @@ To use this method, `textHeaderRow`  for the datasource must be 0.
 
 |===
 
+[[adminsets-data-listings]]
+==== Listings Sub-List
+
+Listings that a FIX format datasource subscribes to as an external market data feed. The list is ignored for the CSV and PSQL formats.
+
+[cols="15,15,70"]
+|===
+| Path | Type |Description
+
+| datasourceId	| Integer	| An identifier of the datasource record which has a listing entry.
+Users may omit to send this value in requests.
+| symbol	| Text	| The symbol requested from the market data feed (tag 55).
+
+|===
+
 [[adminsets-data-get-sgl]]
-==== Get Single Data Source
-Request a single market simulator data source entity.
+==== Get Single Datasource
+Request a single market simulator datasource entity.
 
 _Resource URI_
 ----
 GET /api/datasources/{id}
 ----
 
-_Example_: Request single data source
+_Example_: Request single datasource
 
 [,http]
 ----
-GET /api/datasource/1 HTTP/1.1
+GET /api/datasources/1 HTTP/1.1
 Accept: application/json;charset=UTF-8
 Host: localhost
 ----
@@ -1013,7 +1039,7 @@ Content-Length: XXX
     "format" : "CSV",
     "type" : "OrderBook",
     "repeat" : false,
-    "textDelimeter" : "|",
+    "textDelimiter" : "|",
     "textHeaderRow" : 0,
     "textDataRow" : 1,
     "maxDepthLevels" : 3,
@@ -1033,7 +1059,8 @@ Content-Length: XXX
             "columnFrom" : "BidPrice3",
             "columnTo" : "bid_price_three"
         }
-    ]
+    ],
+    "listings" : []
 }
 ----
 
@@ -1046,20 +1073,20 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "No such data source"
+    "result" : "No such datasource"
 }
 ----
 
 [[adminsets-data-get-multi]]
-==== Get Multiple Data Sources
-Request all market simulator data sources entities.
+==== Get Multiple Datasources
+Request all market simulator datasources entities.
 
 _Resource URI_
 ----
 GET /api/datasources
 ----
 
-_Example_: Get all data sources
+_Example_: Get all datasources
 
 [,http]
 ----
@@ -1098,8 +1125,9 @@ Content-Length: XXX
                     "dataSourceId" : 1,
                     "columnFrom" : "MessageTimeStamp",
                     "columnTo" : "2"
-                },
-            ]
+                }
+            ],
+            "listings" : []
         },
         {
             "id" : 2,
@@ -1110,25 +1138,44 @@ Content-Length: XXX
             "format" : "CSV",
             "type" : "OrderBook",
             "repeat" : true,
-            "textDelimeter" : ";",
+            "textDelimiter" : ";",
             "textHeaderRow" : 1,
             "textDataRow" : 2,
-            "columnMapping" : []
+            "columnMapping" : [],
+            "listings" : []
+        },
+        {
+            "id" : 3,
+            "enabled" : true,
+            "name" : "XETRA-FEED",
+            "venueId" : "XETRA",
+            "connection" : "FIXT.1.1:XETRA_FEED_CLIENT->FEED_SERVER",
+            "format" : "FIX",
+            "type" : "OrderBook",
+            "maxDepthLevels" : 1,
+            "randomPriceOnly" : false,
+            "columnMapping" : [],
+            "listings" : [
+                {
+                    "datasourceId" : 3,
+                    "symbol" : "VOW"
+                }
+            ]
         }
     ]
 }
 ----
 
 [[adminsets-data-add]]
-==== Add Data Sources
-Add a new market simulator data source entity.
+==== Add Datasources
+Add a new market simulator datasource entity.
 
 _Resource URI_
 ----
 POST /api/datasources
 ----
 
-_Example_: Request to add a new data source entity
+_Example_: Request to add a new datasource entity
 
 [,http]
 ----
@@ -1151,6 +1198,30 @@ Host: localhost
         {
             "columnFrom" : "ReceivedTimeStamp",
             "columnTo" : "ActionTime"
+        }
+    ]
+}
+----
+
+_Example_: Request to add a datasource fed by a FIX market data feed
+
+[,http]
+----
+POST /api/datasources HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+
+{
+    "enabled" : true,
+    "name" : "XETRA-FEED",
+    "venueId" : "XETRA",
+    "connection" : "FIXT.1.1:XETRA_FEED_CLIENT->FEED_SERVER",
+    "format" : "FIX",
+    "type" : "OrderBook",
+    "maxDepthLevels" : 1,
+    "listings" : [
+        {
+            "symbol" : "VOW"
         }
     ]
 }
@@ -1183,15 +1254,15 @@ Content-Length: XXX
 ----
 
 [[adminsets-data-update]]
-==== Update Data Sources
-Update existing market simulator data source entities.
+==== Update Datasources
+Update existing market simulator datasource entities.
 
 _Resource URI_
 ----
 PUT /api/datasources/{id}
 ----
 
-_Example_: Request to update a data source entity
+_Example_: Request to update a datasource entity
 
 [,http]
 ----
@@ -1215,7 +1286,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "Requested update of the data source with identifier - 1"
+    "result" : "Requested update of the datasource with identifier - 1"
 }
 ----
 
@@ -1228,7 +1299,20 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "No such data source"
+    "result" : "No such datasource"
+}
+----
+
+_Example_: Negative reply, the update would leave a FIX datasource without a valid session identifier
+
+[,http]
+----
+HTTP/1.1 400 Bad Request
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "connection must be a FIX session identifier in the form BeginString:SenderCompID->TargetCompID[:SessionQualifier] if the format is FIX."
 }
 ----
 

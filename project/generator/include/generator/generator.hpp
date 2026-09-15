@@ -6,12 +6,17 @@
 #include "data_layer/api/database/context.hpp"
 #include "protocol/admin/generator.hpp"
 #include "protocol/app/execution_report.hpp"
+#include "protocol/app/market_data_reject.hpp"
+#include "protocol/app/market_data_snapshot.hpp"
+#include "protocol/app/market_data_update.hpp"
 #include "protocol/app/order_cancellation_confirmation.hpp"
 #include "protocol/app/order_cancellation_reject.hpp"
 #include "protocol/app/order_modification_confirmation.hpp"
 #include "protocol/app/order_modification_reject.hpp"
 #include "protocol/app/order_placement_confirmation.hpp"
 #include "protocol/app/order_placement_reject.hpp"
+#include "protocol/app/session_connected_event.hpp"
+#include "protocol/app/session_terminated_event.hpp"
 
 namespace simulator::generator {
 
@@ -60,6 +65,21 @@ auto accept_reply(const protocol::OrderCancellationConfirmation& reply,
 
 auto accept_reply(const protocol::OrderCancellationReject& reply,
                   Generator& generator) -> void;
+
+auto accept_reply(const protocol::MarketDataSnapshot& reply,
+                  Generator& generator) -> void;
+
+auto accept_reply(const protocol::MarketDataUpdate& reply, Generator& generator)
+    -> void;
+
+auto accept_reply(const protocol::MarketDataReject& reply, Generator& generator)
+    -> void;
+
+auto react_on(const protocol::SessionConnectedEvent& event,
+              Generator& generator) -> void;
+
+auto react_on(const protocol::SessionTerminatedEvent& event,
+              Generator& generator) -> void;
 
 auto process_admin_request(Generator& generator,
                            const protocol::GenerationStatusRequest& request,

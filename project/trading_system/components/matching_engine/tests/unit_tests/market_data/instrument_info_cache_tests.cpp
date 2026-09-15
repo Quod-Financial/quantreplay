@@ -1641,8 +1641,8 @@ struct InstrumentInfoCacheTradeVolume : InstrumentInfoCache {
         .create();
   }
 
-  static auto trade_at_last_trade_on(core::sys_us time,
-                                     const Quantity quantity) -> Trade {
+  static auto trade_at_last_trade_on(core::sys_us time, const Quantity quantity)
+      -> Trade {
     return NewTrade()
         .with_traded_quantity(quantity)
         .with_trade_time(time)
@@ -1745,7 +1745,7 @@ TEST_F(InstrumentInfoCacheTradeVolume,
 }
 
 TEST_F(InstrumentInfoCacheTradeVolume,
-       ResetsToFirstTradeQuantityWhenTheFirstDailyTradeIsOnTradeAtLastPhase) {
+       ResetsToFirstTradeQuantityWhenFirstDailyTradeIsOnTradeAtLastPhase) {
   cache.configure({.clock = core::TzClock{"Europe/Kyiv"},
                    .opening_auction_scheduled = false});
   cache.update(make_update(open_trade_on(yesterday(), Quantity{200})));

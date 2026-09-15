@@ -1,6 +1,5 @@
 #include "matching_engine/matching_engine.hpp"
 
-#include <future>
 #include <latch>
 
 #include "ih/implementation.hpp"
@@ -68,21 +67,6 @@ auto MatchingEngine::execute(protocol::SecurityStatusRequest request) -> void {
   });
 
   log::trace("security status request dispatched");
-}
-
-auto MatchingEngine::provide_state(protocol::InstrumentState& reply) -> void {
-  log::trace("dispatching synchronous instrument state capture request");
-
-  std::promise<void> promise;
-
-  runtime::execute(mux_, [this, &reply, &promise]() mutable {
-    implementation_->dispatch_instrument_state_capture_cmd(reply);
-    promise.set_value();
-  });
-
-  promise.get_future().wait();
-
-  log::debug("instrument state captured: {}", reply);
 }
 
 auto MatchingEngine::store_state(market_state::InstrumentState& state) -> void {

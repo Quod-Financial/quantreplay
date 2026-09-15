@@ -6,7 +6,6 @@
 #include "data_layer/api/database/context.hpp"
 #include "protocol/admin/market_state.hpp"
 #include "protocol/admin/trading_phase.hpp"
-#include "protocol/app/instrument_state_request.hpp"
 #include "protocol/app/market_data_request.hpp"
 #include "protocol/app/order_cancellation_request.hpp"
 #include "protocol/app/order_modification_request.hpp"
@@ -55,10 +54,6 @@ auto process(protocol::MarketDataRequest request, System& trading_system)
 
 auto process(protocol::SecurityStatusRequest request, System& trading_system)
     -> void;
-
-auto process(const protocol::InstrumentStateRequest& request,
-             protocol::InstrumentState& reply,
-             System& trading_system) -> void;
 
 auto process(const protocol::HaltPhaseRequest& request,
              protocol::HaltPhaseReply& reply,

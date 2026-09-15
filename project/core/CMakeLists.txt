@@ -29,6 +29,7 @@ add_static_library(
     include/core/common/session_settings.hpp
     include/core/common/unreachable.hpp
     include/core/common/std_formatter.hpp
+    include/core/tools/fix_session_id.hpp
     include/core/tools/format.hpp
     include/core/tools/numeric.hpp
     include/core/tools/overload.hpp
@@ -41,6 +42,7 @@ add_static_library(
     src/domain/attributes.cpp
     src/domain/composites.cpp
     src/domain/enumerators.cpp
+    src/tools/fix_session_id.cpp
     src/tools/string_checkers.cpp
     src/tools/time.cpp
     src/version.cpp

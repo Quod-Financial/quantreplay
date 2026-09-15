@@ -17,6 +17,7 @@ add_target_tests(
     unit_tests/common/return_code_tests.cpp
     unit_tests/domain/enumerators_tests.cpp
     unit_tests/domain/party_tests.cpp
+    unit_tests/tools/fix_session_id_tests.cpp
     unit_tests/tools/numeric_round_to_tick_tests.cpp
     unit_tests/tools/numeric_tests.cpp
     unit_tests/tools/string_checkers_tests.cpp

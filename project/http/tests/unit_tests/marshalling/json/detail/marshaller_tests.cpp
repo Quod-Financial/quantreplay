@@ -8,6 +8,7 @@
 #include "data_layer/api/models/venue.hpp"
 #include "ih/marshalling/json/detail/marshaller.hpp"
 #include "test_utils/matchers.hpp"
+#include "tests/test_utils/utils.hpp"
 
 namespace simulator::http::json::test {
 namespace {
@@ -34,7 +35,8 @@ TEST_F(HttpJsonMarshaller, CreatesWithObjectDocument) {
 }
 
 TEST_F(HttpJsonMarshaller, ThrowExceptionOnMarshallingBadAttributeValue) {
-  constexpr auto bad_attribute = static_cast<Venue::Attribute>(-1);
+  constexpr auto bad_attribute =
+      http::test::util::invalid_enum_value<Venue::Attribute>();
   Marshaller marshaller{document};
 
   // The exception is being thrown by an Attribute key resolver
@@ -99,7 +101,8 @@ TEST_F(HttpJsonMarshaller, MarshallsUnsignedInteger) {
 
 TEST_F(HttpJsonMarshaller, MarshallsEnumerationBadValue) {
   constexpr auto attribute = Venue::Attribute::VenueId;
-  constexpr auto bad_enum = static_cast<Venue::EngineType>(-1);
+  constexpr auto bad_enum =
+      http::test::util::invalid_enum_value<Venue::EngineType>();
 
   Marshaller marshaller{document};
 

@@ -6,6 +6,7 @@
 
 #include "core/common/return_code.hpp"
 #include "fixtures/given_expected_fixture.hpp"
+#include "test_utils/utils.hpp"
 
 namespace simulator::core::code::test {
 namespace {
@@ -31,7 +32,7 @@ TEST_P(CoreMarketStateStoreFormatting, StreamFormatting) {
 INSTANTIATE_TEST_SUITE_P(
     Formatting,
     CoreMarketStateStoreFormatting,
-    Values(std::make_pair(static_cast<StoreMarketState>(0xFF), "undefined"),
+    Values(std::make_pair(core::test::invalid_enum_value<StoreMarketState>(), "undefined"),
            std::make_pair(StoreMarketState::Stored, "Stored"),
            std::make_pair(StoreMarketState::PersistenceDisabled, "PersistenceDisabled"),
            std::make_pair(StoreMarketState::PersistenceFilePathIsEmpty, "PersistenceFilePathIsEmpty"),
@@ -60,7 +61,7 @@ TEST_P(CoreMarketStateRecoverFormatting, StreamFormatting) {
 INSTANTIATE_TEST_SUITE_P(
     Formatting,
     CoreMarketStateRecoverFormatting,
-    Values(std::make_pair(static_cast<RecoverMarketState>(0xFF), "undefined"),
+    Values(std::make_pair(core::test::invalid_enum_value<RecoverMarketState>(), "undefined"),
                   std::make_pair(RecoverMarketState::Recovered, "Recovered"),
                   std::make_pair(RecoverMarketState::PersistenceDisabled, "PersistenceDisabled"),
                   std::make_pair(RecoverMarketState::PersistenceFilePathIsEmpty, "PersistenceFilePathIsEmpty"),

@@ -3,6 +3,7 @@
 
 #include "api/converters/column_mapping.hpp"
 #include "test_utils/matchers.hpp"
+#include "test_utils/utils.hpp"
 
 namespace simulator::data_layer::converter::test {
 namespace {
@@ -548,7 +549,7 @@ INSTANTIATE_TEST_SUITE_P(
     Formatting,
     DataLayerColumnMappingConverterColumnFromColumn,
     Values(
-        std::make_pair(static_cast<ColumnFrom::Column>(0xFF), "undefined"),
+        std::make_pair(data_layer::test::invalid_enum_value<ColumnFrom::Column>(), "undefined"),
         std::make_pair(ColumnFrom::Column::ReceivedTimestamp, "ReceivedTimeStamp"),
         std::make_pair(ColumnFrom::Column::MessageTimestamp, "MessageTimeStamp"),
         std::make_pair(ColumnFrom::Column::Instrument, "Instrument"),

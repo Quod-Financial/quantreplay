@@ -3,7 +3,7 @@
 
 #include "data_layer/api/models/price_seed.hpp"
 #include "ih/context/instrument_context.hpp"
-#include "ih/context/order_market_data_provider.hpp"
+#include "ih/market_data/market_state.hpp"
 
 namespace simulator::generator {
 

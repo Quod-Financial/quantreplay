@@ -29,6 +29,10 @@ TEST_F(HttpJsonEnumerationResolverDatasourceFormat, ResolvesEnumPostgres) {
   EXPECT_EQ(EnumerationResolver::resolve(Format::Postgres), "PSQL");
 }
 
+TEST_F(HttpJsonEnumerationResolverDatasourceFormat, ResolvesEnumFIX) {
+  EXPECT_EQ(EnumerationResolver::resolve(Format::Fix), "FIX");
+}
+
 TEST_F(HttpJsonEnumerationResolverDatasourceFormat, ResolvesStringUndefined) {
   Format format{};
   EXPECT_THROW(EnumerationResolver::resolve("bad", format), std::runtime_error);
@@ -44,6 +48,12 @@ TEST_F(HttpJsonEnumerationResolverDatasourceFormat, ResolvesStringPostgres) {
   Format format{};
   ASSERT_NO_THROW(EnumerationResolver::resolve("PSQL", format));
   EXPECT_EQ(format, Format::Postgres);
+}
+
+TEST_F(HttpJsonEnumerationResolverDatasourceFormat, ResolvesStringFIX) {
+  Format format{};
+  ASSERT_NO_THROW(EnumerationResolver::resolve("FIX", format));
+  EXPECT_EQ(format, Format::Fix);
 }
 
 struct HttpJsonEnumerationResolverDatasourceType : public ::testing::Test {

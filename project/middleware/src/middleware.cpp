@@ -4,11 +4,17 @@
 #include "ih/channels.hpp"
 #include "log/logging.hpp"
 #include "middleware/channels/generator_admin_channel.hpp"
+#include "middleware/channels/generator_initiator_event_channel.hpp"
+#include "middleware/channels/market_data_reply_channel.hpp"
+#include "middleware/channels/market_data_request_channel.hpp"
 #include "middleware/channels/trading_admin_channel.hpp"
 #include "middleware/channels/trading_reply_channel.hpp"
 #include "middleware/channels/trading_request_channel.hpp"
 #include "middleware/channels/trading_session_event_channel.hpp"
 #include "middleware/routing/generator_admin_channel.hpp"
+#include "middleware/routing/generator_initiator_event_channel.hpp"
+#include "middleware/routing/market_data_reply_channel.hpp"
+#include "middleware/routing/market_data_request_channel.hpp"
 #include "middleware/routing/trading_reply_channel.hpp"
 #include "middleware/routing/trading_request_channel.hpp"
 #include "middleware/routing/trading_session_event_channel.hpp"
@@ -22,6 +28,40 @@ struct GeneratorAdminChannelUnboundError : ChannelUnboundError {
  private:
   static inline std::string_view message =
       "generator admin channel is not bound";
+};
+
+struct GeneratorInitiatorConnectionEventChannelUnboundError
+    : ChannelUnboundError {
+  auto what() const noexcept -> const char* override { return message.data(); }
+
+ private:
+  static inline std::string_view message =
+      "generator initiator connection event channel is not bound";
+};
+
+struct GeneratorInitiatorTerminationEventChannelUnboundError
+    : ChannelUnboundError {
+  auto what() const noexcept -> const char* override { return message.data(); }
+
+ private:
+  static inline std::string_view message =
+      "generator initiator termination event channel is not bound";
+};
+
+struct MarketDataReplyChannelUnboundError : ChannelUnboundError {
+  auto what() const noexcept -> const char* override { return message.data(); }
+
+ private:
+  static inline std::string_view message =
+      "market data reply channel is not bound";
+};
+
+struct MarketDataRequestChannelUnboundError : ChannelUnboundError {
+  auto what() const noexcept -> const char* override { return message.data(); }
+
+ private:
+  static inline std::string_view message =
+      "market data request channel is not bound";
 };
 
 struct TradingAdminChannelUnboundError : ChannelUnboundError {
@@ -80,6 +120,83 @@ auto send_via_generator_admin_channel(Request&& request, Reply&& reply)
   throw GeneratorAdminChannelUnboundError{};
 }
 
+auto emit_via_generator_initiator_connection_event_channel(
+    const protocol::SessionConnectedEvent& event) -> void {
+  const auto& listeners = GeneratorInitiatorConnectionEventChannel::receivers();
+  if (!listeners.empty()) [[likely]] {
+    for (const auto& listener : listeners) {
+      listener->on_event(event);
+    }
+    return;
+  }
+
+  log::warn(
+      "unable to emit event via generator initiator connection event channel, "
+      "probably channel has not been bound or has been released already, "
+      "can not emit {}",
+      event);
+
+  throw GeneratorInitiatorConnectionEventChannelUnboundError{};
+}
+
+auto emit_via_generator_initiator_termination_event_channel(
+    const protocol::SessionTerminatedEvent& event) -> void {
+  const auto& listeners =
+      GeneratorInitiatorTerminationEventChannel::receivers();
+  if (!listeners.empty()) [[likely]] {
+    for (const auto& listener : listeners) {
+      listener->on_event(event);
+    }
+    return;
+  }
+
+  log::warn(
+      "unable to emit event via generator initiator termination event channel, "
+      "probably channel has not been bound or has been released already, "
+      "can not emit {}",
+      event);
+
+  throw GeneratorInitiatorTerminationEventChannelUnboundError{};
+}
+
+template <typename Message>
+auto send_via_market_data_reply_channel(Message&& message) -> void {
+  const auto& receivers = MarketDataReplyChannel::receivers();
+  if (!receivers.empty()) [[likely]] {
+    for (const auto& receiver : receivers) {
+      receiver->process(message);
+    }
+    return;
+  }
+
+  log::warn(
+      "unable to send message via market data reply channel, "
+      "probably channel has not been bound or has been released already, "
+      "can not dispatch {}",
+      message);
+
+  throw MarketDataReplyChannelUnboundError{};
+}
+
+template <typename Request>
+auto send_via_market_data_request_channel(Request&& request) -> void {
+  const auto& receivers = MarketDataRequestChannel::receivers();
+  if (!receivers.empty()) [[likely]] {
+    for (const auto& receiver : receivers) {
+      receiver->process(request);
+    }
+    return;
+  }
+
+  log::warn(
+      "unable to send message via market data request channel, "
+      "probably channel has not been bound or has been released already, "
+      "can not dispatch {}",
+      request);
+
+  throw MarketDataRequestChannelUnboundError{};
+}
+
 template <typename Request, typename Reply>
 auto send_via_trading_admin_channel(Request&& request, Reply&& reply) -> void {
   if (auto* receiver = TradingAdminChannel::receiver()) [[likely]] {
@@ -116,12 +233,13 @@ auto send_via_trading_reply_channel(Message&& message) -> void {
   throw TradingReplyChannelUnboundError{};
 }
 
-template <typename Request, typename... Args>
-auto send_via_trading_request_channel(Request&& request, Args&&... args)
-    -> void {
-  if (auto* receiver = TradingRequestChannel::receiver()) [[likely]] {
-    receiver->process(std::forward<Request>(request),
-                      std::forward<Args>(args)...);
+template <typename Request>
+auto send_via_trading_request_channel(Request&& request) -> void {
+  const auto& receivers = TradingRequestChannel::receivers();
+  if (!receivers.empty()) [[likely]] {
+    for (const auto& receiver : receivers) {
+      receiver->process(request);
+    }
     return;
   }
 
@@ -204,6 +322,101 @@ auto send_admin_request(const protocol::StopGenerationRequest& request,
                         protocol::StopGenerationReply& reply) -> void {
   log::debug("generator admin channel is transferring StopGenerationRequest");
   send_via_generator_admin_channel(request, reply);
+}
+
+// Generator initiator connection event channel implementation
+
+auto bind_generator_initiator_connection_event_channel(
+    std::shared_ptr<GeneratorInitiatorConnectionEventListener> listener)
+    -> void {
+  GeneratorInitiatorConnectionEventChannel::bind(std::move(listener));
+  log::info("generator initiator connection event channel bound");
+}
+
+auto release_generator_initiator_connection_event_channel() noexcept -> void {
+  GeneratorInitiatorConnectionEventChannel::release();
+  log::info("generator initiator connection event channel released");
+}
+
+auto emit_generator_initiator_event(
+    const protocol::SessionConnectedEvent& event) -> void {
+  log::debug(
+      "generator initiator connection event channel is emitting "
+      "SessionConnectedEvent");
+  emit_via_generator_initiator_connection_event_channel(event);
+}
+
+// Generator initiator termination event channel implementation
+
+auto bind_generator_initiator_termination_event_channel(
+    std::shared_ptr<GeneratorInitiatorTerminationEventListener> listener)
+    -> void {
+  GeneratorInitiatorTerminationEventChannel::bind(std::move(listener));
+  log::info("generator initiator termination event channel bound");
+}
+
+auto release_generator_initiator_termination_event_channel() noexcept -> void {
+  GeneratorInitiatorTerminationEventChannel::release();
+  log::info("generator initiator termination event channel released");
+}
+
+auto emit_generator_initiator_event(
+    const protocol::SessionTerminatedEvent& event) -> void {
+  log::debug(
+      "generator initiator termination event channel is emitting "
+      "SessionTerminatedEvent");
+  emit_via_generator_initiator_termination_event_channel(event);
+}
+
+// Market data reply channel implementation
+
+auto bind_market_data_reply_channel(
+    std::shared_ptr<MarketDataReplyReceiver> receiver) -> void {
+  MarketDataReplyChannel::bind(std::move(receiver));
+  log::info("market data reply channel bound");
+}
+
+auto release_market_data_reply_channel() noexcept -> void {
+  MarketDataReplyChannel::release();
+  log::info("market data reply channel released");
+}
+
+auto send_market_data_reply(protocol::MarketDataSnapshot snapshot) -> void {
+  log::debug(
+      "market data reply channel is transferring MarketDataSnapshot message");
+  send_via_market_data_reply_channel(std::move(snapshot));
+}
+
+auto send_market_data_reply(protocol::MarketDataUpdate update) -> void {
+  log::debug(
+      "market data reply channel is transferring MarketDataUpdate message");
+  send_via_market_data_reply_channel(std::move(update));
+}
+
+auto send_market_data_reply(protocol::MarketDataReject reject) -> void {
+  log::debug(
+      "market data reply channel is transferring MarketDataReject message");
+  send_via_market_data_reply_channel(std::move(reject));
+}
+
+// Market data request channel implementation
+
+auto bind_market_data_request_channel(
+    std::shared_ptr<MarketDataRequestReceiver> receiver) -> void {
+  MarketDataRequestChannel::bind(std::move(receiver));
+  log::info("market data request channel bound");
+}
+
+auto release_market_data_request_channel() noexcept -> void {
+  MarketDataRequestChannel::release();
+  log::info("market data request channel released");
+}
+
+auto send_market_data_request(protocol::MarketDataRequest request) -> void {
+  log::debug(
+      "market data request channel is transferring MarketDataRequest "
+      "message");
+  send_via_market_data_request_channel(std::move(request));
 }
 
 // Trading admin channel implementation
@@ -370,14 +583,6 @@ auto send_trading_request(protocol::SecurityStatusRequest request) -> void {
   log::debug(
       "trading request channel is transferring SecurityStatusRequest message");
   send_via_trading_request_channel(std::move(request));
-}
-
-auto send_trading_request(const protocol::InstrumentStateRequest& request,
-                          protocol::InstrumentState& reply) -> void {
-  log::debug(
-      "trading request channel is transferring InstrumentStateRequest internal "
-      "request");
-  send_via_trading_request_channel(request, reply);
 }
 
 // Trading session connection event channel implementation

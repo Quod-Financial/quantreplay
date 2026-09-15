@@ -150,10 +150,12 @@ Required when MDEntryType=Trade.
 
 Required when MDEntryType=Trade.
 
-| => 277 | TradeCondition | C a| Side of the auction imbalance (269=A).
+| => 277 | TradeCondition | C a| Side of the auction imbalance.
 
 * P = Imbalance more buyers
 * Q = Imbalance more sellers
+
+Required when MDEntryType=Imbalance.
 
 | 278 | MDEntryID | Y a| MDEntryID value is unique per Listing. This is an incrementing counter of the format timestamp:counter (e.g. 12346523:7)
 
@@ -193,10 +195,12 @@ The timestamp component is a Unix Timestamp (Sec) that is generated when the sim
 
 | => 273 | MDEntryTime | C | The time the trade happened. Required when MDEntryType=Trade.
 
-| => 277 | TradeCondition | C a| Side of the auction imbalance (269=A).
+| => 277 | TradeCondition | C a| Side of the auction imbalance.
 
 * P = Imbalance more buyers
 * Q = Imbalance more sellers
+
+Required when MDEntryType=Imbalance.
 
 | => 288 | MDEntryBuyer | C | To report the Buy/Bid order party ID. Required when MDEntryType=Trade.
 

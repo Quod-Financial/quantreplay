@@ -29,8 +29,6 @@ class MarketDataFacade : public MarketDataRequestProcessor,
 
   auto process(const protocol::MarketDataRequest& request) -> void override;
 
-  auto capture(protocol::InstrumentState& state) -> void override;
-
   auto store_state(std::optional<Trade>& last_trade,
                    std::optional<market_state::InstrumentInfo>& info)
       -> void override;
