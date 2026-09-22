@@ -3,10 +3,11 @@ add_target_tests(
   HEADERS
     mocks/context/component_context.hpp
     mocks/context/order_context.hpp
+    mocks/historical/action_sink.hpp
     mocks/historical/data_access_adapter.hpp
-    mocks/historical/processor.hpp
     mocks/historical/provider.hpp
     mocks/historical/record.hpp
+    mocks/historical/record_sink.hpp
     mocks/random/algorithm/generation_algorithm.hpp
     mocks/random/counterparty_generator.hpp
     mocks/random/price_generator.hpp
@@ -14,6 +15,7 @@ add_target_tests(
     mocks/random/random_event_generator.hpp
     mocks/random/resting_order_action_generator.hpp
     mocks/random/value_generator.hpp
+    mocks/market_data/best_prices_sink.hpp
     mocks/market_data_request_channel.hpp
     mocks/registry/generated_orders_registry.hpp
     mocks/trading_request_channel.hpp
@@ -28,6 +30,7 @@ add_target_tests(
     unit_tests/historical/adapters/csv_reader_tests.cpp
     unit_tests/historical/adapters/data_access_adapter_tests.cpp
     unit_tests/historical/data/action_tests.cpp
+    unit_tests/historical/data/level_checks_tests.cpp
     unit_tests/historical/data/level_tests.cpp
     unit_tests/historical/data/provider_tests.cpp
     unit_tests/historical/data/record_tests.cpp
@@ -45,8 +48,10 @@ add_target_tests(
     unit_tests/historical/parsing/parsing_tests.cpp
     unit_tests/historical/parsing/parsing_value_tests.cpp
     unit_tests/historical/parsing/row_tests.cpp
-    unit_tests/historical/record_applier_tests.cpp
-    unit_tests/historical/record_checker_tests.cpp
+    unit_tests/historical/processing/composite_processor_tests.cpp
+    unit_tests/historical/processing/price_processor_tests.cpp
+    unit_tests/historical/processing/record_applier_tests.cpp
+    unit_tests/market_data/historical_random_price_source_registry_tests.cpp
     unit_tests/market_data/local_subscription_manager_tests.cpp
     unit_tests/market_data/market_data_provider_tests.cpp
     unit_tests/market_data/order_book_derivation_tests.cpp

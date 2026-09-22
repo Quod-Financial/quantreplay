@@ -1,4 +1,4 @@
-#include "ih/historical/record_applier.hpp"
+#include "ih/historical/processing/record_applier.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "ih/constants.hpp"
+#include "ih/historical/data/level_checks.hpp"
 #include "ih/historical/data/record.hpp"
 #include "ih/registry/generated_order_data.hpp"
 #include "ih/registry/generated_orders_registry.hpp"
@@ -98,7 +99,7 @@ auto RecordApplier::collect_orders(historical::Record& record)
       log::debug(
           "bid side is already marked as invalid, skipping bid at index {}",
           level_idx);
-    } else if (RecordChecker::has_valid_bid(level)) {
+    } else if (has_valid_bid(level)) {
       std::string party = level.bid_counterparty().has_value()
                               ? *level.bid_counterparty()
                               : next_party_id();
@@ -118,7 +119,7 @@ auto RecordApplier::collect_orders(historical::Record& record)
       log::debug(
           "offer side is already marked as invalid, skipping offer at index {}",
           level_idx);
-    } else if (RecordChecker::has_valid_offer(level)) {
+    } else if (has_valid_offer(level)) {
       std::string party = level.offer_counterparty().has_value()
                               ? *level.offer_counterparty()
                               : next_party_id();
@@ -354,20 +355,5 @@ RecordApplier::Order::Order(double order_price,
       price{order_price},
       quantity{order_quantity},
       side{order_side} {}
-
-auto RecordApplier::RecordChecker::has_valid_bid(
-    const historical::Level& level) noexcept -> bool {
-  return level.bid_price().has_value() && !is_empty(level.bid_quantity());
-}
-
-auto RecordApplier::RecordChecker::has_valid_offer(
-    const historical::Level& level) noexcept -> bool {
-  return level.offer_price().has_value() && !is_empty(level.offer_quantity());
-}
-
-auto RecordApplier::RecordChecker::is_empty(
-    const std::optional<double> qty) noexcept -> bool {
-  return !qty.has_value() || qty.value() <= 0.0;
-}
 
 }  // namespace simulator::generator::historical

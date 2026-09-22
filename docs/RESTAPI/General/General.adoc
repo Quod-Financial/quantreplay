@@ -357,6 +357,27 @@ Specifically, prices for new resting Bid orders and aggressive Sell orders use a
  adding the configured spread, or the best Ask price directly if there are no resting Bid orders, or failing that the configured Bid price directly 
  from the table of starting prices (or Mid price if there is no Ask).
 
+A listing can also base these prices on the market data of one or more datasources in addition to its own order book,
+by configuring the random price sources of the listing (see <<adminsets-listings-randpricesrc,this section>>).
+In that case the best prices are selected across the order book of the listing and the top of the book of every configured datasource symbol:
+the highest of all bid prices and the lowest of all ask prices.
+A datasource of any format can be used this way.
+For a FIX datasource the top of the book is taken from each market data snapshot received on the subscription of the symbol,
+and for a CSV or database datasource it is taken from each played back record whose instrument symbol matches the configured symbol.
+The prices of a played back record stay in use until the next matching record is played back, and remain in use after the playback of a datasource
+which does not repeat has ended.
+The prices of a FIX datasource are taken into account only while its FIX session is connected, and are discarded when it disconnects,
+which leaves the initial value to be determined from the remaining sources as described above.
+The prices of all datasources are discarded when order generation is stopped.
+
+Because the aggregation takes the highest bid and the lowest ask, a resting order priced this way still does not cross the order book of the listing,
+but an aggressive order can be generated even when that order book has no orders on the side the aggressive order matches against.
+Its price is derived from the aggregated best prices, so it can be lower (for a Buy) or higher (for a Sell) than the best price of the order book of the listing,
+in which case the immediate-or-cancel order expires without matching anything.
+
+The setting Listings → randomDepthLevels described above still counts only the depth levels of the order book of the listing.
+The random price sources contribute only prices to the aggregation, not depth levels.
+
 Once this initial price value is determined, the setting Listings → randomTickRange is used to determine the number of ticks by which to vary the price of random orders 
 relative to the starting value. 
 New resting Bid order prices and aggressive Sell order prices are randomly chosen as a number of ticks below the initial value, 
@@ -410,7 +431,8 @@ tradable market data.
 For instance, a datasource with bid/ask market data is turned into orders that are sent into the simulator’s matching engine, 
 which then results in published market data and the ability for other clients to send orders into the same matching engine’s order book.
 
-The market simulator currently supports CSV file format, databases such as PostgreSQL and TimescaleDB, and a market data feed received over a FIX connection.
+The market simulator currently supports CSV file format, databases such as PostgreSQL and TimescaleDB, and a market data feed received over a FIX connection
+(see <<general-datasource-formatconfig-fix,this section>>).
 The simulator can read market data in the form of multiple bid/ask order book levels.
 
 See <<adminsets-data,this section>> for specific details of configuring datasources.
@@ -437,6 +459,8 @@ The following datasource properties can be configured to indicate aspects specif
 * textDelimiter - delimiter used to separate values ("," by default if not specified)
 * textHeaderRow - 1-based row index of where header row is located (0 indicates no header row)
 * textDataRow - 1-based row index of where the first row of data is located. Cannot be 0, and must be greater than `textHeaderRow`
+* randomPriceOnly - when set, no order is derived from the rows of the file, which then serves only as a price source for random order generation
+(see <<general-datasource-basicsgl,this section>>)
 
 Specifically for CSV format files, and only when textHeaderRow is 0 or not specified, the column mapping properties of the datasource can be used to map columns by index number. 
 The columnTo property of the column mapping can be used to specify a 1-based column number to map to in the datasource. 
@@ -485,15 +509,18 @@ For example: “postgresql://myuser:mypassword@10.0.1.1:5432/mydatabasename”
 The following datasource properties can be configured to indicate aspects specific to the format of a database:
 
 * tableName - name of table containing data in the database
+* randomPriceOnly - when set, no order is derived from the rows of the table, which then serves only as a price source for random order generation
+(see <<general-datasource-basicsgl,this section>>)
 
 [[general-datasource-formatconfig-fix]]
 ===== FIX Market Data Feed
-For the FIX format, the datasource is not a static set of records — market data is received over a FIX session from an external market data feed subscription.
+For the FIX format, the datasource is not a static set of records — market data is received over a FIX session from an external market data feed subscription, for instance from another market simulator instance or any other FIX service publishing market data.
 
 identifier of the initiator session through which the simulator reaches the market data feed, in the format 
 `+{BeginString}:{SenderCompID}->{TargetCompID}:{SessionQualifier}+` (`+:{SessionQualifier}+` is only added if SessionQualifier is configured). 
 For example: “FIXT.1.1:SIMULATOR->FEED”. 
-The session itself is configured as an initiator session in the QuickFIX configuration file of the simulator instance.
+The session itself is configured as an initiator session in the QuickFIX configuration file of the simulator instance. 
+The host, port and all other properties of the connection are taken from that session of the QuickFIX configuration.
 
 The following datasource properties can be configured to indicate aspects specific to the FIX format:
 
@@ -515,7 +542,7 @@ per distinct session and symbol across the enabled FIX datasources of the venue,
 * MDUpdateType (265) = 0 (Full Refresh)
 * MDEntryType (269) 0 (Bid) and 1 (Offer)
 
-A subscription is requested when order generation starts and again each time its session logs on while generation is running; it is cancelled (263 = 2) when order generation is stopped, and dropped without any message when the session disconnects. 
+A subscription is requested when order generation starts and again each time its session logs on while generation is running; it is cancelled (263 = 2) when order generation is stopped (see <<admincmds-ordergen-startstop,this section>>), and dropped without any message when the session disconnects. 
 A subscription rejected by the feed (35=Y) is disabled until order generation is restarted or its session logs on again. 
 Whenever a subscription ends this way, the prices received from it are discarded. 
 Note that when a market simulator itself is used as the source of a market data feed, the simulator currently only accepts MarketDepth (264) values 0 and 1 and rejects any other maxDepthLevels value.
@@ -538,7 +565,7 @@ A symbol matching no enabled listing of the venue is still subscribed to, so tha
 
 Each full refresh is applied as soon as it is received, with no delay between refreshes; the repeat property has no meaning for a feed. Refreshes received while order generation is stopped are discarded, and the orders already derived stay in the matching engine until the next refresh is applied.
 
-A FIX datasource, with either value of randomPriceOnly, can also provide the top of the book that random order generation of a listing bases its prices on, when the listing is configured to use it as a random price source.
+A FIX datasource, with either value of randomPriceOnly, can also provide the top of the book that random order generation of a listing bases its prices on, when the listing names the datasource and the symbol among its random price sources (see <<adminsets-listings-randpricesrc,this section>>).
 
 [[general-datasource-basicsgl]]
 ==== Basic Single Level Order Book
@@ -547,6 +574,9 @@ the first row of the datasource, and then proceeds to read each subsequent row a
 The trigger for playing back the content of a datasource follows the same logic as the configuration used to indicate whether or not to generate random orders. 
 The orderOnStartup property of a venue determines whether to play back any configured datasources when the simulator starts, and the genstart REST API can be used to start play back on demand. 
 If the randomOrdersEnabled property of a listing is true, then both random order generation and playback from a configured datasource will begin and continue to run simultaneously.
+
+If the randomPriceOnly property of a datasource is true, no order is derived from its rows, and the datasource is played back only to feed the prices of the listings
+which name it among their random price sources (see <<adminsets-listings-randpricesrc,this section>>).
 
 In processing each datasource row, the simulator compares the current state of the matching engine for the given listing of each row, and generates a series of order actions 
 (new orders, amends, cancels) to modify the current state of the matching engine to change to a state that matches the values from the current datasource row being processed. 

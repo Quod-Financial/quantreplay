@@ -17,6 +17,14 @@ namespace simulator::generator::mdata {
 namespace {
 
 [[nodiscard]]
+auto merge_depth(MarketDepth lhs, MarketDepth rhs) noexcept -> MarketDepth {
+  if (lhs == AllDepthLevels || rhs == AllDepthLevels) {
+    return AllDepthLevels;
+  }
+  return std::max(lhs, rhs);
+}
+
+[[nodiscard]]
 auto make_request(const Subscription& subscription,
                   MdSubscriptionRequestType request_type)
     -> protocol::MarketDataRequest {
@@ -42,7 +50,8 @@ SubscriptionManager::SubscriptionManager(
 }
 
 auto SubscriptionManager::add_datasource_subscription(
-    const SubscriptionRequirement& requirement) -> std::optional<MdRequestId> {
+    const SubscriptionRequirement& requirement)
+    -> std::optional<MergedSubscription> {
   if (requirement.symbol.value().empty()) {
     log::warn(
         "ignoring a market data subscription requirement with an empty symbol");
@@ -57,7 +66,8 @@ auto SubscriptionManager::add_datasource_subscription(
 
   if (existing != subscriptions_.end()) {
     merge(*existing, requirement);
-    return existing->request_id();
+    return std::make_optional<MergedSubscription>(existing->request_id(),
+                                                  existing->depth());
   }
 
   InstrumentDescriptor instrument;
@@ -68,8 +78,10 @@ auto SubscriptionManager::add_datasource_subscription(
                               requirement.session,
                               std::move(instrument),
                               requirement.depth);
+  subscriptions_.back().add_datasource_id(requirement.datasource_id);
 
-  return request_id;
+  return std::make_optional<MergedSubscription>(std::move(request_id),
+                                                requirement.depth);
 }
 
 auto SubscriptionManager::subscribe() -> void {
@@ -205,14 +217,14 @@ auto SubscriptionManager::handle_reject(
       reject);
 }
 
-auto SubscriptionManager::find_request_id(const protocol::Session& session,
+auto SubscriptionManager::find_request_id(DatasourceId datasource_id,
                                           const Symbol& symbol) const
     -> std::optional<MdRequestId> {
   const std::lock_guard lock{mutex_};
 
   const auto subscription =
       std::ranges::find_if(subscriptions_, [&](const Subscription& candidate) {
-        return candidate.session() == session &&
+        return candidate.has_datasource_id(datasource_id) &&
                candidate.instrument().symbol == symbol;
       });
 
@@ -228,6 +240,7 @@ auto SubscriptionManager::merge(Subscription& subscription,
   const MarketDepth depth =
       merge_depth(subscription.depth(), requirement.depth);
   subscription.set_depth(depth);
+  subscription.add_datasource_id(requirement.datasource_id);
 
   log::debug(
       "merged a market data subscription requirement on `{}' into the `{}' "

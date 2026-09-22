@@ -13,7 +13,7 @@
 #include "ih/market_data/order_book_derivation.hpp"
 #include "ih/market_data/subscription_requirement.hpp"
 #include "mocks/context/component_context.hpp"
-#include "mocks/historical/processor.hpp"
+#include "mocks/historical/record_sink.hpp"
 #include "protocol/app/market_data_snapshot.hpp"
 #include "protocol/types/session.hpp"
 
@@ -25,8 +25,8 @@ using namespace testing;  // NOLINT
 // NOLINTBEGIN(*magic-numbers*)
 
 struct GeneratorOrderBookDerivation : public Test {
-  std::shared_ptr<NiceMock<mock::Processor>> processor =
-      std::make_shared<NiceMock<mock::Processor>>();
+  std::shared_ptr<NiceMock<mock::RecordSink>> processor =
+      std::make_shared<NiceMock<mock::RecordSink>>();
   std::shared_ptr<NiceMock<mock::ComponentContext>> context =
       std::make_shared<NiceMock<mock::ComponentContext>>();
   OrderBookDerivation derivation{processor, context};
@@ -38,17 +38,14 @@ struct GeneratorOrderBookDerivation : public Test {
   auto bind(const MdRequestId& request_id,
             Symbol symbol,
             MarketDepth depth = AllDepthLevels) -> void {
-    derivation.add(
-        request_id,
-        OrderDerivationRequirement{
-            .session = protocol::Session{protocol::generator::Session{}},
-            .symbol = std::move(symbol),
-            .depth = depth,
-            .counterparty = PartyId{"DS42"}});
+    derivation.add(request_id,
+                   OrderDerivationRequirement{.symbol = std::move(symbol),
+                                              .depth = depth,
+                                              .counterparty = PartyId{"DS42"}});
   }
 
   auto expect_converted_records() -> void {
-    EXPECT_CALL(*processor, process(An<historical::Record>()))
+    EXPECT_CALL(*processor, process(_))
         .WillRepeatedly([this](historical::Record record) {
           converted_records.push_back(std::move(record));
         });
@@ -66,8 +63,8 @@ struct GeneratorOrderBookDerivation : public Test {
   [[nodiscard]]
   static auto make_snapshot(
       std::optional<MdRequestId> request_id,
-      std::vector<MarketDataEntry> entries = {
-          make_bid_entry()}) -> protocol::MarketDataSnapshot {
+      std::vector<MarketDataEntry> entries = {make_bid_entry()})
+      -> protocol::MarketDataSnapshot {
     protocol::MarketDataSnapshot snapshot{
         protocol::Session{protocol::generator::Session{}}};
     snapshot.request_id = std::move(request_id);
@@ -91,7 +88,7 @@ struct GeneratorOrderBookDerivation : public Test {
 TEST_F(GeneratorOrderBookDerivation, IgnoresSnapshotWithoutRequestId) {
   bind(MdRequestId{"MD-1"}, Symbol{"AAPL"});
 
-  EXPECT_CALL(*processor, process(An<historical::Record>())).Times(0);
+  EXPECT_CALL(*processor, process(_)).Times(0);
 
   derivation.process(make_snapshot(std::nullopt));
 }
@@ -100,7 +97,7 @@ TEST_F(GeneratorOrderBookDerivation,
        IgnoresSnapshotOfUnregisteredSubscription) {
   bind(MdRequestId{"MD-1"}, Symbol{"AAPL"});
 
-  EXPECT_CALL(*processor, process(An<historical::Record>())).Times(0);
+  EXPECT_CALL(*processor, process(_)).Times(0);
 
   derivation.process(make_snapshot(MdRequestId{"MD-2"}));
 }
@@ -109,7 +106,7 @@ TEST_F(GeneratorOrderBookDerivation, IgnoresSnapshotWhenGenerationIsStopped) {
   bind(MdRequestId{"MD-1"}, Symbol{"AAPL"});
   ON_CALL(*context, is_component_running()).WillByDefault(Return(false));
 
-  EXPECT_CALL(*processor, process(An<historical::Record>())).Times(0);
+  EXPECT_CALL(*processor, process(_)).Times(0);
 
   derivation.process(make_snapshot(MdRequestId{"MD-1"}));
 }
@@ -161,20 +158,6 @@ TEST_F(GeneratorOrderBookDerivation, TruncatesRecordToSubscriptionDepth) {
 
   ASSERT_THAT(converted_records, SizeIs(1));
   EXPECT_THAT(count_levels(converted_records.front()), Eq(1));
-}
-
-TEST_F(GeneratorOrderBookDerivation,
-       DerivesSingleBookOfMergedDepthForSubscriptionRegisteredTwice) {
-  bind(MdRequestId{"MD-1"}, Symbol{"AAPL"}, MarketDepth{1});
-  bind(MdRequestId{"MD-1"}, Symbol{"AAPL"}, MarketDepth{2});
-  expect_converted_records();
-
-  derivation.process(make_snapshot(
-      MdRequestId{"MD-1"},
-      {make_bid_entry(100.0), make_bid_entry(99.0), make_bid_entry(98.0)}));
-
-  ASSERT_THAT(converted_records, SizeIs(1));
-  EXPECT_THAT(count_levels(converted_records.front()), Eq(2));
 }
 
 // NOLINTEND(*magic-numbers*)

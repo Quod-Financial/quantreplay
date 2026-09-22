@@ -11,7 +11,7 @@
 #include "core/domain/market_data_entry.hpp"
 #include "data_layer/api/models/listing.hpp"
 #include "ih/adaptation/generated_message.hpp"
-#include "ih/historical/processor.hpp"
+#include "ih/historical/processing/action_processor.hpp"
 #include "ih/market_data/order_book_derivation.hpp"
 #include "ih/market_data/subscription_requirement.hpp"
 #include "ih/registry/generated_orders_registry_impl.hpp"
@@ -82,7 +82,6 @@ struct GeneratorOrderDerivation : public Test {
     derivation->add(
         request_id,
         OrderDerivationRequirement{
-            .session = protocol::Session{protocol::generator::Session{}},
             .symbol = Symbol{"AAPL"},
             .depth = AllDepthLevels,
             .counterparty = counterparty});
@@ -115,9 +114,8 @@ struct GeneratorOrderDerivation : public Test {
   }
 
   [[nodiscard]]
-  static auto make_entry(MdEntryType type,
-                         double price,
-                         double quantity) -> MarketDataEntry {
+  static auto make_entry(MdEntryType type, double price, double quantity)
+      -> MarketDataEntry {
     MarketDataEntry entry;
     entry.type = type;
     entry.price = Price{price};

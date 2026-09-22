@@ -13,7 +13,6 @@
 #include "core/tools/numeric.hpp"
 #include "data_layer/api/models/datasource.hpp"
 #include "data_layer/api/models/listing.hpp"
-#include "ih/marshalling/json/detail/enumeration_resolver.hpp"
 #include "ih/marshalling/json/detail/keys.hpp"
 #include "ih/marshalling/json/listing.hpp"
 #include "ih/utils/response_formatters.hpp"
@@ -263,7 +262,6 @@ auto ListingController::validate_random_price_datasources(
   for (const std::uint64_t datasource_id : datasource_ids) {
     auto validation =
         select_random_price_datasource(datasource_id)
-            .and_then(validate_datasource_format)
             .and_then([&venue_id](const data_layer::Datasource& datasource) {
               return validate_datasource_venue(datasource, venue_id);
             });
@@ -288,7 +286,7 @@ auto ListingController::select_random_price_datasource(
     return tl::make_unexpected(
         Result{Pistache::Http::Code::Bad_Request,
                format_result_response(fmt::format(
-                   "{} `{}' does not refer to an existing data source",
+                   "{} `{}' does not refer to an existing datasource",
                    json::listing_random_price_source_key::DatasourceId,
                    datasource_id))});
   }
@@ -300,25 +298,8 @@ auto ListingController::select_random_price_datasource(
   return tl::make_unexpected(
       Result{Pistache::Http::Code::Internal_Server_Error,
              format_result_response(fmt::format(
-                 "Failed to select the data source referenced by {}",
+                 "Failed to select the datasource referenced by {}",
                  json::listing_random_price_source_key::DatasourceId))});
-}
-
-auto ListingController::validate_datasource_format(
-    data_layer::Datasource datasource)
-    -> tl::expected<data_layer::Datasource, Result> {
-  if (datasource.format() == data_layer::Datasource::Format::Fix) {
-    return datasource;
-  }
-
-  return tl::make_unexpected(
-      Result{Pistache::Http::Code::Bad_Request,
-             format_result_response(fmt::format(
-                 "{} `{}' must refer to a data source with the {} format",
-                 json::listing_random_price_source_key::DatasourceId,
-                 datasource.datasource_id(),
-                 json::EnumerationResolver::resolve(
-                     data_layer::Datasource::Format::Fix)))});
 }
 
 auto ListingController::validate_datasource_venue(
@@ -331,7 +312,7 @@ auto ListingController::validate_datasource_venue(
   return tl::make_unexpected(
       Result{Pistache::Http::Code::Bad_Request,
              format_result_response(fmt::format(
-                 "{} `{}' must refer to a data source on the `{}' venue",
+                 "{} `{}' must refer to a datasource on the `{}' venue",
                  json::listing_random_price_source_key::DatasourceId,
                  datasource.datasource_id(),
                  *venue_id))});

@@ -1,10 +1,13 @@
 #ifndef SIMULATOR_GENERATOR_IH_MARKET_DATA_SUBSCRIPTION_HPP_
 #define SIMULATOR_GENERATOR_IH_MARKET_DATA_SUBSCRIPTION_HPP_
 
+#include <algorithm>
+#include <set>
 #include <utility>
 
 #include "core/domain/attributes.hpp"
 #include "core/domain/instrument_descriptor.hpp"
+#include "ih/market_data/subscription_requirement.hpp"
 #include "protocol/types/session.hpp"
 
 namespace simulator::generator::mdata {
@@ -45,7 +48,19 @@ class Subscription {
     return subscribed_;
   }
 
+  [[nodiscard]]
+  auto has_datasource_id(DatasourceId datasource_id) const -> bool {
+    return std::ranges::find(datasource_ids_, datasource_id) !=
+           datasource_ids_.end();
+  }
+
   auto set_depth(MarketDepth depth) noexcept -> void { depth_ = depth; }
+
+  auto add_datasource_id(DatasourceId datasource_id) -> void {
+    if (!has_datasource_id(datasource_id)) {
+      datasource_ids_.emplace(datasource_id);
+    }
+  }
 
   auto mark_subscribed() noexcept -> void { subscribed_ = true; }
 
@@ -55,6 +70,7 @@ class Subscription {
   MdRequestId request_id_;
   protocol::Session session_;
   InstrumentDescriptor instrument_;
+  std::set<DatasourceId> datasource_ids_;
   MarketDepth depth_;
   bool subscribed_ = false;
 };

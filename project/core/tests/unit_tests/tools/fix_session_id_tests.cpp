@@ -34,7 +34,8 @@ TEST(CoreFixSessionIdParsing, ParsesSessionIdWithoutQualifier) {
   ASSERT_THAT(parse_fix_session_id("FIXT.1.1:SENDER->TARGET"),
               Optional(Eq(FixSessionId{.begin_string = "FIXT.1.1",
                                        .sender_comp_id = "SENDER",
-                                       .target_comp_id = "TARGET"})));
+                                       .target_comp_id = "TARGET",
+                                       .session_qualifier = std::nullopt})));
 }
 
 TEST(CoreFixSessionIdParsing, ParsesSessionIdWithQualifier) {

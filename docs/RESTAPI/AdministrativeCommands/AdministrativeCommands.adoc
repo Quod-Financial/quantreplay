@@ -447,6 +447,8 @@ A `HEAD` request to the same resource applies the same resolution logic but
 returns no body — only the status code — so a client can determine whether any
 files are available before initiating the download.
 
+The endpoint resolves only the acceptor session dictionaries.
+
 _Resource URI_
 
 ----
@@ -629,6 +631,10 @@ Content-Length: XXX
 [[admincmds-ordergen-startstop]]
 ==== Start/Stop Order Generation
 Start or stop random order generation and historical data playback for a single market simulator venue instance.
+
+Starting order generation also subscribes to the market data of every enabled datasource of the FIX format on the venue,
+and stopping it unsubscribes from them.
+See <<general-datasource-formatconfig-fix,this section>> for details of these subscriptions.
 
 _Request Properties_
 

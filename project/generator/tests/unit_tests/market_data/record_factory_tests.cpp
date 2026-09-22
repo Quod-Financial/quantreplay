@@ -48,7 +48,6 @@ struct GeneratorRecordFactory : public Test {
   static auto make_requirement(MarketDepth depth)
       -> OrderDerivationRequirement {
     return OrderDerivationRequirement{
-        .session = protocol::Session{protocol::generator::Session{}},
         .symbol = Symbol{"AAPL"},
         .depth = depth,
         .counterparty = PartyId{"DS42"}};

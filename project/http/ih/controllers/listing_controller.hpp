@@ -56,10 +56,6 @@ class ListingController {
       -> tl::expected<data_layer::Datasource, Result>;
 
   [[nodiscard]]
-  static auto validate_datasource_format(data_layer::Datasource datasource)
-      -> tl::expected<data_layer::Datasource, Result>;
-
-  [[nodiscard]]
   static auto validate_datasource_venue(
       const data_layer::Datasource& datasource,
       const std::optional<std::string>& venue_id) -> Validation;

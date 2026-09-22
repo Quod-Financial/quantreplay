@@ -3,7 +3,6 @@
 #include <fmt/format.h>
 
 #include <algorithm>
-#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
@@ -18,13 +17,6 @@
 
 namespace simulator::generator::mdata {
 namespace {
-
-[[nodiscard]]
-auto used_only_for_random_prices(const data_layer::Datasource& datasource)
-    -> bool {
-  return datasource.random_price_only_flag().value_or(
-      data_layer::Datasource::DefaultRandomPriceOnlyFlag);
-}
 
 [[nodiscard]]
 auto make_datasource_requirements(const data_layer::Datasource& datasource)
@@ -65,6 +57,13 @@ auto make_datasource_requirements(const data_layer::Datasource& datasource)
                         : MarketDepth{datasource.max_depth_levels().value_or(
                               data_layer::Datasource::AllDepthLevels)};
 
+  const std::optional<PartyId> order_counterparty =
+      random_price_only
+          ? std::nullopt
+          : std::make_optional<PartyId>(fmt::format(
+                constant::market_data::DatasourceCounterpartyPattern,
+                datasource.datasource_id()));
+
   std::vector<SubscriptionRequirement> requirements;
   requirements.reserve(datasource_listings.size());
 
@@ -80,8 +79,11 @@ auto make_datasource_requirements(const data_layer::Datasource& datasource)
       continue;
     }
 
-    requirements.emplace_back(
-        protocol::Session{*session}, Symbol{datasource_symbol}, depth);
+    requirements.emplace_back(protocol::Session{*session},
+                              Symbol{datasource_symbol},
+                              datasource.datasource_id(),
+                              depth,
+                              order_counterparty);
   }
 
   return requirements;
@@ -98,12 +100,45 @@ auto subscribes_to_symbol(const data_layer::Datasource& datasource,
 }
 
 [[nodiscard]]
+auto has_fix_subscription(const data_layer::Listing& listing,
+                          const data_layer::Datasource& datasource,
+                          const std::string& symbol) -> bool {
+  if (!parse_fix_session(datasource.connection()).has_value()) {
+    log::warn(
+        "the `{}' datasource (id: {}), the `{}' listing (id: {}) bases its "
+        "random prices on, does not specify a valid FIX session in its "
+        "connection `{}', ignoring the random price source of the listing",
+        datasource.name(),
+        datasource.datasource_id(),
+        listing.symbol(),
+        listing.listing_id(),
+        datasource.connection());
+    return false;
+  }
+
+  if (!subscribes_to_symbol(datasource, symbol)) {
+    log::warn(
+        "the `{}' listing (id: {}) bases its random prices on the `{}' symbol "
+        "of the `{}' datasource (id: {}), which does not list the symbol among "
+        "the symbols it subscribes to, ignoring its random price source",
+        listing.symbol(),
+        listing.listing_id(),
+        symbol,
+        datasource.name(),
+        datasource.datasource_id());
+    return false;
+  }
+
+  return true;
+}
+
+[[nodiscard]]
 auto make_random_price_source(
     const data_layer::Listing& listing,
     const data_layer::ListingRandomPriceSource& random_price_source,
     const std::vector<data_layer::Datasource>& datasources)
-    -> std::optional<SubscriptionKey> {
-  const std::uint64_t datasource_id = random_price_source.datasource_id();
+    -> std::optional<RandomPriceSourceKey> {
+  const DatasourceId datasource_id = random_price_source.datasource_id();
 
   const auto datasource = std::ranges::find_if(
       datasources, [datasource_id](const data_layer::Datasource& candidate) {
@@ -120,33 +155,6 @@ auto make_random_price_source(
     return std::nullopt;
   }
 
-  if (datasource->format() != data_layer::Datasource::Format::Fix) {
-    log::warn(
-        "the `{}' listing (id: {}) bases its random prices on the `{}' "
-        "datasource (id: {}), which is not of the FIX format, ignoring its "
-        "random price source",
-        listing.symbol(),
-        listing.listing_id(),
-        datasource->name(),
-        datasource->datasource_id());
-    return std::nullopt;
-  }
-
-  const std::optional<protocol::fix::Session> session =
-      parse_fix_session(datasource->connection());
-  if (!session.has_value()) {
-    log::warn(
-        "the `{}' datasource (id: {}), the `{}' listing (id: {}) bases its "
-        "random prices on, does not specify a valid FIX session in its "
-        "connection `{}', ignoring the random price source of the listing",
-        datasource->name(),
-        datasource->datasource_id(),
-        listing.symbol(),
-        listing.listing_id(),
-        datasource->connection());
-    return std::nullopt;
-  }
-
   const std::string& symbol = random_price_source.symbol();
   if (symbol.empty()) {
     log::warn(
@@ -160,21 +168,13 @@ auto make_random_price_source(
     return std::nullopt;
   }
 
-  if (!subscribes_to_symbol(*datasource, symbol)) {
-    log::warn(
-        "the `{}' listing (id: {}) bases its random prices on the `{}' symbol "
-        "of the `{}' datasource (id: {}), which does not list the symbol among "
-        "the symbols it subscribes to, ignoring its random price source",
-        listing.symbol(),
-        listing.listing_id(),
-        symbol,
-        datasource->name(),
-        datasource->datasource_id());
+  if (datasource->format() == data_layer::Datasource::Format::Fix &&
+      !has_fix_subscription(listing, *datasource, symbol)) {
     return std::nullopt;
   }
 
-  return std::make_optional<SubscriptionKey>(protocol::Session{*session},
-                                             Symbol{symbol});
+  return std::make_optional<RandomPriceSourceKey>(datasource_id,
+                                                  Symbol{symbol});
 }
 
 }  // namespace
@@ -182,6 +182,12 @@ auto make_random_price_source(
 auto bases_random_prices_on_datasource(const data_layer::Listing& listing)
     -> bool {
   return !listing.random_price_sources().empty();
+}
+
+auto used_only_for_random_prices(const data_layer::Datasource& datasource)
+    -> bool {
+  return datasource.random_price_only_flag().value_or(
+      data_layer::Datasource::DefaultRandomPriceOnlyFlag);
 }
 
 auto parse_fix_session(std::string_view connection)
@@ -223,39 +229,12 @@ auto make_datasource_subscription_requirements(
   return requirements;
 }
 
-auto make_order_derivation_requirements(
-    const std::vector<data_layer::Datasource>& datasources)
-    -> std::vector<OrderDerivationRequirement> {
-  std::vector<OrderDerivationRequirement> requirements;
-
-  for (const data_layer::Datasource& datasource : datasources) {
-    if (datasource.format() != data_layer::Datasource::Format::Fix ||
-        used_only_for_random_prices(datasource)) {
-      continue;
-    }
-
-    const PartyId counterparty{
-        fmt::format(constant::market_data::DatasourceCounterpartyPattern,
-                    datasource.datasource_id())};
-    for (SubscriptionRequirement& subscription :
-         make_datasource_requirements(datasource)) {
-      requirements.push_back(OrderDerivationRequirement{
-          .session = std::move(subscription.session),
-          .symbol = std::move(subscription.symbol),
-          .depth = subscription.depth,
-          .counterparty = counterparty});
-    }
-  }
-
-  return requirements;
-}
-
 auto make_listing_random_price_sources(
     const std::vector<data_layer::Datasource>& datasources,
     const std::vector<data_layer::Listing>& listings,
     const std::unordered_set<ListingId>& random_generation_listings)
-    -> std::map<ListingId, std::vector<SubscriptionKey>> {
-  std::map<ListingId, std::vector<SubscriptionKey>> price_sources;
+    -> std::map<ListingId, std::vector<RandomPriceSourceKey>> {
+  std::map<ListingId, std::vector<RandomPriceSourceKey>> price_sources;
 
   for (const data_layer::Listing& listing : listings) {
     if (!bases_random_prices_on_datasource(listing)) {
@@ -271,7 +250,7 @@ auto make_listing_random_price_sources(
       continue;
     }
 
-    std::vector<SubscriptionKey> listing_sources;
+    std::vector<RandomPriceSourceKey> listing_sources;
     for (const data_layer::ListingRandomPriceSource& random_price_source :
          listing.random_price_sources()) {
       auto source =

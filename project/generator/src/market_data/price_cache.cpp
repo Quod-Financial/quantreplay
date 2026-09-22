@@ -36,6 +36,13 @@ auto PriceCache::TopOfBook::replace(const std::vector<MarketDataEntry>& entries)
   offer_depth_levels_ = static_cast<std::uint32_t>(offers.size());
 }
 
+auto PriceCache::TopOfBook::replace(const BestPrices& prices) -> void {
+  clear();
+
+  best_bid_price_ = prices.bid;
+  best_offer_price_ = prices.offer;
+}
+
 auto PriceCache::TopOfBook::clear() -> void {
   best_bid_price_.reset();
   best_offer_price_.reset();
@@ -68,6 +75,14 @@ auto PriceCache::process(const protocol::MarketDataSnapshot& snapshot) -> void {
   const std::unique_lock lock{mutex_};
   if (TopOfBook* const book = find_to_modify(snapshot.request_id)) {
     book->replace(snapshot.market_data_entries);
+  }
+}
+
+auto PriceCache::process(const MdRequestId& request_id,
+                         const BestPrices& prices) -> void {
+  const std::unique_lock lock{mutex_};
+  if (TopOfBook* const book = find_to_modify(request_id)) {
+    book->replace(prices);
   }
 }
 

@@ -557,9 +557,34 @@ Used only for passive orders if randomAggQtyMaximum and/or randomAggAmtMaximum h
 | randomOrdersRate	| Integer	| The number of order actions (new order/modification/cancel/wait) per second during Random Order Generation
 | randomTickRange	| Integer	| Range of price ticks used to calculate prices created by the Random Order Generator (10 by default)
 | randomOrdersEnabled	| Boolean	| Indicates if the Random Order Generator has to generate random orders on a listing
+| randomPriceSources	| Array	| Market data of datasources used as the base price for random order generation on this listing, see <<adminsets-listings-randpricesrc,Random Price Sources Sub-List>>
 | enabled	| Boolean	| Indicates if the listing is enabled and should be used by the Market Simulator
 
 |=== 
+
+[[adminsets-listings-randpricesrc]]
+==== Random Price Sources Sub-List
+By default, the Random Order Generator derives the base price of the orders it generates for a listing from the top of the book of the listing itself.
+A listing can also base this price on the market data of one or more datasources of any format, which are configured in this sub-list.
+The market data of these sources is then aggregated with the order book of the listing itself to determine the base price,
+see <<general-randomorder-distrprice,this section>> for details of how these prices are used.
+
+[cols="15,15,70"]
+|===
+| Path | Type |Description
+
+| listingId	| Integer	| An identifier of the listing record which has a random price source.
+Users may omit to send this value in the requests.
+| datasourceId	| Integer	| An identifier of the datasource to take the prices from.
+It must refer to an existing datasource on the same venue as the listing.
+| symbol	| Text	| Symbol on that datasource to take the prices from.
+On a datasource of the FIX format it must be one of the symbols the datasource subscribes to (see <<adminsets-data-listings,Listings Sub-List>>), otherwise the random price source is ignored.
+On a datasource of the CSV or PSQL format it is matched against the instrument symbol of every played back record, and the prices are taken from the records whose symbol matches.
+
+|===
+
+An empty `randomPriceSources` array removes all random price sources of a listing.
+Omitting the key in a request leaves the currently configured random price sources unchanged.
 
 
 [[adminsets-listings-get-sgl]]
@@ -632,7 +657,14 @@ Content-Length: XXX
     "randomAggQtyMinimum" : 2.0,
     "randomAggQtyMaximum" : 200.0,
     "randomAggAmtMinimum" : 1000.0,
-    "randomAggAmtMaximum" : 3000.0
+    "randomAggAmtMaximum" : 3000.0,
+    "randomPriceSources" : [
+        {
+            "listingId" : 1,
+            "datasourceId" : 3,
+            "symbol" : "SAP"
+        }
+    ]
 }
 ----
 
@@ -713,7 +745,14 @@ Content-Length: XXX
             "randomAggQtyMinimum" : 2.0,
             "randomAggQtyMaximum" : 200.0,
             "randomAggAmtMinimum" : 1000.0,
-            "randomAggAmtMaximum" : 3000.0
+            "randomAggAmtMaximum" : 3000.0,
+            "randomPriceSources" : [
+                {
+                    "listingId" : 1,
+                    "datasourceId" : 3,
+                    "symbol" : "SAP"
+                }
+            ]
         },
         {
             "id" : 3,
@@ -747,7 +786,8 @@ Content-Length: XXX
             "randomAggQtyMinimum" : 2.0,
             "randomAggQtyMaximum" : 200.0,
             "randomAggAmtMinimum" : 1000.0,
-            "randomAggAmtMaximum" : 3000.0
+            "randomAggAmtMaximum" : 3000.0,
+            "randomPriceSources" : []
         }
     ]
 }
@@ -798,6 +838,19 @@ Content-Length: XXX
 
 {
     "result" : "Successfully inserted a new Listing"
+}
+----
+
+_Example_: Negative reply, a random price source refers to a datasource of another venue
+
+[,http]
+----
+HTTP/1.1 400 Bad Request
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "datasourceId `1' must refer to a datasource on the `XETRA' venue"
 }
 ----
 
@@ -940,8 +993,10 @@ _Resource Properties_
 Cannot be 0, and must be greater than `textHeaderRow`, if present (supported only for CSV format)
 | tableName	| Text	| Name of table (supported only for databases)
 | maxDepthLevels	| Integer	a| Maximum depth levels to read from the datasource. 0 or unspecified indicates to read all levels. For FIX Format, this value is used in tag MarketDepth (264) of each market data subscription.
+| columnMapping	| Array	| Mapping between the internal simulator fields and the columns of the datasource (supported only for CSV and PSQL formats),
+see <<adminsets-data-colmapping,Column Mapping Sub-List>>
 | listings	| Array	| For FIX Format, list of Symbols to subscribe to market data. An empty list results in no subscriptions. See <<adminsets-data-listings,Listings Sub-List>>.
-| randomPriceOnly	| Boolean	a| Whether this datasource is used only as a price source for random order generation (supported only for FIX format)
+| randomPriceOnly	| Boolean	a| Whether this datasource is used only as a price source for random order generation
 
 *   When `false` (the default), orders are derived from the datasource and it can also be used as a random order price source.
 *   When `true`, no orders are derived from it, and it is available only as a random order price source
@@ -955,13 +1010,14 @@ Cannot be 0, and must be greater than `textHeaderRow`, if present (supported onl
 |===
 | Path | Type |Description
 
-| dataSourceId	| Integer	| An identifier of the datasource record which has a column mapping config.
+| datasourceId	| Integer	| An identifier of the datasource record which has a column mapping config.
 Users may omit to send this value in the requests.
 | columnFrom	| Enum	a| Internal simulator field for mapping data. Supported values (part 1, continued on next page):
 
 *	ReceivedTimeStamp - timestamp market data update was received (required, date/time precision to the ms, e.g. `2019-03-07 15:00:00.243`)
 *	MessageTimeStamp - timestamp from original sent market data message (required, date/time precision to the ms, e.g. `2019-03-07 15:00:00.115`)
-*	Instrument - instrument symbol matching one of the listing’s Symbol for this venue (required, string)
+*	Instrument - instrument symbol matching one of the listing’s Symbol for this venue, or a symbol named by a random price source of a listing
+when no order is derived from the datasource (required, string)
 *	BidParty - bid level counter party (optional, string, e.g. `CP1`)
 *	BidQuantity - bid level quantity (optional, float, e.g. `10`)
 *	BidPrice - bid level price (optional, float, e.g. `133.5`)
@@ -1000,9 +1056,14 @@ Listings that a FIX format datasource subscribes to as an external market data f
 
 | datasourceId	| Integer	| An identifier of the datasource record which has a listing entry.
 Users may omit to send this value in requests.
-| symbol	| Text	| The symbol requested from the market data feed (tag 55).
+| symbol	| Text	| The symbol requested from the market data feed (tag 55), one market data subscription per entry; entries with the same symbol share one subscription.
+Orders are derived only when the symbol equals the symbol of an enabled listing of the venue; an entry with an empty symbol is ignored.
+See <<general-datasource-formatconfig-fix,this section>> for how the received market data is applied.
 
 |===
+
+An empty `listings` array removes all symbols of a datasource.
+Omitting the key in a request leaves the currently configured symbols unchanged.
 
 [[adminsets-data-get-sgl]]
 ==== Get Single Datasource
@@ -1045,17 +1106,17 @@ Content-Length: XXX
     "maxDepthLevels" : 3,
     "columnMapping" : [
         {
-            "dataSourceId" : 1,
+            "datasourceId" : 1,
             "columnFrom" : "ReceivedTimeStamp",
             "columnTo" : "ActionTime"
         },
         {
-            "dataSourceId" : 1,
+            "datasourceId" : 1,
             "columnFrom" : "MessageTimeStamp",
             "columnTo" : "2"
         },
         {
-            "dataSourceId" : 1,
+            "datasourceId" : 1,
             "columnFrom" : "BidPrice3",
             "columnTo" : "bid_price_three"
         }
@@ -1117,12 +1178,12 @@ Content-Length: XXX
             "tableName" : "historical_data",
             "columnMapping" : [
                 {
-                    "dataSourceId" : 1,
+                    "datasourceId" : 1,
                     "columnFrom" : "ReceivedTimeStamp",
                     "columnTo" : "ActionTime"
                 },
                 {
-                    "dataSourceId" : 1,
+                    "datasourceId" : 1,
                     "columnFrom" : "MessageTimeStamp",
                     "columnTo" : "2"
                 }
@@ -1159,6 +1220,10 @@ Content-Length: XXX
                 {
                     "datasourceId" : 3,
                     "symbol" : "VOW"
+                },
+                {
+                    "datasourceId" : 3,
+                    "symbol" : "BMW"
                 }
             ]
         }
@@ -1203,7 +1268,7 @@ Host: localhost
 }
 ----
 
-_Example_: Request to add a datasource fed by a FIX market data feed
+_Example_: Request to add a new datasource entity reading an external FIX market data feed
 
 [,http]
 ----
@@ -1219,6 +1284,7 @@ Host: localhost
     "format" : "FIX",
     "type" : "OrderBook",
     "maxDepthLevels" : 1,
+    "randomPriceOnly" : true,
     "listings" : [
         {
             "symbol" : "VOW"

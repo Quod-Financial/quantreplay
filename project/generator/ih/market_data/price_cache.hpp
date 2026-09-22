@@ -10,6 +10,7 @@
 
 #include "core/domain/attributes.hpp"
 #include "core/domain/market_data_entry.hpp"
+#include "ih/market_data/best_prices_sink.hpp"
 #include "ih/market_data/market_state.hpp"
 #include "protocol/app/market_data_snapshot.hpp"
 
@@ -19,11 +20,14 @@ namespace simulator::generator::mdata {
 // has made, identified by the subscription request identifier.
 // Written by the threads that deliver market data and read by the order
 // generation threads.
-class PriceCache {
+class PriceCache final : public BestPricesSink {
  public:
   auto add(const MdRequestId& request_id) -> void;
 
   auto process(const protocol::MarketDataSnapshot& snapshot) -> void;
+
+  auto process(const MdRequestId& request_id, const BestPrices& prices)
+      -> void override;
 
   auto reset(const MdRequestId& request_id) -> void;
 
@@ -35,6 +39,8 @@ class PriceCache {
   class TopOfBook {
    public:
     auto replace(const std::vector<MarketDataEntry>& entries) -> void;
+
+    auto replace(const BestPrices& prices) -> void;
 
     auto clear() -> void;
 

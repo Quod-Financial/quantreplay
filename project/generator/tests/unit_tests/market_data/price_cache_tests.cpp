@@ -200,6 +200,73 @@ TEST_F(GeneratorPriceCache, IgnoresMarketDataWithoutRequestId) {
               Optional(Eq(0)));
 }
 
+TEST_F(GeneratorPriceCache, IgnoresBestPricesOfUnknownSubscription) {
+  const MdRequestId unknown_request_id{"MD-2"};
+  cache.add(request_id);
+
+  cache.process(unknown_request_id,
+                BestPrices{.bid = Price{100.0}, .offer = Price{101.0}});
+
+  EXPECT_THAT(cache.market_state(unknown_request_id, {}).bid_depth_levels,
+              Eq(std::nullopt));
+  EXPECT_THAT(cache.market_state(request_id, {}).best_bid_price,
+              Eq(std::nullopt));
+}
+
+TEST_F(GeneratorPriceCache, ReportsProcessedBestPrices) {
+  cache.add(request_id);
+
+  cache.process(request_id,
+                BestPrices{.bid = Price{100.0}, .offer = Price{101.0}});
+
+  const MarketState state = cache.market_state(request_id, {});
+
+  EXPECT_THAT(state.best_bid_price, Optional(DoubleEq(100.0)));
+  EXPECT_THAT(state.best_offer_price, Optional(DoubleEq(101.0)));
+}
+
+TEST_F(GeneratorPriceCache, ReportsZeroDepthLevelsForProcessedBestPrices) {
+  cache.add(request_id);
+
+  cache.process(request_id,
+                BestPrices{.bid = Price{100.0}, .offer = Price{101.0}});
+
+  const MarketState state = cache.market_state(request_id, {});
+
+  EXPECT_THAT(state.bid_depth_levels, Optional(Eq(0)));
+  EXPECT_THAT(state.offer_depth_levels, Optional(Eq(0)));
+}
+
+TEST_F(GeneratorPriceCache, ReplacesSnapshotStateOnBestPrices) {
+  cache.add(request_id);
+  cache.process(make_snapshot(request_id,
+                              {make_entry(MdEntryType::Option::Bid, 100.0),
+                               make_entry(MdEntryType::Option::Bid, 99.0),
+                               make_entry(MdEntryType::Option::Offer, 101.0)}));
+
+  cache.process(request_id,
+                BestPrices{.bid = Price{98.0}, .offer = std::nullopt});
+
+  const MarketState state = cache.market_state(request_id, {});
+
+  EXPECT_THAT(state.best_bid_price, Optional(DoubleEq(98.0)));
+  EXPECT_THAT(state.best_offer_price, Eq(std::nullopt));
+  EXPECT_THAT(state.bid_depth_levels, Optional(Eq(0)));
+}
+
+TEST_F(GeneratorPriceCache, ClearsStateOnEmptyBestPrices) {
+  cache.add(request_id);
+  cache.process(request_id,
+                BestPrices{.bid = Price{100.0}, .offer = Price{101.0}});
+
+  cache.process(request_id, BestPrices{});
+
+  const MarketState state = cache.market_state(request_id, {});
+
+  EXPECT_THAT(state.best_bid_price, Eq(std::nullopt));
+  EXPECT_THAT(state.best_offer_price, Eq(std::nullopt));
+}
+
 TEST_F(GeneratorPriceCache, ClearsStateOnReset) {
   cache.add(request_id);
   cache.process(

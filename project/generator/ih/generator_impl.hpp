@@ -18,6 +18,8 @@
 #include "ih/context/generation_manager.hpp"
 #include "ih/context/instrument_context.hpp"
 #include "ih/factory/executable_factory.hpp"
+#include "ih/historical/processing/action_sink.hpp"
+#include "ih/market_data/historical_random_price_source_registry.hpp"
 #include "ih/market_data/local_subscription_manager.hpp"
 #include "ih/market_data/market_data_provider.hpp"
 #include "ih/market_data/order_book_derivation.hpp"
@@ -26,6 +28,7 @@
 #include "ih/market_data/utils.hpp"
 #include "ih/random/instrument_generator.hpp"
 #include "ih/random/seed_hasher.hpp"
+#include "ih/utils/executable.hpp"
 #include "ih/utils/executor.hpp"
 #include "protocol/app/market_data_reject.hpp"
 #include "protocol/app/market_data_snapshot.hpp"
@@ -108,17 +111,35 @@ class GeneratorImpl final {
   [[nodiscard]]
   auto select_venue_datasources() const -> std::vector<data_layer::Datasource>;
 
-  auto initialize_historical_executor(
+  auto initialize_historical_repliers(
       const std::vector<data_layer::Datasource>& datasources) -> void;
 
-  auto initialize_market_data_subscriptions(
+  [[nodiscard]]
+  auto make_datasource_processor(const data_layer::Datasource& datasource)
+      -> std::unique_ptr<historical::ActionSink>;
+
+  [[nodiscard]]
+  auto make_orders_processor(const data_layer::Datasource& datasource)
+      -> std::unique_ptr<historical::ActionSink>;
+
+  [[nodiscard]]
+  auto make_price_source_processor(const data_layer::Datasource& datasource)
+      -> std::unique_ptr<historical::ActionSink>;
+
+  auto initialize_datasource_subscriptions(
+      const std::vector<data_layer::Datasource>& datasources) -> void;
+
+  auto initialize_random_price_sources(
       const std::vector<data_layer::Datasource>& datasources,
       const std::vector<data_layer::Listing>& listings,
       const std::unordered_set<mdata::ListingId>& random_generation_listings)
       -> void;
 
-  auto initialize_order_book_derivation(
-      const std::vector<data_layer::Datasource>& datasources) -> void;
+  [[nodiscard]]
+  auto resolve_price_source(
+      const std::vector<data_layer::Datasource>& datasources,
+      const mdata::RandomPriceSourceKey& price_source)
+      -> std::optional<MdRequestId>;
 
   auto subscribe_to_market_data() -> void;
 
@@ -141,9 +162,11 @@ class GeneratorImpl final {
   std::shared_ptr<mdata::PriceCache> price_cache_;
   mdata::LocalSubscriptionManager local_subscription_manager_;
   mdata::SubscriptionManager subscription_manager_;
+  mdata::HistoricalRandomPriceSourceRegistry
+      historical_random_price_source_registry_;
   std::unique_ptr<mdata::OrderBookDerivation> order_book_derivation_;
 
-  std::unique_ptr<Executor> historical_replier_;
+  std::vector<std::unique_ptr<Executor>> historical_repliers_;
   std::unique_ptr<InstrumentRandomGeneratorFactory> rnd_executor_factory_;
 
   std::unique_ptr<InstrumentHistoricalReplierFactory> hist_executor_factory_;

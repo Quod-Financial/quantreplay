@@ -1,5 +1,5 @@
-#ifndef SIMULATOR_GENERATOR_IH_HISTORICAL_PROCESSOR_HPP_
-#define SIMULATOR_GENERATOR_IH_HISTORICAL_PROCESSOR_HPP_
+#ifndef SIMULATOR_GENERATOR_IH_HISTORICAL_PROCESSING_ACTION_PROCESSOR_HPP_
+#define SIMULATOR_GENERATOR_IH_HISTORICAL_PROCESSING_ACTION_PROCESSOR_HPP_
 
 #include <memory>
 #include <string_view>
@@ -8,27 +8,13 @@
 
 #include "ih/context/instrument_context.hpp"
 #include "ih/historical/data/record.hpp"
+#include "ih/historical/processing/action_sink.hpp"
+#include "ih/historical/processing/record_sink.hpp"
 
 namespace simulator::generator::historical {
 
-class Processor {
- public:
-  Processor() = default;
-
-  Processor(const Processor&) = default;
-  auto operator=(const Processor&) -> Processor& = default;
-
-  Processor(Processor&&) = default;
-  auto operator=(Processor&&) -> Processor& = default;
-
-  virtual ~Processor() = default;
-
-  virtual auto process(historical::Action action) -> void = 0;
-
-  virtual auto process(historical::Record record) -> void = 0;
-};
-
-class ActionProcessor : public historical::Processor {
+class ActionProcessor : public historical::ActionSink,
+                        public historical::RecordSink {
  public:
   using ContextPointer = std::shared_ptr<OrderInstrumentContext>;
   using Contexts = std::vector<ContextPointer>;
@@ -63,4 +49,4 @@ class ActionProcessor : public historical::Processor {
 
 }  // namespace simulator::generator::historical
 
-#endif  // SIMULATOR_GENERATOR_IH_HISTORICAL_PROCESSOR_HPP_
+#endif  // SIMULATOR_GENERATOR_IH_HISTORICAL_PROCESSING_ACTION_PROCESSOR_HPP_

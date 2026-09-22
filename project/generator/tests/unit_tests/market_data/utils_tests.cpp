@@ -221,6 +221,15 @@ TEST_F(GeneratorMarketDataDatasourceRequirementBuilder,
 }
 
 TEST_F(GeneratorMarketDataDatasourceRequirementBuilder,
+       TakesDatasourceIdFromDatasource) {
+  const auto requirements =
+      make_datasource_subscription_requirements({make_fix_datasource()});
+
+  ASSERT_THAT(requirements, SizeIs(1));
+  ASSERT_THAT(requirements.front().datasource_id, Eq(DatasourceId{42}));
+}
+
+TEST_F(GeneratorMarketDataDatasourceRequirementBuilder,
        TakesDepthFromMaxDepthLevels) {
   const auto datasource =
       make_datasource(with_symbols(Datasource::Patch{}, {"AAPL"})
@@ -315,65 +324,48 @@ TEST_F(GeneratorMarketDataDatasourceRequirementBuilder,
 }
 
 TEST_F(GeneratorMarketDataDatasourceRequirementBuilder,
-       SelectsNoOrderDerivationRequirementForRandomPriceOnlyDatasource) {
+       TakesNoOrderCounterpartyForRandomPriceOnlyDatasource) {
   const auto datasource =
       make_datasource(with_symbols(Datasource::Patch{}, {"AAPL"})
                           .with_random_price_only_flag(true));
 
-  ASSERT_THAT(make_order_derivation_requirements({datasource}), IsEmpty());
+  const auto requirements =
+      make_datasource_subscription_requirements({datasource});
+
+  ASSERT_THAT(requirements, SizeIs(1));
+  ASSERT_THAT(requirements.front().order_counterparty, Eq(std::nullopt));
 }
 
 TEST_F(GeneratorMarketDataDatasourceRequirementBuilder,
-       SelectsNoOrderDerivationRequirementForNonFixDatasource) {
+       TakesOrderCounterpartyForOrderDerivingDatasource) {
   const auto datasource =
       make_datasource(with_symbols(Datasource::Patch{}, {"AAPL"})
-                          .with_format(Datasource::Format::Csv)
                           .with_random_price_only_flag(false));
 
-  ASSERT_THAT(make_order_derivation_requirements({datasource}), IsEmpty());
-}
-
-TEST_F(GeneratorMarketDataDatasourceRequirementBuilder,
-       SelectsOrderDerivationRequirementsOfOrderDerivingDatasources) {
-  const auto price_only_datasource =
-      make_datasource(with_symbols(Datasource::Patch{}, {"AAPL"})
-                          .with_random_price_only_flag(true));
-  const auto deriving_datasource =
-      make_datasource(with_symbols(Datasource::Patch{}, {"MSFT"}));
-
-  const auto requirements = make_order_derivation_requirements(
-      {price_only_datasource, deriving_datasource});
+  const auto requirements =
+      make_datasource_subscription_requirements({datasource});
 
   ASSERT_THAT(requirements, SizeIs(1));
-  EXPECT_THAT(requirements.front().symbol, Eq(Symbol{"MSFT"}));
+  ASSERT_THAT(requirements.front().order_counterparty, Optional(A<PartyId>()));
 }
 
 TEST_F(GeneratorMarketDataDatasourceRequirementBuilder,
-       TakesOrderDerivationDepthFromMaxDepthLevels) {
-  const auto datasource = make_datasource(
-      with_symbols(Datasource::Patch{}, {"AAPL"}).with_max_depth_levels(5));
-
-  const auto requirements = make_order_derivation_requirements({datasource});
-
-  ASSERT_THAT(requirements, SizeIs(1));
-  ASSERT_THAT(requirements.front().depth, Eq(MarketDepth{5}));
-}
-
-TEST_F(GeneratorMarketDataDatasourceRequirementBuilder,
-       NamesOrderDerivationCounterpartyAfterDatasourceId) {
+       NamesOrderCounterpartyAfterDatasourceId) {
   const auto datasource =
       make_datasource(with_symbols(Datasource::Patch{}, {"AAPL"}), 7);
 
-  const auto requirements = make_order_derivation_requirements({datasource});
+  const auto requirements =
+      make_datasource_subscription_requirements({datasource});
 
   ASSERT_THAT(requirements, SizeIs(1));
-  EXPECT_THAT(requirements.front().counterparty, Eq(PartyId{"DS7"}));
+  EXPECT_THAT(requirements.front().order_counterparty,
+              Optional(Eq(PartyId{"DS7"})));
 }
 
 struct GeneratorMarketDataListingPriceSourceBuilder
     : public GeneratorMarketDataDatasourceRequirementBuilder {
-  static constexpr std::uint64_t DatasourceId = 42;
-  static constexpr std::uint64_t OtherDatasourceId = 43;
+  static constexpr DatasourceId SourceDatasourceId = 42;
+  static constexpr DatasourceId OtherDatasourceId = 43;
   static constexpr ListingId PricedListingId = 1;
   static constexpr ListingId OtherPricedListingId = 2;
 
@@ -382,7 +374,7 @@ struct GeneratorMarketDataListingPriceSourceBuilder
   static auto make_all_listing_price_sources(
       const std::vector<Datasource>& datasources,
       const std::vector<Listing>& listings)
-      -> std::map<ListingId, std::vector<SubscriptionKey>> {
+      -> std::map<ListingId, std::vector<RandomPriceSourceKey>> {
     std::unordered_set<ListingId> random_generation_listings;
     for (const Listing& listing : listings) {
       random_generation_listings.emplace(listing.listing_id());
@@ -399,7 +391,7 @@ struct GeneratorMarketDataListingPriceSourceBuilder
     }
     if (!patch.random_price_sources().has_value()) {
       patch = with_random_price_sources(std::move(patch),
-                                        {{DatasourceId, "AAPL.OQ"}});
+                                        {{SourceDatasourceId, "AAPL.OQ"}});
     }
     return make_listing(std::move(patch), listing_id);
   }
@@ -410,6 +402,13 @@ struct GeneratorMarketDataListingPriceSourceBuilder
 
   static auto make_price_source_datasource() -> Datasource {
     return make_datasource(with_symbols(Datasource::Patch{}, {"AAPL.OQ"})
+                               .with_random_price_only_flag(true));
+  }
+
+  static auto make_csv_price_source_datasource() -> Datasource {
+    return make_datasource(Datasource::Patch{}
+                               .with_format(Datasource::Format::Csv)
+                               .with_connection("/data/prices.csv")
                                .with_random_price_only_flag(true));
   }
 };
@@ -442,18 +441,34 @@ TEST_F(GeneratorMarketDataListingPriceSourceBuilder, IgnoresUnknownDatasource) {
               IsEmpty());
 }
 
-TEST_F(GeneratorMarketDataListingPriceSourceBuilder, IgnoresNonFixDatasource) {
+TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
+       TakesPriceSourceOfCsvDatasource) {
+  const auto price_sources = make_all_listing_price_sources(
+      {make_csv_price_source_datasource()}, {make_datasource_priced_listing()});
+
+  ASSERT_THAT(
+      price_sources,
+      UnorderedElementsAre(Pair(PricedListingId,
+                                ElementsAre(Field(&RandomPriceSourceKey::symbol,
+                                                  Eq(Symbol{"AAPL.OQ"}))))));
+}
+
+// A file datasource carries every symbol of its file, so the symbol a listing
+// takes its prices from does not have to be listed on the datasource.
+TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
+       TakesSymbolCsvDatasourceDoesNotList) {
   const auto datasource =
-      make_datasource(with_symbols(Datasource::Patch{}, {"AAPL.OQ"})
-                          .with_format(Datasource::Format::Csv));
+      make_datasource(with_symbols(Datasource::Patch{}, {"MSFT.OQ"})
+                          .with_format(Datasource::Format::Csv)
+                          .with_connection("/data/prices.csv"));
 
   ASSERT_THAT(make_all_listing_price_sources(
                   {datasource}, {make_datasource_priced_listing()}),
-              IsEmpty());
+              SizeIs(1));
 }
 
 TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
-       IgnoresUnparsableConnection) {
+       IgnoresUnparsableConnectionOfFixDatasource) {
   const auto datasource =
       make_datasource(with_symbols(Datasource::Patch{}, {"AAPL.OQ"})
                           .with_connection("host:12000"));
@@ -465,7 +480,7 @@ TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
 
 TEST_F(GeneratorMarketDataListingPriceSourceBuilder, IgnoresEmptySymbol) {
   const auto listing = make_datasource_priced_listing(
-      with_random_price_sources(Listing::Patch{}, {{DatasourceId, ""}}));
+      with_random_price_sources(Listing::Patch{}, {{SourceDatasourceId, ""}}));
 
   ASSERT_THAT(make_all_listing_price_sources({make_price_source_datasource()},
                                              {listing}),
@@ -473,7 +488,7 @@ TEST_F(GeneratorMarketDataListingPriceSourceBuilder, IgnoresEmptySymbol) {
 }
 
 TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
-       IgnoresSymbolTheDatasourceDoesNotSubscribeTo) {
+       IgnoresSymbolTheFixDatasourceDoesNotSubscribeTo) {
   const auto datasource =
       make_datasource(with_symbols(Datasource::Patch{}, {"MSFT.OQ"}));
 
@@ -498,18 +513,18 @@ TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
   ASSERT_THAT(price_sources, SizeIs(1));
   ASSERT_THAT(
       price_sources.begin()->second,
-      ElementsAre(Field(&SubscriptionKey::symbol, Eq(Symbol{"AAPL.OQ"}))));
+      ElementsAre(Field(&RandomPriceSourceKey::symbol, Eq(Symbol{"AAPL.OQ"}))));
 }
 
 TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
-       TakesSessionFromDatasourceConnection) {
+       TakesDatasourceIdFromRandomPriceSource) {
   const auto price_sources = make_all_listing_price_sources(
       {make_price_source_datasource()}, {make_datasource_priced_listing()});
 
   ASSERT_THAT(price_sources, SizeIs(1));
   ASSERT_THAT(price_sources.begin()->second,
-              ElementsAre(Field(&SubscriptionKey::session,
-                                Eq(make_session("TARGET")))));
+              ElementsAre(Field(&RandomPriceSourceKey::datasource_id,
+                                Eq(SourceDatasourceId))));
 }
 
 TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
@@ -520,7 +535,7 @@ TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
                       OtherDatasourceId);
   const auto listing = make_datasource_priced_listing(with_random_price_sources(
       Listing::Patch{},
-      {{DatasourceId, "AAPL.OQ"}, {OtherDatasourceId, "AAPL.N"}}));
+      {{SourceDatasourceId, "AAPL.OQ"}, {OtherDatasourceId, "AAPL.N"}}));
 
   const auto price_sources = make_all_listing_price_sources(
       {make_price_source_datasource(), other_datasource}, {listing});
@@ -529,32 +544,51 @@ TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
   EXPECT_THAT(
       price_sources.begin()->second,
       ElementsAre(
-          AllOf(Field(&SubscriptionKey::symbol, Eq(Symbol{"AAPL.OQ"})),
-                Field(&SubscriptionKey::session, Eq(make_session("TARGET")))),
-          AllOf(Field(&SubscriptionKey::symbol, Eq(Symbol{"AAPL.N"})),
-                Field(&SubscriptionKey::session, Eq(make_session("OTHER"))))));
+          AllOf(Field(&RandomPriceSourceKey::symbol, Eq(Symbol{"AAPL.OQ"})),
+                Field(&RandomPriceSourceKey::datasource_id,
+                      Eq(SourceDatasourceId))),
+          AllOf(Field(&RandomPriceSourceKey::symbol, Eq(Symbol{"AAPL.N"})),
+                Field(&RandomPriceSourceKey::datasource_id,
+                      Eq(OtherDatasourceId)))));
 }
 
 TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
-       TakesSourceOnceWhenDatasourcesShareSessionAndSymbol) {
-  const auto other_datasource = make_datasource(
-      with_symbols(Datasource::Patch{}, {"AAPL.OQ"}), OtherDatasourceId);
+       TakesSourceOnceWhenListingRepeatsIt) {
   const auto listing = make_datasource_priced_listing(with_random_price_sources(
       Listing::Patch{},
-      {{DatasourceId, "AAPL.OQ"}, {OtherDatasourceId, "AAPL.OQ"}}));
+      {{SourceDatasourceId, "AAPL.OQ"}, {SourceDatasourceId, "AAPL.OQ"}}));
 
   const auto price_sources = make_all_listing_price_sources(
-      {make_price_source_datasource(), other_datasource}, {listing});
+      {make_price_source_datasource()}, {listing});
 
   ASSERT_THAT(price_sources, SizeIs(1));
   ASSERT_THAT(price_sources.begin()->second, SizeIs(1));
 }
 
 TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
+       TakesSourceOfEveryDatasourceSharingSessionAndSymbol) {
+  const auto other_datasource = make_datasource(
+      with_symbols(Datasource::Patch{}, {"AAPL.OQ"}), OtherDatasourceId);
+  const auto listing = make_datasource_priced_listing(with_random_price_sources(
+      Listing::Patch{},
+      {{SourceDatasourceId, "AAPL.OQ"}, {OtherDatasourceId, "AAPL.OQ"}}));
+
+  const auto price_sources = make_all_listing_price_sources(
+      {make_price_source_datasource(), other_datasource}, {listing});
+
+  ASSERT_THAT(price_sources, SizeIs(1));
+  ASSERT_THAT(
+      price_sources.begin()->second,
+      UnorderedElementsAre(
+          Field(&RandomPriceSourceKey::datasource_id, Eq(SourceDatasourceId)),
+          Field(&RandomPriceSourceKey::datasource_id, Eq(OtherDatasourceId))));
+}
+
+TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
        TakesValidSourcesOfListingWithAnInvalidSource) {
   const auto listing = make_datasource_priced_listing(with_random_price_sources(
       Listing::Patch{},
-      {{OtherDatasourceId, "AAPL.N"}, {DatasourceId, "AAPL.OQ"}}));
+      {{OtherDatasourceId, "AAPL.N"}, {SourceDatasourceId, "AAPL.OQ"}}));
 
   const auto price_sources = make_all_listing_price_sources(
       {make_price_source_datasource()}, {listing});
@@ -562,7 +596,7 @@ TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
   ASSERT_THAT(price_sources, SizeIs(1));
   ASSERT_THAT(
       price_sources.begin()->second,
-      ElementsAre(Field(&SubscriptionKey::symbol, Eq(Symbol{"AAPL.OQ"}))));
+      ElementsAre(Field(&RandomPriceSourceKey::symbol, Eq(Symbol{"AAPL.OQ"}))));
 }
 
 TEST_F(GeneratorMarketDataListingPriceSourceBuilder,

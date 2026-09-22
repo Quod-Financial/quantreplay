@@ -3,9 +3,11 @@
 
 #include <memory>
 
+#include "data_layer/api/models/datasource.hpp"
 #include "data_layer/api/models/price_seed.hpp"
 #include "ih/context/instrument_context.hpp"
 #include "ih/factory/executable_factory.hpp"
+#include "ih/historical/processing/action_sink.hpp"
 #include "ih/market_data/market_data_provider.hpp"
 #include "ih/utils/executable.hpp"
 
@@ -33,8 +35,17 @@ class HistoricalReplierFactoryImpl final
   HistoricalReplierFactoryImpl() = default;
 
   [[nodiscard]]
-  auto create_orders_executable(const Datasources& datasources,
-                                const InstrumentsContexts& contexts)
+  auto create_orders_processor(const InstrumentsContexts& contexts)
+      -> std::unique_ptr<historical::ActionSink> override;
+
+  [[nodiscard]]
+  auto create_price_source_processor(
+      PriceSourceSymbols symbols, std::shared_ptr<mdata::BestPricesSink> sink)
+      -> std::unique_ptr<historical::ActionSink> override;
+
+  [[nodiscard]]
+  auto create_executable(const data_layer::Datasource& datasource,
+                         std::unique_ptr<historical::ActionSink> processor)
       -> std::unique_ptr<Executable> override;
 };
 

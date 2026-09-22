@@ -1,40 +1,31 @@
 #include "ih/historical/replier.hpp"
 
+#include <cassert>
 #include <exception>
 #include <memory>
-#include <stdexcept>
 #include <utility>
-#include <vector>
 
 #include "ih/historical/data/provider.hpp"
 #include "ih/historical/data/record.hpp"
-#include "ih/historical/processor.hpp"
+#include "ih/historical/processing/action_sink.hpp"
 #include "ih/historical/scheduler.hpp"
 #include "log/logging.hpp"
 
 namespace simulator::generator::historical {
 
-Replier::Replier(const Datasources& datasources,
-                 const InstrumentsContexts& instruments_contexts) {
-  if (instruments_contexts.empty()) {
-    throw std::invalid_argument{
-        "can not initialize historical replier without instruments "
-        "contexts"};
-  }
+Replier::Replier(const data_layer::Datasource& datasource,
+                 std::unique_ptr<ActionSink> processor)
+    : historical_processor_{std::move(processor)} {
+  assert(historical_processor_);
 
-  historical_processor_ =
-      std::make_unique<ActionProcessor>(instruments_contexts);
+  actions_scheduler_ = std::make_unique<historical::ActionsScheduler>(
+      create_provider(datasource));
 
-  // We'll redesign the approach of datasources initialization when
-  // a reading from multiple datasources will be required.
-  // It may require parallel initialization of data_providers and
-  // data_adapters.
-  auto provider = create_provider(datasources);
-
-  actions_scheduler_ =
-      std::make_unique<historical::ActionsScheduler>(std::move(provider));
-
-  log::info("historical data replier initialized successfully");
+  log::info(
+      "historical data replier for the `{}' datasource (id: {}) initialized "
+      "successfully",
+      datasource.name(),
+      datasource.datasource_id());
 }
 
 auto Replier::prepare() noexcept -> void { actions_scheduler_->initialize(); }
@@ -54,16 +45,8 @@ auto Replier::next_exec_timeout() const -> std::chrono::microseconds {
   return actions_scheduler_->next_action_timeout();
 }
 
-auto Replier::create_provider(const Datasources& datasources)
+auto Replier::create_provider(const data_layer::Datasource& datasource)
     -> std::unique_ptr<DataProvider> {
-  if (datasources.empty()) {
-    log::info(
-        "no data sources configured, skipping historical replying "
-        "configuration");
-    return nullptr;
-  }
-
-  const auto& datasource = datasources.front();
   auto provider_factory = std::make_unique<DataProvidersFactoryImpl>();
   std::unique_ptr<DataProvider> provider{nullptr};
 

@@ -21,6 +21,10 @@ using ListingId = std::uint64_t;
 auto bases_random_prices_on_datasource(const data_layer::Listing& listing)
     -> bool;
 
+[[nodiscard]]
+auto used_only_for_random_prices(const data_layer::Datasource& datasource)
+    -> bool;
+
 // Decodes a `BeginString:SenderCompID->TargetCompID[:SessionQualifier]'
 // session identifier, the notation QuickFIX prints for a configured session.
 [[nodiscard]]
@@ -33,16 +37,11 @@ auto make_datasource_subscription_requirements(
     -> std::vector<SubscriptionRequirement>;
 
 [[nodiscard]]
-auto make_order_derivation_requirements(
-    const std::vector<data_layer::Datasource>& datasources)
-    -> std::vector<OrderDerivationRequirement>;
-
-[[nodiscard]]
 auto make_listing_random_price_sources(
     const std::vector<data_layer::Datasource>& datasources,
     const std::vector<data_layer::Listing>& listings,
     const std::unordered_set<ListingId>& random_generation_listings)
-    -> std::map<ListingId, std::vector<SubscriptionKey>>;
+    -> std::map<ListingId, std::vector<RandomPriceSourceKey>>;
 
 }  // namespace simulator::generator::mdata
 

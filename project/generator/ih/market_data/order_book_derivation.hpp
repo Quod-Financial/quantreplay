@@ -9,7 +9,7 @@
 
 #include "core/domain/attributes.hpp"
 #include "ih/context/component_context.hpp"
-#include "ih/historical/processor.hpp"
+#include "ih/historical/processing/record_sink.hpp"
 #include "ih/market_data/subscription_requirement.hpp"
 #include "protocol/app/market_data_snapshot.hpp"
 
@@ -19,7 +19,7 @@ class OrderBookDerivation {
  public:
   OrderBookDerivation() = delete;
 
-  OrderBookDerivation(std::shared_ptr<historical::Processor> processor,
+  OrderBookDerivation(std::shared_ptr<historical::RecordSink> processor,
                       std::shared_ptr<ComponentContext> context);
 
   auto add(const MdRequestId& request_id,
@@ -38,7 +38,7 @@ class OrderBookDerivation {
       -> std::optional<historical::Record>;
 
   std::map<MdRequestId, Binding> bindings_;
-  std::shared_ptr<historical::Processor> processor_;
+  std::shared_ptr<historical::RecordSink> processor_;
   std::shared_ptr<ComponentContext> context_;
   std::mutex mutex_;
 };

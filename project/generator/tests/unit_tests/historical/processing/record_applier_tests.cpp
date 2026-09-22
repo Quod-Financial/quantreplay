@@ -12,8 +12,9 @@
 
 #include "core/common/attribute.hpp"
 #include "ih/adaptation/generated_message.hpp"
+#include "ih/historical/data/level_checks.hpp"
 #include "ih/historical/data/record.hpp"
-#include "ih/historical/record_applier.hpp"
+#include "ih/historical/processing/record_applier.hpp"
 #include "ih/registry/generated_order_data.hpp"
 #include "ih/registry/generated_orders_registry_impl.hpp"
 #include "mocks/context/order_context.hpp"
@@ -220,7 +221,7 @@ TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
                                 std::nullopt,
                                 offer_qty,
                                 std::nullopt);
-  ASSERT_FALSE(historical::RecordApplier::RecordChecker::has_valid_bid(level));
+  ASSERT_FALSE(historical::has_valid_bid(level));
 
   EXPECT_CALL(registry(), select_by)
       .Times(1)
@@ -242,8 +243,7 @@ TEST_F(GeneratorHistoricalRecordApplierMockedRegistry,
                                 std::nullopt,
                                 offer_qty,
                                 std::nullopt);
-  ASSERT_FALSE(
-      historical::RecordApplier::RecordChecker::has_valid_offer(level));
+  ASSERT_FALSE(historical::has_valid_offer(level));
 
   EXPECT_CALL(registry(), select_by)
       .Times(1)

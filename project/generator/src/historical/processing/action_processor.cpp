@@ -1,4 +1,4 @@
-#include "ih/historical/processor.hpp"
+#include "ih/historical/processing/action_processor.hpp"
 
 #include <memory>
 #include <string_view>
@@ -7,7 +7,7 @@
 #include "ih/adaptation/protocol_conversion.hpp"
 #include "ih/context/instrument_context.hpp"
 #include "ih/historical/data/record.hpp"
-#include "ih/historical/record_applier.hpp"
+#include "ih/historical/processing/record_applier.hpp"
 #include "log/logging.hpp"
 #include "middleware/routing/trading_request_channel.hpp"
 

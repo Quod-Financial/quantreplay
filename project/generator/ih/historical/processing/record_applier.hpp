@@ -1,5 +1,5 @@
-#ifndef SIMULATOR_GENERATOR_IH_HISTORICAL_RECORD_APPLIER_HPP_
-#define SIMULATOR_GENERATOR_IH_HISTORICAL_RECORD_APPLIER_HPP_
+#ifndef SIMULATOR_GENERATOR_IH_HISTORICAL_PROCESSING_RECORD_APPLIER_HPP_
+#define SIMULATOR_GENERATOR_IH_HISTORICAL_PROCESSING_RECORD_APPLIER_HPP_
 
 #include <cstdint>
 #include <memory>
@@ -18,7 +18,6 @@ namespace simulator::generator::historical {
 class RecordApplier {
  public:
   struct Order;
-  class RecordChecker;
 
   using ContextPointer = std::shared_ptr<OrderInstrumentContext>;
 
@@ -109,16 +108,6 @@ struct RecordApplier::Order {
   Side side;
 };
 
-class RecordApplier::RecordChecker {
- public:
-  static auto has_valid_bid(const historical::Level& level) noexcept -> bool;
-
-  static auto has_valid_offer(const historical::Level& level) noexcept -> bool;
-
- private:
-  static auto is_empty(const std::optional<double> qty) noexcept -> bool;
-};
-
 }  // namespace simulator::generator::historical
 
-#endif  // SIMULATOR_GENERATOR_IH_HISTORICAL_RECORD_APPLIER_HPP_
+#endif  // SIMULATOR_GENERATOR_IH_HISTORICAL_PROCESSING_RECORD_APPLIER_HPP_

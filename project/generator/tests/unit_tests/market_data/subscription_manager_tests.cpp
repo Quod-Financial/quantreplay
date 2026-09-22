@@ -29,6 +29,9 @@ using namespace testing;  // NOLINT
 // NOLINTBEGIN(*magic-numbers*)
 
 struct GeneratorSubscriptionManager : public Test {
+  static constexpr DatasourceId SourceDatasourceId = 42;
+  static constexpr DatasourceId OtherDatasourceId = 43;
+
   StrictMock<mock::MarketDataRequestReceiver> receiver;
   std::shared_ptr<NiceMock<mock::ComponentContext>> context =
       std::make_shared<NiceMock<mock::ComponentContext>>();
@@ -53,11 +56,14 @@ struct GeneratorSubscriptionManager : public Test {
   [[nodiscard]]
   static auto make_requirement(Symbol symbol = Symbol{"AAPL"},
                                MarketDepth depth = AllDepthLevels,
-                               protocol::Session session = make_session())
+                               protocol::Session session = make_session(),
+                               DatasourceId datasource_id = SourceDatasourceId)
       -> SubscriptionRequirement {
     return SubscriptionRequirement{.session = std::move(session),
                                    .symbol = std::move(symbol),
-                                   .depth = depth};
+                                   .datasource_id = datasource_id,
+                                   .depth = depth,
+                                   .order_counterparty = std::nullopt};
   }
 
   [[nodiscard]]
@@ -121,7 +127,8 @@ TEST_F(GeneratorSubscriptionManager, ReturnsGeneratedIdentifierAsRequestId) {
   EXPECT_CALL(*context, generate_identifier()).WillOnce(Return("MD-42"));
 
   ASSERT_THAT(manager.add_datasource_subscription(make_requirement()),
-              Optional(Eq(MdRequestId{"MD-42"})));
+              Optional(Field(&MergedSubscription::request_id,
+                             Eq(MdRequestId{"MD-42"}))));
 }
 
 TEST_F(GeneratorSubscriptionManager,
@@ -130,7 +137,33 @@ TEST_F(GeneratorSubscriptionManager,
   manager.add_datasource_subscription(make_requirement());
 
   ASSERT_THAT(manager.add_datasource_subscription(make_requirement()),
-              Optional(Eq(MdRequestId{"MD-42"})));
+              Optional(Field(&MergedSubscription::request_id,
+                             Eq(MdRequestId{"MD-42"}))));
+}
+
+TEST_F(GeneratorSubscriptionManager, ReturnsDepthOfRequirement) {
+  ASSERT_THAT(manager.add_datasource_subscription(
+                  make_requirement(Symbol{"AAPL"}, MarketDepth{5})),
+              Optional(Field(&MergedSubscription::depth, Eq(MarketDepth{5}))));
+}
+
+TEST_F(GeneratorSubscriptionManager, ReturnsMaximumDepthOfMergedRequirements) {
+  manager.add_datasource_subscription(
+      make_requirement(Symbol{"AAPL"}, MarketDepth{5}));
+
+  ASSERT_THAT(manager.add_datasource_subscription(
+                  make_requirement(Symbol{"AAPL"}, MarketDepth{1})),
+              Optional(Field(&MergedSubscription::depth, Eq(MarketDepth{5}))));
+}
+
+TEST_F(GeneratorSubscriptionManager,
+       ReturnsAllDepthLevelsWhenAnyMergedRequirementRequestsFullBook) {
+  manager.add_datasource_subscription(
+      make_requirement(Symbol{"AAPL"}, AllDepthLevels));
+
+  ASSERT_THAT(manager.add_datasource_subscription(
+                  make_requirement(Symbol{"AAPL"}, MarketDepth{5})),
+              Optional(Field(&MergedSubscription::depth, Eq(AllDepthLevels))));
 }
 
 TEST_F(GeneratorSubscriptionManager, ClearsCachedMarketDataOnUnsubscribe) {
@@ -437,14 +470,14 @@ TEST_F(GeneratorSubscriptionManager, ResendsSubscribeRequestAfterUnsubscribe) {
 TEST_F(GeneratorSubscriptionManager, ReturnsNoRequestIdForUnknownSymbol) {
   add_datasource_subscriptions({make_requirement()});
 
-  ASSERT_THAT(manager.find_request_id(make_session(), Symbol{"MSFT"}),
+  ASSERT_THAT(manager.find_request_id(SourceDatasourceId, Symbol{"MSFT"}),
               Eq(std::nullopt));
 }
 
-TEST_F(GeneratorSubscriptionManager, ReturnsNoRequestIdForUnknownSession) {
+TEST_F(GeneratorSubscriptionManager, ReturnsNoRequestIdForUnknownDatasource) {
   add_datasource_subscriptions({make_requirement()});
 
-  ASSERT_THAT(manager.find_request_id(make_session("OTHER"), Symbol{"AAPL"}),
+  ASSERT_THAT(manager.find_request_id(OtherDatasourceId, Symbol{"AAPL"}),
               Eq(std::nullopt));
 }
 
@@ -452,7 +485,22 @@ TEST_F(GeneratorSubscriptionManager, ReturnsRequestIdOfConfiguredInstrument) {
   EXPECT_CALL(*context, generate_identifier()).WillOnce(Return("MD-42"));
   add_datasource_subscriptions({make_requirement()});
 
-  ASSERT_THAT(manager.find_request_id(make_session(), Symbol{"AAPL"}),
+  ASSERT_THAT(manager.find_request_id(SourceDatasourceId, Symbol{"AAPL"}),
+              Optional(Eq(MdRequestId{"MD-42"})));
+}
+
+TEST_F(GeneratorSubscriptionManager,
+       ReturnsRequestIdOfMergedSubscriptionForEveryDatasource) {
+  EXPECT_CALL(*context, generate_identifier()).WillOnce(Return("MD-42"));
+  add_datasource_subscriptions(
+      {make_requirement(
+           Symbol{"AAPL"}, AllDepthLevels, make_session(), SourceDatasourceId),
+       make_requirement(
+           Symbol{"AAPL"}, AllDepthLevels, make_session(), OtherDatasourceId)});
+
+  EXPECT_THAT(manager.find_request_id(SourceDatasourceId, Symbol{"AAPL"}),
+              Optional(Eq(MdRequestId{"MD-42"})));
+  EXPECT_THAT(manager.find_request_id(OtherDatasourceId, Symbol{"AAPL"}),
               Optional(Eq(MdRequestId{"MD-42"})));
 }
 

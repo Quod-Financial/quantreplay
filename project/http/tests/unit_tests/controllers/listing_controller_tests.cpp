@@ -83,7 +83,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
   EXPECT_EQ(code, Code::Bad_Request);
   EXPECT_THAT(content,
               HasSubstr("datasourceId `24' does not refer to an "
-                        "existing data source"));
+                        "existing datasource"));
 }
 
 TEST_F(HttpListingControllerRandomPriceSource,
@@ -101,19 +101,33 @@ TEST_F(HttpListingControllerRandomPriceSource,
 }
 
 TEST_F(HttpListingControllerRandomPriceSource,
-       RejectsInsertWithNonFixDatasource) {
+       InsertsListingWithCsvDatasourceOfItsVenue) {
   EXPECT_CALL(datasources(), select_single(Eq(DatasourceId)))
       .WillOnce(Return(
           make_datasource(Datasource::Format::Csv, std::string{VenueId})));
-  EXPECT_CALL(listings(), add).Times(0);
+  EXPECT_CALL(listings(), add)
+      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
 
   const auto [code, content] = controller->insert_listing(
       R"({"venueId":"LSE",)"
       R"("randomPriceSources":[{"datasourceId":24,"symbol":"AAPL.OQ"}]})");
 
-  EXPECT_EQ(code, Code::Bad_Request);
-  EXPECT_THAT(content,
-              HasSubstr("must refer to a data source with the FIX format"));
+  EXPECT_EQ(code, Code::Created);
+}
+
+TEST_F(HttpListingControllerRandomPriceSource,
+       InsertsListingWithPostgresDatasourceOfItsVenue) {
+  EXPECT_CALL(datasources(), select_single(Eq(DatasourceId)))
+      .WillOnce(Return(
+          make_datasource(Datasource::Format::Postgres, std::string{VenueId})));
+  EXPECT_CALL(listings(), add)
+      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+
+  const auto [code, content] = controller->insert_listing(
+      R"({"venueId":"LSE",)"
+      R"("randomPriceSources":[{"datasourceId":24,"symbol":"AAPL.OQ"}]})");
+
+  EXPECT_EQ(code, Code::Created);
 }
 
 TEST_F(HttpListingControllerRandomPriceSource,
@@ -128,7 +142,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
 
   EXPECT_EQ(code, Code::Bad_Request);
   EXPECT_THAT(content,
-              HasSubstr("must refer to a data source on the `LSE' venue"));
+              HasSubstr("must refer to a datasource on the `LSE' venue"));
 }
 
 TEST_F(HttpListingControllerRandomPriceSource,
@@ -174,7 +188,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
   EXPECT_EQ(code, Code::Bad_Request);
   EXPECT_THAT(content,
               HasSubstr("datasourceId `24' does not refer to an "
-                        "existing data source"));
+                        "existing datasource"));
 }
 
 TEST_F(HttpListingControllerRandomPriceSource,
@@ -227,22 +241,21 @@ TEST_F(HttpListingControllerRandomPriceSource,
 }
 
 TEST_F(HttpListingControllerRandomPriceSource,
-       RejectsUpdateWithNonFixDatasource) {
+       UpdatesListingWithCsvDatasourceOfItsVenue) {
   EXPECT_CALL(listings(),
               select_single(Matcher<const std::string&>(Eq("AAPL"))))
       .WillOnce(Return(make_listing(Listing::Patch{})));
   EXPECT_CALL(datasources(), select_single(Eq(DatasourceId)))
       .WillOnce(Return(
           make_datasource(Datasource::Format::Csv, std::string{VenueId})));
-  EXPECT_CALL(listings(), update(_, Matcher<const std::string&>(_))).Times(0);
+  EXPECT_CALL(listings(), update(_, Matcher<const std::string&>(Eq("AAPL"))))
+      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
 
   const auto [code, content] = controller->update_listing(
       "AAPL",
       R"({"randomPriceSources":[{"datasourceId":24,"symbol":"AAPL.OQ"}]})");
 
-  EXPECT_EQ(code, Code::Bad_Request);
-  EXPECT_THAT(content,
-              HasSubstr("must refer to a data source with the FIX format"));
+  EXPECT_EQ(code, Code::Ok);
 }
 
 TEST_F(HttpListingControllerRandomPriceSource,
@@ -260,7 +273,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
 
   EXPECT_EQ(code, Code::Bad_Request);
   EXPECT_THAT(content,
-              HasSubstr("must refer to a data source on the `LSE' venue"));
+              HasSubstr("must refer to a datasource on the `LSE' venue"));
 }
 
 TEST_F(HttpListingControllerRandomPriceSource,
@@ -308,13 +321,12 @@ TEST_F(HttpListingControllerRandomPriceSource,
 }
 
 TEST_F(HttpListingControllerRandomPriceSource,
-       RejectsInsertWhenAnyRandomPriceSourceRefersToNonFixDatasource) {
+       RejectsInsertWhenAnyRandomPriceSourceRefersToDatasourceOfAnotherVenue) {
   EXPECT_CALL(datasources(), select_single(Eq(DatasourceId)))
       .Times(AtMost(1))
       .WillRepeatedly(Return(make_fix_datasource()));
   EXPECT_CALL(datasources(), select_single(Eq(OtherDatasourceId)))
-      .WillOnce(Return(
-          make_datasource(Datasource::Format::Csv, std::string{VenueId})));
+      .WillOnce(Return(make_datasource(Datasource::Format::Fix, "XETRA")));
   EXPECT_CALL(listings(), add).Times(0);
 
   const auto [code, content] = controller->insert_listing(
@@ -324,7 +336,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
 
   EXPECT_EQ(code, Code::Bad_Request);
   EXPECT_THAT(content,
-              HasSubstr("must refer to a data source with the FIX format"));
+              HasSubstr("must refer to a datasource on the `LSE' venue"));
 }
 
 TEST_F(HttpListingControllerRandomPriceSource,

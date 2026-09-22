@@ -12,7 +12,7 @@
 namespace simulator::generator::mdata {
 
 OrderBookDerivation::OrderBookDerivation(
-    std::shared_ptr<historical::Processor> processor,
+    std::shared_ptr<historical::RecordSink> processor,
     std::shared_ptr<ComponentContext> context)
     : processor_{std::move(processor)}, context_{std::move(context)} {
   assert(processor_);
@@ -31,13 +31,13 @@ auto OrderBookDerivation::add(const MdRequestId& request_id,
   }
 
   OrderDerivationRequirement& bound = binding->second.requirement;
-  bound.depth = merge_depth(bound.depth, requirement.depth);
+  bound.depth = requirement.depth;
   log::debug(
-      "merged an order derivation requirement on `{}' into the one of the "
-      "`{}' market data subscription with the {} depth, keeping the `{}' "
+      "reused the order derivation of the `{}' market data subscription for "
+      "another requirement on `{}' with the {} depth, keeping the `{}' "
       "counterparty",
-      bound.symbol,
       request_id,
+      bound.symbol,
       bound.depth,
       bound.counterparty);
 }

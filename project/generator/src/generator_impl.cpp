@@ -1,7 +1,6 @@
 #include "ih/generator_impl.hpp"
 
 #include <algorithm>
-#include <iterator>
 #include <memory>
 #include <optional>
 #include <span>
@@ -16,7 +15,9 @@
 #include "ih/context/generation_manager.hpp"
 #include "ih/context/order_generation_context_impl.hpp"
 #include "ih/factory/executable_factory_impl.hpp"
-#include "ih/historical/processor.hpp"
+#include "ih/historical/processing/action_processor.hpp"
+#include "ih/historical/processing/action_sink.hpp"
+#include "ih/historical/processing/composite_processor.hpp"
 #include "ih/market_data/market_data_provider.hpp"
 #include "ih/market_data/utils.hpp"
 #include "ih/random/seed_hasher.hpp"
@@ -34,6 +35,8 @@ GeneratorImpl::GeneratorImpl(const data_layer::Venue& target_venue,
       price_cache_{std::make_shared<mdata::PriceCache>()},
       local_subscription_manager_{price_cache_, generation_manager_},
       subscription_manager_{price_cache_, generation_manager_},
+      historical_random_price_source_registry_{price_cache_,
+                                               generation_manager_},
       rnd_executor_factory_{InstrumentRandomGeneratorFactoryImpl::create()},
       hist_executor_factory_{std::make_unique<HistoricalReplierFactoryImpl>()} {
   assert(generation_manager_);
@@ -52,11 +55,11 @@ GeneratorImpl::GeneratorImpl(const data_layer::Venue& target_venue,
         candidate.context->get_instrument().listing_id());
   }
 
-  initialize_market_data_subscriptions(
+  initialize_datasource_subscriptions(datasources);
+  initialize_random_price_sources(
       datasources, listings, random_generation_listings);
-  initialize_order_book_derivation(datasources);
   initialize_random_generation_executors(candidates);
-  initialize_historical_executor(datasources);
+  initialize_historical_repliers(datasources);
 
   log::info("generator initialized successfully");
 }
@@ -117,8 +120,8 @@ auto GeneratorImpl::start() -> void {
     entry.executor->launch();
   }
 
-  if (historical_replier_) {
-    historical_replier_->launch();
+  for (const auto& replier : historical_repliers_) {
+    replier->launch();
   }
 }
 
@@ -268,69 +271,96 @@ auto GeneratorImpl::select_venue_datasources() const
   return data_layer::select_all_datasources(database_context_, std::move(pred));
 }
 
-auto GeneratorImpl::initialize_historical_executor(
+auto GeneratorImpl::initialize_historical_repliers(
     const std::vector<data_layer::Datasource>& datasources) -> void {
+  for (const data_layer::Datasource& datasource : datasources) {
+    if (datasource.format() == data_layer::Datasource::Format::Fix) {
+      continue;
+    }
+
+    std::unique_ptr<historical::ActionSink> processor =
+        make_datasource_processor(datasource);
+    if (!processor) {
+      log::info(
+          "neither order generation nor random prices of the venue use the "
+          "`{}' datasource (id: {}), skipping its replaying",
+          datasource.name(),
+          datasource.datasource_id());
+      continue;
+    }
+
+    historical_repliers_.push_back(
+        Executor::create(hist_executor_factory_->create_executable(
+                             datasource, std::move(processor)),
+                         generation_manager_));
+  }
+}
+
+auto GeneratorImpl::make_datasource_processor(
+    const data_layer::Datasource& datasource)
+    -> std::unique_ptr<historical::ActionSink> {
+  historical::CompositeProcessor::Processors processors;
+  if (auto orders_processor = make_orders_processor(datasource)) {
+    processors.push_back(std::move(orders_processor));
+  }
+  if (auto price_source_processor = make_price_source_processor(datasource)) {
+    processors.push_back(std::move(price_source_processor));
+  }
+
+  if (processors.empty()) {
+    return nullptr;
+  }
+  if (processors.size() == 1) {
+    return std::move(processors.front());
+  }
+  return std::make_unique<historical::CompositeProcessor>(
+      std::move(processors));
+}
+
+auto GeneratorImpl::make_orders_processor(
+    const data_layer::Datasource& datasource)
+    -> std::unique_ptr<historical::ActionSink> {
+  if (mdata::used_only_for_random_prices(datasource)) {
+    log::info(
+        "the `{}' datasource (id: {}) is used only as a random price source, "
+        "no order is derived from it",
+        datasource.name(),
+        datasource.datasource_id());
+    return nullptr;
+  }
+
   if (order_listings_contexts_.empty()) {
-    historical_replier_ = nullptr;
-    return;
+    log::info(
+        "no instrument of the venue is configured for order generation, no "
+        "order is derived from the `{}' datasource (id: {})",
+        datasource.name(),
+        datasource.datasource_id());
+    return nullptr;
   }
 
-  std::vector<data_layer::Datasource> non_fix_datasources;
-  std::ranges::copy_if(datasources,
-                       std::back_inserter(non_fix_datasources),
-                       [](const data_layer::Datasource& datasource) {
-                         return datasource.format() !=
-                                data_layer::Datasource::Format::Fix;
-                       });
-
-  auto executable = hist_executor_factory_->create_orders_executable(
-      non_fix_datasources, order_listings_contexts_);
-
-  historical_replier_ =
-      Executor::create(std::move(executable), generation_manager_);
+  return hist_executor_factory_->create_orders_processor(
+      order_listings_contexts_);
 }
 
-auto GeneratorImpl::initialize_market_data_subscriptions(
-    const std::vector<data_layer::Datasource>& datasources,
-    const std::vector<data_layer::Listing>& listings,
-    const std::unordered_set<mdata::ListingId>& random_generation_listings)
-    -> void {
-  const auto datasource_requirements =
-      mdata::make_datasource_subscription_requirements(datasources);
-  for (const auto& requirement : datasource_requirements) {
-    subscription_manager_.add_datasource_subscription(requirement);
+auto GeneratorImpl::make_price_source_processor(
+    const data_layer::Datasource& datasource)
+    -> std::unique_ptr<historical::ActionSink> {
+  auto symbols = historical_random_price_source_registry_.symbols_of(
+      datasource.datasource_id());
+  if (symbols.empty()) {
+    log::debug(
+        "no listing bases its random prices on the `{}' datasource (id: {}), "
+        "no price is taken from it",
+        datasource.name(),
+        datasource.datasource_id());
+    return nullptr;
   }
 
-  const auto listing_price_sources = mdata::make_listing_random_price_sources(
-      datasources, listings, random_generation_listings);
-  for (const auto& [listing_id, price_sources] : listing_price_sources) {
-    std::vector<MdRequestId> request_ids;
-    request_ids.reserve(price_sources.size());
-
-    for (const mdata::SubscriptionKey& price_source : price_sources) {
-      const auto request_id = subscription_manager_.find_request_id(
-          price_source.session, price_source.symbol);
-      if (!request_id.has_value()) {
-        log::warn(
-            "the random prices of the listing (id: {}) are based on the `{}' "
-            "symbol, which is not subscribed to, ignoring the random price "
-            "source",
-            listing_id,
-            price_source.symbol);
-        continue;
-      }
-
-      request_ids.push_back(*request_id);
-      price_cache_->add(*request_id);
-    }
-
-    if (!request_ids.empty()) {
-      random_price_request_ids_.emplace(listing_id, std::move(request_ids));
-    }
-  }
+  return hist_executor_factory_->create_price_source_processor(
+      std::move(symbols), price_cache_);
 }
 
-auto GeneratorImpl::initialize_order_book_derivation(
+auto GeneratorImpl::initialize_datasource_subscriptions(
     const std::vector<data_layer::Datasource>& datasources) -> void {
   order_book_derivation_ = std::make_unique<mdata::OrderBookDerivation>(
       std::make_shared<historical::ActionProcessor>(order_listings_contexts_),
@@ -344,8 +374,15 @@ auto GeneratorImpl::initialize_order_book_derivation(
     }
   }
 
-  for (mdata::OrderDerivationRequirement& requirement :
-       mdata::make_order_derivation_requirements(datasources)) {
+  for (const mdata::SubscriptionRequirement& requirement :
+       mdata::make_datasource_subscription_requirements(datasources)) {
+    const auto subscription =
+        subscription_manager_.add_datasource_subscription(requirement);
+    if (!subscription.has_value() ||
+        !requirement.order_counterparty.has_value()) {
+      continue;
+    }
+
     if (!listing_symbols.contains(requirement.symbol.value())) {
       log::warn(
           "the `{}' symbol subscribed to on an external feed does not match "
@@ -355,23 +392,79 @@ auto GeneratorImpl::initialize_order_book_derivation(
       continue;
     }
 
-    const auto request_id = subscription_manager_.find_request_id(
-        requirement.session, requirement.symbol);
-    if (!request_id.has_value()) {
-      log::warn(
-          "the `{}' symbol is not subscribed to on the external feed, no "
-          "orders are derived from its market data",
-          requirement.symbol);
-      continue;
-    }
-
     log::info(
         "orders for the `{}' listing are derived from the `{}' market data "
         "subscription",
         requirement.symbol,
-        *request_id);
-    order_book_derivation_->add(*request_id, std::move(requirement));
+        subscription->request_id);
+    order_book_derivation_->add(
+        subscription->request_id,
+        mdata::OrderDerivationRequirement{
+            .symbol = requirement.symbol,
+            .depth = subscription->depth,
+            .counterparty = *requirement.order_counterparty});
   }
+}
+
+auto GeneratorImpl::initialize_random_price_sources(
+    const std::vector<data_layer::Datasource>& datasources,
+    const std::vector<data_layer::Listing>& listings,
+    const std::unordered_set<mdata::ListingId>& random_generation_listings)
+    -> void {
+  const auto listing_price_sources = mdata::make_listing_random_price_sources(
+      datasources, listings, random_generation_listings);
+  for (const auto& [listing_id, price_sources] : listing_price_sources) {
+    std::vector<MdRequestId> request_ids;
+    request_ids.reserve(price_sources.size());
+
+    for (const mdata::RandomPriceSourceKey& price_source : price_sources) {
+      const auto request_id = resolve_price_source(datasources, price_source);
+      if (!request_id.has_value()) {
+        log::warn(
+            "the random prices of the listing (id: {}) are based on the `{}' "
+            "symbol, which is not subscribed to, ignoring the random price "
+            "source",
+            listing_id,
+            price_source.symbol);
+        continue;
+      }
+
+      // Datasources sharing a session and a symbol resolve into one entry.
+      if (std::ranges::find(request_ids, *request_id) != request_ids.end()) {
+        continue;
+      }
+
+      request_ids.push_back(*request_id);
+      price_cache_->add(*request_id);
+    }
+
+    if (!request_ids.empty()) {
+      random_price_request_ids_.emplace(listing_id, std::move(request_ids));
+    }
+  }
+}
+
+auto GeneratorImpl::resolve_price_source(
+    const std::vector<data_layer::Datasource>& datasources,
+    const mdata::RandomPriceSourceKey& price_source)
+    -> std::optional<MdRequestId> {
+  if (auto request_id = subscription_manager_.find_request_id(
+          price_source.datasource_id, price_source.symbol)) {
+    return request_id;
+  }
+
+  const auto datasource = std::ranges::find_if(
+      datasources, [&price_source](const data_layer::Datasource& candidate) {
+        return candidate.datasource_id() == price_source.datasource_id;
+      });
+  if (datasource == datasources.end() ||
+      (datasource->format() != data_layer::Datasource::Format::Csv &&
+       datasource->format() != data_layer::Datasource::Format::Postgres)) {
+    return std::nullopt;
+  }
+
+  return std::make_optional<MdRequestId>(
+      historical_random_price_source_registry_.add(price_source));
 }
 
 auto GeneratorImpl::subscribe_to_market_data() -> void {
@@ -382,6 +475,7 @@ auto GeneratorImpl::subscribe_to_market_data() -> void {
 auto GeneratorImpl::unsubscribe_from_market_data() -> void {
   local_subscription_manager_.unsubscribe();
   subscription_manager_.unsubscribe();
+  historical_random_price_source_registry_.reset();
 }
 
 auto GeneratorImpl::terminate() noexcept -> void { terminate_generator(); }
@@ -436,9 +530,10 @@ auto GeneratorImpl::terminate_generator() noexcept -> void {
   }
   listings_random_generators_.clear();
 
-  if (historical_replier_) {
-    historical_replier_->terminate();
+  for (auto& replier : historical_repliers_) {
+    replier->terminate();
   }
+  historical_repliers_.clear();
 
   generation_manager_->terminate();
 }

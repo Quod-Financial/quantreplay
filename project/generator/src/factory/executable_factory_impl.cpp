@@ -5,6 +5,9 @@
 #include <utility>
 
 #include "ih/context/order_generation_context_impl.hpp"
+#include "ih/historical/processing/action_processor.hpp"
+#include "ih/historical/processing/action_sink.hpp"
+#include "ih/historical/processing/price_processor.hpp"
 #include "ih/historical/replier.hpp"
 #include "ih/random/algorithm/order_generation_algorithm.hpp"
 #include "ih/random/instrument_generator.hpp"
@@ -32,10 +35,27 @@ auto InstrumentRandomGeneratorFactoryImpl::create_orders_executable(
       random::OrderGenerationAlgorithm::create(generation_context));
 }
 
-auto HistoricalReplierFactoryImpl::create_orders_executable(
-    const Datasources& datasources, const InstrumentsContexts& contexts)
+auto HistoricalReplierFactoryImpl::create_orders_processor(
+    const InstrumentsContexts& contexts)
+    -> std::unique_ptr<historical::ActionSink> {
+  return std::make_unique<historical::ActionProcessor>(contexts);
+}
+
+auto HistoricalReplierFactoryImpl::create_price_source_processor(
+    PriceSourceSymbols symbols, std::shared_ptr<mdata::BestPricesSink> sink)
+    -> std::unique_ptr<historical::ActionSink> {
+  return std::make_unique<historical::PriceProcessor>(std::move(sink),
+                                                      std::move(symbols));
+}
+
+auto HistoricalReplierFactoryImpl::create_executable(
+    const data_layer::Datasource& datasource,
+    std::unique_ptr<historical::ActionSink> processor)
     -> std::unique_ptr<Executable> {
-  return std::make_unique<historical::Replier>(datasources, contexts);
+  assert(processor);
+
+  return std::make_unique<historical::Replier>(datasource,
+                                               std::move(processor));
 }
 
 }  // namespace simulator::generator

@@ -16,6 +16,14 @@
 
 namespace simulator::generator::mdata {
 
+struct MergedSubscription {
+  MdRequestId request_id;
+  MarketDepth depth{AllDepthLevels};
+
+  [[nodiscard]]
+  auto operator==(const MergedSubscription&) const -> bool = default;
+};
+
 // Merges the configured market data requirements into one subscription per
 // session and symbol, and sends subscribe/unsubscribe requests for them.
 // All the requirements have to be added before the manager is used, as the
@@ -35,7 +43,7 @@ class SubscriptionManager {
   auto operator=(SubscriptionManager&&) -> SubscriptionManager& = delete;
 
   auto add_datasource_subscription(const SubscriptionRequirement& requirement)
-      -> std::optional<MdRequestId>;
+      -> std::optional<MergedSubscription>;
 
   auto subscribe() -> void;
 
@@ -54,8 +62,7 @@ class SubscriptionManager {
   auto handle_reject(const protocol::MarketDataReject& reject) -> void;
 
   [[nodiscard]]
-  auto find_request_id(const protocol::Session& session,
-                       const Symbol& symbol) const
+  auto find_request_id(DatasourceId datasource_id, const Symbol& symbol) const
       -> std::optional<MdRequestId>;
 
  private:
