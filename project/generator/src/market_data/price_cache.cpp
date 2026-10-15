@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <mutex>
+#include <optional>
 #include <set>
 #include <span>
 
@@ -94,13 +95,18 @@ auto PriceCache::reset(const MdRequestId& request_id) -> void {
 }
 
 auto PriceCache::market_state(const MdRequestId& order_book,
-                              std::span<const MdRequestId> external) const
+                              std::span<const MdRequestId> external,
+                              OrderBookPrices order_book_prices) const
     -> MarketState {
   MarketState result;
   const std::shared_lock lock{mutex_};
 
   if (const auto book = books_.find(order_book); book != books_.end()) {
     result = book->second.state();
+  }
+  if (order_book_prices == OrderBookPrices::Excluded) {
+    result.best_bid_price.reset();
+    result.best_offer_price.reset();
   }
 
   auto& best_bid_price = result.best_bid_price;

@@ -61,6 +61,38 @@ TEST(GeneratorMarketDataSessionParsing, ParsesSessionQualifier) {
               Optional(Eq(protocol::fix::SessionQualifier{"QUALIFIER"})));
 }
 
+struct GeneratorMarketDataOrderBookPricesSelection : public Test {
+  data_layer::Listing::Patch patch =
+      data_layer::Listing::Patch{}.with_venue_id("LSE");
+
+  [[nodiscard]]
+  auto make_listing() const -> data_layer::Listing {
+    return data_layer::Listing::create(patch, 42);
+  }
+};
+
+TEST_F(GeneratorMarketDataOrderBookPricesSelection,
+       AggregatesOrderBookPricesWhenFlagIsAbsent) {
+  EXPECT_THAT(order_book_prices_of(make_listing()),
+              Eq(OrderBookPrices::Aggregated));
+}
+
+TEST_F(GeneratorMarketDataOrderBookPricesSelection,
+       AggregatesOrderBookPricesWhenFlagIsFalse) {
+  patch.with_random_price_exclude_current_listing_flag(false);
+
+  EXPECT_THAT(order_book_prices_of(make_listing()),
+              Eq(OrderBookPrices::Aggregated));
+}
+
+TEST_F(GeneratorMarketDataOrderBookPricesSelection,
+       ExcludesOrderBookPricesWhenFlagIsTrue) {
+  patch.with_random_price_exclude_current_listing_flag(true);
+
+  EXPECT_THAT(order_book_prices_of(make_listing()),
+              Eq(OrderBookPrices::Excluded));
+}
+
 struct GeneratorMarketDataDatasourceRequirementBuilder : public Test {
   using Datasource = data_layer::Datasource;
   using DatasourceListing = data_layer::DatasourceListing;

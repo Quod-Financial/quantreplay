@@ -184,6 +184,14 @@ auto bases_random_prices_on_datasource(const data_layer::Listing& listing)
   return !listing.random_price_sources().empty();
 }
 
+auto order_book_prices_of(const data_layer::Listing& listing)
+    -> OrderBookPrices {
+  return listing.random_price_exclude_current_listing_flag().value_or(
+             data_layer::Listing::DefaultRandomPriceExcludeCurrentListingFlag)
+             ? OrderBookPrices::Excluded
+             : OrderBookPrices::Aggregated;
+}
+
 auto used_only_for_random_prices(const data_layer::Datasource& datasource)
     -> bool {
   return datasource.random_price_only_flag().value_or(

@@ -87,6 +87,8 @@ constexpr std::string_view RandomAggressiveAmtMaximum{"randomAggAmtMaximum"};
 constexpr std::string_view Enabled{"enabled"};
 constexpr std::string_view RandomOrdersEnabled{"randomOrdersEnabled"};
 constexpr std::string_view RandomPriceSources{"randomPriceSources"};
+constexpr std::string_view RandomPriceExcludeCurrentListing{
+    "randomPriceExcludeCurrentListing"};
 constexpr std::string_view Listings{"listings"};
 
 }  // namespace listing_key

@@ -52,11 +52,13 @@ class Listing {
     RandomAggressiveQtyMinimum,
     RandomAggressiveQtyMaximum,
     RandomAggressiveAmtMinimum,
-    RandomAggressiveAmtMaximum
+    RandomAggressiveAmtMaximum,
+    RandomPriceExcludeCurrentListing
   };
 
   static constexpr bool DefaultEnabledFlag{true};
   static constexpr bool DefaultRandomOrdersEnabledFlag{true};
+  static constexpr bool DefaultRandomPriceExcludeCurrentListingFlag{false};
 
   [[nodiscard]]
   static auto create(Listing::Patch snapshot, std::uint64_t id) -> Listing;
@@ -153,6 +155,10 @@ class Listing {
   auto random_orders_enabled_flag() const noexcept -> std::optional<bool>;
 
   [[nodiscard]]
+  auto random_price_exclude_current_listing_flag() const noexcept
+      -> std::optional<bool>;
+
+  [[nodiscard]]
   auto random_aggressive_qty_minimum() const noexcept -> std::optional<double>;
 
   [[nodiscard]]
@@ -212,6 +218,7 @@ class Listing {
 
   std::optional<bool> enabled_flag_;
   std::optional<bool> random_orders_enabled_flag_;
+  std::optional<bool> random_price_exclude_current_listing_flag_;
 };
 
 class Listing::Patch {
@@ -345,6 +352,12 @@ class Listing::Patch {
       -> Patch&;
 
   [[nodiscard]]
+  auto random_price_exclude_current_listing_flag() const noexcept
+      -> PatchField<bool>;
+  auto with_random_price_exclude_current_listing_flag(
+      std::optional<bool> flag) noexcept -> Patch&;
+
+  [[nodiscard]]
   auto random_aggressive_qty_minimum() const noexcept -> PatchField<double>;
   auto with_random_aggressive_qty_minimum(std::optional<double> qty) noexcept
       -> Patch&;
@@ -411,6 +424,7 @@ class Listing::Patch {
 
   PatchField<bool> enabled_flag_;
   PatchField<bool> random_orders_enabled_flag_;
+  PatchField<bool> random_price_exclude_current_listing_flag_;
 };
 
 }  // namespace simulator::data_layer

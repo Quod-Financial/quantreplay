@@ -21,4 +21,5 @@ add_target_tests(
     unit_tests/tools/numeric_round_to_tick_tests.cpp
     unit_tests/tools/numeric_tests.cpp
     unit_tests/tools/string_checkers_tests.cpp
-    unit_tests/tools/time_tests.cpp)
+    unit_tests/tools/time_tests.cpp
+    unit_tests/version_tests.cpp)

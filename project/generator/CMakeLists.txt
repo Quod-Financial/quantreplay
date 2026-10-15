@@ -60,6 +60,7 @@ add_static_library(
     ih/market_data/market_data_provider.hpp
     ih/market_data/market_state.hpp
     ih/market_data/order_book_derivation.hpp
+    ih/market_data/order_book_prices.hpp
     ih/market_data/price_cache.hpp
     ih/market_data/record_factory.hpp
     ih/market_data/subscription.hpp

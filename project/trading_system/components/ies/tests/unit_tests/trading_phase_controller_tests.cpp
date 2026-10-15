@@ -393,6 +393,41 @@ TEST_F(TradingSystemIesAuctionController,
 }
 
 TEST_F(TradingSystemIesAuctionController,
+       HoldsCallSubPhaseUntilSubMinuteConfiguredEnd) {
+  set_uncross_offset(0s);
+  schedule({{.begin = 16h,
+             .end = 16h + 30s,
+             .phase = TradingPhase::Option::ClosingAuction},
+            {.begin = 16h + 30s,
+             .end = 17h,
+             .phase = TradingPhase::Option::Closed}});
+
+  tick(16h);
+  tick(16h + 29s);
+
+  ASSERT_THAT(reported_phases,
+              ElementsAre(call_of(TradingPhase::Option::ClosingAuction)));
+}
+
+TEST_F(TradingSystemIesAuctionController, UncrossesAtSubMinuteConfiguredEnd) {
+  set_uncross_offset(0s);
+  schedule({{.begin = 16h,
+             .end = 16h + 30s,
+             .phase = TradingPhase::Option::ClosingAuction},
+            {.begin = 16h + 30s,
+             .end = 17h,
+             .phase = TradingPhase::Option::Closed}});
+
+  tick(16h);
+  tick(16h + 30s);
+
+  ASSERT_THAT(reported_phases,
+              ElementsAre(call_of(TradingPhase::Option::ClosingAuction),
+                          uncrossing_of(TradingPhase::Option::ClosingAuction),
+                          closed_phase()));
+}
+
+TEST_F(TradingSystemIesAuctionController,
        FallsBackToOpenWhenNoPhaseIsScheduledAtAuctionEnd) {
   set_uncross_offset(0s);
   schedule({{.begin = 9h,

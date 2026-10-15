@@ -513,6 +513,24 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomOrdersEnabled) {
   ASSERT_EQ(marshall(listing), expected_json);
 }
 
+TEST_F(HttpJsonListingMarshaller, MarshallsRandomPriceExcludeCurrentListing) {
+  const auto patch =
+      make_default_patch().with_random_price_exclude_current_listing_flag(
+          true);
+  const auto listing = Listing::create(patch, 42);
+
+  // clang-format off
+  const std::string expected_json{"{"
+      R"("id":42,)"
+      R"("venueId":"dummy",)"
+      R"("randomPriceExcludeCurrentListing":true,)"
+      R"("randomPriceSources":[])"
+  "}"};
+  // clang-format on
+
+  ASSERT_EQ(marshall(listing), expected_json);
+}
+
 TEST_F(HttpJsonListingMarshaller, MarshallsRandomAggressiveQtyMinimum) {
   const auto patch =
       make_default_patch().with_random_aggressive_qty_minimum(42.42);
@@ -1123,6 +1141,28 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomOrdersEnabled) {
   ListingUnmarshaller::unmarshall(json, patch);
 
   ASSERT_THAT(patch.random_orders_enabled_flag(),
+              IsPatchFieldWithValue(Optional(true)));
+}
+
+TEST_F(HttpJsonListingUnmarshaller,
+       UnmarshallsRandomPriceExcludeCurrentListingNull) {
+  constexpr std::string_view json{
+      R"({"randomPriceExcludeCurrentListing":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.random_price_exclude_current_listing_flag(),
+              IsPatchFieldWithValue(std::nullopt));
+}
+
+TEST_F(HttpJsonListingUnmarshaller,
+       UnmarshallsRandomPriceExcludeCurrentListing) {
+  constexpr std::string_view json{
+      R"({"randomPriceExcludeCurrentListing":true})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.random_price_exclude_current_listing_flag(),
               IsPatchFieldWithValue(Optional(true)));
 }
 

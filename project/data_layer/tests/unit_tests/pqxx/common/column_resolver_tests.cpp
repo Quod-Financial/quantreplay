@@ -280,6 +280,11 @@ TEST_F(DataLayerListingResolver, ResolvesRandomOrdersEnabled) {
   EXPECT_EQ(resolver(Column::RandomOrdersEnabled), "random_orders_enabled");
 }
 
+TEST_F(DataLayerListingResolver, ResolvesRandomPriceExcludeCurrentListing) {
+  EXPECT_EQ(resolver(Column::RandomPriceExcludeCurrentListing),
+            "random_price_exclude_current_listing");
+}
+
 TEST_F(DataLayerListingResolver, ResolvesRandomAggressiveQtyMinimum) {
   EXPECT_EQ(resolver(Column::RandomAggressiveQtyMinimum),
             "random_aggressive_qty_minimum");

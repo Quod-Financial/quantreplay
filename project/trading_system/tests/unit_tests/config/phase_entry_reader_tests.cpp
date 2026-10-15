@@ -63,7 +63,8 @@ TEST_F(TradingSystemPhaseEntryReader, SetsEndRangeToZeroMinuteIfNotSet) {
   patch.with_start_time("11:00").with_end_time("12:00").with_phase(
       MarketPhase::Phase::Closed);
   reader(create_phase(patch));
-  ASSERT_EQ(config.trading_phases_schedule().phase_records()[0].end_range, 0min);
+  ASSERT_EQ(config.trading_phases_schedule().phase_records()[0].end_range,
+            0min);
 }
 
 TEST_F(TradingSystemPhaseEntryReader, SetsEndRange) {
@@ -126,6 +127,54 @@ TEST_F(TradingSystemPhaseEntryReader,
       MarketPhase::Phase::Closed);
   reader(create_phase(patch));
   ASSERT_TRUE(config.trading_phases_schedule().phase_records().empty());
+}
+
+TEST_F(TradingSystemPhaseEntryReader, ParsesSecondsInStartTimeAndEndTime) {
+  patch.with_start_time("11:00:15")
+      .with_end_time("12:30:45")
+      .with_phase(MarketPhase::Phase::Closed);
+  reader(create_phase(patch));
+  ASSERT_THAT(
+      config.trading_phases_schedule().phase_records(),
+      ElementsAre(ies::PhaseRecord{.begin = 11h + 15s,
+                                   .end = 12h + 30min + 45s,
+                                   .phase = TradingPhase::Option::Closed}));
+}
+
+TEST_F(TradingSystemPhaseEntryReader, AddsMarketPhaseShorterThanOneMinute) {
+  patch.with_start_time("11:00:00")
+      .with_end_time("11:00:10")
+      .with_phase(MarketPhase::Phase::Closed);
+  reader(create_phase(patch));
+  ASSERT_THAT(
+      config.trading_phases_schedule().phase_records(),
+      ElementsAre(ies::PhaseRecord{.begin = 11h,
+                                   .end = 11h + 10s,
+                                   .phase = TradingPhase::Option::Closed}));
+}
+
+TEST_F(TradingSystemPhaseEntryReader,
+       DoesNotAddMarketPhaseIfTimesDifferOnlyBySecondsAndStartIsGreater) {
+  patch.with_start_time("11:00:30")
+      .with_end_time("11:00:10")
+      .with_phase(MarketPhase::Phase::Closed);
+  reader(create_phase(patch));
+  ASSERT_TRUE(config.trading_phases_schedule().phase_records().empty());
+}
+
+TEST_F(TradingSystemPhaseEntryReader, AddsMarketPhaseAfterMalformedOne) {
+  patch.with_start_time("11h").with_end_time("12:00").with_phase(
+      MarketPhase::Phase::Closed);
+  reader(create_phase(patch));
+
+  patch.with_start_time("11:00:30").with_end_time("12:00:00");
+  reader(create_phase(patch));
+
+  ASSERT_THAT(
+      config.trading_phases_schedule().phase_records(),
+      ElementsAre(ies::PhaseRecord{.begin = 11h + 30s,
+                                   .end = 12h,
+                                   .phase = TradingPhase::Option::Closed}));
 }
 
 }  // namespace

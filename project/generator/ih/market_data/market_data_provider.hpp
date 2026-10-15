@@ -6,6 +6,7 @@
 
 #include "core/domain/attributes.hpp"
 #include "ih/market_data/market_state.hpp"
+#include "ih/market_data/order_book_prices.hpp"
 #include "ih/market_data/price_cache.hpp"
 
 namespace simulator::generator::mdata {
@@ -28,14 +29,16 @@ class MarketDataProvider {
 // Composes the market state of a single listing out of cached market data.
 // The market depth always comes from the simulated venue's own order book,
 // while the base prices are the best of its top of the book and of the tops of
-// the configured random price sources, if there are any.
+// the configured random price sources, if there are any. The top of its own
+// book can be left out of that aggregation.
 class CachedMarketDataProvider final : public MarketDataProvider {
  public:
   CachedMarketDataProvider() = delete;
 
   CachedMarketDataProvider(std::shared_ptr<PriceCache> price_cache,
                            MdRequestId order_book,
-                           std::vector<MdRequestId> external);
+                           std::vector<MdRequestId> external,
+                           OrderBookPrices order_book_prices);
 
   [[nodiscard]]
   auto market_state() const -> MarketState override;
@@ -44,6 +47,7 @@ class CachedMarketDataProvider final : public MarketDataProvider {
   std::shared_ptr<PriceCache> price_cache_;
   MdRequestId order_book_id_;
   std::vector<MdRequestId> external_ids_;
+  OrderBookPrices order_book_prices_;
 };
 
 }  // namespace simulator::generator::mdata

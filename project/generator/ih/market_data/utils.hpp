@@ -10,6 +10,7 @@
 
 #include "data_layer/api/models/datasource.hpp"
 #include "data_layer/api/models/listing.hpp"
+#include "ih/market_data/order_book_prices.hpp"
 #include "ih/market_data/subscription_requirement.hpp"
 #include "protocol/types/session.hpp"
 
@@ -20,6 +21,10 @@ using ListingId = std::uint64_t;
 [[nodiscard]]
 auto bases_random_prices_on_datasource(const data_layer::Listing& listing)
     -> bool;
+
+[[nodiscard]]
+auto order_book_prices_of(const data_layer::Listing& listing)
+    -> OrderBookPrices;
 
 [[nodiscard]]
 auto used_only_for_random_prices(const data_layer::Datasource& datasource)

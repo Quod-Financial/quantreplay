@@ -435,6 +435,22 @@ TEST_F(DataLayerListingPatch, SetsRandomOrdersEnabledFlag) {
               IsPatchFieldWithValue(Optional(Eq(false))));
 }
 
+TEST_F(DataLayerListingPatch, SetsRandomPriceExcludeCurrentListingFlagNull) {
+  ASSERT_FALSE(patch.random_price_exclude_current_listing_flag().has_value());
+
+  patch.with_random_price_exclude_current_listing_flag(std::nullopt);
+  EXPECT_THAT(patch.random_price_exclude_current_listing_flag(),
+              IsPatchFieldWithValue(std::nullopt));
+}
+
+TEST_F(DataLayerListingPatch, SetsRandomPriceExcludeCurrentListingFlag) {
+  ASSERT_FALSE(patch.random_price_exclude_current_listing_flag().has_value());
+
+  patch.with_random_price_exclude_current_listing_flag(true);
+  EXPECT_THAT(patch.random_price_exclude_current_listing_flag(),
+              IsPatchFieldWithValue(Optional(Eq(true))));
+}
+
 TEST_F(DataLayerListingPatch, SetsRandomAggressiveQtyMinimumNull) {
   ASSERT_FALSE(patch.random_aggressive_qty_minimum().has_value());
 
@@ -963,6 +979,22 @@ TEST_F(DataLayerListing, GetsRandomOrdersEnabledSpecified) {
 
   Listing listing = Listing::create(patch, 42);
   EXPECT_THAT(listing.random_orders_enabled_flag(), Optional(Eq(false)));
+}
+
+TEST_F(DataLayerListing, GetsRandomPriceExcludeCurrentListingMissing) {
+  patch.with_venue_id("NASDAQ");
+
+  Listing listing = Listing::create(patch, 42);
+  EXPECT_EQ(listing.random_price_exclude_current_listing_flag(), std::nullopt);
+}
+
+TEST_F(DataLayerListing, GetsRandomPriceExcludeCurrentListingSpecified) {
+  patch.with_venue_id("NASDAQ");
+  patch.with_random_price_exclude_current_listing_flag(true);
+
+  Listing listing = Listing::create(patch, 42);
+  EXPECT_THAT(listing.random_price_exclude_current_listing_flag(),
+              Optional(Eq(true)));
 }
 
 TEST_F(DataLayerListing, GetsRandomAggressiveQtyMinimumMissing) {

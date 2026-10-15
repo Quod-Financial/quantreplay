@@ -426,11 +426,11 @@ Content-Length: XXX
 [[admincmds-vensts-data-dictionaries]]
 ==== Get Venue Session Data Dictionaries
 Download a ZIP archive of all QuickFIX data dictionary files associated with a single
-configured session of a venue.
+configured session of a venue. Dictionaries can only be requested for acceptor sessions configured
+on the simulator.
 
 The `sessionId` - session identifier in the format: `+{BeginString}:{SenderCompID}->{TargetCompID}:{SessionQualifier}+`.
 `+:{SessionQualifier}+` is only added if SessionQualifier is configured.
-Only acceptor sessions are returned in this call and any initiator or unedfined sessions are excluded.
 
 The archive gathers a unique list of every data dictionary referenced by the
 session, taken from the following settings:
@@ -446,8 +446,6 @@ at the common base of all referenced paths.
 A `HEAD` request to the same resource applies the same resolution logic but
 returns no body — only the status code — so a client can determine whether any
 files are available before initiating the download.
-
-The endpoint resolves only the acceptor session dictionaries.
 
 _Resource URI_
 
@@ -631,10 +629,6 @@ Content-Length: XXX
 [[admincmds-ordergen-startstop]]
 ==== Start/Stop Order Generation
 Start or stop random order generation and historical data playback for a single market simulator venue instance.
-
-Starting order generation also subscribes to the market data of every enabled datasource of the FIX format on the venue,
-and stopping it unsubscribes from them.
-See <<general-datasource-formatconfig-fix,this section>> for details of these subscriptions.
 
 _Request Properties_
 

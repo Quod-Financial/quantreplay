@@ -65,6 +65,8 @@ auto Listing::create(Listing::Patch snapshot, std::uint64_t id) -> Listing {
 
   SIM_ASSIGN_FIELD(enabled_flag_, enabled_flag_);
   SIM_ASSIGN_FIELD(random_orders_enabled_flag_, random_orders_enabled_flag_);
+  SIM_ASSIGN_FIELD(random_price_exclude_current_listing_flag_,
+                   random_price_exclude_current_listing_flag_);
 
 #undef SIM_ASSIGN_FIELD
 
@@ -212,6 +214,11 @@ auto Listing::random_amt_maximum() const noexcept -> std::optional<double> {
 auto Listing::random_orders_enabled_flag() const noexcept
     -> std::optional<bool> {
   return random_orders_enabled_flag_;
+}
+
+auto Listing::random_price_exclude_current_listing_flag() const noexcept
+    -> std::optional<bool> {
+  return random_price_exclude_current_listing_flag_;
 }
 
 auto Listing::random_aggressive_qty_minimum() const noexcept
@@ -543,6 +550,17 @@ auto Listing::Patch::random_orders_enabled_flag() const noexcept
 auto Listing::Patch::with_random_orders_enabled_flag(
     std::optional<bool> flag) noexcept -> Patch& {
   random_orders_enabled_flag_ = std::move(flag);
+  return *this;
+}
+
+auto Listing::Patch::random_price_exclude_current_listing_flag() const noexcept
+    -> PatchField<bool> {
+  return random_price_exclude_current_listing_flag_;
+}
+
+auto Listing::Patch::with_random_price_exclude_current_listing_flag(
+    std::optional<bool> flag) noexcept -> Patch& {
+  random_price_exclude_current_listing_flag_ = std::move(flag);
   return *this;
 }
 

@@ -557,17 +557,18 @@ Used only for passive orders if randomAggQtyMaximum and/or randomAggAmtMaximum h
 | randomOrdersRate	| Integer	| The number of order actions (new order/modification/cancel/wait) per second during Random Order Generation
 | randomTickRange	| Integer	| Range of price ticks used to calculate prices created by the Random Order Generator (10 by default)
 | randomOrdersEnabled	| Boolean	| Indicates if the Random Order Generator has to generate random orders on a listing
-| randomPriceSources	| Array	| Market data of datasources used as the base price for random order generation on this listing, see <<adminsets-listings-randpricesrc,Random Price Sources Sub-List>>
+| randomPriceSources	| Array	| List of market data sources to be used for deriving price during random order generation
+| randomPriceExcludeCurrentListing	| Boolean	| Indicates if the order book of the listing itself is excluded from the aggregation of its random price sources (false by default), see <<adminsets-listings-randpricesrc,Random Price Sources Sub-List>>
 | enabled	| Boolean	| Indicates if the listing is enabled and should be used by the Market Simulator
 
 |=== 
 
 [[adminsets-listings-randpricesrc]]
 ==== Random Price Sources Sub-List
-By default, the Random Order Generator derives the base price of the orders it generates for a listing from the top of the book of the listing itself.
-A listing can also base this price on the market data of one or more datasources of any format, which are configured in this sub-list.
-The market data of these sources is then aggregated with the order book of the listing itself to determine the base price,
-see <<general-randomorder-distrprice,this section>> for details of how these prices are used.
+By default, the Random Order Generator uses the top of book of the listing itself as the base price for deriving the price randomly generted orders.
+A listing can also use a base price from the market data of one or more datasources of any format, as configured in this sub-list.
+The market data of these sources is then aggregated with the order book of the listing itself to determine the base price.
+See <<general-randomorder-distrprice,this section>> for details of how these prices are used to derive the price for each randomly generated order.
 
 [cols="15,15,70"]
 |===
@@ -577,15 +578,15 @@ see <<general-randomorder-distrprice,this section>> for details of how these pri
 Users may omit to send this value in the requests.
 | datasourceId	| Integer	| An identifier of the datasource to take the prices from.
 It must refer to an existing datasource on the same venue as the listing.
-| symbol	| Text	| Symbol on that datasource to take the prices from.
-On a datasource of the FIX format it must be one of the symbols the datasource subscribes to (see <<adminsets-data-listings,Listings Sub-List>>), otherwise the random price source is ignored.
-On a datasource of the CSV or PSQL format it is matched against the instrument symbol of every played back record, and the prices are taken from the records whose symbol matches.
+| symbol	| Text	| Symbol on the specified datasource to take base prices from. This symbol must match a symbol consumed as market data from the specified datasource.
 
 |===
 
-An empty `randomPriceSources` array removes all random price sources of a listing.
-Omitting the key in a request leaves the currently configured random price sources unchanged.
-
+When `randomPriceExcludeCurrentListing` is true, the order book of the listing itself is left out of that aggregation,
+and the base price is determined from the configured random price sources only.
+The prices of the order book of the listing are then never used, so on a listing that has no usable random price source,
+or while none of its random price sources has a price, for instance while the FIX session of a FIX datasource is disconnected,
+the base price is taken from the <<adminsets-priceseeds,price seed>> of the listing.
 
 [[adminsets-listings-get-sgl]]
 ==== Get Single Listing
@@ -658,6 +659,7 @@ Content-Length: XXX
     "randomAggQtyMaximum" : 200.0,
     "randomAggAmtMinimum" : 1000.0,
     "randomAggAmtMaximum" : 3000.0,
+    "randomPriceExcludeCurrentListing" : false,
     "randomPriceSources" : [
         {
             "listingId" : 1,
@@ -746,6 +748,7 @@ Content-Length: XXX
             "randomAggQtyMaximum" : 200.0,
             "randomAggAmtMinimum" : 1000.0,
             "randomAggAmtMaximum" : 3000.0,
+            "randomPriceExcludeCurrentListing" : false,
             "randomPriceSources" : [
                 {
                     "listingId" : 1,
@@ -787,6 +790,7 @@ Content-Length: XXX
             "randomAggQtyMaximum" : 200.0,
             "randomAggAmtMinimum" : 1000.0,
             "randomAggAmtMaximum" : 3000.0,
+            "randomPriceExcludeCurrentListing" : false,
             "randomPriceSources" : []
         }
     ]
@@ -994,9 +998,9 @@ Cannot be 0, and must be greater than `textHeaderRow`, if present (supported onl
 | tableName	| Text	| Name of table (supported only for databases)
 | maxDepthLevels	| Integer	a| Maximum depth levels to read from the datasource. 0 or unspecified indicates to read all levels. For FIX Format, this value is used in tag MarketDepth (264) of each market data subscription.
 | columnMapping	| Array	| Mapping between the internal simulator fields and the columns of the datasource (supported only for CSV and PSQL formats),
-see <<adminsets-data-colmapping,Column Mapping Sub-List>>
+see <<adminsets-data-colmapping>>
 | listings	| Array	| For FIX Format, list of Symbols to subscribe to market data. An empty list results in no subscriptions. See <<adminsets-data-listings,Listings Sub-List>>.
-| randomPriceOnly	| Boolean	a| Whether this datasource is used only as a price source for random order generation
+| randomPriceOnly	| Boolean	a| Whether this datasource is used only as a source for deriving prices during random order generation, and will not result in playback of data through associated configured listings.
 
 *   When `false` (the default), orders are derived from the datasource and it can also be used as a random order price source.
 *   When `true`, no orders are derived from it, and it is available only as a random order price source
@@ -1016,7 +1020,7 @@ Users may omit to send this value in the requests.
 
 *	ReceivedTimeStamp - timestamp market data update was received (required, date/time precision to the ms, e.g. `2019-03-07 15:00:00.243`)
 *	MessageTimeStamp - timestamp from original sent market data message (required, date/time precision to the ms, e.g. `2019-03-07 15:00:00.115`)
-*	Instrument - instrument symbol matching one of the listing’s Symbol for this venue, or a symbol named by a random price source of a listing
+*	Instrument - instrument symbol matching a Symbol for one of the listings of this venue, or a symbol named by a random price source of a listing
 when no order is derived from the datasource (required, string)
 *	BidParty - bid level counter party (optional, string, e.g. `CP1`)
 *	BidQuantity - bid level quantity (optional, float, e.g. `10`)
@@ -1048,22 +1052,17 @@ To use this method, `textHeaderRow`  for the datasource must be 0.
 [[adminsets-data-listings]]
 ==== Listings Sub-List
 
-Listings that a FIX format datasource subscribes to as an external market data feed. The list is ignored for the CSV and PSQL formats.
+Listings that a FIX format datasource subscribes to as an external market data feed. The list is currently ignored for the CSV and PSQL datasource formats.
 
 [cols="15,15,70"]
 |===
 | Path | Type |Description
 
-| datasourceId	| Integer	| An identifier of the datasource record which has a listing entry.
-Users may omit to send this value in requests.
-| symbol	| Text	| The symbol requested from the market data feed (tag 55), one market data subscription per entry; entries with the same symbol share one subscription.
-Orders are derived only when the symbol equals the symbol of an enabled listing of the venue; an entry with an empty symbol is ignored.
+| datasourceId	| Integer	| An identifier of the datasource record which has a listing entry. Users may omit to send this value in requests.
+| symbol	| Text	| The symbol requested from the market data feed (tag 55).
 See <<general-datasource-formatconfig-fix,this section>> for how the received market data is applied.
 
 |===
-
-An empty `listings` array removes all symbols of a datasource.
-Omitting the key in a request leaves the currently configured symbols unchanged.
 
 [[adminsets-data-get-sgl]]
 ==== Get Single Datasource

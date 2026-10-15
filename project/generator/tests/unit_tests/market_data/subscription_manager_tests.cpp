@@ -12,6 +12,7 @@
 #include "core/domain/attributes.hpp"
 #include "core/domain/instrument_descriptor.hpp"
 #include "core/domain/market_data_entry.hpp"
+#include "ih/market_data/order_book_prices.hpp"
 #include "ih/market_data/price_cache.hpp"
 #include "ih/market_data/subscription_manager.hpp"
 #include "middleware/channels/market_data_request_channel.hpp"
@@ -174,13 +175,17 @@ TEST_F(GeneratorSubscriptionManager, ClearsCachedMarketDataOnUnsubscribe) {
   manager.subscribe();
   publish_bid_price(MdRequestId{"MD-42"}, 100.);
   ASSERT_THAT(
-      price_cache->market_state(MdRequestId{"MD-42"}, {}).best_bid_price,
+      price_cache
+          ->market_state(MdRequestId{"MD-42"}, {}, OrderBookPrices::Aggregated)
+          .best_bid_price,
       Optional(DoubleEq(100.)));
 
   manager.unsubscribe();
 
   ASSERT_THAT(
-      price_cache->market_state(MdRequestId{"MD-42"}, {}).best_bid_price,
+      price_cache
+          ->market_state(MdRequestId{"MD-42"}, {}, OrderBookPrices::Aggregated)
+          .best_bid_price,
       Eq(std::nullopt));
 }
 
@@ -519,13 +524,17 @@ TEST_F(GeneratorSubscriptionManager,
   add_and_subscribe({make_requirement()});
   publish_bid_price(MdRequestId{"MD-42"}, 100.);
   ASSERT_THAT(
-      price_cache->market_state(MdRequestId{"MD-42"}, {}).best_bid_price,
+      price_cache
+          ->market_state(MdRequestId{"MD-42"}, {}, OrderBookPrices::Aggregated)
+          .best_bid_price,
       Optional(DoubleEq(100.)));
 
   manager.handle_session_disconnected(make_session());
 
   ASSERT_THAT(
-      price_cache->market_state(MdRequestId{"MD-42"}, {}).best_bid_price,
+      price_cache
+          ->market_state(MdRequestId{"MD-42"}, {}, OrderBookPrices::Aggregated)
+          .best_bid_price,
       Eq(std::nullopt));
 }
 
@@ -701,13 +710,17 @@ TEST_F(GeneratorSubscriptionManager,
   add_and_subscribe({make_requirement()});
   publish_bid_price(MdRequestId{"MD-42"}, 100.);
   ASSERT_THAT(
-      price_cache->market_state(MdRequestId{"MD-42"}, {}).best_bid_price,
+      price_cache
+          ->market_state(MdRequestId{"MD-42"}, {}, OrderBookPrices::Aggregated)
+          .best_bid_price,
       Optional(DoubleEq(100.)));
 
   manager.handle_reject(make_reject(MdRequestId{"MD-42"}));
 
   ASSERT_THAT(
-      price_cache->market_state(MdRequestId{"MD-42"}, {}).best_bid_price,
+      price_cache
+          ->market_state(MdRequestId{"MD-42"}, {}, OrderBookPrices::Aggregated)
+          .best_bid_price,
       Eq(std::nullopt));
 }
 

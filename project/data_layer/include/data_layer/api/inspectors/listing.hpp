@@ -242,6 +242,11 @@ inline auto ListingReader<Marshaller>::read(const Listing& listing) -> void {
     static_assert(can_marshall_v<decltype(*value)>);
     marshaller_(Attribute::RandomAggressiveAmtMaximum, *value);
   }
+
+  if (const auto& value = listing.random_price_exclude_current_listing_flag()) {
+    static_assert(can_marshall_v<decltype(*value)>);
+    marshaller_(Attribute::RandomPriceExcludeCurrentListing, *value);
+  }
 }
 
 template <typename Marshaller>
@@ -414,6 +419,14 @@ inline auto ListingPatchReader<Marshaller>::read(const Listing::Patch& patch)
   if (const auto& value = patch.random_aggressive_amt_maximum()) {
     static_assert(can_marshall_v<decltype(*value)>);
     marshaller_(Attribute::RandomAggressiveAmtMaximum, *value);
+  }
+
+  if (const auto& value = patch.random_price_exclude_current_listing_flag()) {
+    static_assert(
+        can_marshall_v<std::remove_cvref_t<decltype(value)>::value_type>);
+    marshaller_(Attribute::RandomPriceExcludeCurrentListing,
+                value.inner_value_or(
+                    Listing::DefaultRandomPriceExcludeCurrentListingFlag));
   }
 }
 
@@ -620,6 +633,15 @@ inline auto ListingPatchWriter<Unmarshaller>::write(Listing::Patch& patch)
   if (unmarshaller_(Attribute::RandomAggressiveAmtMaximum,
                     random_aggressive_amt_maximum)) {
     patch.with_random_aggressive_amt_maximum(random_aggressive_amt_maximum);
+  }
+
+  std::optional<bool> random_price_exclude_current_listing;
+  static_assert(
+      can_unmarshall_v<decltype(random_price_exclude_current_listing)>);
+  if (unmarshaller_(Attribute::RandomPriceExcludeCurrentListing,
+                    random_price_exclude_current_listing)) {
+    patch.with_random_price_exclude_current_listing_flag(
+        random_price_exclude_current_listing);
   }
 }
 

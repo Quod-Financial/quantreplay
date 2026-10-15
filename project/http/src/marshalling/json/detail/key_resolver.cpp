@@ -161,6 +161,8 @@ auto KeyResolver::resolve_key(data_layer::Listing::Attribute attribute)
       return listing_key::RandomAggressiveAmtMinimum;
     case data_layer::Listing::Attribute::RandomAggressiveAmtMaximum:
       return listing_key::RandomAggressiveAmtMaximum;
+    case data_layer::Listing::Attribute::RandomPriceExcludeCurrentListing:
+      return listing_key::RandomPriceExcludeCurrentListing;
   }
 
   raise_bad_attribute_error("Listing", attribute);

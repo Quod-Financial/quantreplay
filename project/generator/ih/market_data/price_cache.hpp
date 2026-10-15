@@ -12,6 +12,7 @@
 #include "core/domain/market_data_entry.hpp"
 #include "ih/market_data/best_prices_sink.hpp"
 #include "ih/market_data/market_state.hpp"
+#include "ih/market_data/order_book_prices.hpp"
 #include "protocol/app/market_data_snapshot.hpp"
 
 namespace simulator::generator::mdata {
@@ -33,7 +34,8 @@ class PriceCache final : public BestPricesSink {
 
   [[nodiscard]]
   auto market_state(const MdRequestId& order_book,
-                    std::span<const MdRequestId> external) const -> MarketState;
+                    std::span<const MdRequestId> external,
+                    OrderBookPrices order_book_prices) const -> MarketState;
 
  private:
   class TopOfBook {

@@ -224,28 +224,48 @@ auto GeneratorImpl::make_market_data_provider(
       instrument_ctx.get_instrument_descriptor());
 
   const auto& instrument = instrument_ctx.get_instrument();
-  std::vector<MdRequestId> external_request_ids;
-  if (const auto request_ids =
-          random_price_request_ids_.find(instrument.listing_id());
-      request_ids != random_price_request_ids_.end()) {
-    external_request_ids = request_ids->second;
-    log::info(
-        "random prices of the `{}' listing (id: {}) are based on the top of "
-        "the book aggregated from its own order book and {} market data "
-        "subscription(s)",
-        instrument.symbol(),
-        instrument.listing_id(),
-        external_request_ids.size());
-  } else {
-    log::info(
-        "random prices of the `{}' listing (id: {}) are based on the top of "
-        "the book of its own order book",
-        instrument.symbol(),
-        instrument.listing_id());
+  const mdata::OrderBookPrices order_book_prices =
+      mdata::order_book_prices_of(instrument);
+  const bool excluded = order_book_prices == mdata::OrderBookPrices::Excluded;
+  const auto request_ids =
+      random_price_request_ids_.find(instrument.listing_id());
+  if (request_ids == random_price_request_ids_.end()) {
+    if (excluded) {
+      log::warn(
+          "the `{}' listing (id: {}) excludes its own order book from the "
+          "random price aggregation, but has no usable random price source, "
+          "its random prices are based on its price seed",
+          instrument.symbol(),
+          instrument.listing_id());
+    } else {
+      log::info(
+          "random prices of the `{}' listing (id: {}) are based on the top of "
+          "the book of its own order book",
+          instrument.symbol(),
+          instrument.listing_id());
+    }
+    return std::make_unique<mdata::CachedMarketDataProvider>(
+        price_cache_,
+        local_request_id,
+        std::vector<MdRequestId>{},
+        order_book_prices);
   }
 
+  std::vector<MdRequestId> external_request_ids = request_ids->second;
+  log::info(
+      "random prices of the `{}' listing (id: {}) are based on the top of "
+      "the book aggregated from {}{} market data subscription(s){}",
+      instrument.symbol(),
+      instrument.listing_id(),
+      excluded ? "" : "its own order book and ",
+      external_request_ids.size(),
+      excluded ? ", excluding its own order book" : "");
+
   return std::make_unique<mdata::CachedMarketDataProvider>(
-      price_cache_, local_request_id, std::move(external_request_ids));
+      price_cache_,
+      local_request_id,
+      std::move(external_request_ids),
+      order_book_prices);
 }
 
 auto GeneratorImpl::select_venue_listings() const

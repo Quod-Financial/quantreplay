@@ -11,6 +11,7 @@
 #include "core/domain/instrument_descriptor.hpp"
 #include "core/domain/market_data_entry.hpp"
 #include "ih/market_data/local_subscription_manager.hpp"
+#include "ih/market_data/order_book_prices.hpp"
 #include "ih/market_data/price_cache.hpp"
 #include "ih/market_data/subscription_requirement.hpp"
 #include "middleware/channels/trading_request_channel.hpp"
@@ -96,8 +97,10 @@ TEST_F(GeneratorLocalSubscriptionManager, RegistersSubscriptionInPriceCache) {
 
   const MdRequestId request_id = manager.add(make_instrument());
 
-  EXPECT_THAT(price_cache->market_state(request_id, {}).bid_depth_levels,
-              Optional(Eq(0)));
+  EXPECT_THAT(
+      price_cache->market_state(request_id, {}, OrderBookPrices::Aggregated)
+          .bid_depth_levels,
+      Optional(Eq(0)));
 }
 
 TEST_F(GeneratorLocalSubscriptionManager, AllocatesDistinctRequestIds) {
@@ -230,8 +233,10 @@ TEST_F(GeneratorLocalSubscriptionManager,
 
   manager.unsubscribe();
 
-  EXPECT_THAT(price_cache->market_state(request_id, {}).best_bid_price,
-              Eq(std::nullopt));
+  EXPECT_THAT(
+      price_cache->market_state(request_id, {}, OrderBookPrices::Aggregated)
+          .best_bid_price,
+      Eq(std::nullopt));
 }
 
 TEST_F(GeneratorLocalSubscriptionManager,

@@ -259,6 +259,9 @@ auto ColumnResolver::to_column_name(Listing::Attribute attribute)
     case Listing::Attribute::RandomAggressiveAmtMaximum:
       column_name = listing_column::RandomAggressiveAmtMaximum;
       break;
+    case Listing::Attribute::RandomPriceExcludeCurrentListing:
+      column_name = listing_column::RandomPriceExcludeCurrentListing;
+      break;
   }
 
   if (!column_name.empty()) {

@@ -345,3 +345,24 @@ databaseChangeLog:
               - column:
                   name: random_aggressive_amt_maximum
                   type: float(4)
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_table_listing_12
+      labels: schema,v13
+      comment: Add random_price_exclude_current_listing column into the listing table
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: random_price_exclude_current_listing
+      changes:
+        - addColumn:
+            tableName: listing
+            columns:
+              - column:
+                  name: random_price_exclude_current_listing
+                  type: bool

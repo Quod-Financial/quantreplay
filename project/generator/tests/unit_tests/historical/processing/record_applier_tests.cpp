@@ -1618,6 +1618,134 @@ TEST_F(GeneratorHistoricalRecordApplier,
   ASSERT_TRUE(registry_select_by_party_id(PartyId{"CP2"}).empty());
 }
 
+TEST_F(GeneratorHistoricalRecordApplier,
+       CancelsOtherPartyOfferIfRecordHasOnlyBid) {
+  const auto level =
+      make_level(10.5, 100., "CP1", std::nullopt, std::nullopt, std::nullopt);
+  const auto record = make_record({level});
+
+  registry().add(make_registered_order(ClientOrderId{"RestingOffer"},
+                                       OrderPrice{77.6},
+                                       Side::Option::Sell,
+                                       Quantity{634.},
+                                       PartyId{"CP2"}));
+
+  EXPECT_CALL(context(), get_synthetic_identifier).WillOnce(Return("NewBid"));
+
+  const std::vector<GeneratedMessage> messages = apply(record);
+
+  ASSERT_EQ(messages.size(), 2);
+  EXPECT_THAT(messages[0],
+              IsCancelRequest(Side::Option::Sell,
+                              ClientOrderId{"RestingOffer"},
+                              77.6,
+                              634.,
+                              PartyId{"CP2"}));
+  EXPECT_THAT(messages[1],
+              IsNewOrderRequest(Side::Option::Buy,
+                                ClientOrderId{"NewBid"},
+                                10.5,
+                                100.,
+                                PartyId{"CP1"}));
+  EXPECT_TRUE(registry_select_by_party_id(PartyId{"CP2"}).empty());
+}
+
+TEST_F(GeneratorHistoricalRecordApplier,
+       CancelsOtherPartyBidIfRecordHasOnlyOffer) {
+  const auto level =
+      make_level(std::nullopt, std::nullopt, std::nullopt, 100.5, 300., "CP1");
+  const auto record = make_record({level});
+
+  registry().add(make_registered_order(ClientOrderId{"RestingBid"},
+                                       OrderPrice{78.},
+                                       Side::Option::Buy,
+                                       Quantity{499.},
+                                       PartyId{"CP2"}));
+
+  EXPECT_CALL(context(), get_synthetic_identifier).WillOnce(Return("NewOffer"));
+
+  const std::vector<GeneratedMessage> messages = apply(record);
+
+  ASSERT_EQ(messages.size(), 2);
+  EXPECT_THAT(messages[0],
+              IsCancelRequest(Side::Option::Buy,
+                              ClientOrderId{"RestingBid"},
+                              78.,
+                              499.,
+                              PartyId{"CP2"}));
+  EXPECT_THAT(messages[1],
+              IsNewOrderRequest(Side::Option::Sell,
+                                ClientOrderId{"NewOffer"},
+                                100.5,
+                                300.,
+                                PartyId{"CP1"}));
+  EXPECT_TRUE(registry_select_by_party_id(PartyId{"CP2"}).empty());
+}
+
+TEST_F(GeneratorHistoricalRecordApplier,
+       CancelsOfferOfPartyGivenOnOfferLevelWithoutPriceAndQuantity) {
+  const auto level =
+      make_level(10.5, 100., "CP1", std::nullopt, std::nullopt, "CP5");
+  const auto record = make_record({level});
+
+  registry().add(make_registered_order(ClientOrderId{"RestingOffer"},
+                                       OrderPrice{11.7},
+                                       Side::Option::Sell,
+                                       Quantity{403.},
+                                       PartyId{"CP5"}));
+
+  EXPECT_CALL(context(), get_synthetic_identifier).WillOnce(Return("NewBid"));
+
+  const std::vector<GeneratedMessage> messages = apply(record);
+
+  ASSERT_EQ(messages.size(), 2);
+  EXPECT_THAT(messages[0],
+              IsCancelRequest(Side::Option::Sell,
+                              ClientOrderId{"RestingOffer"},
+                              11.7,
+                              403.,
+                              PartyId{"CP5"}));
+  EXPECT_THAT(messages[1],
+              IsNewOrderRequest(Side::Option::Buy,
+                                ClientOrderId{"NewBid"},
+                                10.5,
+                                100.,
+                                PartyId{"CP1"}));
+  EXPECT_TRUE(registry_select_by_party_id(PartyId{"CP5"}).empty());
+}
+
+TEST_F(GeneratorHistoricalRecordApplier,
+       CancelsBidOfPartyGivenOnBidLevelWithoutPriceAndQuantity) {
+  const auto level =
+      make_level(std::nullopt, std::nullopt, "CP5", 100.5, 300., "CP1");
+  const auto record = make_record({level});
+
+  registry().add(make_registered_order(ClientOrderId{"RestingBid"},
+                                       OrderPrice{78.},
+                                       Side::Option::Buy,
+                                       Quantity{499.},
+                                       PartyId{"CP5"}));
+
+  EXPECT_CALL(context(), get_synthetic_identifier).WillOnce(Return("NewOffer"));
+
+  const std::vector<GeneratedMessage> messages = apply(record);
+
+  ASSERT_EQ(messages.size(), 2);
+  EXPECT_THAT(messages[0],
+              IsCancelRequest(Side::Option::Buy,
+                              ClientOrderId{"RestingBid"},
+                              78.,
+                              499.,
+                              PartyId{"CP5"}));
+  EXPECT_THAT(messages[1],
+              IsNewOrderRequest(Side::Option::Sell,
+                                ClientOrderId{"NewOffer"},
+                                100.5,
+                                300.,
+                                PartyId{"CP1"}));
+  EXPECT_TRUE(registry_select_by_party_id(PartyId{"CP5"}).empty());
+}
+
 TEST_F(GeneratorHistoricalRecordApplier, ModifiesTwoBidLevelsWithSameParties) {
   const auto level1 = make_level(
       12., 12., "Counterparty1", std::nullopt, std::nullopt, std::nullopt);
@@ -2279,12 +2407,8 @@ TEST_F(GeneratorHistoricalRecordApplier,
                                        Quantity{100.0},
                                        counterparty));
 
-  const auto record = make_record({make_level(11.0,
-                                              200.0,
-                                              counterparty.value(),
-                                              11.04,
-                                              150.0,
-                                              counterparty.value())});
+  const auto record = make_record({make_level(
+      11.0, 200.0, counterparty.value(), 11.04, 150.0, counterparty.value())});
 
   const std::vector<GeneratedMessage> messages = apply(record);
 

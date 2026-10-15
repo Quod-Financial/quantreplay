@@ -294,6 +294,12 @@ TEST_F(HttpJsonKeyResolverListing, ResolvesRandomAggressiveAmtMaximum) {
             "randomAggAmtMaximum");
 }
 
+TEST_F(HttpJsonKeyResolverListing, ResolvesRandomPriceExcludeCurrentListing) {
+  EXPECT_EQ(
+      KeyResolver::resolve_key(Attribute::RandomPriceExcludeCurrentListing),
+      "randomPriceExcludeCurrentListing");
+}
+
 struct HttpJsonKeyResolverListingRandomPriceSource : public ::testing::Test {
   using Attribute = data_layer::ListingRandomPriceSource::Attribute;
 };

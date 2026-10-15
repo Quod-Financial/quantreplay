@@ -102,6 +102,8 @@ constexpr std::string_view RandomAggressiveAmtMinimum{
     "random_aggressive_amt_minimum"};
 constexpr std::string_view RandomAggressiveAmtMaximum{
     "random_aggressive_amt_maximum"};
+constexpr std::string_view RandomPriceExcludeCurrentListing{
+    "random_price_exclude_current_listing"};
 
 }  // namespace listing_column
 

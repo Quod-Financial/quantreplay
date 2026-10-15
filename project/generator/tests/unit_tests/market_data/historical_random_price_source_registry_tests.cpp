@@ -9,6 +9,7 @@
 #include "core/domain/attributes.hpp"
 #include "ih/market_data/best_prices_sink.hpp"
 #include "ih/market_data/historical_random_price_source_registry.hpp"
+#include "ih/market_data/order_book_prices.hpp"
 #include "ih/market_data/price_cache.hpp"
 #include "ih/market_data/subscription_requirement.hpp"
 #include "mocks/context/component_context.hpp"
@@ -51,7 +52,9 @@ struct GeneratorHistoricalRandomPriceSourceRegistry : public Test {
   [[nodiscard]]
   auto cached_bid_price(const MdRequestId& request_id) const
       -> std::optional<double> {
-    return price_cache->market_state(request_id, {}).best_bid_price;
+    return price_cache
+        ->market_state(request_id, {}, OrderBookPrices::Aggregated)
+        .best_bid_price;
   }
 
  private:

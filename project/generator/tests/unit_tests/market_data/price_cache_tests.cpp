@@ -6,6 +6,7 @@
 
 #include "core/domain/attributes.hpp"
 #include "core/domain/market_data_entry.hpp"
+#include "ih/market_data/order_book_prices.hpp"
 #include "ih/market_data/price_cache.hpp"
 #include "protocol/app/market_data_snapshot.hpp"
 #include "protocol/types/session.hpp"
@@ -52,7 +53,8 @@ struct GeneratorPriceCache : public Test {
 };
 
 TEST_F(GeneratorPriceCache, ReportsEmptyStateForUnknownSubscription) {
-  const MarketState state = cache.market_state(request_id, {});
+  const MarketState state =
+      cache.market_state(request_id, {}, OrderBookPrices::Aggregated);
 
   EXPECT_THAT(state.best_bid_price, Eq(std::nullopt));
   EXPECT_THAT(state.best_offer_price, Eq(std::nullopt));
@@ -63,7 +65,8 @@ TEST_F(GeneratorPriceCache, ReportsEmptyStateForUnknownSubscription) {
 TEST_F(GeneratorPriceCache, ReportsZeroDepthForSubscriptionWithoutData) {
   cache.add(request_id);
 
-  const MarketState state = cache.market_state(request_id, {});
+  const MarketState state =
+      cache.market_state(request_id, {}, OrderBookPrices::Aggregated);
 
   EXPECT_THAT(state.best_bid_price, Eq(std::nullopt));
   EXPECT_THAT(state.best_offer_price, Eq(std::nullopt));
@@ -80,7 +83,8 @@ TEST_F(GeneratorPriceCache, ReportsBestPricesAndDepthLevelsFromSnapshot) {
                                make_entry(MdEntryType::Option::Offer, 102.0),
                                make_entry(MdEntryType::Option::Offer, 101.0)}));
 
-  const MarketState state = cache.market_state(request_id, {});
+  const MarketState state =
+      cache.market_state(request_id, {}, OrderBookPrices::Aggregated);
 
   EXPECT_THAT(state.best_bid_price, Optional(DoubleEq(100.0)));
   EXPECT_THAT(state.best_offer_price, Optional(DoubleEq(101.0)));
@@ -96,7 +100,8 @@ TEST_F(GeneratorPriceCache, CountsRepeatedSnapshotPriceAsSingleDepthLevel) {
                                make_entry(MdEntryType::Option::Bid, 100.0),
                                make_entry(MdEntryType::Option::Bid, 99.0)}));
 
-  const MarketState state = cache.market_state(request_id, {});
+  const MarketState state =
+      cache.market_state(request_id, {}, OrderBookPrices::Aggregated);
 
   EXPECT_THAT(state.best_bid_price, Optional(DoubleEq(100.0)));
   EXPECT_THAT(state.bid_depth_levels, Optional(Eq(2)));
@@ -113,7 +118,8 @@ TEST_F(GeneratorPriceCache, ReportsBestPricesOfUnorderedSnapshot) {
                                make_entry(MdEntryType::Option::Offer, 101.0),
                                make_entry(MdEntryType::Option::Offer, 102.0)}));
 
-  const MarketState state = cache.market_state(request_id, {});
+  const MarketState state =
+      cache.market_state(request_id, {}, OrderBookPrices::Aggregated);
 
   EXPECT_THAT(state.best_bid_price, Optional(DoubleEq(100.0)));
   EXPECT_THAT(state.best_offer_price, Optional(DoubleEq(101.0)));
@@ -128,7 +134,8 @@ TEST_F(GeneratorPriceCache, ReplacesPreviousStateOnSnapshot) {
   cache.process(
       make_snapshot(request_id, {make_entry(MdEntryType::Option::Bid, 98.0)}));
 
-  const MarketState state = cache.market_state(request_id, {});
+  const MarketState state =
+      cache.market_state(request_id, {}, OrderBookPrices::Aggregated);
 
   EXPECT_THAT(state.best_bid_price, Optional(DoubleEq(98.0)));
   EXPECT_THAT(state.bid_depth_levels, Optional(Eq(1)));
@@ -142,7 +149,8 @@ TEST_F(GeneratorPriceCache, ClearsStateOnEmptySnapshot) {
 
   cache.process(make_snapshot(request_id, {}));
 
-  const MarketState state = cache.market_state(request_id, {});
+  const MarketState state =
+      cache.market_state(request_id, {}, OrderBookPrices::Aggregated);
 
   EXPECT_THAT(state.best_bid_price, Eq(std::nullopt));
   EXPECT_THAT(state.best_offer_price, Eq(std::nullopt));
@@ -157,7 +165,8 @@ TEST_F(GeneratorPriceCache, IgnoresSnapshotEntryWithoutPrice) {
   entry.price = std::nullopt;
   cache.process(make_snapshot(request_id, {entry}));
 
-  const MarketState state = cache.market_state(request_id, {});
+  const MarketState state =
+      cache.market_state(request_id, {}, OrderBookPrices::Aggregated);
 
   EXPECT_THAT(state.best_bid_price, Eq(std::nullopt));
   EXPECT_THAT(state.bid_depth_levels, Optional(Eq(0)));
@@ -169,7 +178,8 @@ TEST_F(GeneratorPriceCache, IgnoresSnapshotEntryOfUnrequestedType) {
   cache.process(make_snapshot(request_id,
                               {make_entry(MdEntryType::Option::Trade, 100.0)}));
 
-  const MarketState state = cache.market_state(request_id, {});
+  const MarketState state =
+      cache.market_state(request_id, {}, OrderBookPrices::Aggregated);
 
   EXPECT_THAT(state.best_bid_price, Eq(std::nullopt));
   EXPECT_THAT(state.best_offer_price, Eq(std::nullopt));
@@ -184,9 +194,12 @@ TEST_F(GeneratorPriceCache, IgnoresMarketDataOfUnknownSubscription) {
   cache.process(make_snapshot(unknown_request_id,
                               {make_entry(MdEntryType::Option::Bid, 100.0)}));
 
-  EXPECT_THAT(cache.market_state(unknown_request_id, {}).bid_depth_levels,
-              Eq(std::nullopt));
-  EXPECT_THAT(cache.market_state(request_id, {}).bid_depth_levels,
+  EXPECT_THAT(
+      cache.market_state(unknown_request_id, {}, OrderBookPrices::Aggregated)
+          .bid_depth_levels,
+      Eq(std::nullopt));
+  EXPECT_THAT(cache.market_state(request_id, {}, OrderBookPrices::Aggregated)
+                  .bid_depth_levels,
               Optional(Eq(0)));
 }
 
@@ -196,7 +209,8 @@ TEST_F(GeneratorPriceCache, IgnoresMarketDataWithoutRequestId) {
   cache.process(make_snapshot(std::nullopt,
                               {make_entry(MdEntryType::Option::Bid, 100.0)}));
 
-  EXPECT_THAT(cache.market_state(request_id, {}).bid_depth_levels,
+  EXPECT_THAT(cache.market_state(request_id, {}, OrderBookPrices::Aggregated)
+                  .bid_depth_levels,
               Optional(Eq(0)));
 }
 
@@ -207,9 +221,12 @@ TEST_F(GeneratorPriceCache, IgnoresBestPricesOfUnknownSubscription) {
   cache.process(unknown_request_id,
                 BestPrices{.bid = Price{100.0}, .offer = Price{101.0}});
 
-  EXPECT_THAT(cache.market_state(unknown_request_id, {}).bid_depth_levels,
-              Eq(std::nullopt));
-  EXPECT_THAT(cache.market_state(request_id, {}).best_bid_price,
+  EXPECT_THAT(
+      cache.market_state(unknown_request_id, {}, OrderBookPrices::Aggregated)
+          .bid_depth_levels,
+      Eq(std::nullopt));
+  EXPECT_THAT(cache.market_state(request_id, {}, OrderBookPrices::Aggregated)
+                  .best_bid_price,
               Eq(std::nullopt));
 }
 
@@ -219,7 +236,8 @@ TEST_F(GeneratorPriceCache, ReportsProcessedBestPrices) {
   cache.process(request_id,
                 BestPrices{.bid = Price{100.0}, .offer = Price{101.0}});
 
-  const MarketState state = cache.market_state(request_id, {});
+  const MarketState state =
+      cache.market_state(request_id, {}, OrderBookPrices::Aggregated);
 
   EXPECT_THAT(state.best_bid_price, Optional(DoubleEq(100.0)));
   EXPECT_THAT(state.best_offer_price, Optional(DoubleEq(101.0)));
@@ -231,7 +249,8 @@ TEST_F(GeneratorPriceCache, ReportsZeroDepthLevelsForProcessedBestPrices) {
   cache.process(request_id,
                 BestPrices{.bid = Price{100.0}, .offer = Price{101.0}});
 
-  const MarketState state = cache.market_state(request_id, {});
+  const MarketState state =
+      cache.market_state(request_id, {}, OrderBookPrices::Aggregated);
 
   EXPECT_THAT(state.bid_depth_levels, Optional(Eq(0)));
   EXPECT_THAT(state.offer_depth_levels, Optional(Eq(0)));
@@ -247,7 +266,8 @@ TEST_F(GeneratorPriceCache, ReplacesSnapshotStateOnBestPrices) {
   cache.process(request_id,
                 BestPrices{.bid = Price{98.0}, .offer = std::nullopt});
 
-  const MarketState state = cache.market_state(request_id, {});
+  const MarketState state =
+      cache.market_state(request_id, {}, OrderBookPrices::Aggregated);
 
   EXPECT_THAT(state.best_bid_price, Optional(DoubleEq(98.0)));
   EXPECT_THAT(state.best_offer_price, Eq(std::nullopt));
@@ -261,7 +281,8 @@ TEST_F(GeneratorPriceCache, ClearsStateOnEmptyBestPrices) {
 
   cache.process(request_id, BestPrices{});
 
-  const MarketState state = cache.market_state(request_id, {});
+  const MarketState state =
+      cache.market_state(request_id, {}, OrderBookPrices::Aggregated);
 
   EXPECT_THAT(state.best_bid_price, Eq(std::nullopt));
   EXPECT_THAT(state.best_offer_price, Eq(std::nullopt));
@@ -274,7 +295,8 @@ TEST_F(GeneratorPriceCache, ClearsStateOnReset) {
 
   cache.reset(request_id);
 
-  const MarketState state = cache.market_state(request_id, {});
+  const MarketState state =
+      cache.market_state(request_id, {}, OrderBookPrices::Aggregated);
 
   EXPECT_THAT(state.best_bid_price, Eq(std::nullopt));
   EXPECT_THAT(state.bid_depth_levels, Optional(Eq(0)));
@@ -288,10 +310,13 @@ TEST_F(GeneratorPriceCache, KeepsSubscriptionsIndependent) {
   cache.process(
       make_snapshot(request_id, {make_entry(MdEntryType::Option::Bid, 100.0)}));
 
-  EXPECT_THAT(cache.market_state(request_id, {}).best_bid_price,
+  EXPECT_THAT(cache.market_state(request_id, {}, OrderBookPrices::Aggregated)
+                  .best_bid_price,
               Optional(DoubleEq(100.0)));
-  EXPECT_THAT(cache.market_state(other_request_id, {}).best_bid_price,
-              Eq(std::nullopt));
+  EXPECT_THAT(
+      cache.market_state(other_request_id, {}, OrderBookPrices::Aggregated)
+          .best_bid_price,
+      Eq(std::nullopt));
 }
 
 TEST_F(GeneratorPriceCache, IgnoresUnknownExternalSubscription) {
@@ -300,7 +325,8 @@ TEST_F(GeneratorPriceCache, IgnoresUnknownExternalSubscription) {
            make_entry(MdEntryType::Option::Offer, 101.0)});
   const std::vector<MdRequestId> external{MdRequestId{"MD-2"}};
 
-  const MarketState state = cache.market_state(request_id, external);
+  const MarketState state =
+      cache.market_state(request_id, external, OrderBookPrices::Aggregated);
 
   EXPECT_THAT(state.best_bid_price, Optional(DoubleEq(100.0)));
   EXPECT_THAT(state.best_offer_price, Optional(DoubleEq(101.0)));
@@ -314,7 +340,8 @@ TEST_F(GeneratorPriceCache, IgnoresExternalSubscriptionWithoutData) {
   cache.add(external_request_id);
   const std::vector<MdRequestId> external{external_request_id};
 
-  const MarketState state = cache.market_state(request_id, external);
+  const MarketState state =
+      cache.market_state(request_id, external, OrderBookPrices::Aggregated);
 
   EXPECT_THAT(state.best_bid_price, Optional(DoubleEq(100.0)));
   EXPECT_THAT(state.best_offer_price, Optional(DoubleEq(101.0)));
@@ -327,7 +354,8 @@ TEST_F(GeneratorPriceCache, ReportsExternalPricesForUnknownOrderBookRequestId) {
            make_entry(MdEntryType::Option::Offer, 101.0)});
   const std::vector<MdRequestId> external{external_request_id};
 
-  const MarketState state = cache.market_state(request_id, external);
+  const MarketState state =
+      cache.market_state(request_id, external, OrderBookPrices::Aggregated);
 
   EXPECT_THAT(state.best_bid_price, Optional(DoubleEq(100.0)));
   EXPECT_THAT(state.best_offer_price, Optional(DoubleEq(101.0)));
@@ -343,7 +371,8 @@ TEST_F(GeneratorPriceCache, TakesExternalPricesWhenOrderBookIsEmpty) {
            make_entry(MdEntryType::Option::Offer, 101.0)});
   const std::vector<MdRequestId> external{external_request_id};
 
-  const MarketState state = cache.market_state(request_id, external);
+  const MarketState state =
+      cache.market_state(request_id, external, OrderBookPrices::Aggregated);
 
   EXPECT_THAT(state.best_bid_price, Optional(DoubleEq(100.0)));
   EXPECT_THAT(state.best_offer_price, Optional(DoubleEq(101.0)));
@@ -361,7 +390,8 @@ TEST_F(GeneratorPriceCache, KeepsOrderBookPricesWhenExternalPricesAreWorse) {
            make_entry(MdEntryType::Option::Offer, 102.0)});
   const std::vector<MdRequestId> external{external_request_id};
 
-  const MarketState state = cache.market_state(request_id, external);
+  const MarketState state =
+      cache.market_state(request_id, external, OrderBookPrices::Aggregated);
 
   EXPECT_THAT(state.best_bid_price, Optional(DoubleEq(100.0)));
   EXPECT_THAT(state.best_offer_price, Optional(DoubleEq(101.0)));
@@ -375,7 +405,8 @@ TEST_F(GeneratorPriceCache, SelectsHighestBidPriceOfAllSubscriptions) {
   publish(second_request_id, {make_entry(MdEntryType::Option::Bid, 101.0)});
   const std::vector<MdRequestId> external{first_request_id, second_request_id};
 
-  const MarketState state = cache.market_state(request_id, external);
+  const MarketState state =
+      cache.market_state(request_id, external, OrderBookPrices::Aggregated);
 
   EXPECT_THAT(state.best_bid_price, Optional(DoubleEq(102.0)));
 }
@@ -388,7 +419,8 @@ TEST_F(GeneratorPriceCache, SelectsLowestOfferPriceOfAllSubscriptions) {
   publish(second_request_id, {make_entry(MdEntryType::Option::Offer, 102.0)});
   const std::vector<MdRequestId> external{first_request_id, second_request_id};
 
-  const MarketState state = cache.market_state(request_id, external);
+  const MarketState state =
+      cache.market_state(request_id, external, OrderBookPrices::Aggregated);
 
   EXPECT_THAT(state.best_offer_price, Optional(DoubleEq(101.0)));
 }
@@ -399,7 +431,8 @@ TEST_F(GeneratorPriceCache, AggregatesSidesOfSubscriptionsIndependently) {
   publish(external_request_id, {make_entry(MdEntryType::Option::Offer, 101.0)});
   const std::vector<MdRequestId> external{external_request_id};
 
-  const MarketState state = cache.market_state(request_id, external);
+  const MarketState state =
+      cache.market_state(request_id, external, OrderBookPrices::Aggregated);
 
   EXPECT_THAT(state.best_bid_price, Optional(DoubleEq(100.0)));
   EXPECT_THAT(state.best_offer_price, Optional(DoubleEq(101.0)));
@@ -417,7 +450,88 @@ TEST_F(GeneratorPriceCache, ReportsDepthLevelsOfOrderBookOnly) {
            make_entry(MdEntryType::Option::Offer, 103.0)});
   const std::vector<MdRequestId> external{external_request_id};
 
-  const MarketState state = cache.market_state(request_id, external);
+  const MarketState state =
+      cache.market_state(request_id, external, OrderBookPrices::Aggregated);
+
+  EXPECT_THAT(state.bid_depth_levels, Optional(Eq(2)));
+  EXPECT_THAT(state.offer_depth_levels, Optional(Eq(1)));
+}
+
+TEST_F(GeneratorPriceCache, ExcludesOrderBookPricesFromAggregation) {
+  const MdRequestId external_request_id{"MD-2"};
+  publish(request_id,
+          {make_entry(MdEntryType::Option::Bid, 100.0),
+           make_entry(MdEntryType::Option::Offer, 101.0)});
+  publish(external_request_id,
+          {make_entry(MdEntryType::Option::Bid, 99.0),
+           make_entry(MdEntryType::Option::Offer, 102.0)});
+  const std::vector<MdRequestId> external{external_request_id};
+
+  const MarketState state =
+      cache.market_state(request_id, external, OrderBookPrices::Excluded);
+
+  EXPECT_THAT(state.best_bid_price, Optional(DoubleEq(99.0)));
+  EXPECT_THAT(state.best_offer_price, Optional(DoubleEq(102.0)));
+}
+
+TEST_F(GeneratorPriceCache, ReportsNoPricesWhenExcludedSourcesHaveNoData) {
+  const MdRequestId external_request_id{"MD-2"};
+  publish(request_id,
+          {make_entry(MdEntryType::Option::Bid, 100.0),
+           make_entry(MdEntryType::Option::Offer, 101.0)});
+  cache.add(external_request_id);
+  const std::vector<MdRequestId> external{external_request_id};
+
+  const MarketState state =
+      cache.market_state(request_id, external, OrderBookPrices::Excluded);
+
+  EXPECT_THAT(state.best_bid_price, Eq(std::nullopt));
+  EXPECT_THAT(state.best_offer_price, Eq(std::nullopt));
+}
+
+TEST_F(GeneratorPriceCache,
+       ReportsNoPricesWhenOrderBookIsExcludedWithoutSources) {
+  publish(request_id,
+          {make_entry(MdEntryType::Option::Bid, 100.0),
+           make_entry(MdEntryType::Option::Offer, 101.0)});
+
+  const MarketState state =
+      cache.market_state(request_id, {}, OrderBookPrices::Excluded);
+
+  EXPECT_THAT(state.best_bid_price, Eq(std::nullopt));
+  EXPECT_THAT(state.best_offer_price, Eq(std::nullopt));
+}
+
+TEST_F(GeneratorPriceCache,
+       KeepsOrderBookSideOutWhenExcludedSourcesQuoteOtherSideOnly) {
+  const MdRequestId external_request_id{"MD-2"};
+  publish(request_id,
+          {make_entry(MdEntryType::Option::Bid, 100.0),
+           make_entry(MdEntryType::Option::Offer, 101.0)});
+  publish(external_request_id, {make_entry(MdEntryType::Option::Bid, 99.0)});
+  const std::vector<MdRequestId> external{external_request_id};
+
+  const MarketState state =
+      cache.market_state(request_id, external, OrderBookPrices::Excluded);
+
+  EXPECT_THAT(state.best_bid_price, Optional(DoubleEq(99.0)));
+  EXPECT_THAT(state.best_offer_price, Eq(std::nullopt));
+}
+
+TEST_F(GeneratorPriceCache, KeepsOrderBookDepthLevelsWhenItsPricesAreExcluded) {
+  const MdRequestId external_request_id{"MD-2"};
+  publish(request_id,
+          {make_entry(MdEntryType::Option::Bid, 100.0),
+           make_entry(MdEntryType::Option::Bid, 99.0),
+           make_entry(MdEntryType::Option::Offer, 101.0)});
+  publish(external_request_id,
+          {make_entry(MdEntryType::Option::Bid, 98.0),
+           make_entry(MdEntryType::Option::Offer, 102.0),
+           make_entry(MdEntryType::Option::Offer, 103.0)});
+  const std::vector<MdRequestId> external{external_request_id};
+
+  const MarketState state =
+      cache.market_state(request_id, external, OrderBookPrices::Excluded);
 
   EXPECT_THAT(state.bid_depth_levels, Optional(Eq(2)));
   EXPECT_THAT(state.offer_depth_levels, Optional(Eq(1)));

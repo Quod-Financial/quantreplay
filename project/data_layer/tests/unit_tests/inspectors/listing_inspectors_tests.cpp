@@ -346,6 +346,21 @@ TEST_F(DataLayerInspectorsListingReader, ReadsRandomOrdersEnabled) {
   make_reader().read(listing);
 }
 
+TEST_F(DataLayerInspectorsListingReader,
+       ReadsRandomPriceExcludeCurrentListing) {
+  const auto patch =
+      make_default_patch().with_random_price_exclude_current_listing_flag(
+          true);
+  const auto listing = Listing::create(patch, 42);
+
+  EXPECT_CALL(
+      marshaller(),
+      boolean(Eq(Attribute::RandomPriceExcludeCurrentListing), Eq(true)))
+      .Times(1);
+
+  make_reader().read(listing);
+}
+
 TEST_F(DataLayerInspectorsListingReader, ReadsRandomAggressiveQtyMinimum) {
   const auto patch =
       make_default_patch().with_random_aggressive_qty_minimum(42.42);
@@ -717,6 +732,30 @@ TEST_F(DataLayerInspectorsListingPatchReader, ReadsRandomOrdersEnabled) {
 
   EXPECT_CALL(marshaller(),
               boolean(Eq(Attribute::RandomOrdersEnabled), Eq(false)))
+      .Times(1);
+
+  make_reader().read(patch);
+}
+
+TEST_F(DataLayerInspectorsListingPatchReader,
+       SetsRandomPriceExcludeCurrentListingToFalseIfItIsNull) {
+  patch.with_random_price_exclude_current_listing_flag(std::nullopt);
+
+  EXPECT_CALL(
+      marshaller(),
+      boolean(Eq(Attribute::RandomPriceExcludeCurrentListing), Eq(false)))
+      .Times(1);
+
+  make_reader().read(patch);
+}
+
+TEST_F(DataLayerInspectorsListingPatchReader,
+       ReadsRandomPriceExcludeCurrentListing) {
+  patch.with_random_price_exclude_current_listing_flag(true);
+
+  EXPECT_CALL(
+      marshaller(),
+      boolean(Eq(Attribute::RandomPriceExcludeCurrentListing), Eq(true)))
       .Times(1);
 
   make_reader().read(patch);
@@ -1305,6 +1344,30 @@ TEST_F(DataLayerInspectorsListingPatchWriter, WritesRandomOrdersEnabled) {
   make_writer().write(patch);
   EXPECT_THAT(patch.random_orders_enabled_flag(),
               IsPatchFieldWithValue(Optional(Eq(false))));
+}
+
+TEST_F(DataLayerInspectorsListingPatchWriter,
+       WritesRandomPriceExcludeCurrentListingNull) {
+  EXPECT_CALL(
+      unmarshaller(),
+      optional_boolean(Eq(Attribute::RandomPriceExcludeCurrentListing), _))
+      .WillOnce(DoAll(SetArgReferee<1>(std::nullopt), Return(true)));
+
+  make_writer().write(patch);
+  EXPECT_THAT(patch.random_price_exclude_current_listing_flag(),
+              IsPatchFieldWithValue(std::nullopt));
+}
+
+TEST_F(DataLayerInspectorsListingPatchWriter,
+       WritesRandomPriceExcludeCurrentListing) {
+  EXPECT_CALL(
+      unmarshaller(),
+      optional_boolean(Eq(Attribute::RandomPriceExcludeCurrentListing), _))
+      .WillOnce(DoAll(SetArgReferee<1>(true), Return(true)));
+
+  make_writer().write(patch);
+  EXPECT_THAT(patch.random_price_exclude_current_listing_flag(),
+              IsPatchFieldWithValue(Optional(Eq(true))));
 }
 
 TEST_F(DataLayerInspectorsListingPatchWriter,
