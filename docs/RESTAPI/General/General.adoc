@@ -365,12 +365,7 @@ In order to support coordination of randomly generated prices across multiple li
 Bid and Ask values on an aggregation of market data from one or more configured datasources in addition to its own order book
 by configuring the random price sources of the listing (see <<adminsets-listings-randpricesrc,this section>>).
 In that case the initial Bid and Ask prices are selected from the top of book values of the aggregation of the current listing's order book and the top
-of the book of each configured datasource symbol.
-The current listing's order book can be left out of this aggregation by setting Listings → randomPriceExcludeCurrentListing,
-in which case the initial Bid and Ask prices are selected from the top of book values of the configured datasource symbols only,
-and a resting order priced this way can cross the order book of the listing.
-The prices of the current listing's order book are then never used: while none of the configured datasource symbols has a price,
-or when no usable datasource symbol is configured, the initial value is taken from the table of starting prices.
+of the book of each configured datasource symbol. Alternatively, it is also possible to configure the current listing's order book to be excluded from this, so it is _only_ the top of the book of each configured datasource symbol that is usedfor the initial Bid and Ask.
 
 Once this initial price value is determined, the setting Listings → randomTickRange is used to determine the number of ticks by which to vary the price of random orders 
 relative to the starting value. 
@@ -505,10 +500,16 @@ The following datasource properties can be configured to indicate aspects specif
 ===== FIX Market Data Feed
 For the FIX format, the datasource is not a static set of records — market data is received over a FIX session from a live external market data feed subscription, for instance from another market simulator instance or any other FIX service publishing market data.
 
-The connection string for a FIX datasource is the identifier of the initiator session through which the simulator reaches the market data feed, in the format 
-`+{BeginString}:{SenderCompID}->{TargetCompID}:{SessionQualifier}+` (`+:{SessionQualifier}+` is only added if SessionQualifier is configured). 
-For example: “FIXT.1.1:SIMULATOR->FEED”. 
-The session itself is configured as an initiator session in the QuickFIX configuration file of the simulator instance. 
+The connection string for a FIX datasource names the initiator session through which the simulator reaches the market data feed and, optionally, the QuickFIX settings file defining that session,
+as one or two comma-separated values:
+
+* the session identifier, in the format `+{BeginString}:{SenderCompID}->{TargetCompID}:{SessionQualifier}+` (`+:{SessionQualifier}+` is only added if SessionQualifier is configured), 
+for example `+FIXT.1.1:SIMULATOR->FEED+`. On its own, it names an initiator session configured in the QuickFIX configuration file of the simulator instance.
+* optionally, after a comma, the path of a separate QuickFIX settings file in which the session is configured as an initiator session, 
+for example `+FIXT.1.1:SIMULATOR->FEED, /path/to/feed.cfg+`.
+
+Whitespace around the values and the comma is ignored. 
+A connection string in any other form — a malformed session identifier, an empty path or more than two values — is rejected.
 
 The following datasource properties can be configured to indicate aspects specific to the FIX format:
 

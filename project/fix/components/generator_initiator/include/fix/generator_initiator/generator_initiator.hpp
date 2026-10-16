@@ -16,7 +16,7 @@ struct GeneratorInitiator {
   auto operator=(const GeneratorInitiator&) -> GeneratorInitiator& = delete;
   auto operator=(GeneratorInitiator&&) noexcept -> GeneratorInitiator&;
 
-  auto implementation() noexcept -> Implementation&;
+  auto implementation() const noexcept -> Implementation&;
 
  private:
   std::unique_ptr<Implementation> impl_;

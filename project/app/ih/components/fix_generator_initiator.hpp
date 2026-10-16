@@ -2,11 +2,13 @@
 #define SIMULATOR_APP_IH_COMPONENTS_FIX_GENERATOR_INITIATOR_HPP_
 
 #include <utility>
+#include <vector>
 
 #include "fix/generator_initiator/generator_initiator.hpp"
 #include "fix/generator_initiator/lifetime.hpp"
 #include "fix/generator_initiator/transport.hpp"
 #include "middleware/channels/market_data_request_channel.hpp"
+#include "protocol/types/session.hpp"
 
 namespace simulator {
 
@@ -19,6 +21,11 @@ class FixGeneratorInitiator final
   auto launch() -> void { fix::start_generator_initiator(initiator_); }
 
   auto terminate() -> void { fix::stop_generator_initiator(initiator_); }
+
+  [[nodiscard]]
+  auto sessions() const -> std::vector<protocol::fix::Session> {
+    return fix::generator_initiator_sessions(initiator_);
+  }
 
   auto process(protocol::MarketDataRequest request) -> void override {
     fix::send_request(request, initiator_);

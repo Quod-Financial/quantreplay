@@ -6,6 +6,7 @@ project(app
 #------------------------------------------------------------------------------#
 
 ensure_project_dependency_exist(simulator::cfg)
+ensure_project_dependency_exist(simulator::core)
 ensure_project_dependency_exist(simulator::log)
 ensure_project_dependency_exist(simulator::data_layer)
 ensure_project_dependency_exist(simulator::middleware)
@@ -27,18 +28,22 @@ add_static_library(
     ih/components/generator.hpp
     ih/components/http_server.hpp
     ih/components/trading_engine.hpp
+    ih/dispatchers/market_data_request_dispatcher.hpp
     ih/dispatchers/venue_trading_reply_dispatcher.hpp
     ih/platforms/platform.hpp
     ih/platforms/venue_simulation_platform.hpp
     ih/application.hpp
     ih/command_options.hpp
     ih/control_callbacks.hpp
+    ih/datasource_settings_files.hpp
     ih/loading.hpp
     ih/loop.hpp
   SOURCES
+    src/dispatchers/market_data_request_dispatcher.cpp
     src/platforms/venue_simulation_platform.cpp
     src/application.cpp
     src/command_options.cpp
+    src/datasource_settings_files.cpp
     src/loading.cpp
     src/loop.cpp
   PUBLIC_INCLUDE_DIRECTORIES
@@ -53,6 +58,7 @@ add_static_library(
     simulator::generator
     simulator::http
     simulator::cfg
+    simulator::core
     simulator::log
     simulator::data_layer)
 

@@ -11,7 +11,7 @@
 #include <utility>
 #include <vector>
 
-#include "core/tools/fix_session_id.hpp"
+#include "core/tools/fix_session.hpp"
 #include "ih/constants.hpp"
 #include "log/logging.hpp"
 
@@ -200,18 +200,19 @@ auto used_only_for_random_prices(const data_layer::Datasource& datasource)
 
 auto parse_fix_session(std::string_view connection)
     -> std::optional<protocol::fix::Session> {
-  const auto session_id = core::parse_fix_session_id(connection);
-  if (!session_id.has_value()) {
+  const auto reference = core::parse_fix_session_reference(connection);
+  if (!reference.has_value()) {
     return std::nullopt;
   }
 
+  const core::FixSessionId& session_id = reference->session_id;
   auto session = std::make_optional<protocol::fix::Session>(
-      protocol::fix::BeginString{session_id->begin_string},
-      protocol::fix::SenderCompId{session_id->sender_comp_id},
-      protocol::fix::TargetCompId{session_id->target_comp_id});
-  if (session_id->session_qualifier.has_value()) {
+      protocol::fix::BeginString{session_id.begin_string},
+      protocol::fix::SenderCompId{session_id.sender_comp_id},
+      protocol::fix::TargetCompId{session_id.target_comp_id});
+  if (session_id.session_qualifier.has_value()) {
     session->session_qualifier =
-        protocol::fix::SessionQualifier{*session_id->session_qualifier};
+        protocol::fix::SessionQualifier{*session_id.session_qualifier};
   }
   return session;
 }

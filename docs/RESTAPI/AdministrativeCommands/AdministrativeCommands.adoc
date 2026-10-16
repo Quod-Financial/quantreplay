@@ -19,7 +19,7 @@ _Response Properties_
 | name | Text | Venue full name
 | startTime | DateTime | Time when the instance started
 | version | Text | Version of MktSimulator
-| sessionSettings | Array | QuickFIX session settings configured for this venue instance, as parsed by the venue. Every section of the configuration is listed, including both acceptor and initiator sessions.
+| sessionSettings | Array | QuickFIX session settings configured for this venue instance, as parsed by the venue. Every section of the QuickFIX configuration file of the instance is listed, including both acceptor and initiator sessions; the separate settings files named by FIX datasources are not included.
 | sessions | Array | QuickFIX acceptor session details for this venue instance, as parsed by the venue. Only acceptor sessions for connecting to the simulator are listed, and any initiator sessions used by configured FIX datasources) are not included.
 | statusCode | Integer | HTTP code received in response to venue status request
 |===
@@ -1178,7 +1178,7 @@ Content-Length: XXX
 
 Reset configured initial state for a single market simulator venue instance from database settings. All simulator settings will be refreshed from the database. If the venue is configured with persistenceEnabled = true, like a normal simulator startup sequence, the listings specified in the configured persistence file path for that venue will have their market state restored, and any other active traded listings will have their market states cleared. Random order generation and historical data playback will also be stopped, and only restarted if the venue is configured with orderOnStartup = true. The REST and FIX engines will also be reset during this time, causing active connections to be disrupted.
 
-The simulator XML file configuration and FIX file configuration will not be reloaded during a reset. A physical restart of the market simulator process is required to reload these settings.
+The simulator XML file configuration is not reloaded during a reset; a physical restart of the market simulator process is required to reload it. The FIX engines are recreated from the files on disk, so changes to the QuickFIX configuration file of the instance and to the separate settings files named by FIX datasources (see <<general-datasource-formatconfig-fix,FIX Market Data Feed>>) take effect on a reset.
 
 WARNING: Changing the venueId of the venue associated with the simulator instance or the configured restPort for a live running market simulator instance before resetting the configured state is not supported and will likely have unstable results.
 

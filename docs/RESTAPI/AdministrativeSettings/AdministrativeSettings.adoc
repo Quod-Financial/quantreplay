@@ -558,7 +558,7 @@ Used only for passive orders if randomAggQtyMaximum and/or randomAggAmtMaximum h
 | randomTickRange	| Integer	| Range of price ticks used to calculate prices created by the Random Order Generator (10 by default)
 | randomOrdersEnabled	| Boolean	| Indicates if the Random Order Generator has to generate random orders on a listing
 | randomPriceSources	| Array	| List of market data sources to be used for deriving price during random order generation
-| randomPriceExcludeCurrentListing	| Boolean	| Indicates if the order book of the listing itself is excluded from the aggregation of its random price sources (false by default), see <<adminsets-listings-randpricesrc,Random Price Sources Sub-List>>
+| randomPriceExcludeCurrentListing	| Boolean	| Indicates if the order book of the listing itself is excluded from the aggregation of its random price sources (false by default)
 | enabled	| Boolean	| Indicates if the listing is enabled and should be used by the Market Simulator
 
 |=== 
@@ -567,7 +567,7 @@ Used only for passive orders if randomAggQtyMaximum and/or randomAggAmtMaximum h
 ==== Random Price Sources Sub-List
 By default, the Random Order Generator uses the top of book of the listing itself as the base price for deriving the price randomly generted orders.
 A listing can also use a base price from the market data of one or more datasources of any format, as configured in this sub-list.
-The market data of these sources is then aggregated with the order book of the listing itself to determine the base price.
+The market data of these sources is then aggregated with the order book of the listing itself to determine the base price, or the order book of the listing can be excluded using the `randomPriceExcludeCurrentListing` setting.
 See <<general-randomorder-distrprice,this section>> for details of how these prices are used to derive the price for each randomly generated order.
 
 [cols="15,15,70"]
@@ -581,12 +581,6 @@ It must refer to an existing datasource on the same venue as the listing.
 | symbol	| Text	| Symbol on the specified datasource to take base prices from. This symbol must match a symbol consumed as market data from the specified datasource.
 
 |===
-
-When `randomPriceExcludeCurrentListing` is true, the order book of the listing itself is left out of that aggregation,
-and the base price is determined from the configured random price sources only.
-The prices of the order book of the listing are then never used, so on a listing that has no usable random price source,
-or while none of its random price sources has a price, for instance while the FIX session of a FIX datasource is disconnected,
-the base price is taken from the <<adminsets-priceseeds,price seed>> of the listing.
 
 [[adminsets-listings-get-sgl]]
 ==== Get Single Listing
@@ -978,7 +972,7 @@ _Resource Properties_
 
 * CSV Format - a local server file path
 * PSQL Format - a database connection string
-* FIX Format - the initiator session ID to use to subscribe to market data, as `+{BeginString}:{SenderCompID}->{TargetCompID}:{SessionQualifier}+` (`+:{SessionQualifier}+` only if configured)
+* FIX Format - the initiator session ID to use to subscribe to market data, as `+{BeginString}:{SenderCompID}->{TargetCompID}:{SessionQualifier}+` (`+:{SessionQualifier}+` only if configured), optionally followed by a comma and the path of a separate QuickFIX settings file defining that session, read when the instance starts or is reset. See <<general-datasource-formatconfig-fix,FIX Market Data Feed>>
 
 | format	| Text	a| Indicates the type of historic data storage. Supported values:
 
@@ -1292,6 +1286,30 @@ Host: localhost
 }
 ----
 
+_Example_: Request to add a datasource whose feed session is defined in a separate QuickFIX settings file
+
+[,http]
+----
+POST /api/datasources HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+
+{
+    "enabled" : true,
+    "name" : "XETRA-FEED-2",
+    "venueId" : "XETRA",
+    "connection" : "FIXT.1.1:XETRA_FEED_CLIENT->SECOND_FEED_SERVER, /rodata/second-feed.cfg",
+    "format" : "FIX",
+    "type" : "OrderBook",
+    "maxDepthLevels" : 1,
+    "listings" : [
+        {
+            "symbol" : "BMW"
+        }
+    ]
+}
+----
+
 _Example_: Positive reply
 
 [,http]
@@ -1368,7 +1386,7 @@ Content-Length: XXX
 }
 ----
 
-_Example_: Negative reply, the update would leave a FIX datasource without a valid session identifier
+_Example_: Negative reply, the update would leave a FIX datasource without a valid `connection`
 
 [,http]
 ----
@@ -1377,7 +1395,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "connection must be a FIX session identifier in the form BeginString:SenderCompID->TargetCompID[:SessionQualifier] if the format is FIX."
+    "result" : "connection must be a FIX session identifier in the form BeginString:SenderCompID->TargetCompID[:SessionQualifier], optionally followed by a comma and a path to a QuickFIX settings file, if the format is FIX."
 }
 ----
 

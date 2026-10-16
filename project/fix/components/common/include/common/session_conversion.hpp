@@ -15,6 +15,10 @@ struct InvalidSessionCategoryError : std::invalid_argument {
 };
 
 [[nodiscard]]
+auto decode_fix_session(const FIX::SessionID& session_id)
+    -> protocol::fix::Session;
+
+[[nodiscard]]
 auto decode_session(const FIX::SessionID& session_id) -> protocol::Session;
 
 [[nodiscard]]

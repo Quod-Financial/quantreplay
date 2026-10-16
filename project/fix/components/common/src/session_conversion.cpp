@@ -2,7 +2,6 @@
 
 #include <fmt/format.h>
 
-#include <utility>
 #include <variant>
 
 #include "core/common/name.hpp"
@@ -28,16 +27,21 @@ InvalidSessionCategoryError::InvalidSessionCategoryError(
     const std::string& message)
     : std::invalid_argument(message) {}
 
-auto decode_session(const FIX::SessionID& fix_session) -> protocol::Session {
-  protocol::fix::Session fix{
+auto decode_fix_session(const FIX::SessionID& fix_session)
+    -> protocol::fix::Session {
+  protocol::fix::Session session{
       protocol::fix::BeginString{fix_session.getBeginString()},
       protocol::fix::SenderCompId{fix_session.getSenderCompID()},
       protocol::fix::TargetCompId{fix_session.getTargetCompID()}};
   if (const auto& qualifier = fix_session.getSessionQualifier();
       !qualifier.empty()) {
-    fix.session_qualifier = protocol::fix::SessionQualifier{qualifier};
+    session.session_qualifier = protocol::fix::SessionQualifier{qualifier};
   }
-  return protocol::Session{std::move(fix)};
+  return session;
+}
+
+auto decode_session(const FIX::SessionID& fix_session) -> protocol::Session {
+  return protocol::Session{decode_fix_session(fix_session)};
 }
 
 [[nodiscard]]

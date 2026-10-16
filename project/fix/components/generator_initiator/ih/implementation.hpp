@@ -7,6 +7,7 @@
 #include <quickfix/SessionSettings.h>
 
 #include <memory>
+#include <vector>
 
 #include "common/communicators/application.hpp"
 #include "common/communicators/fix_message_sender.hpp"
@@ -16,6 +17,7 @@
 #include "ih/processors/market_data_reply_processor.hpp"
 #include "ih/processors/market_data_request_sender.hpp"
 #include "ih/processors/session_event_processor.hpp"
+#include "protocol/types/session.hpp"
 
 namespace simulator::fix {
 
@@ -36,6 +38,9 @@ struct GeneratorInitiator::Implementation {
 
   auto requester() noexcept -> RequestSender&;
 
+  [[nodiscard]]
+  auto sessions() const noexcept -> const std::vector<protocol::fix::Session>&;
+
   auto start_connection() -> void;
 
   auto stop_connection() noexcept -> void;
@@ -51,6 +56,7 @@ struct GeneratorInitiator::Implementation {
   std::unique_ptr<FIX::MessageStoreFactory> persistence_factory_;
   std::unique_ptr<FIX::LogFactory> logger_factory_;
   std::unique_ptr<FIX::Initiator> connection_;
+  std::vector<protocol::fix::Session> sessions_;
   RequestSender request_sender_;
 };
 

@@ -282,13 +282,8 @@ auto GeneratorImpl::select_venue_listings() const
 
 auto GeneratorImpl::select_venue_datasources() const
     -> std::vector<data_layer::Datasource> {
-  using data_layer::DatasourceCmp;
-  using Attribute = data_layer::Datasource::Attribute;
-  const auto& operating_venue_id = generation_manager_->get_venue().venue_id();
-  auto pred = DatasourceCmp::eq(Attribute::VenueId, operating_venue_id) &&
-              DatasourceCmp::eq(Attribute::Enabled, true);
-
-  return data_layer::select_all_datasources(database_context_, std::move(pred));
+  return data_layer::select_enabled_venue_datasources(
+      database_context_, generation_manager_->get_venue().venue_id());
 }
 
 auto GeneratorImpl::initialize_historical_repliers(

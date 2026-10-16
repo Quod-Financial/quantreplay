@@ -30,8 +30,9 @@ auto order_book_prices_of(const data_layer::Listing& listing)
 auto used_only_for_random_prices(const data_layer::Datasource& datasource)
     -> bool;
 
-// Decodes a `BeginString:SenderCompID->TargetCompID[:SessionQualifier]'
-// session identifier, the notation QuickFIX prints for a configured session.
+// Decodes the `BeginString:SenderCompID->TargetCompID[:SessionQualifier]'
+// session identifier a datasource connection starts with, ignoring the
+// QuickFIX settings file path the connection may name after it.
 [[nodiscard]]
 auto parse_fix_session(std::string_view connection)
     -> std::optional<protocol::fix::Session>;

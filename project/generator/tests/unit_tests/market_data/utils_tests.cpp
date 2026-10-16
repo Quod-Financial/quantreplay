@@ -61,6 +61,31 @@ TEST(GeneratorMarketDataSessionParsing, ParsesSessionQualifier) {
               Optional(Eq(protocol::fix::SessionQualifier{"QUALIFIER"})));
 }
 
+TEST(GeneratorMarketDataSessionParsing,
+     ParsesSessionOfConnectionWithSettingsFile) {
+  const auto session =
+      parse_fix_session("FIXT.1.1:SENDER->TARGET, /path/to/settings.cfg");
+
+  ASSERT_TRUE(session.has_value());
+  EXPECT_THAT(session->begin_string,
+              Eq(protocol::fix::BeginString{"FIXT.1.1"}));
+  EXPECT_THAT(session->sender_comp_id,
+              Eq(protocol::fix::SenderCompId{"SENDER"}));
+  EXPECT_THAT(session->target_comp_id,
+              Eq(protocol::fix::TargetCompId{"TARGET"}));
+  EXPECT_THAT(session->session_qualifier, Eq(std::nullopt));
+}
+
+TEST(GeneratorMarketDataSessionParsing,
+     ParsesSessionQualifierOfConnectionWithSettingsFile) {
+  const auto session = parse_fix_session(
+      "FIXT.1.1:SENDER->TARGET:QUALIFIER, /path/to/settings.cfg");
+
+  ASSERT_TRUE(session.has_value());
+  ASSERT_THAT(session->session_qualifier,
+              Optional(Eq(protocol::fix::SessionQualifier{"QUALIFIER"})));
+}
+
 struct GeneratorMarketDataOrderBookPricesSelection : public Test {
   data_layer::Listing::Patch patch =
       data_layer::Listing::Patch{}.with_venue_id("LSE");
@@ -250,6 +275,19 @@ TEST_F(GeneratorMarketDataDatasourceRequirementBuilder,
                   protocol::fix::BeginString{"FIXT.1.1"},
                   protocol::fix::SenderCompId{"SENDER"},
                   protocol::fix::TargetCompId{"TARGET"}}}));
+}
+
+TEST_F(GeneratorMarketDataDatasourceRequirementBuilder,
+       TakesSessionFromConnectionWithSettingsFile) {
+  const auto datasource = make_datasource(
+      with_symbols(Datasource::Patch{}, {"AAPL"})
+          .with_connection("FIXT.1.1:SENDER->TARGET, /path/to/settings.cfg"));
+
+  const auto requirements =
+      make_datasource_subscription_requirements({datasource});
+
+  ASSERT_THAT(requirements, SizeIs(1));
+  ASSERT_THAT(requirements.front().session, Eq(make_session("TARGET")));
 }
 
 TEST_F(GeneratorMarketDataDatasourceRequirementBuilder,
@@ -552,6 +590,22 @@ TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
        TakesDatasourceIdFromRandomPriceSource) {
   const auto price_sources = make_all_listing_price_sources(
       {make_price_source_datasource()}, {make_datasource_priced_listing()});
+
+  ASSERT_THAT(price_sources, SizeIs(1));
+  ASSERT_THAT(price_sources.begin()->second,
+              ElementsAre(Field(&RandomPriceSourceKey::datasource_id,
+                                Eq(SourceDatasourceId))));
+}
+
+TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
+       AcceptsDatasourceConnectionWithSettingsFile) {
+  const auto datasource = make_datasource(
+      with_symbols(Datasource::Patch{}, {"AAPL.OQ"})
+          .with_connection("FIXT.1.1:SENDER->TARGET, /path/to/settings.cfg")
+          .with_random_price_only_flag(true));
+
+  const auto price_sources = make_all_listing_price_sources(
+      {datasource}, {make_datasource_priced_listing()});
 
   ASSERT_THAT(price_sources, SizeIs(1));
   ASSERT_THAT(price_sources.begin()->second,

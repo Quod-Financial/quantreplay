@@ -1,4 +1,4 @@
-#include "core/tools/fix_session_id.hpp"
+#include "core/tools/fix_session.hpp"
 
 #include <optional>
 #include <string>
@@ -10,6 +10,18 @@ namespace {
 
 constexpr std::string_view CompIdSeparator{"->"};
 constexpr char PartSeparator{':'};
+constexpr char ValueSeparator{','};
+constexpr std::string_view Whitespaces{" \t\n\v\f\r"};
+
+[[nodiscard]]
+auto trim(std::string_view text) -> std::string_view {
+  const auto first = text.find_first_not_of(Whitespaces);
+  if (first == std::string_view::npos) {
+    return {};
+  }
+  const auto last = text.find_last_not_of(Whitespaces);
+  return text.substr(first, last - first + 1);
+}
 
 }  // namespace
 
@@ -52,6 +64,30 @@ auto parse_fix_session_id(std::string_view text)
     session_id->session_qualifier = std::string{session_qualifier};
   }
   return session_id;
+}
+
+auto parse_fix_session_reference(std::string_view text)
+    -> std::optional<FixSessionReference> {
+  const auto separator = text.find(ValueSeparator);
+
+  auto session_id = parse_fix_session_id(trim(text.substr(0, separator)));
+  if (!session_id.has_value()) {
+    return std::nullopt;
+  }
+
+  std::optional<FixSessionReference> reference{std::in_place};
+  reference->session_id = std::move(*session_id);
+
+  if (separator != std::string_view::npos) {
+    const std::string_view settings_file = trim(text.substr(separator + 1));
+    if (settings_file.empty() ||
+        settings_file.find(ValueSeparator) != std::string_view::npos) {
+      return std::nullopt;
+    }
+    reference->settings_file = settings_file;
+  }
+
+  return reference;
 }
 
 }  // namespace simulator::core

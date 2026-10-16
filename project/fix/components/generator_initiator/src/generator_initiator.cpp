@@ -20,7 +20,7 @@ GeneratorInitiator::~GeneratorInitiator() noexcept = default;
 auto GeneratorInitiator::operator=(GeneratorInitiator&&) noexcept
     -> GeneratorInitiator& = default;
 
-auto GeneratorInitiator::implementation() noexcept -> Implementation& {
+auto GeneratorInitiator::implementation() const noexcept -> Implementation& {
   if (impl_) [[likely]] {
     return *impl_;
   }

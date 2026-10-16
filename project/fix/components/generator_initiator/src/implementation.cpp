@@ -1,11 +1,16 @@
 #include "ih/implementation.hpp"
 
 #include <quickfix/Session.h>
+#include <quickfix/SessionID.h>
+#include <quickfix/SessionSettings.h>
 #include <quickfix/SocketInitiator.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <exception>
+#include <iterator>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <vector>
 
@@ -14,8 +19,10 @@
 #include "common/message_store.hpp"
 #include "common/processors/event_processor.hpp"
 #include "common/processors/message_processor.hpp"
+#include "common/session_conversion.hpp"
 #include "common/sessions.hpp"
 #include "log/logging.hpp"
+#include "protocol/types/session.hpp"
 
 namespace simulator::fix {
 namespace {
@@ -39,12 +46,35 @@ auto create_initiator_application(const MessageProcessor& reply_processor,
 }
 
 [[nodiscard]]
+auto unregistered_sessions(const FIX::SessionSettings& settings)
+    -> std::vector<FIX::SessionID> {
+  const std::set<FIX::SessionID> sessions = settings.getSessions();
+  std::vector<FIX::SessionID> unregistered;
+  std::ranges::copy_if(sessions,
+                       std::back_inserter(unregistered),
+                       [](const FIX::SessionID& session_id) {
+                         return !FIX::Session::doesSessionExist(session_id);
+                       });
+  return unregistered;
+}
+
+// A throwing FIX::Initiator constructor abandons the sessions it has already
+// created, which would keep their ids registered for the rest of the process.
+auto destroy_abandoned_sessions(const std::vector<FIX::SessionID>& session_ids)
+    -> void {
+  for (const FIX::SessionID& session_id : session_ids) {
+    delete FIX::Session::lookupSession(session_id);
+  }
+}
+
+[[nodiscard]]
 auto create_fix_initiator_connection(
     const FIX::SessionSettings& settings,
     FIX::Application& application,
     FIX::MessageStoreFactory& persistence_factory,
     FIX::LogFactory& logger_factory) -> std::unique_ptr<FIX::SocketInitiator> {
   log::debug("creating quickfix initiator connection");
+  const auto new_sessions = unregistered_sessions(settings);
   try {
     return std::make_unique<FIX::SocketInitiator>(
         application, persistence_factory, settings, logger_factory);
@@ -55,7 +85,19 @@ auto create_fix_initiator_connection(
     log::err(
         "failed to setup fix initiator connection, unknown error occurred");
   }
+  destroy_abandoned_sessions(new_sessions);
   throw std::runtime_error{"failed to setup quickfix initiator connection"};
+}
+
+[[nodiscard]]
+auto decode_sessions(const std::vector<FIX::Session*>& sessions)
+    -> std::vector<protocol::fix::Session> {
+  std::vector<protocol::fix::Session> decoded;
+  decoded.reserve(sessions.size());
+  for (const FIX::Session* session : sessions) {
+    decoded.push_back(decode_fix_session(session->getSessionID()));
+  }
+  return decoded;
 }
 
 auto report_configured_sessions(const std::vector<FIX::Session*>& sessions)
@@ -76,6 +118,7 @@ GeneratorInitiator::Implementation::Implementation(
       logger_factory_{create_log_factory()},
       connection_{create_fix_initiator_connection(
           settings, *application_, *persistence_factory_, *logger_factory_)},
+      sessions_{decode_sessions(get_sessions(*connection_))},
       request_sender_{message_sender_,
                       MappingSettings{get_sessions(*connection_)}} {
   report_configured_sessions(get_sessions(*connection_));
@@ -88,6 +131,11 @@ GeneratorInitiator::Implementation::~Implementation() noexcept {
 auto GeneratorInitiator::Implementation::requester() noexcept
     -> RequestSender& {
   return request_sender_;
+}
+
+auto GeneratorInitiator::Implementation::sessions() const noexcept
+    -> const std::vector<protocol::fix::Session>& {
+  return sessions_;
 }
 
 auto GeneratorInitiator::Implementation::start_connection() -> void {
