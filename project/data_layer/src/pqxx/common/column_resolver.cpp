@@ -145,6 +145,9 @@ auto ColumnResolver::to_column_name(Datasource::Attribute attribute)
     case Datasource::Attribute::RandomPriceOnly:
       column_name = datasource_column::RandomPriceOnly;
       break;
+    case Datasource::Attribute::IncrementalSubscriptions:
+      column_name = datasource_column::IncrementalSubscriptions;
+      break;
   }
 
   if (!column_name.empty()) {

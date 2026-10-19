@@ -138,6 +138,11 @@ inline auto DatasourceReader<Marshaller>::read(const Datasource& datasource)
     static_assert(can_marshall_v<decltype(*value)>);
     marshaller_(Attribute::RandomPriceOnly, *value);
   }
+
+  if (const auto value = datasource.incremental_subscriptions_flag()) {
+    static_assert(can_marshall_v<decltype(*value)>);
+    marshaller_(Attribute::IncrementalSubscriptions, *value);
+  }
 }
 
 template <typename Marshaller>
@@ -218,6 +223,14 @@ inline auto DatasourcePatchReader<Marshaller>::read(
         can_marshall_v<std::remove_cvref_t<decltype(value)>::value_type>);
     marshaller_(Attribute::RandomPriceOnly,
                 value.inner_value_or(Datasource::DefaultRandomPriceOnlyFlag));
+  }
+
+  if (const auto& value = patch.incremental_subscriptions_flag()) {
+    static_assert(
+        can_marshall_v<std::remove_cvref_t<decltype(value)>::value_type>);
+    marshaller_(
+        Attribute::IncrementalSubscriptions,
+        value.inner_value_or(Datasource::DefaultIncrementalSubscriptionsFlag));
   }
 }
 
@@ -300,6 +313,14 @@ inline auto DatasourcePatchWriter<Unmarshaller>::write(
   static_assert(can_unmarshall_v<decltype(random_price_only_flag)>);
   if (unmarshaller_(Attribute::RandomPriceOnly, random_price_only_flag)) {
     target_patch.with_random_price_only_flag(random_price_only_flag);
+  }
+
+  std::optional<bool> incremental_subscriptions_flag;
+  static_assert(can_unmarshall_v<decltype(incremental_subscriptions_flag)>);
+  if (unmarshaller_(Attribute::IncrementalSubscriptions,
+                    incremental_subscriptions_flag)) {
+    target_patch.with_incremental_subscriptions_flag(
+        incremental_subscriptions_flag);
   }
 }
 

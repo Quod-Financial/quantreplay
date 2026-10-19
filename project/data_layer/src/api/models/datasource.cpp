@@ -49,6 +49,8 @@ auto Datasource::create(Datasource::Patch snapshot, std::uint64_t datasource_id)
   SIM_ASSIGN_FIELD(repeat_flag_, repeat_flag_);
   SIM_ASSIGN_FIELD(max_depth_levels_, max_depth_levels_);
   SIM_ASSIGN_FIELD(random_price_only_flag_, random_price_only_flag_);
+  SIM_ASSIGN_FIELD(incremental_subscriptions_flag_,
+                   incremental_subscriptions_flag_);
 
 #undef SIM_ASSIGN_FIELD
 
@@ -140,6 +142,11 @@ auto Datasource::max_depth_levels() const noexcept
 auto Datasource::random_price_only_flag() const noexcept
     -> std::optional<bool> {
   return random_price_only_flag_;
+}
+
+auto Datasource::incremental_subscriptions_flag() const noexcept
+    -> std::optional<bool> {
+  return incremental_subscriptions_flag_;
 }
 
 auto Datasource::Patch::enabled_flag() const noexcept
@@ -313,6 +320,17 @@ auto Datasource::Patch::random_price_only_flag() const noexcept
 auto Datasource::Patch::with_random_price_only_flag(
     std::optional<bool> flag) noexcept -> Patch& {
   random_price_only_flag_ = std::move(flag);
+  return *this;
+}
+
+auto Datasource::Patch::incremental_subscriptions_flag() const noexcept
+    -> const PatchField<bool>& {
+  return incremental_subscriptions_flag_;
+}
+
+auto Datasource::Patch::with_incremental_subscriptions_flag(
+    std::optional<bool> flag) noexcept -> Patch& {
+  incremental_subscriptions_flag_ = std::move(flag);
   return *this;
 }
 

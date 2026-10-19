@@ -53,6 +53,20 @@ auto map_market_entry_time(const FIX::FieldMap& source,
       std::chrono::microseconds{time.getMicroecond()}};
 }
 
+// An unsupported update action must not lose the whole incremental refresh,
+// so that the generator learns that its book can no longer be kept.
+auto map_update_action(const FIX::FieldMap& source,
+                       std::optional<MarketEntryAction>& destination) -> void {
+  try {
+    map_fix_field<FIX::MDUpdateAction>(source, destination);
+  } catch (const FIX::IncorrectTagValue& exception) {
+    log::warn(
+        "leaving the update action of a market data entry unmapped, it is not "
+        "supported: {}",
+        exception.detail);
+  }
+}
+
 auto map_market_entry(const FIX::FieldMap& source,
                       std::vector<MarketDataEntry>& destination) -> void {
   MarketDataEntry entry;
@@ -72,7 +86,7 @@ auto map_market_entry(const FIX::FieldMap& source,
   map_fix_field<FIX::MDEntryPx>(source, entry.price);
   map_fix_field<FIX::MDEntrySize>(source, entry.quantity);
   map_fix_field<FIX::AggressorSide>(source, entry.aggressor_side);
-  map_fix_field<FIX::MDUpdateAction>(source, entry.action);
+  map_update_action(source, entry.action);
 
   destination.emplace_back(std::move(entry));
 }

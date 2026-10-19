@@ -38,6 +38,7 @@ TEST_F(DataLayerModelsDatasourcePatch, DoesNotContainDefaultValues) {
   ASSERT_FALSE(patch.columns_mapping().has_value());
   ASSERT_FALSE(patch.listings().has_value());
   ASSERT_FALSE(patch.random_price_only_flag().has_value());
+  ASSERT_FALSE(patch.incremental_subscriptions_flag().has_value());
 }
 
 TEST_F(DataLayerModelsDatasourcePatch, SetsEnabledFlagNull) {
@@ -187,6 +188,18 @@ TEST_F(DataLayerModelsDatasourcePatch, SetsRandomPriceOnlyFlagNull) {
 TEST_F(DataLayerModelsDatasourcePatch, SetsRandomPriceOnlyFlag) {
   patch.with_random_price_only_flag(true);
   EXPECT_THAT(patch.random_price_only_flag(),
+              IsPatchFieldWithValue(Optional(Eq(true))));
+}
+
+TEST_F(DataLayerModelsDatasourcePatch, SetsIncrementalSubscriptionsFlagNull) {
+  patch.with_incremental_subscriptions_flag(std::nullopt);
+  EXPECT_THAT(patch.incremental_subscriptions_flag(),
+              IsPatchFieldWithValue(std::nullopt));
+}
+
+TEST_F(DataLayerModelsDatasourcePatch, SetsIncrementalSubscriptionsFlag) {
+  patch.with_incremental_subscriptions_flag(true);
+  EXPECT_THAT(patch.incremental_subscriptions_flag(),
               IsPatchFieldWithValue(Optional(Eq(true))));
 }
 
@@ -470,6 +483,22 @@ TEST_F(DataLayerModelsDatasource, StoresRandomPriceOnlyFlag) {
 
   const auto datasource = Datasource::create(patch, 42);
   EXPECT_EQ(datasource.random_price_only_flag(), true);
+}
+
+TEST_F(DataLayerModelsDatasource,
+       StoresNullOptionalIncrementalSubscriptionsFlagIfNotSet) {
+  fill_required_fields(patch);
+
+  const auto datasource = Datasource::create(patch, 42);
+  EXPECT_EQ(datasource.incremental_subscriptions_flag(), std::nullopt);
+}
+
+TEST_F(DataLayerModelsDatasource, StoresIncrementalSubscriptionsFlag) {
+  fill_required_fields(patch);
+  patch.with_incremental_subscriptions_flag(true);
+
+  const auto datasource = Datasource::create(patch, 42);
+  EXPECT_EQ(datasource.incremental_subscriptions_flag(), true);
 }
 
 // NOLINTEND(*magic-numbers*)

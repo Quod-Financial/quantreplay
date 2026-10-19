@@ -359,6 +359,28 @@ TEST_F(HttpJsonDatasourceMarshaller, MarshallsRandomPriceOnly) {
   EXPECT_EQ(marshall(datasource), expected_json);
 }
 
+TEST_F(HttpJsonDatasourceMarshaller, MarshallsIncrementalSubscriptions) {
+  auto patch = make_default_patch();
+  patch.with_incremental_subscriptions_flag(true);
+  const auto datasource = make_datasource(patch, 42);
+
+  // clang-format off
+  const std::string expected_json{"{"
+    R"("id":42,)"
+    R"("name":"dummy",)"
+    R"("venueId":"dummy",)"
+    R"("connection":"dummy",)"
+    R"("format":"CSV",)"
+    R"("type":"OrderBook",)"
+    R"("incrementalSubscriptions":true,)"
+    R"("columnMapping":[],)"
+    R"("listings":[])"
+  "}"};
+  // clang-format on
+
+  EXPECT_EQ(marshall(datasource), expected_json);
+}
+
 struct HttpJsonDatasourceUnmarshaller : public ::testing::Test {
   data_layer::Datasource::Patch patch;
 };
@@ -671,6 +693,23 @@ TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsRandomPriceOnly) {
 
   DatasourceUnmarshaller::unmarshall(json, patch);
   EXPECT_THAT(patch.random_price_only_flag(),
+              IsPatchFieldWithValue(Optional(Eq(true))));
+}
+
+TEST_F(HttpJsonDatasourceUnmarshaller,
+       UnmarshallsIncrementalSubscriptionsNull) {
+  constexpr std::string_view json{R"({"incrementalSubscriptions":null})"};
+
+  DatasourceUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.incremental_subscriptions_flag(),
+              IsPatchFieldWithValue(std::nullopt));
+}
+
+TEST_F(HttpJsonDatasourceUnmarshaller, UnmarshallsIncrementalSubscriptions) {
+  constexpr std::string_view json{R"({"incrementalSubscriptions":true})"};
+
+  DatasourceUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.incremental_subscriptions_flag(),
               IsPatchFieldWithValue(Optional(Eq(true))));
 }
 

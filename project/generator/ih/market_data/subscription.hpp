@@ -17,11 +17,13 @@ class Subscription {
   Subscription(MdRequestId request_id,
                protocol::Session session,
                InstrumentDescriptor instrument,
-               MarketDepth depth) noexcept
+               MarketDepth depth,
+               MarketDataUpdateType update_type) noexcept
       : request_id_{std::move(request_id)},
         session_{std::move(session)},
         instrument_{std::move(instrument)},
-        depth_{depth} {}
+        depth_{depth},
+        update_type_{update_type} {}
 
   [[nodiscard]]
   auto request_id() const noexcept -> const MdRequestId& {
@@ -44,6 +46,11 @@ class Subscription {
   }
 
   [[nodiscard]]
+  auto update_type() const noexcept -> MarketDataUpdateType {
+    return update_type_;
+  }
+
+  [[nodiscard]]
   auto subscribed() const noexcept -> bool {
     return subscribed_;
   }
@@ -55,6 +62,10 @@ class Subscription {
   }
 
   auto set_depth(MarketDepth depth) noexcept -> void { depth_ = depth; }
+
+  auto set_update_type(MarketDataUpdateType update_type) noexcept -> void {
+    update_type_ = update_type;
+  }
 
   auto add_datasource_id(DatasourceId datasource_id) -> void {
     if (!has_datasource_id(datasource_id)) {
@@ -72,6 +83,7 @@ class Subscription {
   InstrumentDescriptor instrument_;
   std::set<DatasourceId> datasource_ids_;
   MarketDepth depth_;
+  MarketDataUpdateType update_type_;
   bool subscribed_ = false;
 };
 

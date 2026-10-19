@@ -110,6 +110,11 @@ TEST_F(HttpJsonKeyResolverDatasource, ResolvesRandomPriceOnly) {
             "randomPriceOnly");
 }
 
+TEST_F(HttpJsonKeyResolverDatasource, ResolvesIncrementalSubscriptions) {
+  EXPECT_EQ(KeyResolver::resolve_key(Attribute::IncrementalSubscriptions),
+            "incrementalSubscriptions");
+}
+
 struct HttpJsonKeyResolverDatasourceListing : public ::testing::Test {
   using Attribute = data_layer::DatasourceListing::Attribute;
 };

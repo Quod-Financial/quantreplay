@@ -85,6 +85,8 @@ auto KeyResolver::resolve_key(data_layer::Datasource::Attribute attribute)
       return datasource_key::MaxDepthLevels;
     case data_layer::Datasource::Attribute::RandomPriceOnly:
       return datasource_key::RandomPriceOnly;
+    case data_layer::Datasource::Attribute::IncrementalSubscriptions:
+      return datasource_key::IncrementalSubscriptions;
   }
 
   raise_bad_attribute_error("Datasource", attribute);

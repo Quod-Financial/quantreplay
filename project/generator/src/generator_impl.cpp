@@ -33,8 +33,9 @@ GeneratorImpl::GeneratorImpl(const data_layer::Venue& target_venue,
     : database_context_(std::move(database_context)),
       generation_manager_{GenerationManager::create(target_venue)},
       price_cache_{std::make_shared<mdata::PriceCache>()},
+      book_cache_{std::make_shared<mdata::MarketDataBookCache>()},
       local_subscription_manager_{price_cache_, generation_manager_},
-      subscription_manager_{price_cache_, generation_manager_},
+      subscription_manager_{price_cache_, book_cache_, generation_manager_},
       historical_random_price_source_registry_{price_cache_,
                                                generation_manager_},
       rnd_executor_factory_{InstrumentRandomGeneratorFactoryImpl::create()},
@@ -377,9 +378,16 @@ auto GeneratorImpl::make_price_source_processor(
 
 auto GeneratorImpl::initialize_datasource_subscriptions(
     const std::vector<data_layer::Datasource>& datasources) -> void {
-  order_book_derivation_ = std::make_unique<mdata::OrderBookDerivation>(
+  order_book_derivation_ = std::make_shared<mdata::OrderBookDerivation>(
       std::make_shared<historical::ActionProcessor>(order_listings_contexts_),
       generation_manager_);
+  market_data_router_ = std::make_unique<mdata::MarketDataRouter>(
+      book_cache_,
+      price_cache_,
+      order_book_derivation_,
+      [this](const MdRequestId& request_id) {
+        subscription_manager_.handle_divergence(request_id);
+      });
 
   std::unordered_set<std::string_view> listing_symbols;
   for (const auto& context : order_listings_contexts_) {
@@ -513,8 +521,12 @@ auto GeneratorImpl::process_reply(std::uint64_t instrument_id,
 
 auto GeneratorImpl::process_market_data(
     const protocol::MarketDataSnapshot& snapshot) -> void {
-  price_cache_->process(snapshot);
-  order_book_derivation_->process(snapshot);
+  market_data_router_->process(snapshot);
+}
+
+auto GeneratorImpl::process_market_data(
+    const protocol::MarketDataUpdate& update) -> void {
+  market_data_router_->process(update);
 }
 
 auto GeneratorImpl::process_market_data(

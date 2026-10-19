@@ -8,6 +8,7 @@
 
 #include "core/domain/attributes.hpp"
 #include "ih/context/component_context.hpp"
+#include "ih/market_data/market_data_book_cache.hpp"
 #include "ih/market_data/price_cache.hpp"
 #include "ih/market_data/subscription.hpp"
 #include "ih/market_data/subscription_requirement.hpp"
@@ -33,6 +34,7 @@ class SubscriptionManager {
   SubscriptionManager() = delete;
 
   SubscriptionManager(std::shared_ptr<PriceCache> price_cache,
+                      std::shared_ptr<MarketDataBookCache> book_cache,
                       std::shared_ptr<ComponentContext> context);
 
   SubscriptionManager(const SubscriptionManager&) = delete;
@@ -61,6 +63,11 @@ class SubscriptionManager {
   // it, until subscribe() or the connection of its session requests it again.
   auto handle_reject(const protocol::MarketDataReject& reject) -> void;
 
+  // Cancels an incremental subscription whose book has diverged from the feed,
+  // until subscribe() or the connection of its session requests it again.
+  // The book cache is expected to have marked the book as diverged already.
+  auto handle_divergence(const MdRequestId& request_id) -> void;
+
   [[nodiscard]]
   auto find_request_id(DatasourceId datasource_id, const Symbol& symbol) const
       -> std::optional<MdRequestId>;
@@ -75,8 +82,11 @@ class SubscriptionManager {
 
   auto mark_unsubscribed(Subscription& subscription) -> void;
 
+  auto drop_market_data(const MdRequestId& request_id) -> void;
+
   std::vector<Subscription> subscriptions_;
   std::shared_ptr<PriceCache> price_cache_;
+  std::shared_ptr<MarketDataBookCache> book_cache_;
   std::shared_ptr<ComponentContext> context_;
   bool subscription_requested_ = false;
   mutable std::mutex mutex_;

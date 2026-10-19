@@ -236,6 +236,24 @@ TEST_F(InitiatorFromFixMarketDataUpdateMapping,
   ASSERT_THROW(map(), FIX::FieldNotFound);
 }
 
+TEST_F(InitiatorFromFixMarketDataUpdateMapping,
+       LeavesUnsupportedUpdateActionUnmapped) {
+  fix_message.addGroup([] {
+    FIX50SP2::MarketDataIncrementalRefresh::NoMDEntries entry;
+    set_field(FIX::MDEntryID{"entry-id"}, entry);
+    set_field(FIX::MDUpdateAction{FIX::MDUpdateAction_DELETE_THRU}, entry);
+    set_field(FIX::MDEntryType{FIX::MDEntryType_BID}, entry);
+    return entry;
+  }());
+
+  map();
+
+  ASSERT_THAT(internal_message.market_data_entries, SizeIs(1));
+  const auto& entry = internal_message.market_data_entries.front();
+  EXPECT_THAT(entry.action, Eq(std::nullopt));
+  EXPECT_THAT(entry.id, Optional(Eq(MarketEntryId{"entry-id"})));
+}
+
 TEST_F(InitiatorFromFixMarketDataUpdateMapping, MapsMarketDataEntries) {
   fix_message.addGroup([] {
     FIX50SP2::MarketDataIncrementalRefresh::NoMDEntries entry;

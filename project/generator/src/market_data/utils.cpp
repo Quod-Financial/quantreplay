@@ -64,6 +64,12 @@ auto make_datasource_requirements(const data_layer::Datasource& datasource)
                 constant::market_data::DatasourceCounterpartyPattern,
                 datasource.datasource_id()));
 
+  const MarketDataUpdateType update_type =
+      datasource.incremental_subscriptions_flag().value_or(
+          data_layer::Datasource::DefaultIncrementalSubscriptionsFlag)
+          ? MarketDataUpdateType::Option::Incremental
+          : MarketDataUpdateType::Option::Snapshot;
+
   std::vector<SubscriptionRequirement> requirements;
   requirements.reserve(datasource_listings.size());
 
@@ -83,7 +89,8 @@ auto make_datasource_requirements(const data_layer::Datasource& datasource)
                               Symbol{datasource_symbol},
                               datasource.datasource_id(),
                               depth,
-                              order_counterparty);
+                              order_counterparty,
+                              update_type);
   }
 
   return requirements;

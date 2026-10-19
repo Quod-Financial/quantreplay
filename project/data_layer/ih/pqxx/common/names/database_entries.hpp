@@ -44,6 +44,8 @@ constexpr std::string_view TextDataRow{"text_data_row"};
 constexpr std::string_view TableName{"table_name"};
 constexpr std::string_view MaxDepthLevels{"max_depth_levels"};
 constexpr std::string_view RandomPriceOnly{"random_price_only"};
+constexpr std::string_view IncrementalSubscriptions{
+    "incremental_subscriptions"};
 
 }  // namespace datasource_column
 

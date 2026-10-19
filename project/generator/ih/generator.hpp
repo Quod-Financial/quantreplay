@@ -63,6 +63,10 @@ struct Generator::Implementation {
     generator_->process_market_data(snapshot);
   }
 
+  auto process_market_data(const protocol::MarketDataUpdate& update) -> void {
+    generator_->process_market_data(update);
+  }
+
   auto process_market_data(const protocol::MarketDataReject& reject) -> void {
     generator_->process_market_data(reject);
   }

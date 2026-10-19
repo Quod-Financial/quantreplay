@@ -25,6 +25,17 @@ auto merge_depth(MarketDepth lhs, MarketDepth rhs) noexcept -> MarketDepth {
 }
 
 [[nodiscard]]
+auto merge_update_type(MarketDataUpdateType lhs,
+                       MarketDataUpdateType rhs) noexcept
+    -> MarketDataUpdateType {
+  if (lhs == MarketDataUpdateType::Option::Incremental &&
+      rhs == MarketDataUpdateType::Option::Incremental) {
+    return MarketDataUpdateType::Option::Incremental;
+  }
+  return MarketDataUpdateType::Option::Snapshot;
+}
+
+[[nodiscard]]
 auto make_request(const Subscription& subscription,
                   MdSubscriptionRequestType request_type)
     -> protocol::MarketDataRequest {
@@ -35,17 +46,44 @@ auto make_request(const Subscription& subscription,
                                MdEntryType::Option::Offer};
   request.market_depth = subscription.depth();
   request.request_type = request_type;
-  request.update_type = MarketDataUpdateType::Option::Snapshot;
+  request.update_type = subscription.update_type();
   return request;
+}
+
+auto try_send(const Subscription& subscription,
+              MdSubscriptionRequestType request_type) -> bool {
+  try {
+    middleware::send_market_data_request(
+        make_request(subscription, request_type));
+    return true;
+  } catch (const std::exception& exception) {
+    log::err("failed to send the `{}' market data {} request for {}: {}",
+             subscription.request_id(),
+             request_type,
+             subscription.instrument(),
+             exception.what());
+  } catch (...) {
+    log::err(
+        "failed to send the `{}' market data {} request for {}, unknown "
+        "error occurred",
+        subscription.request_id(),
+        request_type,
+        subscription.instrument());
+  }
+  return false;
 }
 
 }  // namespace
 
 SubscriptionManager::SubscriptionManager(
     std::shared_ptr<PriceCache> price_cache,
+    std::shared_ptr<MarketDataBookCache> book_cache,
     std::shared_ptr<ComponentContext> context)
-    : price_cache_{std::move(price_cache)}, context_{std::move(context)} {
+    : price_cache_{std::move(price_cache)},
+      book_cache_{std::move(book_cache)},
+      context_{std::move(context)} {
   assert(price_cache_);
+  assert(book_cache_);
   assert(context_);
 }
 
@@ -77,7 +115,8 @@ auto SubscriptionManager::add_datasource_subscription(
   subscriptions_.emplace_back(request_id,
                               requirement.session,
                               std::move(instrument),
-                              requirement.depth);
+                              requirement.depth,
+                              requirement.update_type);
   subscriptions_.back().add_datasource_id(requirement.datasource_id);
 
   return std::make_optional<MergedSubscription>(std::move(request_id),
@@ -159,7 +198,7 @@ auto SubscriptionManager::handle_session_disconnected(
   }
 
   for (const MdRequestId& request_id : dropped) {
-    price_cache_->reset(request_id);
+    drop_market_data(request_id);
   }
 
   log::info(
@@ -208,13 +247,56 @@ auto SubscriptionManager::handle_reject(
     return;
   }
 
-  price_cache_->reset(*reject.request_id);
+  drop_market_data(subscription->request_id());
 
   log::warn(
       "the market data subscription for {} has been rejected and is disabled "
       "until generation is restarted or its session is established again, {}",
       subscription->instrument(),
       reject);
+}
+
+auto SubscriptionManager::handle_divergence(const MdRequestId& request_id)
+    -> void {
+  const auto subscription =
+      std::ranges::find_if(subscriptions_, [&](const Subscription& candidate) {
+        return candidate.request_id() == request_id;
+      });
+  if (subscription == subscriptions_.end()) {
+    log::warn(
+        "ignoring a diverged book of the `{}' market data subscription, which "
+        "is not a subscription of the generator",
+        request_id);
+    return;
+  }
+
+  {
+    const std::lock_guard lock{mutex_};
+    if (!subscription->subscribed()) {
+      log::debug(
+          "ignoring a diverged book of the `{}' market data subscription, "
+          "which is not subscribed",
+          request_id);
+      return;
+    }
+
+    subscription->mark_unsubscribed();
+    // Sent under the lock, so a subscribe request that another thread sends
+    // for the subscription is always sent after this one.
+    try_send(*subscription, MdSubscriptionRequestType::Option::Unsubscribe);
+  }
+
+  // The book cache keeps the diverged book, which ignores the full refreshes
+  // still in flight until the subscription is requested again.
+  price_cache_->reset(request_id);
+
+  log::err(
+      "the book of the `{}' market data subscription for {} has diverged from "
+      "the feed, the subscription is cancelled until generation is restarted "
+      "or its session is established again; disable incrementalSubscriptions "
+      "of the datasource if the feed keeps diverging",
+      request_id,
+      subscription->instrument());
 }
 
 auto SubscriptionManager::find_request_id(DatasourceId datasource_id,
@@ -240,42 +322,40 @@ auto SubscriptionManager::merge(Subscription& subscription,
   const MarketDepth depth =
       merge_depth(subscription.depth(), requirement.depth);
   subscription.set_depth(depth);
+  subscription.set_update_type(
+      merge_update_type(subscription.update_type(), requirement.update_type));
   subscription.add_datasource_id(requirement.datasource_id);
 
   log::debug(
       "merged a market data subscription requirement on `{}' into the `{}' "
-      "subscription with the {} depth",
+      "subscription with the {} depth and the {} update type",
       requirement.symbol,
       subscription.request_id(),
-      depth);
+      depth,
+      subscription.update_type());
 }
 
 auto SubscriptionManager::send_subscribe(Subscription& subscription) -> void {
+  bool incremental = false;
   {
     const std::lock_guard lock{mutex_};
     if (subscription.subscribed()) {
       return;
     }
     subscription.mark_subscribed();
+    incremental =
+        subscription.update_type() == MarketDataUpdateType::Option::Incremental;
   }
 
-  try {
-    middleware::send_market_data_request(make_request(
-        subscription, MdSubscriptionRequestType::Option::Subscribe));
-  } catch (const std::exception& exception) {
+  // Tracked before the request is sent, as the full refresh answering it is
+  // delivered by another thread.
+  if (incremental) {
+    book_cache_->track(subscription.request_id(), subscription.depth());
+  }
+
+  if (!try_send(subscription, MdSubscriptionRequestType::Option::Subscribe)) {
     mark_unsubscribed(subscription);
-    log::err(
-        "failed to send the `{}' market data subscription request for {}: {}",
-        subscription.request_id(),
-        subscription.instrument(),
-        exception.what());
-  } catch (...) {
-    mark_unsubscribed(subscription);
-    log::err(
-        "failed to send the `{}' market data subscription request for {}, "
-        "unknown error occurred",
-        subscription.request_id(),
-        subscription.instrument());
+    drop_market_data(subscription.request_id());
   }
 }
 
@@ -288,30 +368,20 @@ auto SubscriptionManager::send_unsubscribe(Subscription& subscription) -> void {
     subscription.mark_unsubscribed();
   }
 
-  price_cache_->reset(subscription.request_id());
-
-  try {
-    middleware::send_market_data_request(make_request(
-        subscription, MdSubscriptionRequestType::Option::Unsubscribe));
-  } catch (const std::exception& exception) {
-    log::err(
-        "failed to send the `{}' market data unsubscribe request for {}: {}",
-        subscription.request_id(),
-        subscription.instrument(),
-        exception.what());
-  } catch (...) {
-    log::err(
-        "failed to send the `{}' market data unsubscribe request for {}, "
-        "unknown error occurred",
-        subscription.request_id(),
-        subscription.instrument());
-  }
+  drop_market_data(subscription.request_id());
+  try_send(subscription, MdSubscriptionRequestType::Option::Unsubscribe);
 }
 
 auto SubscriptionManager::mark_unsubscribed(Subscription& subscription)
     -> void {
   const std::lock_guard lock{mutex_};
   subscription.mark_unsubscribed();
+}
+
+auto SubscriptionManager::drop_market_data(const MdRequestId& request_id)
+    -> void {
+  price_cache_->reset(request_id);
+  book_cache_->reset(request_id);
 }
 
 }  // namespace simulator::generator::mdata

@@ -33,6 +33,7 @@ struct SubscriptionRequirement {
   MarketDepth depth{AllDepthLevels};
   // Set only for a datasource whose market data is turned into orders.
   std::optional<PartyId> order_counterparty;
+  MarketDataUpdateType update_type{MarketDataUpdateType::Option::Snapshot};
 
   [[nodiscard]]
   auto operator==(const SubscriptionRequirement&) const -> bool = default;

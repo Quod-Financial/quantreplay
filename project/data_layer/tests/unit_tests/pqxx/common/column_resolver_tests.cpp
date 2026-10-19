@@ -107,6 +107,11 @@ TEST_F(DataLayerDatasourceResolver, ResolvesRandomPriceOnly) {
   EXPECT_EQ(resolver(Column::RandomPriceOnly), "random_price_only");
 }
 
+TEST_F(DataLayerDatasourceResolver, ResolvesIncrementalSubscriptions) {
+  EXPECT_EQ(resolver(Column::IncrementalSubscriptions),
+            "incremental_subscriptions");
+}
+
 struct DataLayerDatasourceListingResolver : public ::testing::Test {
   using Column = DatasourceListing::Attribute;
 

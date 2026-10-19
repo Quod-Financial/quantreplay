@@ -107,3 +107,24 @@ databaseChangeLog:
               - column:
                   name: random_price_only
                   type: bool
+
+  - changeSet:
+      author: vskotarenko
+      id: market_simulator_schema_table_data_source_5
+      labels: schema,v13
+      comment: Add incremental_subscriptions column
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - not:
+            - columnExists:
+                tableName: data_source
+                columnName: incremental_subscriptions
+      changes:
+        - addColumn:
+            tableName: data_source
+            columns:
+              - column:
+                  name: incremental_subscriptions
+                  type: bool

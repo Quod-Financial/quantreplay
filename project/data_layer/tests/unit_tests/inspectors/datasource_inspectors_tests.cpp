@@ -204,6 +204,18 @@ TEST_F(DataLayerInspectorsDatasourceReader, ReadsRandomPriceOnlyFlag) {
   make_reader().read(datasource);
 }
 
+TEST_F(DataLayerInspectorsDatasourceReader, ReadsIncrementalSubscriptionsFlag) {
+  fill_required_fields(patch);
+  patch.with_incremental_subscriptions_flag(true);
+  const auto datasource = Datasource::create(patch, 42);
+
+  EXPECT_CALL(marshaller(),
+              boolean(Eq(Attribute::IncrementalSubscriptions), Eq(true)))
+      .Times(1);
+
+  make_reader().read(datasource);
+}
+
 class DataLayerInspectorsDatasourcePatchReader : public ::testing::Test {
  public:
   using MarshallerType = Marshaller<Datasource>;
@@ -411,6 +423,28 @@ TEST_F(DataLayerInspectorsDatasourcePatchReader, ReadsRandomPriceOnlyFlag) {
   make_reader().read(patch);
 }
 
+TEST_F(DataLayerInspectorsDatasourcePatchReader,
+       SetsIncrementalSubscriptionsFlagToFalseIfItIsNull) {
+  patch.with_incremental_subscriptions_flag(std::nullopt);
+
+  EXPECT_CALL(marshaller(),
+              boolean(Eq(Attribute::IncrementalSubscriptions), Eq(false)))
+      .Times(1);
+
+  make_reader().read(patch);
+}
+
+TEST_F(DataLayerInspectorsDatasourcePatchReader,
+       ReadsIncrementalSubscriptionsFlag) {
+  patch.with_incremental_subscriptions_flag(true);
+
+  EXPECT_CALL(marshaller(),
+              boolean(Eq(Attribute::IncrementalSubscriptions), Eq(true)))
+      .Times(1);
+
+  make_reader().read(patch);
+}
+
 class DataLayerInspectorsDatasourcePatchWriter : public ::testing::Test {
  public:
   using UnmarshallerType = Unmarshaller<Datasource>;
@@ -605,6 +639,17 @@ TEST_F(DataLayerInspectorsDatasourcePatchWriter, WritesRandomPriceOnlyFlag) {
 
   make_writer().write(patch);
   EXPECT_THAT(patch.random_price_only_flag(),
+              IsPatchFieldWithValue(Optional(Eq(true))));
+}
+
+TEST_F(DataLayerInspectorsDatasourcePatchWriter,
+       WritesIncrementalSubscriptionsFlag) {
+  EXPECT_CALL(unmarshaller(),
+              optional_boolean(Eq(Attribute::IncrementalSubscriptions), _))
+      .WillOnce(DoAll(SetArgReferee<1>(true), Return(true)));
+
+  make_writer().write(patch);
+  EXPECT_THAT(patch.incremental_subscriptions_flag(),
               IsPatchFieldWithValue(Optional(Eq(true))));
 }
 

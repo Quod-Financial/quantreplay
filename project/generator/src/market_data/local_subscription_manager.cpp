@@ -48,7 +48,8 @@ auto LocalSubscriptionManager::add(InstrumentDescriptor instrument)
   subscriptions_.emplace_back(request_id,
                               protocol::Session{protocol::generator::Session{}},
                               std::move(instrument),
-                              AllDepthLevels);
+                              AllDepthLevels,
+                              MarketDataUpdateType::Option::Snapshot);
 
   log::debug("configured the '{}' order book market data subscription for {}",
              request_id,

@@ -38,6 +38,7 @@ constexpr std::string_view ColumnMapping{"columnMapping"};
 constexpr std::string_view MaxDepthLevels{"maxDepthLevels"};
 constexpr std::string_view Listings{"listings"};
 constexpr std::string_view RandomPriceOnly{"randomPriceOnly"};
+constexpr std::string_view IncrementalSubscriptions{"incrementalSubscriptions"};
 constexpr std::string_view Datasources{"dataSources"};
 
 }  // namespace datasource_key

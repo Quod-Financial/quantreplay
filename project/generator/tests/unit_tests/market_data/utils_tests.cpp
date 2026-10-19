@@ -420,6 +420,47 @@ TEST_F(GeneratorMarketDataDatasourceRequirementBuilder,
 }
 
 TEST_F(GeneratorMarketDataDatasourceRequirementBuilder,
+       RequestsFullRefreshesWhenIncrementalSubscriptionsAreNotSet) {
+  const auto datasource =
+      make_datasource(with_symbols(Datasource::Patch{}, {"AAPL"}));
+
+  const auto requirements =
+      make_datasource_subscription_requirements({datasource});
+
+  ASSERT_THAT(requirements, SizeIs(1));
+  ASSERT_THAT(requirements.front().update_type,
+              Eq(MarketDataUpdateType::Option::Snapshot));
+}
+
+TEST_F(GeneratorMarketDataDatasourceRequirementBuilder,
+       RequestsFullRefreshesWhenIncrementalSubscriptionsAreDisabled) {
+  const auto datasource =
+      make_datasource(with_symbols(Datasource::Patch{}, {"AAPL"})
+                          .with_incremental_subscriptions_flag(false));
+
+  const auto requirements =
+      make_datasource_subscription_requirements({datasource});
+
+  ASSERT_THAT(requirements, SizeIs(1));
+  ASSERT_THAT(requirements.front().update_type,
+              Eq(MarketDataUpdateType::Option::Snapshot));
+}
+
+TEST_F(GeneratorMarketDataDatasourceRequirementBuilder,
+       RequestsIncrementalRefreshesWhenIncrementalSubscriptionsAreEnabled) {
+  const auto datasource =
+      make_datasource(with_symbols(Datasource::Patch{}, {"AAPL", "MSFT"})
+                          .with_incremental_subscriptions_flag(true));
+
+  const auto requirements =
+      make_datasource_subscription_requirements({datasource});
+
+  ASSERT_THAT(requirements,
+              Each(Field(&SubscriptionRequirement::update_type,
+                         Eq(MarketDataUpdateType::Option::Incremental))));
+}
+
+TEST_F(GeneratorMarketDataDatasourceRequirementBuilder,
        NamesOrderCounterpartyAfterDatasourceId) {
   const auto datasource =
       make_datasource(with_symbols(Datasource::Patch{}, {"AAPL"}), 7);

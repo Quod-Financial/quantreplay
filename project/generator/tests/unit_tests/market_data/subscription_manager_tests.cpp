@@ -12,6 +12,7 @@
 #include "core/domain/attributes.hpp"
 #include "core/domain/instrument_descriptor.hpp"
 #include "core/domain/market_data_entry.hpp"
+#include "ih/market_data/market_data_book_cache.hpp"
 #include "ih/market_data/order_book_prices.hpp"
 #include "ih/market_data/price_cache.hpp"
 #include "ih/market_data/subscription_manager.hpp"
@@ -21,6 +22,7 @@
 #include "protocol/app/market_data_reject.hpp"
 #include "protocol/app/market_data_request.hpp"
 #include "protocol/app/market_data_snapshot.hpp"
+#include "protocol/app/market_data_update.hpp"
 
 namespace simulator::generator::mdata::test {
 namespace {
@@ -37,7 +39,9 @@ struct GeneratorSubscriptionManager : public Test {
   std::shared_ptr<NiceMock<mock::ComponentContext>> context =
       std::make_shared<NiceMock<mock::ComponentContext>>();
   std::shared_ptr<PriceCache> price_cache = std::make_shared<PriceCache>();
-  SubscriptionManager manager{price_cache, context};
+  std::shared_ptr<MarketDataBookCache> book_cache =
+      std::make_shared<MarketDataBookCache>();
+  SubscriptionManager manager{price_cache, book_cache, context};
 
   GeneratorSubscriptionManager() {
     ON_CALL(*context, generate_identifier()).WillByDefault([this] {
@@ -65,6 +69,13 @@ struct GeneratorSubscriptionManager : public Test {
                                    .datasource_id = datasource_id,
                                    .depth = depth,
                                    .order_counterparty = std::nullopt};
+  }
+
+  [[nodiscard]]
+  static auto make_incremental_requirement() -> SubscriptionRequirement {
+    SubscriptionRequirement requirement = make_requirement();
+    requirement.update_type = MarketDataUpdateType::Option::Incremental;
+    return requirement;
   }
 
   [[nodiscard]]
@@ -102,6 +113,53 @@ struct GeneratorSubscriptionManager : public Test {
     snapshot.market_data_entries.push_back(entry);
 
     price_cache->process(snapshot);
+  }
+
+  [[nodiscard]]
+  static auto make_full_refresh(const MdRequestId& request_id)
+      -> protocol::MarketDataSnapshot {
+    protocol::MarketDataSnapshot snapshot{make_session()};
+    snapshot.request_id = request_id;
+    return snapshot;
+  }
+
+  [[nodiscard]]
+  static auto make_update(const MdRequestId& request_id,
+                          MarketDataEntry entry) -> protocol::MarketDataUpdate {
+    protocol::MarketDataUpdate update{make_session()};
+    update.request_id = request_id;
+    update.market_data_entries.push_back(std::move(entry));
+    return update;
+  }
+
+  [[nodiscard]]
+  auto updates_cached_book(const MdRequestId& request_id) -> bool {
+    MarketDataEntry entry;
+    entry.type = MdEntryType::Option::Bid;
+    entry.id = MarketEntryId{"B1"};
+    entry.price = Price{100.};
+    entry.quantity = Quantity{100};
+    entry.action = MarketEntryAction::Option::New;
+
+    (void)book_cache->process(make_full_refresh(request_id));
+    return book_cache->process(make_update(request_id, std::move(entry)))
+        .snapshot.has_value();
+  }
+
+  auto diverge_cached_book(const MdRequestId& request_id) -> void {
+    MarketDataEntry entry;
+    entry.type = MdEntryType::Option::Bid;
+    entry.id = MarketEntryId{"UNKNOWN"};
+    entry.action = MarketEntryAction::Option::Change;
+
+    (void)book_cache->process(make_full_refresh(request_id));
+    (void)book_cache->process(make_update(request_id, std::move(entry)));
+  }
+
+  auto diverge(const MdRequestId& request_id) -> void {
+    EXPECT_CALL(receiver, process(_)).Times(AnyNumber());
+    manager.handle_divergence(request_id);
+    Mock::VerifyAndClearExpectations(&receiver);
   }
 
  private:
@@ -319,6 +377,57 @@ TEST_F(GeneratorSubscriptionManager, SendsRequestWithFullRefreshUpdateType) {
                     Optional(Eq(MarketDataUpdateType::Option::Snapshot)))));
 
   manager.subscribe();
+}
+
+TEST_F(GeneratorSubscriptionManager,
+       SendsRequestWithIncrementalUpdateTypeForIncrementalRequirement) {
+  add_datasource_subscriptions({make_incremental_requirement()});
+
+  EXPECT_CALL(
+      receiver,
+      process(Field(&protocol::MarketDataRequest::update_type,
+                    Optional(Eq(MarketDataUpdateType::Option::Incremental)))));
+
+  manager.subscribe();
+}
+
+TEST_F(GeneratorSubscriptionManager,
+       SendsFullRefreshUpdateTypeWhenAnyMergedRequirementIsFullRefresh) {
+  add_datasource_subscriptions({make_incremental_requirement(),
+                                make_requirement(),
+                                make_incremental_requirement()});
+
+  EXPECT_CALL(
+      receiver,
+      process(Field(&protocol::MarketDataRequest::update_type,
+                    Optional(Eq(MarketDataUpdateType::Option::Snapshot)))));
+
+  manager.subscribe();
+}
+
+TEST_F(GeneratorSubscriptionManager,
+       SendsIncrementalUpdateTypeWhenAllMergedRequirementsAreIncremental) {
+  add_datasource_subscriptions(
+      {make_incremental_requirement(), make_incremental_requirement()});
+
+  EXPECT_CALL(
+      receiver,
+      process(Field(&protocol::MarketDataRequest::update_type,
+                    Optional(Eq(MarketDataUpdateType::Option::Incremental)))));
+
+  manager.subscribe();
+}
+
+TEST_F(GeneratorSubscriptionManager,
+       SendsIncrementalUnsubscribeRequestForIncrementalSubscription) {
+  add_and_subscribe({make_incremental_requirement()});
+
+  EXPECT_CALL(
+      receiver,
+      process(Field(&protocol::MarketDataRequest::update_type,
+                    Optional(Eq(MarketDataUpdateType::Option::Incremental)))));
+
+  manager.unsubscribe();
 }
 
 TEST_F(GeneratorSubscriptionManager, SendsRequestWithSubscribeRequestType) {
@@ -722,6 +831,145 @@ TEST_F(GeneratorSubscriptionManager,
           ->market_state(MdRequestId{"MD-42"}, {}, OrderBookPrices::Aggregated)
           .best_bid_price,
       Eq(std::nullopt));
+}
+
+TEST_F(GeneratorSubscriptionManager,
+       CachesBookOfIncrementalSubscriptionOnSubscribe) {
+  EXPECT_CALL(*context, generate_identifier()).WillOnce(Return("MD-42"));
+
+  add_and_subscribe({make_incremental_requirement()});
+
+  ASSERT_TRUE(updates_cached_book(MdRequestId{"MD-42"}));
+}
+
+TEST_F(GeneratorSubscriptionManager, DropsCachedBookWhenSubscribeRequestFails) {
+  EXPECT_CALL(*context, generate_identifier()).WillOnce(Return("MD-42"));
+  add_datasource_subscriptions({make_incremental_requirement()});
+  EXPECT_CALL(receiver, process(_))
+      .WillOnce(Throw(std::runtime_error{"send failed"}));
+
+  manager.subscribe();
+
+  ASSERT_FALSE(updates_cached_book(MdRequestId{"MD-42"}));
+}
+
+TEST_F(GeneratorSubscriptionManager, DropsCachedBookOnUnsubscribe) {
+  EXPECT_CALL(*context, generate_identifier()).WillOnce(Return("MD-42"));
+  add_and_subscribe({make_incremental_requirement()});
+  EXPECT_CALL(receiver, process(_)).Times(AnyNumber());
+
+  manager.unsubscribe();
+
+  ASSERT_FALSE(updates_cached_book(MdRequestId{"MD-42"}));
+}
+
+TEST_F(GeneratorSubscriptionManager, DropsCachedBookOnSessionDisconnection) {
+  EXPECT_CALL(*context, generate_identifier()).WillOnce(Return("MD-42"));
+  add_and_subscribe({make_incremental_requirement()});
+
+  manager.handle_session_disconnected(make_session());
+
+  ASSERT_FALSE(updates_cached_book(MdRequestId{"MD-42"}));
+}
+
+TEST_F(GeneratorSubscriptionManager, DropsCachedBookOfRejectedSubscription) {
+  EXPECT_CALL(*context, generate_identifier()).WillOnce(Return("MD-42"));
+  add_and_subscribe({make_incremental_requirement()});
+
+  manager.handle_reject(make_reject(MdRequestId{"MD-42"}));
+
+  ASSERT_FALSE(updates_cached_book(MdRequestId{"MD-42"}));
+}
+
+TEST_F(GeneratorSubscriptionManager, IgnoresDivergenceOfUnknownSubscription) {
+  add_and_subscribe({make_incremental_requirement()});
+  manager.handle_divergence(MdRequestId{"MD-UNKNOWN"});
+
+  EXPECT_CALL(
+      receiver,
+      process(
+          Field(&protocol::MarketDataRequest::request_type,
+                Optional(Eq(MdSubscriptionRequestType::Option::Unsubscribe)))));
+
+  manager.unsubscribe();
+}
+
+TEST_F(GeneratorSubscriptionManager,
+       SendsNothingOnDivergenceOfUnsubscribedSubscription) {
+  EXPECT_CALL(*context, generate_identifier()).WillOnce(Return("MD-42"));
+  add_datasource_subscriptions({make_incremental_requirement()});
+
+  EXPECT_CALL(receiver, process(_)).Times(0);
+
+  manager.handle_divergence(MdRequestId{"MD-42"});
+}
+
+TEST_F(GeneratorSubscriptionManager, SendsUnsubscribeRequestOnDivergence) {
+  EXPECT_CALL(*context, generate_identifier()).WillOnce(Return("MD-42"));
+  add_and_subscribe({make_incremental_requirement()});
+
+  EXPECT_CALL(
+      receiver,
+      process(AllOf(
+          Field(&protocol::MarketDataRequest::request_id,
+                Optional(Eq(MdRequestId{"MD-42"}))),
+          Field(
+              &protocol::MarketDataRequest::request_type,
+              Optional(Eq(MdSubscriptionRequestType::Option::Unsubscribe))))));
+
+  manager.handle_divergence(MdRequestId{"MD-42"});
+}
+
+TEST_F(GeneratorSubscriptionManager,
+       SendsNoUnsubscribeRequestForDivergedSubscription) {
+  EXPECT_CALL(*context, generate_identifier()).WillOnce(Return("MD-42"));
+  add_and_subscribe({make_incremental_requirement()});
+  diverge(MdRequestId{"MD-42"});
+
+  EXPECT_CALL(receiver, process(_)).Times(0);
+
+  manager.unsubscribe();
+}
+
+TEST_F(GeneratorSubscriptionManager,
+       ResendsSubscribeRequestForDivergedSubscriptionOnSubscribe) {
+  EXPECT_CALL(*context, generate_identifier()).WillOnce(Return("MD-42"));
+  add_and_subscribe({make_incremental_requirement()});
+  diverge(MdRequestId{"MD-42"});
+
+  EXPECT_CALL(receiver,
+              process(Field(
+                  &protocol::MarketDataRequest::request_type,
+                  Optional(Eq(MdSubscriptionRequestType::Option::Subscribe)))));
+
+  manager.subscribe();
+}
+
+TEST_F(GeneratorSubscriptionManager,
+       ClearsCachedMarketDataOfDivergedSubscription) {
+  EXPECT_CALL(*context, generate_identifier()).WillOnce(Return("MD-42"));
+  price_cache->add(MdRequestId{"MD-42"});
+  add_and_subscribe({make_incremental_requirement()});
+  publish_bid_price(MdRequestId{"MD-42"}, 100.);
+
+  diverge(MdRequestId{"MD-42"});
+
+  ASSERT_THAT(
+      price_cache
+          ->market_state(MdRequestId{"MD-42"}, {}, OrderBookPrices::Aggregated)
+          .best_bid_price,
+      Eq(std::nullopt));
+}
+
+TEST_F(GeneratorSubscriptionManager,
+       KeepsFullRefreshesOfDivergedBookUnpublished) {
+  EXPECT_CALL(*context, generate_identifier()).WillOnce(Return("MD-42"));
+  add_and_subscribe({make_incremental_requirement()});
+  diverge_cached_book(MdRequestId{"MD-42"});
+
+  diverge(MdRequestId{"MD-42"});
+
+  ASSERT_FALSE(book_cache->process(make_full_refresh(MdRequestId{"MD-42"})));
 }
 
 // NOLINTEND(*magic-numbers*)

@@ -57,7 +57,9 @@ add_static_library(
     ih/market_data/best_prices_sink.hpp
     ih/market_data/historical_random_price_source_registry.hpp
     ih/market_data/local_subscription_manager.hpp
+    ih/market_data/market_data_book_cache.hpp
     ih/market_data/market_data_provider.hpp
+    ih/market_data/market_data_router.hpp
     ih/market_data/market_state.hpp
     ih/market_data/order_book_derivation.hpp
     ih/market_data/order_book_prices.hpp
@@ -132,7 +134,9 @@ add_static_library(
     src/historical/scheduler.cpp
     src/market_data/historical_random_price_source_registry.cpp
     src/market_data/local_subscription_manager.cpp
+    src/market_data/market_data_book_cache.cpp
     src/market_data/market_data_provider.cpp
+    src/market_data/market_data_router.cpp
     src/market_data/order_book_derivation.cpp
     src/market_data/price_cache.cpp
     src/market_data/record_factory.cpp

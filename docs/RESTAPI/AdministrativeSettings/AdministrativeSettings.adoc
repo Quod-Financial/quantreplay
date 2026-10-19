@@ -990,7 +990,12 @@ _Resource Properties_
 | textDataRow	| Integer	| 1-based row index of where the first row of data is located. 
 Cannot be 0, and must be greater than `textHeaderRow`, if present (supported only for CSV format)
 | tableName	| Text	| Name of table (supported only for databases)
-| maxDepthLevels	| Integer	a| Maximum depth levels to read from the datasource. 0 or unspecified indicates to read all levels. For FIX Format, this value is used in tag MarketDepth (264) of each market data subscription.
+| maxDepthLevels	| Integer	a| Maximum depth levels to read from the datasource. 0 or unspecified indicates to read all levels. For FIX Format, this value is used in tag MarketDepth (264) of each market data subscription, unless randomPriceOnly is set (the subscription then requests the top of the book only) or another enabled datasource subscribing to the same symbol over the same session requests more levels (see <<general-datasource-formatconfig-fix,FIX Market Data Feed>>).
+| incrementalSubscriptions	| Boolean	a| For FIX Format, whether the market data subscriptions are made as incremental rather than full refresh subscriptions, using MDUpdateType (265)
+
+*   When `false` (the default), each subscription requests full refreshes (265 = 0).
+*   When `true`, each subscription requests incremental refreshes (265 = 1), unless another enabled datasource subscribing to the same symbol over the same session requests full refreshes (see <<general-datasource-formatconfig-fix,FIX Market Data Feed>>).
+
 | columnMapping	| Array	| Mapping between the internal simulator fields and the columns of the datasource (supported only for CSV and PSQL formats),
 see <<adminsets-data-colmapping>>
 | listings	| Array	| For FIX Format, list of Symbols to subscribe to market data. An empty list results in no subscriptions. See <<adminsets-data-listings,Listings Sub-List>>.
@@ -1208,6 +1213,7 @@ Content-Length: XXX
             "type" : "OrderBook",
             "maxDepthLevels" : 1,
             "randomPriceOnly" : false,
+            "incrementalSubscriptions" : false,
             "columnMapping" : [],
             "listings" : [
                 {
@@ -1278,6 +1284,7 @@ Host: localhost
     "type" : "OrderBook",
     "maxDepthLevels" : 1,
     "randomPriceOnly" : true,
+    "incrementalSubscriptions" : true,
     "listings" : [
         {
             "symbol" : "VOW"

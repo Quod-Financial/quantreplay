@@ -33,7 +33,8 @@ class Datasource {
     TextDataRow,
     TableName,
     MaxDepthLevels,
-    RandomPriceOnly
+    RandomPriceOnly,
+    IncrementalSubscriptions
   };
 
   enum class Format { Csv, Postgres, Fix };
@@ -46,6 +47,7 @@ class Datasource {
   static constexpr bool DefaultEnabledFlag{true};
   static constexpr bool DefaultRepeatFlag{false};
   static constexpr bool DefaultRandomPriceOnlyFlag{false};
+  static constexpr bool DefaultIncrementalSubscriptionsFlag{false};
   static constexpr char DefaultTextDelimiter{','};
   static constexpr std::uint64_t DefaultTextDataRow{1};
 
@@ -101,6 +103,9 @@ class Datasource {
   [[nodiscard]]
   auto random_price_only_flag() const noexcept -> std::optional<bool>;
 
+  [[nodiscard]]
+  auto incremental_subscriptions_flag() const noexcept -> std::optional<bool>;
+
  private:
   Datasource() = default;
 
@@ -126,6 +131,7 @@ class Datasource {
   std::optional<bool> enabled_flag_;
   std::optional<bool> repeat_flag_;
   std::optional<bool> random_price_only_flag_;
+  std::optional<bool> incremental_subscriptions_flag_;
 };
 
 class Datasource::Patch {
@@ -201,6 +207,12 @@ class Datasource::Patch {
   auto random_price_only_flag() const noexcept -> const PatchField<bool>&;
   auto with_random_price_only_flag(std::optional<bool> flag) noexcept -> Patch&;
 
+  [[nodiscard]]
+  auto incremental_subscriptions_flag() const noexcept
+      -> const PatchField<bool>&;
+  auto with_incremental_subscriptions_flag(std::optional<bool> flag) noexcept
+      -> Patch&;
+
  private:
   PatchField<std::string> table_name_;
   std::optional<std::string> name_;
@@ -221,6 +233,7 @@ class Datasource::Patch {
   PatchField<bool> enabled_flag_;
   PatchField<bool> repeat_flag_;
   PatchField<bool> random_price_only_flag_;
+  PatchField<bool> incremental_subscriptions_flag_;
 };
 
 }  // namespace simulator::data_layer

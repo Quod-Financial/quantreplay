@@ -268,12 +268,10 @@ auto accept_reply(const protocol::MarketDataSnapshot& reply,
   process_market_data(reply, generator.implementation());
 }
 
-auto accept_reply(const protocol::MarketDataUpdate& reply,
-                  [[maybe_unused]] Generator& generator) -> void {
-  log::warn(
-      "order generator subscribes for full refreshes only and does not handle "
-      "MarketDataUpdate messages, skipping {}",
-      reply);
+auto accept_reply(const protocol::MarketDataUpdate& reply, Generator& generator)
+    -> void {
+  log::debug("accepting MarketDataUpdate sent to the generator instance");
+  process_market_data(reply, generator.implementation());
 }
 
 auto accept_reply(const protocol::MarketDataReject& reply, Generator& generator)

@@ -21,7 +21,9 @@
 #include "ih/historical/processing/action_sink.hpp"
 #include "ih/market_data/historical_random_price_source_registry.hpp"
 #include "ih/market_data/local_subscription_manager.hpp"
+#include "ih/market_data/market_data_book_cache.hpp"
 #include "ih/market_data/market_data_provider.hpp"
+#include "ih/market_data/market_data_router.hpp"
 #include "ih/market_data/order_book_derivation.hpp"
 #include "ih/market_data/price_cache.hpp"
 #include "ih/market_data/subscription_manager.hpp"
@@ -68,6 +70,8 @@ class GeneratorImpl final {
 
   auto process_market_data(const protocol::MarketDataSnapshot& snapshot)
       -> void;
+
+  auto process_market_data(const protocol::MarketDataUpdate& update) -> void;
 
   auto process_market_data(const protocol::MarketDataReject& reject) -> void;
 
@@ -160,11 +164,13 @@ class GeneratorImpl final {
   std::shared_ptr<GenerationManager> generation_manager_;
 
   std::shared_ptr<mdata::PriceCache> price_cache_;
+  std::shared_ptr<mdata::MarketDataBookCache> book_cache_;
   mdata::LocalSubscriptionManager local_subscription_manager_;
   mdata::SubscriptionManager subscription_manager_;
   mdata::HistoricalRandomPriceSourceRegistry
       historical_random_price_source_registry_;
-  std::unique_ptr<mdata::OrderBookDerivation> order_book_derivation_;
+  std::shared_ptr<mdata::OrderBookDerivation> order_book_derivation_;
+  std::unique_ptr<mdata::MarketDataRouter> market_data_router_;
 
   std::vector<std::unique_ptr<Executor>> historical_repliers_;
   std::unique_ptr<InstrumentRandomGeneratorFactory> rnd_executor_factory_;
