@@ -95,3 +95,20 @@ databaseChangeLog:
             onUpdate: CASCADE
             onDelete: CASCADE
             validate: true
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_key_listing_random_price_source_4
+      labels: schema,v13
+      comment: Drop listing_random_price_source_pkey so that a random price source can refer to a listing of the local venue without a datasource
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing_random_price_source
+        - primaryKeyExists:
+            tableName: listing_random_price_source
+            primaryKeyName: listing_random_price_source_pkey
+      changes:
+        - dropPrimaryKey:
+            constraintName: listing_random_price_source_pkey
+            tableName: listing_random_price_source

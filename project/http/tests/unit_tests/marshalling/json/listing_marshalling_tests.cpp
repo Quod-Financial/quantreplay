@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 
 #include <initializer_list>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -623,6 +624,31 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomPriceSources) {
               R"("listingId":42,)"
               R"("datasourceId":8,)"
               R"("symbol":"AAPL.N")"
+            "}"
+        "]"
+  "}"};
+  // clang-format on
+
+  ASSERT_EQ(marshall(listing), expected_json);
+}
+
+TEST_F(HttpJsonListingMarshaller,
+       MarshallsRandomPriceSourceWithoutDatasourceId) {
+  data_layer::ListingRandomPriceSource::Patch source;
+  source.with_symbol("MSFT");
+
+  auto patch = make_default_patch();
+  patch.with_random_price_source(source);
+  const auto listing = Listing::create(patch, 42);
+
+  // clang-format off
+  const std::string expected_json{"{"
+      R"("id":42,)"
+      R"("venueId":"dummy",)"
+      R"("randomPriceSources":[)"
+            "{"
+              R"("listingId":42,)"
+              R"("symbol":"MSFT")"
             "}"
         "]"
   "}"};
@@ -1284,6 +1310,30 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomPriceSourcesValidArray) {
   expected.with_datasource_id(7).with_symbol("AAPL.OQ");
   ASSERT_THAT(patch.random_price_sources(),
               Optional(ElementsAre(Eq(expected))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsNullDatasourceId) {
+  constexpr std::string_view json{
+      R"({"randomPriceSources":[{"datasourceId":null,"symbol":"MSFT"}]})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  data_layer::ListingRandomPriceSource::Patch expected;
+  expected.with_symbol("MSFT");
+  ASSERT_THAT(patch.random_price_sources(),
+              Optional(ElementsAre(Eq(expected))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsAbsentDatasourceId) {
+  constexpr std::string_view json{
+      R"({"randomPriceSources":[{"symbol":"MSFT"}]})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.random_price_sources(),
+              Optional(ElementsAre(Property(
+                  &data_layer::ListingRandomPriceSource::Patch::datasource_id,
+                  Eq(std::nullopt)))));
 }
 
 // NOLINTEND(*magic-numbers*)

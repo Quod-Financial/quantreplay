@@ -1,5 +1,7 @@
 #include "api/models/listing_random_price_source.hpp"
 
+#include <cstdint>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -19,7 +21,8 @@ auto ListingRandomPriceSource::listing_id() const noexcept -> std::uint64_t {
   return listing_id_;
 }
 
-auto ListingRandomPriceSource::datasource_id() const noexcept -> std::uint64_t {
+auto ListingRandomPriceSource::datasource_id() const noexcept
+    -> const std::optional<std::uint64_t>& {
   return datasource_id_;
 }
 
@@ -28,12 +31,12 @@ auto ListingRandomPriceSource::symbol() const noexcept -> const std::string& {
 }
 
 auto ListingRandomPriceSource::Patch::datasource_id() const noexcept
-    -> std::uint64_t {
+    -> const std::optional<std::uint64_t>& {
   return datasource_id_;
 }
 
 auto ListingRandomPriceSource::Patch::with_datasource_id(
-    std::uint64_t datasource_id) noexcept -> Patch& {
+    std::optional<std::uint64_t> datasource_id) noexcept -> Patch& {
   datasource_id_ = datasource_id;
   return *this;
 }

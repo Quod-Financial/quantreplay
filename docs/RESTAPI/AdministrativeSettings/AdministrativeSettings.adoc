@@ -557,7 +557,7 @@ Used only for passive orders if randomAggQtyMaximum and/or randomAggAmtMaximum h
 | randomOrdersRate	| Integer	| The number of order actions (new order/modification/cancel/wait) per second during Random Order Generation
 | randomTickRange	| Integer	| Range of price ticks used to calculate prices created by the Random Order Generator (10 by default)
 | randomOrdersEnabled	| Boolean	| Indicates if the Random Order Generator has to generate random orders on a listing
-| randomPriceSources	| Array	| List of market data sources to be used for deriving price during random order generation
+| randomPriceSources	| Array	| Market data of datasources, or of other listings of the same venue, used as the base price for random order generation on this listing, see <<adminsets-listings-randpricesrc,Random Price Sources Sub-List>>
 | randomPriceExcludeCurrentListing	| Boolean	| Indicates if the order book of the listing itself is excluded from the aggregation of its random price sources (false by default)
 | enabled	| Boolean	| Indicates if the listing is enabled and should be used by the Market Simulator
 
@@ -565,8 +565,10 @@ Used only for passive orders if randomAggQtyMaximum and/or randomAggAmtMaximum h
 
 [[adminsets-listings-randpricesrc]]
 ==== Random Price Sources Sub-List
-By default, the Random Order Generator uses the top of book of the listing itself as the base price for deriving the price randomly generted orders.
+By default, the Random Order Generator uses the top of book of the listing itself as the base price for deriving the price for randomly generated orders.
 A listing can also use a base price from the market data of one or more datasources of any format, as configured in this sub-list.
+A random price source can also refer to another listing of the local venue, the venue of the listing itself, instead of a datasource:
+the prices are then taken directly from the order book of that listing on the running simulator instance, with no datasource involved.
 The market data of these sources is then aggregated with the order book of the listing itself to determine the base price, or the order book of the listing can be excluded using the `randomPriceExcludeCurrentListing` setting.
 See <<general-randomorder-distrprice,this section>> for details of how these prices are used to derive the price for each randomly generated order.
 
@@ -576,9 +578,10 @@ See <<general-randomorder-distrprice,this section>> for details of how these pri
 
 | listingId	| Integer	| An identifier of the listing record which has a random price source.
 Users may omit to send this value in the requests.
-| datasourceId	| Integer	| An identifier of the datasource to take the prices from.
+| datasourceId	| Integer or null	| An identifier of the datasource to take the prices from.
 It must refer to an existing datasource on the same venue as the listing.
-| symbol	| Text	| Symbol on the specified datasource to take base prices from. This symbol must match a symbol consumed as market data from the specified datasource.
+A `null` value, or omitting the key, selects the local venue: the prices are taken from the top of the book of the listing of the same venue whose symbol matches `symbol`.
+| symbol	| Text	| Symbol to take base prices from, on the specified datasource or, when no datasource is specified, on the local venue. On a datasource it must match a symbol consumed as market data from that datasource.
 
 |===
 
@@ -659,6 +662,10 @@ Content-Length: XXX
             "listingId" : 1,
             "datasourceId" : 3,
             "symbol" : "SAP"
+        },
+        {
+            "listingId" : 1,
+            "symbol" : "SIE"
         }
     ]
 }

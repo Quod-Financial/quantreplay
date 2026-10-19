@@ -13,6 +13,17 @@
 
 namespace simulator::generator::mdata {
 
+struct HistoricalPriceSourceKey {
+  DatasourceId datasource_id{};
+  Symbol symbol;
+
+  [[nodiscard]]
+  auto operator==(const HistoricalPriceSourceKey&) const -> bool = default;
+
+  [[nodiscard]]
+  auto operator<=>(const HistoricalPriceSourceKey&) const = default;
+};
+
 class HistoricalRandomPriceSourceRegistry final {
  public:
   HistoricalRandomPriceSourceRegistry() = delete;
@@ -32,7 +43,7 @@ class HistoricalRandomPriceSourceRegistry final {
   auto operator=(HistoricalRandomPriceSourceRegistry&&)
       -> HistoricalRandomPriceSourceRegistry& = delete;
 
-  auto add(const RandomPriceSourceKey& key) -> MdRequestId;
+  auto add(const HistoricalPriceSourceKey& key) -> MdRequestId;
 
   [[nodiscard]]
   auto symbols_of(DatasourceId datasource_id) const
@@ -41,7 +52,7 @@ class HistoricalRandomPriceSourceRegistry final {
   auto reset() -> void;
 
  private:
-  std::map<RandomPriceSourceKey, MdRequestId> sources_;
+  std::map<HistoricalPriceSourceKey, MdRequestId> sources_;
   std::shared_ptr<PriceCache> price_cache_;
   std::shared_ptr<ComponentContext> context_;
 };

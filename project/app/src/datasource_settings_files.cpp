@@ -55,11 +55,11 @@ auto datasource_settings_files(
     if (key == instance_key) {
       continue;
     }
-    auto& file =
-        files_by_key
-            .try_emplace(std::move(key),
-                         DatasourceSettingsFile{.path = *settings_file})
-            .first->second;
+    auto& file = files_by_key
+                     .try_emplace(std::move(key),
+                                  DatasourceSettingsFile{.path = *settings_file,
+                                                         .datasources = {}})
+                     .first->second;
     file.datasources.push_back(
         {.id = datasource.datasource_id(), .name = datasource.name()});
   }

@@ -1,4 +1,4 @@
-#include "ih/market_data/subscription_manager.hpp"
+#include "ih/market_data/subscription/subscription_manager.hpp"
 
 #include <algorithm>
 #include <cassert>

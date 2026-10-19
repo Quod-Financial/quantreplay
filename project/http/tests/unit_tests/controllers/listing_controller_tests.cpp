@@ -302,7 +302,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
       .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
 
   const auto [code, content] =
-      controller->update_listing("AAPL", R"({"symbol":"AAPL"})");
+      controller->update_listing("AAPL", R"({"enabled":false})");
 
   EXPECT_EQ(code, Code::Ok);
 }
@@ -370,6 +370,235 @@ TEST_F(HttpListingControllerRandomPriceSource,
       R"({"datasourceId":24,"symbol":"AAPL.N"}]})");
 
   EXPECT_EQ(code, Code::Created);
+}
+
+TEST_F(HttpListingControllerRandomPriceSource,
+       InsertsListingWithLocalVenueSource) {
+  EXPECT_CALL(datasources(), select_single).Times(0);
+  EXPECT_CALL(listings(), add)
+      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+
+  const auto [code, content] = controller->insert_listing(
+      R"({"venueId":"LSE",)"
+      R"("randomPriceSources":[{"datasourceId":null,"symbol":"MSFT"}]})");
+
+  EXPECT_EQ(code, Code::Created);
+}
+
+TEST_F(HttpListingControllerRandomPriceSource,
+       UpdatesListingWithLocalVenueSource) {
+  EXPECT_CALL(listings(),
+              select_single(Matcher<const std::string&>(Eq("AAPL"))))
+      .WillOnce(Return(make_listing(Listing::Patch{})));
+  EXPECT_CALL(datasources(), select_single).Times(0);
+  EXPECT_CALL(listings(), update(_, Matcher<const std::string&>(Eq("AAPL"))))
+      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+
+  const auto [code, content] = controller->update_listing(
+      "AAPL",
+      R"({"randomPriceSources":[{"datasourceId":null,"symbol":"MSFT"}]})");
+
+  EXPECT_EQ(code, Code::Ok);
+}
+
+TEST_F(HttpListingControllerRandomPriceSource,
+       InsertsListingWithLocalVenueSourceAndDatasourceOfItsVenue) {
+  EXPECT_CALL(datasources(), select_single(Eq(DatasourceId)))
+      .WillOnce(Return(make_fix_datasource()));
+  EXPECT_CALL(listings(), add)
+      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+
+  const auto [code, content] = controller->insert_listing(
+      R"({"venueId":"LSE",)"
+      R"("randomPriceSources":[{"datasourceId":null,"symbol":"MSFT"},)"
+      R"({"datasourceId":24,"symbol":"AAPL.OQ"}]})");
+
+  EXPECT_EQ(code, Code::Created);
+}
+
+TEST_F(HttpListingControllerRandomPriceSource,
+       RejectsInsertWithLocalVenueSourceWithoutSymbol) {
+  EXPECT_CALL(listings(), add).Times(0);
+
+  const auto [code, content] = controller->insert_listing(
+      R"({"venueId":"LSE","randomPriceSources":[{"datasourceId":null}]})");
+
+  EXPECT_EQ(code, Code::Bad_Request);
+  EXPECT_THAT(content,
+              HasSubstr("symbol of a random price source must not be empty"));
+}
+
+TEST_F(HttpListingControllerRandomPriceSource,
+       RejectsInsertWithEmptyDatasourceSymbol) {
+  EXPECT_CALL(listings(), add).Times(0);
+
+  const auto [code, content] = controller->insert_listing(
+      R"({"venueId":"LSE",)"
+      R"("randomPriceSources":[{"datasourceId":24,"symbol":""}]})");
+
+  EXPECT_EQ(code, Code::Bad_Request);
+  EXPECT_THAT(content,
+              HasSubstr("symbol of a random price source must not be empty"));
+}
+
+TEST_F(HttpListingControllerRandomPriceSource,
+       RejectsInsertWithLocalVenueSourceOfListingOwnSymbol) {
+  EXPECT_CALL(listings(), add).Times(0);
+
+  const auto [code, content] = controller->insert_listing(
+      R"({"venueId":"LSE","symbol":"MSFT",)"
+      R"("randomPriceSources":[{"datasourceId":null,"symbol":"MSFT"}]})");
+
+  EXPECT_EQ(code, Code::Bad_Request);
+  EXPECT_THAT(content, HasSubstr("must not refer to the listing itself"));
+}
+
+TEST_F(HttpListingControllerRandomPriceSource,
+       RejectsUpdateWithLocalVenueSourceOfCurrentListingSymbol) {
+  EXPECT_CALL(listings(),
+              select_single(Matcher<const std::string&>(Eq("AAPL"))))
+      .WillOnce(Return(make_listing(Listing::Patch{}.with_symbol("AAPL"))));
+  EXPECT_CALL(listings(), update(_, Matcher<const std::string&>(_))).Times(0);
+
+  const auto [code, content] = controller->update_listing(
+      "AAPL",
+      R"({"randomPriceSources":[{"datasourceId":null,"symbol":"AAPL"}]})");
+
+  EXPECT_EQ(code, Code::Bad_Request);
+  EXPECT_THAT(content, HasSubstr("must not refer to the listing itself"));
+}
+
+TEST_F(HttpListingControllerRandomPriceSource,
+       UpdatesListingWithLocalVenueSourceOfItsNewSymbol) {
+  EXPECT_CALL(listings(),
+              select_single(Matcher<const std::string&>(Eq("AAPL"))))
+      .WillOnce(Return(make_listing(Listing::Patch{}.with_symbol("AAPL"))));
+  EXPECT_CALL(listings(), update(_, Matcher<const std::string&>(Eq("AAPL"))))
+      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+
+  const auto [code, content] = controller->update_listing(
+      "AAPL",
+      R"({"symbol":"MSFT",)"
+      R"("randomPriceSources":[{"datasourceId":null,"symbol":"AAPL"}]})");
+
+  EXPECT_EQ(code, Code::Ok);
+}
+
+TEST_F(HttpListingControllerRandomPriceSource,
+       RejectsRenameToSymbolOfStoredLocalVenueSource) {
+  auto stored = Listing::Patch{}.with_symbol("AAPL");
+  stored.with_random_price_source(
+      data_layer::ListingRandomPriceSource::Patch{}.with_symbol("MSFT"));
+  EXPECT_CALL(listings(),
+              select_single(Matcher<const std::string&>(Eq("AAPL"))))
+      .WillOnce(Return(make_listing(std::move(stored))));
+  EXPECT_CALL(listings(), update(_, Matcher<const std::string&>(_))).Times(0);
+
+  const auto [code, content] =
+      controller->update_listing("AAPL", R"({"symbol":"MSFT"})");
+
+  EXPECT_EQ(code, Code::Bad_Request);
+  EXPECT_THAT(content, HasSubstr("can not take the `MSFT' symbol"));
+}
+
+TEST_F(HttpListingControllerRandomPriceSource,
+       RenamesListingToSymbolOfStoredDatasourceSource) {
+  auto stored = Listing::Patch{}.with_symbol("AAPL");
+  stored.with_random_price_source(
+      data_layer::ListingRandomPriceSource::Patch{}
+          .with_datasource_id(DatasourceId)
+          .with_symbol("MSFT"));
+  EXPECT_CALL(listings(),
+              select_single(Matcher<const std::string&>(Eq("AAPL"))))
+      .WillOnce(Return(make_listing(std::move(stored))));
+  EXPECT_CALL(datasources(), select_single).Times(0);
+  EXPECT_CALL(listings(), update(_, Matcher<const std::string&>(Eq("AAPL"))))
+      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+
+  const auto [code, content] =
+      controller->update_listing("AAPL", R"({"symbol":"MSFT"})");
+
+  EXPECT_EQ(code, Code::Ok);
+}
+
+TEST_F(HttpListingControllerRandomPriceSource,
+       RejectsVenueMoveAwayFromStoredDatasourceVenue) {
+  auto stored = Listing::Patch{}.with_symbol("AAPL");
+  stored.with_random_price_source(
+      data_layer::ListingRandomPriceSource::Patch{}
+          .with_datasource_id(DatasourceId)
+          .with_symbol("AAPL.OQ"));
+  EXPECT_CALL(listings(),
+              select_single(Matcher<const std::string&>(Eq("AAPL"))))
+      .WillOnce(Return(make_listing(std::move(stored))));
+  EXPECT_CALL(datasources(), select_single(Eq(DatasourceId)))
+      .WillOnce(Return(make_fix_datasource()));
+  EXPECT_CALL(listings(), update(_, Matcher<const std::string&>(_))).Times(0);
+
+  const auto [code, content] =
+      controller->update_listing("AAPL", R"({"venueId":"XETRA"})");
+
+  EXPECT_EQ(code, Code::Bad_Request);
+  EXPECT_THAT(content,
+              HasSubstr("can not move to the `XETRA' venue while its random "
+                        "price source refers to the datasource `24'"));
+}
+
+TEST_F(HttpListingControllerRandomPriceSource,
+       MovesListingWithOnlyLocalVenueSourcesToAnotherVenue) {
+  auto stored = Listing::Patch{}.with_symbol("AAPL");
+  stored.with_random_price_source(
+      data_layer::ListingRandomPriceSource::Patch{}.with_symbol("MSFT"));
+  EXPECT_CALL(listings(),
+              select_single(Matcher<const std::string&>(Eq("AAPL"))))
+      .WillOnce(Return(make_listing(std::move(stored))));
+  EXPECT_CALL(datasources(), select_single).Times(0);
+  EXPECT_CALL(listings(), update(_, Matcher<const std::string&>(Eq("AAPL"))))
+      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+
+  const auto [code, content] =
+      controller->update_listing("AAPL", R"({"venueId":"XETRA"})");
+
+  EXPECT_EQ(code, Code::Ok);
+}
+
+TEST_F(HttpListingControllerRandomPriceSource,
+       KeepsStoredSourcesUncheckedWhenPatchRepeatsVenue) {
+  auto stored = Listing::Patch{}.with_symbol("AAPL");
+  stored.with_random_price_source(
+      data_layer::ListingRandomPriceSource::Patch{}
+          .with_datasource_id(DatasourceId)
+          .with_symbol("AAPL.OQ"));
+  EXPECT_CALL(listings(),
+              select_single(Matcher<const std::string&>(Eq("AAPL"))))
+      .WillOnce(Return(make_listing(std::move(stored))));
+  EXPECT_CALL(datasources(), select_single).Times(0);
+  EXPECT_CALL(listings(), update(_, Matcher<const std::string&>(Eq("AAPL"))))
+      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+
+  const auto [code, content] = controller->update_listing(
+      "AAPL", R"({"venueId":"LSE","enabled":false})");
+
+  EXPECT_EQ(code, Code::Ok);
+}
+
+TEST_F(HttpListingControllerRandomPriceSource,
+       RejectsVenueMoveWithDatasourceOfPreviousVenue) {
+  EXPECT_CALL(listings(),
+              select_single(Matcher<const std::string&>(Eq("AAPL"))))
+      .WillOnce(Return(make_listing(Listing::Patch{}.with_symbol("AAPL"))));
+  EXPECT_CALL(datasources(), select_single(Eq(DatasourceId)))
+      .WillOnce(Return(make_fix_datasource()));
+  EXPECT_CALL(listings(), update(_, Matcher<const std::string&>(_))).Times(0);
+
+  const auto [code, content] = controller->update_listing(
+      "AAPL",
+      R"({"venueId":"XETRA",)"
+      R"("randomPriceSources":[{"datasourceId":24,"symbol":"AAPL.OQ"}]})");
+
+  EXPECT_EQ(code, Code::Bad_Request);
+  EXPECT_THAT(content,
+              HasSubstr("must refer to a datasource on the `XETRA' venue"));
 }
 
 // NOLINTEND(*magic-numbers*)

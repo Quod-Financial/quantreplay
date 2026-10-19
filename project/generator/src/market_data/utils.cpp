@@ -140,12 +140,72 @@ auto has_fix_subscription(const data_layer::Listing& listing,
 }
 
 [[nodiscard]]
+auto make_local_random_price_source(
+    const data_layer::Listing& listing,
+    const data_layer::ListingRandomPriceSource& random_price_source,
+    const std::vector<data_layer::Listing>& listings)
+    -> std::optional<RandomPriceSourceKey> {
+  const std::string& symbol = random_price_source.symbol();
+  if (symbol.empty()) {
+    log::warn(
+        "the `{}' listing (id: {}) does not specify the symbol of the local "
+        "venue listing to take the random prices from, ignoring its random "
+        "price source",
+        listing.symbol(),
+        listing.listing_id());
+    return std::nullopt;
+  }
+
+  if (listing.symbol() == symbol) {
+    log::warn(
+        "the `{}' listing (id: {}) bases its random prices on its own symbol "
+        "on the local venue, which its own order book already provides, "
+        "ignoring the random price source",
+        listing.symbol(),
+        listing.listing_id());
+    return std::nullopt;
+  }
+
+  const auto matching_listings =
+      std::ranges::count_if(listings, [&symbol](const auto& candidate) {
+        return candidate.symbol() == symbol;
+      });
+  if (matching_listings == 0) {
+    log::warn(
+        "the `{}' listing (id: {}) bases its random prices on the `{}' symbol "
+        "of the local venue, which is not an enabled listing of the venue, "
+        "ignoring its random price source",
+        listing.symbol(),
+        listing.listing_id(),
+        symbol);
+    return std::nullopt;
+  }
+
+  if (matching_listings > 1) {
+    log::warn(
+        "the `{}' listing (id: {}) bases its random prices on the `{}' symbol "
+        "of the local venue, which several enabled listings of the venue "
+        "have, the prices are taken from only one of them",
+        listing.symbol(),
+        listing.listing_id(),
+        symbol);
+  }
+
+  return std::make_optional<RandomPriceSourceKey>(std::nullopt, Symbol{symbol});
+}
+
+[[nodiscard]]
 auto make_random_price_source(
     const data_layer::Listing& listing,
     const data_layer::ListingRandomPriceSource& random_price_source,
-    const std::vector<data_layer::Datasource>& datasources)
+    const std::vector<data_layer::Datasource>& datasources,
+    const std::vector<data_layer::Listing>& listings)
     -> std::optional<RandomPriceSourceKey> {
-  const DatasourceId datasource_id = random_price_source.datasource_id();
+  if (!random_price_source.datasource_id().has_value()) {
+    return make_local_random_price_source(
+        listing, random_price_source, listings);
+  }
+  const DatasourceId datasource_id = *random_price_source.datasource_id();
 
   const auto datasource = std::ranges::find_if(
       datasources, [datasource_id](const data_layer::Datasource& candidate) {
@@ -184,12 +244,12 @@ auto make_random_price_source(
                                                   Symbol{symbol});
 }
 
-}  // namespace
-
-auto bases_random_prices_on_datasource(const data_layer::Listing& listing)
-    -> bool {
+[[nodiscard]]
+auto has_random_price_sources(const data_layer::Listing& listing) -> bool {
   return !listing.random_price_sources().empty();
 }
+
+}  // namespace
 
 auto order_book_prices_of(const data_layer::Listing& listing)
     -> OrderBookPrices {
@@ -253,7 +313,7 @@ auto make_listing_random_price_sources(
   std::map<ListingId, std::vector<RandomPriceSourceKey>> price_sources;
 
   for (const data_layer::Listing& listing : listings) {
-    if (!bases_random_prices_on_datasource(listing)) {
+    if (!has_random_price_sources(listing)) {
       continue;
     }
 
@@ -269,8 +329,8 @@ auto make_listing_random_price_sources(
     std::vector<RandomPriceSourceKey> listing_sources;
     for (const data_layer::ListingRandomPriceSource& random_price_source :
          listing.random_price_sources()) {
-      auto source =
-          make_random_price_source(listing, random_price_source, datasources);
+      auto source = make_random_price_source(
+          listing, random_price_source, datasources, listings);
       if (!source.has_value()) {
         continue;
       }

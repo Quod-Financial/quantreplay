@@ -222,7 +222,7 @@ auto GeneratorImpl::make_market_data_provider(
     const OrderInstrumentContext& instrument_ctx)
     -> std::unique_ptr<mdata::MarketDataProvider> {
   const MdRequestId local_request_id = local_subscription_manager_.add(
-      instrument_ctx.get_instrument_descriptor());
+      instrument_ctx.get_instrument_descriptor(), mdata::AllDepthLevels);
 
   const auto& instrument = instrument_ctx.get_instrument();
   const mdata::OrderBookPrices order_book_prices =
@@ -471,14 +471,19 @@ auto GeneratorImpl::resolve_price_source(
     const std::vector<data_layer::Datasource>& datasources,
     const mdata::RandomPriceSourceKey& price_source)
     -> std::optional<MdRequestId> {
+  if (!price_source.datasource_id.has_value()) {
+    return resolve_local_price_source(price_source.symbol);
+  }
+  const mdata::DatasourceId datasource_id = *price_source.datasource_id;
+
   if (auto request_id = subscription_manager_.find_request_id(
-          price_source.datasource_id, price_source.symbol)) {
+          datasource_id, price_source.symbol)) {
     return request_id;
   }
 
   const auto datasource = std::ranges::find_if(
-      datasources, [&price_source](const data_layer::Datasource& candidate) {
-        return candidate.datasource_id() == price_source.datasource_id;
+      datasources, [datasource_id](const data_layer::Datasource& candidate) {
+        return candidate.datasource_id() == datasource_id;
       });
   if (datasource == datasources.end() ||
       (datasource->format() != data_layer::Datasource::Format::Csv &&
@@ -487,7 +492,33 @@ auto GeneratorImpl::resolve_price_source(
   }
 
   return std::make_optional<MdRequestId>(
-      historical_random_price_source_registry_.add(price_source));
+      historical_random_price_source_registry_.add(
+          mdata::HistoricalPriceSourceKey{.datasource_id = datasource_id,
+                                          .symbol = price_source.symbol}));
+}
+
+auto GeneratorImpl::resolve_local_price_source(const Symbol& symbol)
+    -> std::optional<MdRequestId> {
+  const auto context = std::ranges::find_if(
+      order_listings_contexts_,
+      [&symbol](const std::shared_ptr<OrderInstrumentContext>& candidate) {
+        return candidate->get_instrument().symbol() == symbol.value();
+      });
+  if (context == order_listings_contexts_.end()) {
+    return std::nullopt;
+  }
+
+  const MdRequestId request_id = local_subscription_manager_.add(
+      (*context)->get_instrument_descriptor(), mdata::TopOfTheBookDepth);
+
+  log::info(
+      "the top of the book of the `{}' listing of the local venue is taken "
+      "into account as a random price source by the `{}' market data "
+      "subscription",
+      symbol,
+      request_id);
+
+  return request_id;
 }
 
 auto GeneratorImpl::subscribe_to_market_data() -> void {

@@ -56,7 +56,6 @@ add_static_library(
     ih/historical/scheduler.hpp
     ih/market_data/best_prices_sink.hpp
     ih/market_data/historical_random_price_source_registry.hpp
-    ih/market_data/local_subscription_manager.hpp
     ih/market_data/market_data_book_cache.hpp
     ih/market_data/market_data_provider.hpp
     ih/market_data/market_data_router.hpp
@@ -65,8 +64,9 @@ add_static_library(
     ih/market_data/order_book_prices.hpp
     ih/market_data/price_cache.hpp
     ih/market_data/record_factory.hpp
-    ih/market_data/subscription.hpp
-    ih/market_data/subscription_manager.hpp
+    ih/market_data/subscription/local_subscription_manager.hpp
+    ih/market_data/subscription/subscription.hpp
+    ih/market_data/subscription/subscription_manager.hpp
     ih/market_data/subscription_requirement.hpp
     ih/market_data/utils.hpp
     ih/random/algorithm/generation_algorithm.hpp
@@ -133,14 +133,14 @@ add_static_library(
     src/historical/replier.cpp
     src/historical/scheduler.cpp
     src/market_data/historical_random_price_source_registry.cpp
-    src/market_data/local_subscription_manager.cpp
     src/market_data/market_data_book_cache.cpp
     src/market_data/market_data_provider.cpp
     src/market_data/market_data_router.cpp
     src/market_data/order_book_derivation.cpp
     src/market_data/price_cache.cpp
     src/market_data/record_factory.cpp
-    src/market_data/subscription_manager.cpp
+    src/market_data/subscription/local_subscription_manager.cpp
+    src/market_data/subscription/subscription_manager.cpp
     src/market_data/utils.cpp
     src/random/algorithm/order_generation_algorithm.cpp
     src/random/algorithm/utils/quantity_params_selector.cpp

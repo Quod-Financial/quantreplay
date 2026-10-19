@@ -164,6 +164,17 @@ struct GeneratorMarketDataDatasourceRequirementBuilder : public Test {
     return patch;
   }
 
+  static auto with_local_venue_price_sources(
+      Listing::Patch patch, std::initializer_list<std::string> symbols)
+      -> Listing::Patch {
+    for (const std::string& symbol : symbols) {
+      ListingRandomPriceSource::Patch source;
+      source.with_symbol(symbol);
+      patch.with_random_price_source(std::move(source));
+    }
+    return patch;
+  }
+
   static auto make_fix_datasource() -> Datasource {
     return make_datasource(with_symbols(Datasource::Patch{}, {"AAPL"}));
   }
@@ -516,6 +527,11 @@ struct GeneratorMarketDataListingPriceSourceBuilder
                                .with_random_price_only_flag(true));
   }
 
+  static auto make_msft_listing() -> Listing {
+    return make_listing(Listing::Patch{}.with_symbol("MSFT"),
+                        OtherPricedListingId);
+  }
+
   static auto make_csv_price_source_datasource() -> Datasource {
     return make_datasource(Datasource::Patch{}
                                .with_format(Datasource::Format::Csv)
@@ -724,6 +740,87 @@ TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
   ASSERT_THAT(
       price_sources.begin()->second,
       ElementsAre(Field(&RandomPriceSourceKey::symbol, Eq(Symbol{"AAPL.OQ"}))));
+}
+
+TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
+       IgnoresEmptySymbolOfLocalVenueSource) {
+  const auto listing = make_datasource_priced_listing(
+      with_local_venue_price_sources(Listing::Patch{}, {""}));
+
+  ASSERT_THAT(
+      make_all_listing_price_sources({}, {listing, make_msft_listing()}),
+      IsEmpty());
+}
+
+TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
+       IgnoresLocalVenueSourceOfListingOwnSymbol) {
+  const auto listing = make_datasource_priced_listing(
+      with_local_venue_price_sources(Listing::Patch{}, {"AAPL"}));
+
+  ASSERT_THAT(make_all_listing_price_sources({}, {listing}), IsEmpty());
+}
+
+TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
+       IgnoresLocalVenueSymbolWithoutListingOnVenue) {
+  const auto listing = make_datasource_priced_listing(
+      with_local_venue_price_sources(Listing::Patch{}, {"MSFT"}));
+
+  ASSERT_THAT(make_all_listing_price_sources({}, {listing}), IsEmpty());
+}
+
+TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
+       TakesPriceSourceOfLocalVenueListing) {
+  const auto listing = make_datasource_priced_listing(
+      with_local_venue_price_sources(Listing::Patch{}, {"MSFT"}));
+
+  const auto price_sources =
+      make_all_listing_price_sources({}, {listing, make_msft_listing()});
+
+  ASSERT_THAT(price_sources,
+              UnorderedElementsAre(Pair(
+                  PricedListingId,
+                  ElementsAre(AllOf(
+                      Field(&RandomPriceSourceKey::datasource_id,
+                            Eq(std::nullopt)),
+                      Field(&RandomPriceSourceKey::symbol,
+                            Eq(Symbol{"MSFT"})))))));
+}
+
+TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
+       TakesLocalVenueSourceOfSymbolSeveralListingsShare) {
+  const auto listing = make_datasource_priced_listing(
+      with_local_venue_price_sources(Listing::Patch{}, {"MSFT"}));
+  constexpr ListingId DuplicateListingId = 3;
+  const auto duplicate = make_listing(Listing::Patch{}.with_symbol("MSFT"),
+                                      DuplicateListingId);
+
+  const auto price_sources = make_all_listing_price_sources(
+      {}, {listing, make_msft_listing(), duplicate});
+
+  ASSERT_THAT(price_sources,
+              UnorderedElementsAre(Pair(
+                  PricedListingId,
+                  ElementsAre(Field(&RandomPriceSourceKey::symbol,
+                                    Eq(Symbol{"MSFT"}))))));
+}
+
+TEST_F(GeneratorMarketDataListingPriceSourceBuilder,
+       TakesLocalVenueAndDatasourceSourcesOfListing) {
+  auto patch = with_random_price_sources(Listing::Patch{},
+                                         {{SourceDatasourceId, "AAPL.OQ"}});
+  const auto listing = make_datasource_priced_listing(
+      with_local_venue_price_sources(std::move(patch), {"MSFT"}));
+
+  const auto price_sources = make_all_listing_price_sources(
+      {make_price_source_datasource()}, {listing, make_msft_listing()});
+
+  ASSERT_THAT(price_sources, SizeIs(1));
+  EXPECT_THAT(
+      price_sources.begin()->second,
+      ElementsAre(Field(&RandomPriceSourceKey::datasource_id,
+                        Eq(SourceDatasourceId)),
+                  Field(&RandomPriceSourceKey::datasource_id,
+                        Eq(std::nullopt))));
 }
 
 TEST_F(GeneratorMarketDataListingPriceSourceBuilder,

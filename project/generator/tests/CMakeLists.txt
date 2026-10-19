@@ -52,7 +52,6 @@ add_target_tests(
     unit_tests/historical/processing/price_processor_tests.cpp
     unit_tests/historical/processing/record_applier_tests.cpp
     unit_tests/market_data/historical_random_price_source_registry_tests.cpp
-    unit_tests/market_data/local_subscription_manager_tests.cpp
     unit_tests/market_data/market_data_book_cache_tests.cpp
     unit_tests/market_data/market_data_provider_tests.cpp
     unit_tests/market_data/market_data_router_tests.cpp
@@ -60,7 +59,8 @@ add_target_tests(
     unit_tests/market_data/order_derivation_tests.cpp
     unit_tests/market_data/price_cache_tests.cpp
     unit_tests/market_data/record_factory_tests.cpp
-    unit_tests/market_data/subscription_manager_tests.cpp
+    unit_tests/market_data/subscription/local_subscription_manager_tests.cpp
+    unit_tests/market_data/subscription/subscription_manager_tests.cpp
     unit_tests/market_data/utils_tests.cpp
     unit_tests/random/algorithm/order_generation_algorithm_tests.cpp
     unit_tests/random/algorithm/utils/attributes_setter_tests.cpp

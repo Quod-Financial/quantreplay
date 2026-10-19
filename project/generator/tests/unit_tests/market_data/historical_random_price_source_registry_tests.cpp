@@ -39,9 +39,9 @@ struct GeneratorHistoricalRandomPriceSourceRegistry : public Test {
   [[nodiscard]]
   static auto make_key(Symbol symbol = Symbol{"AAPL.OQ"},
                        DatasourceId datasource_id = SourceDatasourceId)
-      -> RandomPriceSourceKey {
-    return RandomPriceSourceKey{.datasource_id = datasource_id,
-                                .symbol = std::move(symbol)};
+      -> HistoricalPriceSourceKey {
+    return HistoricalPriceSourceKey{.datasource_id = datasource_id,
+                                    .symbol = std::move(symbol)};
   }
 
   auto publish_bid_price(const MdRequestId& request_id, double price) -> void {

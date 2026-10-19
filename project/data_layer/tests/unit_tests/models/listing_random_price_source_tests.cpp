@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <optional>
+
 #include "api/models/listing_random_price_source.hpp"
 
 namespace simulator::data_layer::test {
@@ -11,7 +13,7 @@ struct DataLayerModelsListingRandomPriceSourcePatch : public ::testing::Test {
 
 TEST_F(DataLayerModelsListingRandomPriceSourcePatch, DoesNotSetDefaultValues) {
   EXPECT_TRUE(patch.symbol().empty());
-  EXPECT_EQ(patch.datasource_id(), 0);
+  EXPECT_EQ(patch.datasource_id(), std::nullopt);
 }
 
 TEST_F(DataLayerModelsListingRandomPriceSourcePatch, SetsSymbol) {
@@ -22,6 +24,11 @@ TEST_F(DataLayerModelsListingRandomPriceSourcePatch, SetsSymbol) {
 TEST_F(DataLayerModelsListingRandomPriceSourcePatch, SetsDatasourceId) {
   patch.with_datasource_id(7);
   EXPECT_EQ(patch.datasource_id(), 7);
+}
+
+TEST_F(DataLayerModelsListingRandomPriceSourcePatch, ResetsDatasourceId) {
+  patch.with_datasource_id(7).with_datasource_id(std::nullopt);
+  EXPECT_EQ(patch.datasource_id(), std::nullopt);
 }
 
 struct DataLayerModelsListingRandomPriceSource : public ::testing::Test {
@@ -38,6 +45,11 @@ TEST_F(DataLayerModelsListingRandomPriceSource, CreatesWithDatasourceId) {
 
   const auto model = ListingRandomPriceSource::create(patch, 42);
   EXPECT_EQ(model.datasource_id(), 7);
+}
+
+TEST_F(DataLayerModelsListingRandomPriceSource, CreatesWithoutDatasourceId) {
+  const auto model = ListingRandomPriceSource::create(patch, 42);
+  EXPECT_EQ(model.datasource_id(), std::nullopt);
 }
 
 TEST_F(DataLayerModelsListingRandomPriceSource, CreatesWithSymbol) {

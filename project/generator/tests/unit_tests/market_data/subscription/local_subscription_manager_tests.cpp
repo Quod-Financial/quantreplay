@@ -6,13 +6,14 @@
 #include <optional>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include "core/domain/attributes.hpp"
 #include "core/domain/instrument_descriptor.hpp"
 #include "core/domain/market_data_entry.hpp"
-#include "ih/market_data/local_subscription_manager.hpp"
 #include "ih/market_data/order_book_prices.hpp"
 #include "ih/market_data/price_cache.hpp"
+#include "ih/market_data/subscription/local_subscription_manager.hpp"
 #include "ih/market_data/subscription_requirement.hpp"
 #include "middleware/channels/trading_request_channel.hpp"
 #include "mocks/context/component_context.hpp"
@@ -95,7 +96,7 @@ struct GeneratorLocalSubscriptionManager : public Test {
 TEST_F(GeneratorLocalSubscriptionManager, RegistersSubscriptionInPriceCache) {
   LocalSubscriptionManager manager = make_manager();
 
-  const MdRequestId request_id = manager.add(make_instrument());
+  const MdRequestId request_id = manager.add(make_instrument(), AllDepthLevels);
 
   EXPECT_THAT(
       price_cache->market_state(request_id, {}, OrderBookPrices::Aggregated)
@@ -106,10 +107,115 @@ TEST_F(GeneratorLocalSubscriptionManager, RegistersSubscriptionInPriceCache) {
 TEST_F(GeneratorLocalSubscriptionManager, AllocatesDistinctRequestIds) {
   LocalSubscriptionManager manager = make_manager();
 
-  const MdRequestId first = manager.add(make_instrument("AAPL"));
-  const MdRequestId second = manager.add(make_instrument("MSFT"));
+  const MdRequestId first =
+      manager.add(make_instrument("AAPL"), AllDepthLevels);
+  const MdRequestId second =
+      manager.add(make_instrument("MSFT"), AllDepthLevels);
 
   EXPECT_THAT(first, Ne(second));
+}
+
+TEST_F(GeneratorLocalSubscriptionManager, SharesRequestIdOfSameInstrument) {
+  LocalSubscriptionManager manager = make_manager();
+
+  const MdRequestId first = manager.add(make_instrument(), TopOfTheBookDepth);
+  const MdRequestId second = manager.add(make_instrument(), AllDepthLevels);
+
+  EXPECT_THAT(first, Eq(second));
+}
+
+TEST_F(GeneratorLocalSubscriptionManager, SendsOneRequestPerInstrument) {
+  LocalSubscriptionManager manager = make_manager();
+  manager.add(make_instrument(), TopOfTheBookDepth);
+  manager.add(make_instrument(), AllDepthLevels);
+
+  EXPECT_CALL(receiver, process(A<protocol::MarketDataRequest>())).Times(1);
+
+  manager.subscribe();
+}
+
+TEST_F(GeneratorLocalSubscriptionManager,
+       WidensSharedSubscriptionToAllDepthLevels) {
+  LocalSubscriptionManager manager = make_manager();
+  manager.add(make_instrument(), TopOfTheBookDepth);
+  manager.add(make_instrument(), AllDepthLevels);
+  capture_single_request();
+
+  manager.subscribe();
+
+  EXPECT_THAT(captured_request().market_depth, Optional(Eq(AllDepthLevels)));
+}
+
+TEST_F(GeneratorLocalSubscriptionManager,
+       KeepsAllDepthLevelsOfSharedSubscription) {
+  LocalSubscriptionManager manager = make_manager();
+  manager.add(make_instrument(), AllDepthLevels);
+  manager.add(make_instrument(), TopOfTheBookDepth);
+  capture_single_request();
+
+  manager.subscribe();
+
+  EXPECT_THAT(captured_request().market_depth, Optional(Eq(AllDepthLevels)));
+}
+
+TEST_F(GeneratorLocalSubscriptionManager,
+       ResubscribesWhenWideningSubscribedSubscription) {
+  LocalSubscriptionManager manager = make_manager();
+  manager.add(make_instrument(), TopOfTheBookDepth);
+  EXPECT_CALL(receiver, process(A<protocol::MarketDataRequest>())).Times(1);
+  manager.subscribe();
+  Mock::VerifyAndClearExpectations(&receiver);
+  std::vector<protocol::MarketDataRequest> requests;
+  EXPECT_CALL(receiver, process(A<protocol::MarketDataRequest>()))
+      .Times(2)
+      .WillRepeatedly([&requests](protocol::MarketDataRequest request) {
+        requests.push_back(std::move(request));
+      });
+
+  manager.add(make_instrument(), AllDepthLevels);
+
+  ASSERT_THAT(requests, SizeIs(2));
+  EXPECT_THAT(requests[0].request_type,
+              Optional(Eq(MdSubscriptionRequestType::Option::Unsubscribe)));
+  EXPECT_THAT(requests[1].request_type,
+              Optional(Eq(MdSubscriptionRequestType::Option::Subscribe)));
+  EXPECT_THAT(requests[1].market_depth, Optional(Eq(AllDepthLevels)));
+}
+
+TEST_F(GeneratorLocalSubscriptionManager,
+       WidensSharedSubscriptionToDeeperLimitedDepth) {
+  LocalSubscriptionManager manager = make_manager();
+  manager.add(make_instrument(), MarketDepth{2});
+  manager.add(make_instrument(), MarketDepth{4});
+  capture_single_request();
+
+  manager.subscribe();
+
+  EXPECT_THAT(captured_request().market_depth, Optional(Eq(MarketDepth{4})));
+}
+
+TEST_F(GeneratorLocalSubscriptionManager,
+       KeepsDeeperLimitedDepthOfSharedSubscription) {
+  LocalSubscriptionManager manager = make_manager();
+  manager.add(make_instrument(), MarketDepth{4});
+  manager.add(make_instrument(), MarketDepth{2});
+  capture_single_request();
+
+  manager.subscribe();
+
+  EXPECT_THAT(captured_request().market_depth, Optional(Eq(MarketDepth{4})));
+}
+
+TEST_F(GeneratorLocalSubscriptionManager, DoesNotResubscribeOnSameDepth) {
+  LocalSubscriptionManager manager = make_manager();
+  manager.add(make_instrument(), TopOfTheBookDepth);
+  EXPECT_CALL(receiver, process(A<protocol::MarketDataRequest>())).Times(1);
+  manager.subscribe();
+  Mock::VerifyAndClearExpectations(&receiver);
+
+  EXPECT_CALL(receiver, process(A<protocol::MarketDataRequest>())).Times(0);
+
+  manager.add(make_instrument(), TopOfTheBookDepth);
 }
 
 TEST_F(GeneratorLocalSubscriptionManager, SendsNothingWithoutSubscriptions) {
@@ -122,8 +228,8 @@ TEST_F(GeneratorLocalSubscriptionManager, SendsNothingWithoutSubscriptions) {
 
 TEST_F(GeneratorLocalSubscriptionManager, SendsRequestPerSubscription) {
   LocalSubscriptionManager manager = make_manager();
-  manager.add(make_instrument("AAPL"));
-  manager.add(make_instrument("MSFT"));
+  manager.add(make_instrument("AAPL"), AllDepthLevels);
+  manager.add(make_instrument("MSFT"), AllDepthLevels);
 
   EXPECT_CALL(receiver, process(A<protocol::MarketDataRequest>())).Times(2);
 
@@ -132,7 +238,7 @@ TEST_F(GeneratorLocalSubscriptionManager, SendsRequestPerSubscription) {
 
 TEST_F(GeneratorLocalSubscriptionManager, SubscribesOnGeneratorSession) {
   LocalSubscriptionManager manager = make_manager();
-  manager.add(make_instrument());
+  manager.add(make_instrument(), AllDepthLevels);
   capture_single_request();
 
   manager.subscribe();
@@ -143,7 +249,8 @@ TEST_F(GeneratorLocalSubscriptionManager, SubscribesOnGeneratorSession) {
 
 TEST_F(GeneratorLocalSubscriptionManager, SubscribesOnRequestedInstrument) {
   LocalSubscriptionManager manager = make_manager();
-  const MdRequestId request_id = manager.add(make_instrument("AAPL"));
+  const MdRequestId request_id =
+      manager.add(make_instrument("AAPL"), AllDepthLevels);
   capture_single_request();
 
   manager.subscribe();
@@ -156,7 +263,7 @@ TEST_F(GeneratorLocalSubscriptionManager, SubscribesOnRequestedInstrument) {
 
 TEST_F(GeneratorLocalSubscriptionManager, SubscribesOnBothBookSides) {
   LocalSubscriptionManager manager = make_manager();
-  manager.add(make_instrument());
+  manager.add(make_instrument(), AllDepthLevels);
   capture_single_request();
 
   manager.subscribe();
@@ -168,7 +275,7 @@ TEST_F(GeneratorLocalSubscriptionManager, SubscribesOnBothBookSides) {
 
 TEST_F(GeneratorLocalSubscriptionManager, SubscribesOnFullDepthFullRefresh) {
   LocalSubscriptionManager manager = make_manager();
-  manager.add(make_instrument());
+  manager.add(make_instrument(), AllDepthLevels);
   capture_single_request();
 
   manager.subscribe();
@@ -180,9 +287,19 @@ TEST_F(GeneratorLocalSubscriptionManager, SubscribesOnFullDepthFullRefresh) {
               Optional(Eq(MdSubscriptionRequestType::Option::Subscribe)));
 }
 
+TEST_F(GeneratorLocalSubscriptionManager, SubscribesOnRequestedDepth) {
+  LocalSubscriptionManager manager = make_manager();
+  manager.add(make_instrument(), TopOfTheBookDepth);
+  capture_single_request();
+
+  manager.subscribe();
+
+  EXPECT_THAT(captured_request().market_depth, Optional(Eq(TopOfTheBookDepth)));
+}
+
 TEST_F(GeneratorLocalSubscriptionManager, SubscribesWithoutPartyFiltering) {
   LocalSubscriptionManager manager = make_manager();
-  manager.add(make_instrument());
+  manager.add(make_instrument(), AllDepthLevels);
   capture_single_request();
 
   manager.subscribe();
@@ -192,7 +309,7 @@ TEST_F(GeneratorLocalSubscriptionManager, SubscribesWithoutPartyFiltering) {
 
 TEST_F(GeneratorLocalSubscriptionManager, DoesNotSubscribeTwice) {
   LocalSubscriptionManager manager = make_manager();
-  manager.add(make_instrument());
+  manager.add(make_instrument(), AllDepthLevels);
 
   EXPECT_CALL(receiver, process(A<protocol::MarketDataRequest>())).Times(1);
 
@@ -202,7 +319,7 @@ TEST_F(GeneratorLocalSubscriptionManager, DoesNotSubscribeTwice) {
 
 TEST_F(GeneratorLocalSubscriptionManager, SendsUnsubscribeRequest) {
   LocalSubscriptionManager manager = make_manager();
-  manager.add(make_instrument());
+  manager.add(make_instrument(), AllDepthLevels);
   EXPECT_CALL(receiver, process(A<protocol::MarketDataRequest>())).Times(1);
   manager.subscribe();
   Mock::VerifyAndClearExpectations(&receiver);
@@ -216,7 +333,7 @@ TEST_F(GeneratorLocalSubscriptionManager, SendsUnsubscribeRequest) {
 
 TEST_F(GeneratorLocalSubscriptionManager, DoesNotUnsubscribeWhenNotSubscribed) {
   LocalSubscriptionManager manager = make_manager();
-  manager.add(make_instrument());
+  manager.add(make_instrument(), AllDepthLevels);
 
   EXPECT_CALL(receiver, process(A<protocol::MarketDataRequest>())).Times(0);
 
@@ -226,7 +343,7 @@ TEST_F(GeneratorLocalSubscriptionManager, DoesNotUnsubscribeWhenNotSubscribed) {
 TEST_F(GeneratorLocalSubscriptionManager,
        DiscardsCachedMarketDataOnUnsubscribe) {
   LocalSubscriptionManager manager = make_manager();
-  const MdRequestId request_id = manager.add(make_instrument());
+  const MdRequestId request_id = manager.add(make_instrument(), AllDepthLevels);
   EXPECT_CALL(receiver, process(A<protocol::MarketDataRequest>())).Times(2);
   manager.subscribe();
   publish_bid(request_id, 100.0);
@@ -242,7 +359,7 @@ TEST_F(GeneratorLocalSubscriptionManager,
 TEST_F(GeneratorLocalSubscriptionManager,
        SurvivesUnboundTradingRequestChannel) {
   LocalSubscriptionManager manager = make_manager();
-  manager.add(make_instrument());
+  manager.add(make_instrument(), AllDepthLevels);
   middleware::release_trading_request_channel();
 
   ASSERT_NO_THROW(manager.subscribe());

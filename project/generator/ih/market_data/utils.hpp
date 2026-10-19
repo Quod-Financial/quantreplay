@@ -19,10 +19,6 @@ namespace simulator::generator::mdata {
 using ListingId = std::uint64_t;
 
 [[nodiscard]]
-auto bases_random_prices_on_datasource(const data_layer::Listing& listing)
-    -> bool;
-
-[[nodiscard]]
 auto order_book_prices_of(const data_layer::Listing& listing)
     -> OrderBookPrices;
 

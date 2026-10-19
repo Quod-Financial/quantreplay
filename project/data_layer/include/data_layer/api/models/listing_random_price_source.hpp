@@ -2,6 +2,7 @@
 #define SIMULATOR_DATA_LAYER_INCLUDE_DATA_LAYER_API_MODELS_LISTING_RANDOM_PRICE_SOURCE_HPP_
 
 #include <cstdint>
+#include <optional>
 #include <string>
 
 namespace simulator::data_layer {
@@ -21,7 +22,7 @@ class ListingRandomPriceSource {
   auto listing_id() const noexcept -> std::uint64_t;
 
   [[nodiscard]]
-  auto datasource_id() const noexcept -> std::uint64_t;
+  auto datasource_id() const noexcept -> const std::optional<std::uint64_t>&;
 
   [[nodiscard]]
   auto symbol() const noexcept -> const std::string&;
@@ -33,7 +34,7 @@ class ListingRandomPriceSource {
   ListingRandomPriceSource() = default;
 
   std::uint64_t listing_id_{0};
-  std::uint64_t datasource_id_{0};
+  std::optional<std::uint64_t> datasource_id_;
   std::string symbol_;
 };
 
@@ -44,8 +45,9 @@ class ListingRandomPriceSource::Patch {
   using Attribute = ListingRandomPriceSource::Attribute;
 
   [[nodiscard]]
-  auto datasource_id() const noexcept -> std::uint64_t;
-  auto with_datasource_id(std::uint64_t datasource_id) noexcept -> Patch&;
+  auto datasource_id() const noexcept -> const std::optional<std::uint64_t>&;
+  auto with_datasource_id(std::optional<std::uint64_t> datasource_id) noexcept
+      -> Patch&;
 
   [[nodiscard]]
   auto symbol() const noexcept -> const std::string&;
@@ -55,7 +57,7 @@ class ListingRandomPriceSource::Patch {
   auto operator==(const Patch&) const -> bool = default;
 
  private:
-  std::uint64_t datasource_id_{0};
+  std::optional<std::uint64_t> datasource_id_;
   std::string symbol_;
 };
 

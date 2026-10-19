@@ -20,13 +20,13 @@
 #include "ih/factory/executable_factory.hpp"
 #include "ih/historical/processing/action_sink.hpp"
 #include "ih/market_data/historical_random_price_source_registry.hpp"
-#include "ih/market_data/local_subscription_manager.hpp"
 #include "ih/market_data/market_data_book_cache.hpp"
 #include "ih/market_data/market_data_provider.hpp"
 #include "ih/market_data/market_data_router.hpp"
 #include "ih/market_data/order_book_derivation.hpp"
 #include "ih/market_data/price_cache.hpp"
-#include "ih/market_data/subscription_manager.hpp"
+#include "ih/market_data/subscription/local_subscription_manager.hpp"
+#include "ih/market_data/subscription/subscription_manager.hpp"
 #include "ih/market_data/utils.hpp"
 #include "ih/random/instrument_generator.hpp"
 #include "ih/random/seed_hasher.hpp"
@@ -143,6 +143,10 @@ class GeneratorImpl final {
   auto resolve_price_source(
       const std::vector<data_layer::Datasource>& datasources,
       const mdata::RandomPriceSourceKey& price_source)
+      -> std::optional<MdRequestId>;
+
+  [[nodiscard]]
+  auto resolve_local_price_source(const Symbol& symbol)
       -> std::optional<MdRequestId>;
 
   auto subscribe_to_market_data() -> void;

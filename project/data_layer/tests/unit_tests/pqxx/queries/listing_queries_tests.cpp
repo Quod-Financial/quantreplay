@@ -123,6 +123,20 @@ TEST(DataLayerPqxxListingRandomPriceSourceQueryInsert, Compose) {
             "VALUES (`42`, `7`, `AAPL.OQ`)");
 }
 
+TEST(DataLayerPqxxListingRandomPriceSourceQueryInsert,
+     Compose_WithoutDatasourceIdOfLocalVenueSource) {
+  SanitizerStub sanitizer;
+  ListingRandomPriceSource::Patch patch;
+  patch.with_symbol("AAPL");
+  const auto source = ListingRandomPriceSource::create(patch, 42);
+
+  const auto query = Insert::prepare(source, sanitizer);
+  EXPECT_EQ(query.compose(),
+            "INSERT INTO listing_random_price_source "
+            "(listing_id, symbol) "
+            "VALUES (`42`, `AAPL`)");
+}
+
 TEST(DataLayerPqxxListingRandomPriceSourceQuerySelect,
      Compose_WithByListingIdPredicate) {
   SanitizerStub sanitizer;

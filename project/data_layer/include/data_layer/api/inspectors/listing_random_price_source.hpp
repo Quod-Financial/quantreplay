@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -59,8 +60,10 @@ inline auto ListingRandomPriceSourceReader<Marshaller>::read(
   static_assert(can_marshall_v<decltype(source.listing_id())>);
   marshaller_(Attribute::ListingId, source.listing_id());
 
-  static_assert(can_marshall_v<decltype(source.datasource_id())>);
-  marshaller_(Attribute::DatasourceId, source.datasource_id());
+  if (const auto& datasource_id = source.datasource_id()) {
+    static_assert(can_marshall_v<decltype(*datasource_id)>);
+    marshaller_(Attribute::DatasourceId, *datasource_id);
+  }
 
   static_assert(can_marshall_v<decltype(source.symbol())>);
   marshaller_(Attribute::Symbol, source.symbol());
@@ -69,7 +72,7 @@ inline auto ListingRandomPriceSourceReader<Marshaller>::read(
 template <typename Unmarshaller>
 inline auto ListingRandomPriceSourcePatchWriter<Unmarshaller>::write(
     ListingRandomPriceSource::Patch& patch) -> void {
-  std::uint64_t datasource_id{};
+  std::optional<std::uint64_t> datasource_id;
   static_assert(can_unmarshall_v<decltype(datasource_id)>);
   if (unmarshaller_(Attribute::DatasourceId, datasource_id)) {
     patch.with_datasource_id(datasource_id);

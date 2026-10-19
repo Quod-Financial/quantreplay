@@ -1,6 +1,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cstdint>
+#include <optional>
+
 #include "api/inspectors/listing_random_price_source.hpp"
 #include "api/models/listing_random_price_source.hpp"
 #include "common/marshaller.hpp"
@@ -52,6 +55,15 @@ TEST_F(DataLayerInspectorsListingRandomPriceSourceReader, ReadsDatasourceId) {
   make_reader().read(source);
 }
 
+TEST_F(DataLayerInspectorsListingRandomPriceSourceReader,
+       DoesNotReadDatasourceIdIfNotSet) {
+  const auto source = ListingRandomPriceSource::create(patch, 42);
+
+  EXPECT_CALL(marshaller(), uint64(Eq(Attribute::DatasourceId), _)).Times(0);
+
+  make_reader().read(source);
+}
+
 TEST_F(DataLayerInspectorsListingRandomPriceSourceReader, ReadsSymbol) {
   patch.with_symbol("AAPL.OQ");
   const auto source = ListingRandomPriceSource::create(patch, 42);
@@ -78,7 +90,7 @@ class DataLayerInspectorsListingRandomPriceSourcePatchWriter
 
  protected:
   auto SetUp() -> void override {
-    EXPECT_CALL(unmarshaller(), uint64)
+    EXPECT_CALL(unmarshaller(), optional_uint64)
         .Times(AnyNumber())
         .WillRepeatedly(Return(false));
     EXPECT_CALL(unmarshaller(), string)
@@ -92,12 +104,24 @@ class DataLayerInspectorsListingRandomPriceSourcePatchWriter
 
 TEST_F(DataLayerInspectorsListingRandomPriceSourcePatchWriter,
        WritesDatasourceId) {
-  EXPECT_CALL(unmarshaller(), uint64(Eq(Attribute::DatasourceId), _))
-      .WillOnce(DoAll(SetArgReferee<1>(7), Return(true)));
+  EXPECT_CALL(unmarshaller(), optional_uint64(Eq(Attribute::DatasourceId), _))
+      .WillOnce(DoAll(SetArgReferee<1>(std::optional<std::uint64_t>{7}),
+                      Return(true)));
 
   make_writer().write(patch);
 
   EXPECT_EQ(patch.datasource_id(), 7);
+}
+
+TEST_F(DataLayerInspectorsListingRandomPriceSourcePatchWriter,
+       WritesDatasourceIdNull) {
+  patch.with_datasource_id(7);
+  EXPECT_CALL(unmarshaller(), optional_uint64(Eq(Attribute::DatasourceId), _))
+      .WillOnce(DoAll(SetArgReferee<1>(std::nullopt), Return(true)));
+
+  make_writer().write(patch);
+
+  EXPECT_EQ(patch.datasource_id(), std::nullopt);
 }
 
 TEST_F(DataLayerInspectorsListingRandomPriceSourcePatchWriter, WritesSymbol) {

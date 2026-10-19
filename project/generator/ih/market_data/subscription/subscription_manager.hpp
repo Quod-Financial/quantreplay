@@ -1,5 +1,5 @@
-#ifndef SIMULATOR_GENERATOR_IH_MARKET_DATA_SUBSCRIPTION_MANAGER_HPP_
-#define SIMULATOR_GENERATOR_IH_MARKET_DATA_SUBSCRIPTION_MANAGER_HPP_
+#ifndef SIMULATOR_GENERATOR_IH_MARKET_DATA_SUBSCRIPTION_SUBSCRIPTION_MANAGER_HPP_
+#define SIMULATOR_GENERATOR_IH_MARKET_DATA_SUBSCRIPTION_SUBSCRIPTION_MANAGER_HPP_
 
 #include <memory>
 #include <mutex>
@@ -10,7 +10,7 @@
 #include "ih/context/component_context.hpp"
 #include "ih/market_data/market_data_book_cache.hpp"
 #include "ih/market_data/price_cache.hpp"
-#include "ih/market_data/subscription.hpp"
+#include "ih/market_data/subscription/subscription.hpp"
 #include "ih/market_data/subscription_requirement.hpp"
 #include "protocol/app/market_data_reject.hpp"
 #include "protocol/types/session.hpp"
@@ -94,4 +94,4 @@ class SubscriptionManager {
 
 }  // namespace simulator::generator::mdata
 
-#endif  // SIMULATOR_GENERATOR_IH_MARKET_DATA_SUBSCRIPTION_MANAGER_HPP_
+#endif  // SIMULATOR_GENERATOR_IH_MARKET_DATA_SUBSCRIPTION_SUBSCRIPTION_MANAGER_HPP_

@@ -16,14 +16,12 @@ constexpr MarketDepth AllDepthLevels{0};
 constexpr MarketDepth TopOfTheBookDepth{1};
 
 struct RandomPriceSourceKey {
-  DatasourceId datasource_id{};
+  // Unset for a listing of the simulated venue itself.
+  std::optional<DatasourceId> datasource_id;
   Symbol symbol;
 
   [[nodiscard]]
   auto operator==(const RandomPriceSourceKey&) const -> bool = default;
-
-  [[nodiscard]]
-  auto operator<=>(const RandomPriceSourceKey&) const = default;
 };
 
 struct SubscriptionRequirement {

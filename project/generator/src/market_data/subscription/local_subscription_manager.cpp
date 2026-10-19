@@ -1,5 +1,6 @@
-#include "ih/market_data/local_subscription_manager.hpp"
+#include "ih/market_data/subscription/local_subscription_manager.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <exception>
 #include <utility>
@@ -30,6 +31,12 @@ auto make_request(const Subscription& subscription,
   return request;
 }
 
+[[nodiscard]]
+auto covers(MarketDepth depth, MarketDepth requested) -> bool {
+  return depth == AllDepthLevels ||
+         (requested != AllDepthLevels && depth.value() >= requested.value());
+}
+
 }  // namespace
 
 LocalSubscriptionManager::LocalSubscriptionManager(
@@ -40,15 +47,26 @@ LocalSubscriptionManager::LocalSubscriptionManager(
   assert(context_);
 }
 
-auto LocalSubscriptionManager::add(InstrumentDescriptor instrument)
-    -> MdRequestId {
+auto LocalSubscriptionManager::add(InstrumentDescriptor instrument,
+                                   MarketDepth depth) -> MdRequestId {
+  const auto existing = std::ranges::find_if(
+      subscriptions_, [&instrument](const Subscription& subscription) {
+        return subscription.instrument() == instrument;
+      });
+  if (existing != subscriptions_.end()) {
+    if (!covers(existing->depth(), depth)) {
+      widen(*existing, depth);
+    }
+    return existing->request_id();
+  }
+
   MdRequestId request_id{context_->generate_identifier()};
   price_cache_->add(request_id);
 
   subscriptions_.emplace_back(request_id,
                               protocol::Session{protocol::generator::Session{}},
                               std::move(instrument),
-                              AllDepthLevels,
+                              depth,
                               MarketDataUpdateType::Option::Snapshot);
 
   log::debug("configured the '{}' order book market data subscription for {}",
@@ -56,6 +74,19 @@ auto LocalSubscriptionManager::add(InstrumentDescriptor instrument)
              subscriptions_.back().instrument());
 
   return request_id;
+}
+
+auto LocalSubscriptionManager::widen(Subscription& subscription,
+                                     MarketDepth depth) -> void {
+  if (!subscription.subscribed()) {
+    subscription.set_depth(depth);
+    return;
+  }
+
+  // The venue keeps the depth of the original request, so it is sent again.
+  send_unsubscribe(subscription);
+  subscription.set_depth(depth);
+  send_subscribe(subscription);
 }
 
 auto LocalSubscriptionManager::subscribe() -> void {

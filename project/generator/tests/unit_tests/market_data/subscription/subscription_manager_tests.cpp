@@ -15,7 +15,7 @@
 #include "ih/market_data/market_data_book_cache.hpp"
 #include "ih/market_data/order_book_prices.hpp"
 #include "ih/market_data/price_cache.hpp"
-#include "ih/market_data/subscription_manager.hpp"
+#include "ih/market_data/subscription/subscription_manager.hpp"
 #include "middleware/channels/market_data_request_channel.hpp"
 #include "mocks/context/component_context.hpp"
 #include "mocks/market_data_request_channel.hpp"

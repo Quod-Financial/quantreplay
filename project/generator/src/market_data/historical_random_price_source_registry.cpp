@@ -18,8 +18,8 @@ HistoricalRandomPriceSourceRegistry::HistoricalRandomPriceSourceRegistry(
   assert(context_);
 }
 
-auto HistoricalRandomPriceSourceRegistry::add(const RandomPriceSourceKey& key)
-    -> MdRequestId {
+auto HistoricalRandomPriceSourceRegistry::add(
+    const HistoricalPriceSourceKey& key) -> MdRequestId {
   if (const auto source = sources_.find(key); source != sources_.end()) {
     return source->second;
   }

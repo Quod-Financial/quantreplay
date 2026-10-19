@@ -46,7 +46,19 @@ auto unmarshall_request_body(std::string_view body,
 struct RandomPriceSettings {
   std::unordered_set<std::uint64_t> datasource_ids;
   std::optional<std::string> venue_id;
+  bool from_stored_sources = false;
 };
+
+template <typename Sources>
+auto collect_datasource_ids(const Sources& sources,
+                            std::unordered_set<std::uint64_t>& datasource_ids)
+    -> void {
+  for (const auto& source : sources) {
+    if (const auto& datasource_id = source.datasource_id()) {
+      datasource_ids.emplace(*datasource_id);
+    }
+  }
+}
 
 [[nodiscard]]
 auto resolve_random_price_settings(
@@ -59,9 +71,13 @@ auto resolve_random_price_settings(
   }
 
   if (const auto& patched_sources = patch.random_price_sources()) {
-    for (const auto& patched : *patched_sources) {
-      settings.datasource_ids.emplace(patched.datasource_id());
-    }
+    collect_datasource_ids(*patched_sources, settings.datasource_ids);
+  } else if (patch.venue_id().has_value() && current.has_value() &&
+             *patch.venue_id() != current->venue_id()) {
+    // A venue move keeps the stored sources, which must follow the listing.
+    collect_datasource_ids(current->random_price_sources(),
+                           settings.datasource_ids);
+    settings.from_stored_sources = true;
   }
   if (patch.venue_id().has_value()) {
     settings.venue_id = *patch.venue_id();
@@ -191,7 +207,8 @@ auto ListingController::update_listing(const std::string& key,
     return std::make_pair(code, std::move(content));
   }
 
-  if (patch.random_price_sources().has_value()) {
+  if (patch.random_price_sources().has_value() || patch.symbol().has_value() ||
+      patch.venue_id().has_value()) {
     auto current = [&] {
       if (core::is_number(key)) {
         return data_accessor_->select_single(std::stoull(key));
@@ -208,7 +225,8 @@ auto ListingController::update_listing(const std::string& key,
       return std::make_pair(code, std::move(content));
     }
 
-    if (auto validation = validate_random_price_source(patch, current.value());
+    if (auto validation = validate_random_price_source(
+            patch, std::make_optional(std::move(current).value()));
         !validation.has_value()) {
       return std::move(validation.error());
     }
@@ -251,19 +269,93 @@ auto ListingController::update_listing(const std::string& key,
 auto ListingController::validate_random_price_source(
     const data_layer::Listing::Patch& patch,
     const std::optional<data_layer::Listing>& current) const -> Validation {
+  if (auto validation = validate_random_price_symbols(patch, current);
+      !validation.has_value()) {
+    return validation;
+  }
+
   const auto settings = resolve_random_price_settings(patch, current);
-  return validate_random_price_datasources(settings.datasource_ids,
-                                           settings.venue_id);
+  return validate_random_price_datasources(
+      settings.datasource_ids,
+      settings.venue_id,
+      settings.from_stored_sources ? SourcesOrigin::StoredListing
+                                   : SourcesOrigin::Request);
+}
+
+auto ListingController::listing_updated_symbol_does_not_reference_itself(
+    const data_layer::Listing::Patch& patch,
+    const std::optional<data_layer::Listing>& current) -> Validation {
+  if (!patch.symbol().has_value() || !current.has_value()) {
+    return {};
+  }
+
+  for (const auto& stored : current->random_price_sources()) {
+    if (!stored.datasource_id().has_value() &&
+        stored.symbol() == *patch.symbol()) {
+      return tl::make_unexpected(
+          Result{Pistache::Http::Code::Bad_Request,
+                 format_result_response(fmt::format(
+                     "the listing can not take the `{}' symbol, which a local "
+                     "venue random price source of the listing refers to",
+                     *patch.symbol()))});
+    }
+  }
+  return {};
+}
+
+auto ListingController::listing_does_not_reference_itself(
+    const std::vector<data_layer::ListingRandomPriceSource::Patch>&
+        random_price_sources,
+    const std::optional<std::string>& listing_symbol) -> Validation {
+  for (const auto& patched : random_price_sources) {
+    if (patched.symbol().empty()) {
+      return tl::make_unexpected(
+          Result{Pistache::Http::Code::Bad_Request,
+                 format_result_response(fmt::format(
+                     "{} of a random price source must not be empty",
+                     json::listing_random_price_source_key::Symbol))});
+    }
+
+    if (!patched.datasource_id().has_value() &&
+        listing_symbol == patched.symbol()) {
+      return tl::make_unexpected(
+          Result{Pistache::Http::Code::Bad_Request,
+                 format_result_response(fmt::format(
+                     "{} `{}' of a local venue random price source must not "
+                     "refer to the listing itself",
+                     json::listing_random_price_source_key::Symbol,
+                     patched.symbol()))});
+    }
+  }
+
+  return {};
+}
+
+auto ListingController::validate_random_price_symbols(
+    const data_layer::Listing::Patch& patch,
+    const std::optional<data_layer::Listing>& current) -> Validation {
+  if (!patch.random_price_sources().has_value()) {
+    return listing_updated_symbol_does_not_reference_itself(patch, current);
+  }
+
+  std::optional<std::string> listing_symbol = patch.symbol();
+  if (!listing_symbol.has_value() && current.has_value()) {
+    listing_symbol = current->symbol();
+  }
+  return listing_does_not_reference_itself(*patch.random_price_sources(),
+                                           listing_symbol);
 }
 
 auto ListingController::validate_random_price_datasources(
     const std::unordered_set<std::uint64_t>& datasource_ids,
-    const std::optional<std::string>& venue_id) const -> Validation {
+    const std::optional<std::string>& venue_id,
+    SourcesOrigin origin) const -> Validation {
   for (const std::uint64_t datasource_id : datasource_ids) {
     auto validation =
         select_random_price_datasource(datasource_id)
-            .and_then([&venue_id](const data_layer::Datasource& datasource) {
-              return validate_datasource_venue(datasource, venue_id);
+            .and_then([&venue_id,
+                       origin](const data_layer::Datasource& datasource) {
+              return validate_datasource_venue(datasource, venue_id, origin);
             });
     if (!validation.has_value()) {
       return validation;
@@ -304,9 +396,21 @@ auto ListingController::select_random_price_datasource(
 
 auto ListingController::validate_datasource_venue(
     const data_layer::Datasource& datasource,
-    const std::optional<std::string>& venue_id) -> Validation {
+    const std::optional<std::string>& venue_id,
+    SourcesOrigin origin) -> Validation {
   if (!venue_id.has_value() || datasource.venue_id() == *venue_id) {
     return {};
+  }
+
+  if (origin == SourcesOrigin::StoredListing) {
+    return tl::make_unexpected(
+        Result{Pistache::Http::Code::Bad_Request,
+               format_result_response(fmt::format(
+                   "the listing can not move to the `{}' venue while its "
+                   "random price source refers to the datasource `{}' of "
+                   "another venue",
+                   *venue_id,
+                   datasource.datasource_id()))});
   }
 
   return tl::make_unexpected(

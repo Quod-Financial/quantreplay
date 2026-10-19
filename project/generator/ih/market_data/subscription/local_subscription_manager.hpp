@@ -1,5 +1,5 @@
-#ifndef SIMULATOR_GENERATOR_IH_MARKET_DATA_LOCAL_SUBSCRIPTION_MANAGER_HPP_
-#define SIMULATOR_GENERATOR_IH_MARKET_DATA_LOCAL_SUBSCRIPTION_MANAGER_HPP_
+#ifndef SIMULATOR_GENERATOR_IH_MARKET_DATA_SUBSCRIPTION_LOCAL_SUBSCRIPTION_MANAGER_HPP_
+#define SIMULATOR_GENERATOR_IH_MARKET_DATA_SUBSCRIPTION_LOCAL_SUBSCRIPTION_MANAGER_HPP_
 
 #include <memory>
 #include <vector>
@@ -8,7 +8,7 @@
 #include "core/domain/instrument_descriptor.hpp"
 #include "ih/context/component_context.hpp"
 #include "ih/market_data/price_cache.hpp"
-#include "ih/market_data/subscription.hpp"
+#include "ih/market_data/subscription/subscription.hpp"
 
 namespace simulator::generator::mdata {
 
@@ -28,13 +28,15 @@ class LocalSubscriptionManager {
   auto operator=(LocalSubscriptionManager&&)
       -> LocalSubscriptionManager& = delete;
 
-  auto add(InstrumentDescriptor instrument) -> MdRequestId;
+  auto add(InstrumentDescriptor instrument, MarketDepth depth) -> MdRequestId;
 
   auto subscribe() -> void;
 
   auto unsubscribe() -> void;
 
  private:
+  auto widen(Subscription& subscription, MarketDepth depth) -> void;
+
   auto send_subscribe(Subscription& subscription) -> void;
 
   auto send_unsubscribe(Subscription& subscription) -> void;
@@ -46,4 +48,4 @@ class LocalSubscriptionManager {
 
 }  // namespace simulator::generator::mdata
 
-#endif  // SIMULATOR_GENERATOR_IH_MARKET_DATA_LOCAL_SUBSCRIPTION_MANAGER_HPP_
+#endif  // SIMULATOR_GENERATOR_IH_MARKET_DATA_SUBSCRIPTION_LOCAL_SUBSCRIPTION_MANAGER_HPP_
