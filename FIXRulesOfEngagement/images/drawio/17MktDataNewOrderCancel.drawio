@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="ac.draw.io" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0.1 Safari/605.1.15">
+  <diagram name="Page-1" id="a1NewOrderCancelFlow01">
+    <mxGraphModel dx="1380" dy="919" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="NewOrderCancel-1" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};fillColor=#dae8fc;strokeColor=#000000;" value="Client App" vertex="1">
+          <mxGeometry height="170" width="100" x="70" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="NewOrderCancel-2" parent="NewOrderCancel-1" style="html=1;points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};fillColor=#dae8fc;strokeColor=default;" value="" vertex="1">
+          <mxGeometry height="80" width="10" x="45" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="NewOrderCancel-3" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};fillColor=#dae8fc;strokeColor=#000000;" value="Market Simulator" vertex="1">
+          <mxGeometry height="170" width="100" x="470" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="NewOrderCancel-4" parent="NewOrderCancel-3" style="html=1;points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};fillColor=#dae8fc;strokeColor=default;" value="" vertex="1">
+          <mxGeometry height="80" width="10" x="45" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="NewOrderCancel-5" edge="1" parent="1" source="NewOrderCancel-2" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" target="NewOrderCancel-4" value="NewOrderSingle (35=D)">
+          <mxGeometry relative="1" x="0.0051" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="260" y="150" />
+            </Array>
+            <mxPoint x="275" y="160" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="NewOrderCancel-6" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="ExecutionReport (35=8)&lt;div&gt;ExecType=Cancelled (150=4)&lt;/div&gt;&lt;div&gt;OrdStatus=Cancelled (39=4)&lt;/div&gt;">
+          <mxGeometry height="50" relative="1" width="50" y="-30" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="515" y="230" as="sourcePoint" />
+            <mxPoint x="125" y="230" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
