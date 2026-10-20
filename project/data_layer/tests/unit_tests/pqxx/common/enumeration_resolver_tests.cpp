@@ -27,6 +27,11 @@ TEST(DataLayer_Pqxx_EnumerationResolver_DatasourceFromat, String_Postgres) {
   EXPECT_EQ(resolver(Datasource::Format::Postgres), "PSQL");
 }
 
+TEST(DataLayer_Pqxx_EnumerationResolver_DatasourceFromat, String_FIX) {
+  constexpr EnumerationResolver resolver;
+  EXPECT_EQ(resolver(Datasource::Format::Fix), "FIX");
+}
+
 TEST(DataLayer_Pqxx_EnumerationResolver_DatasourceFromat, Value_Undefined) {
   constexpr EnumerationResolver resolver;
   auto format = data_layer::test::invalid_enum_value<Datasource::Format>();
@@ -48,6 +53,14 @@ TEST(DataLayer_Pqxx_EnumerationResolver_DatasourceFromat, Value_Postgres) {
 
   EXPECT_NO_THROW(resolver("PSQL", format));
   EXPECT_EQ(format, Datasource::Format::Postgres);
+}
+
+TEST(DataLayer_Pqxx_EnumerationResolver_DatasourceFromat, Value_FIX) {
+  constexpr EnumerationResolver resolver;
+  auto format = data_layer::test::invalid_enum_value<Datasource::Format>();
+
+  EXPECT_NO_THROW(resolver("FIX", format));
+  EXPECT_EQ(format, Datasource::Format::Fix);
 }
 
 TEST(DataLayer_Pqxx_EnumerationResolver_DatasourceType, String_Undefined) {

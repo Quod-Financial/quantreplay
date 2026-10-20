@@ -2,10 +2,13 @@
 #include <gtest/gtest.h>
 
 #include <initializer_list>
+#include <optional>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
 #include "data_layer/api/models/listing.hpp"
+#include "data_layer/api/models/listing_random_price_source.hpp"
 #include "ih/marshalling/json/listing.hpp"
 #include "tests/test_utils/matchers.hpp"
 
@@ -40,7 +43,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsListingID) {
   // clang-format off
   const std::string expected_json{"{"
     R"("id":42,)"
-    R"("venueId":"dummy")"
+    R"("venueId":"dummy",)"
+    R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -55,7 +59,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsSymbol) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("symbol":"AAPL")"
+      R"("symbol":"AAPL",)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -69,7 +74,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsVenueID) {
   // clang-format off
   const std::string expected_json{"{"
       R"("id":42,)"
-      R"("venueId":"NASDAQ")"
+      R"("venueId":"NASDAQ",)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -84,7 +90,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsSecurityType) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-     R"("securityType":"Equity")"
+     R"("securityType":"Equity",)"
+     R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -99,7 +106,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsPriceCurrency) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("priceCurrency":"USD")"
+      R"("priceCurrency":"USD",)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -114,7 +122,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsFxBaseCurrency) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("fxBaseCurrency":"USD")"
+      R"("fxBaseCurrency":"USD",)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -129,7 +138,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsInstrSymbol) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("instrSymbol":"AAPL")"
+      R"("instrSymbol":"AAPL",)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -144,7 +154,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsQtyMinimum) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("qtyMinimum":42.42)"
+      R"("qtyMinimum":42.42,)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -159,7 +170,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsQtyMaximum) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("qtyMaximum":42.42)"
+      R"("qtyMaximum":42.42,)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -174,7 +186,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsQtyMultiple) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("qtyMultiple":42.42)"
+      R"("qtyMultiple":42.42,)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -189,7 +202,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsPriceTickSize) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("priceTickSize":42.42)"
+      R"("priceTickSize":42.42,)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -204,7 +218,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsEnabled) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("enabled":false)"
+      R"("enabled":false,)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -219,7 +234,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomQtyMaximum) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("randomQtyMaximum":42.42)"
+      R"("randomQtyMaximum":42.42,)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -234,7 +250,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomDepthLevels) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("randomDepthLevels":42)"
+      R"("randomDepthLevels":42,)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -249,7 +266,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomOrdersSpread) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("randomOrdersSpread":42.42)"
+      R"("randomOrdersSpread":42.42,)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -264,7 +282,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomOrdersRate) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("randomOrdersRate":42)"
+      R"("randomOrdersRate":42,)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -279,7 +298,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomTickRange) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("randomTickRange":42)"
+      R"("randomTickRange":42,)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -294,7 +314,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsSecurityExchange) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("securityExchange":"NASDAQ")"
+      R"("securityExchange":"NASDAQ",)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -309,7 +330,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsPartyID) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("partyId":"Party")"
+      R"("partyId":"Party",)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -324,7 +346,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsPartyRole) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("partyRole":"PartyRole")"
+      R"("partyRole":"PartyRole",)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -339,7 +362,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsCusipID) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("cusipId":"Cusip")"
+      R"("cusipId":"Cusip",)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -354,7 +378,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsSedolID) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("sedolId":"Sedol")"
+      R"("sedolId":"Sedol",)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -369,7 +394,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsIsinID) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("isinId":"Isin")"
+      R"("isinId":"Isin",)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -384,7 +410,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRicID) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("ricId":"Ric")"
+      R"("ricId":"Ric",)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -399,7 +426,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsExchangeSymbolID) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("exchangeSymbolId":"EXC")"
+      R"("exchangeSymbolId":"EXC",)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -414,7 +442,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsBloombergSymbolID) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("bloombergSymbolId":"BBG")"
+      R"("bloombergSymbolId":"BBG",)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -429,7 +458,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomQtyMinimum) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("randomQtyMinimum":42.42)"
+      R"("randomQtyMinimum":42.42,)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -444,7 +474,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomAmtMinimum) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("randomAmtMinimum":42.42)"
+      R"("randomAmtMinimum":42.42,)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -459,7 +490,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomAmtMaximum) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("randomAmtMaximum":42.42)"
+      R"("randomAmtMaximum":42.42,)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -474,7 +506,26 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomOrdersEnabled) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("randomOrdersEnabled":true)"
+      R"("randomOrdersEnabled":true,)"
+      R"("randomPriceSources":[])"
+  "}"};
+  // clang-format on
+
+  ASSERT_EQ(marshall(listing), expected_json);
+}
+
+TEST_F(HttpJsonListingMarshaller, MarshallsRandomPriceExcludeCurrentListing) {
+  const auto patch =
+      make_default_patch().with_random_price_exclude_current_listing_flag(
+          true);
+  const auto listing = Listing::create(patch, 42);
+
+  // clang-format off
+  const std::string expected_json{"{"
+      R"("id":42,)"
+      R"("venueId":"dummy",)"
+      R"("randomPriceExcludeCurrentListing":true,)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -490,7 +541,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomAggressiveQtyMinimum) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("randomAggQtyMinimum":42.42)"
+      R"("randomAggQtyMinimum":42.42,)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -506,7 +558,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomAggressiveQtyMaximum) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("randomAggQtyMaximum":42.42)"
+      R"("randomAggQtyMaximum":42.42,)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -522,7 +575,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomAggressiveAmtMinimum) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("randomAggAmtMinimum":42.42)"
+      R"("randomAggAmtMinimum":42.42,)"
+      R"("randomPriceSources":[])"
   "}"};
   // clang-format on
 
@@ -538,7 +592,65 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomAggressiveAmtMaximum) {
   const std::string expected_json{"{"
       R"("id":42,)"
       R"("venueId":"dummy",)"
-      R"("randomAggAmtMaximum":42.42)"
+      R"("randomAggAmtMaximum":42.42,)"
+      R"("randomPriceSources":[])"
+  "}"};
+  // clang-format on
+
+  ASSERT_EQ(marshall(listing), expected_json);
+}
+
+TEST_F(HttpJsonListingMarshaller, MarshallsRandomPriceSources) {
+  data_layer::ListingRandomPriceSource::Patch first;
+  first.with_datasource_id(7).with_symbol("AAPL.OQ");
+  data_layer::ListingRandomPriceSource::Patch second;
+  second.with_datasource_id(8).with_symbol("AAPL.N");
+
+  auto patch = make_default_patch();
+  patch.with_random_price_source(first).with_random_price_source(second);
+  const auto listing = Listing::create(patch, 42);
+
+  // clang-format off
+  const std::string expected_json{"{"
+      R"("id":42,)"
+      R"("venueId":"dummy",)"
+      R"("randomPriceSources":[)"
+            "{"
+              R"("listingId":42,)"
+              R"("datasourceId":7,)"
+              R"("symbol":"AAPL.OQ")"
+            "},"
+            "{"
+              R"("listingId":42,)"
+              R"("datasourceId":8,)"
+              R"("symbol":"AAPL.N")"
+            "}"
+        "]"
+  "}"};
+  // clang-format on
+
+  ASSERT_EQ(marshall(listing), expected_json);
+}
+
+TEST_F(HttpJsonListingMarshaller,
+       MarshallsRandomPriceSourceWithoutDatasourceId) {
+  data_layer::ListingRandomPriceSource::Patch source;
+  source.with_symbol("MSFT");
+
+  auto patch = make_default_patch();
+  patch.with_random_price_source(source);
+  const auto listing = Listing::create(patch, 42);
+
+  // clang-format off
+  const std::string expected_json{"{"
+      R"("id":42,)"
+      R"("venueId":"dummy",)"
+      R"("randomPriceSources":[)"
+            "{"
+              R"("listingId":42,)"
+              R"("symbol":"MSFT")"
+            "}"
+        "]"
   "}"};
   // clang-format on
 
@@ -546,19 +658,21 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomAggressiveAmtMaximum) {
 }
 
 TEST_F(HttpJsonListingMarshaller, MarshallsListingsList) {
-  const auto listing1 = Listing ::create(make_default_patch(), 1);
-  const auto listing2 = Listing ::create(make_default_patch(), 2);
+  const auto listing1 = Listing::create(make_default_patch(), 1);
+  const auto listing2 = Listing::create(make_default_patch(), 2);
 
   // clang-format off
   const std::string expected_json{"{"
       R"("listings":[)"
             "{"
               R"("id":1,)"
-              R"("venueId":"dummy")"
+              R"("venueId":"dummy",)"
+              R"("randomPriceSources":[])"
             "},"
             "{"
               R"("id":2,)"
-              R"("venueId":"dummy")"
+              R"("venueId":"dummy",)"
+              R"("randomPriceSources":[])"
             "}"
         "]"
   "}"};
@@ -1056,6 +1170,28 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomOrdersEnabled) {
               IsPatchFieldWithValue(Optional(true)));
 }
 
+TEST_F(HttpJsonListingUnmarshaller,
+       UnmarshallsRandomPriceExcludeCurrentListingNull) {
+  constexpr std::string_view json{
+      R"({"randomPriceExcludeCurrentListing":null})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.random_price_exclude_current_listing_flag(),
+              IsPatchFieldWithValue(std::nullopt));
+}
+
+TEST_F(HttpJsonListingUnmarshaller,
+       UnmarshallsRandomPriceExcludeCurrentListing) {
+  constexpr std::string_view json{
+      R"({"randomPriceExcludeCurrentListing":true})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.random_price_exclude_current_listing_flag(),
+              IsPatchFieldWithValue(Optional(true)));
+}
+
 TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomAggressiveQtyMinimumNull) {
   constexpr std::string_view json{R"({"randomAggQtyMinimum":null})"};
 
@@ -1126,6 +1262,78 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomAggressiveAmtMaximum) {
 
   ASSERT_THAT(patch.random_aggressive_amt_maximum(),
               IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller,
+       ThrowsExceptionOnUnmarshallingNotArrayRandomPriceSourcesValue) {
+  constexpr std::string_view json{R"({"randomPriceSources":{}})"};
+
+  ASSERT_THAT([&] { ListingUnmarshaller::unmarshall(json, patch); },
+              ThrowsMessage<std::runtime_error>(
+                  "can not parse `randomPriceSources' key in Listing JSON, "
+                  "which is not a JSON array"));
+}
+
+TEST_F(HttpJsonListingUnmarshaller,
+       ThrowsExceptionOnUnmarshallingRandomPriceSourcesInvalidElemType) {
+  constexpr std::string_view json{R"({"randomPriceSources":[5,1,2]})"};
+
+  ASSERT_THAT([&] { ListingUnmarshaller::unmarshall(json, patch); },
+              ThrowsMessage<std::runtime_error>(
+                  "can not parse a JSON object in `randomPriceSources' "
+                  "JSON array"));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsAbsentRandomPriceSources) {
+  constexpr std::string_view json{R"({"symbol":"AAPL"})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_FALSE(patch.random_price_sources().has_value());
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomPriceSourcesEmptyArray) {
+  constexpr std::string_view json{R"({"randomPriceSources":[]})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.random_price_sources(), Optional(IsEmpty()));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsRandomPriceSourcesValidArray) {
+  constexpr std::string_view json{
+      R"({"randomPriceSources":[{"datasourceId":7,"symbol":"AAPL.OQ"}]})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  data_layer::ListingRandomPriceSource::Patch expected;
+  expected.with_datasource_id(7).with_symbol("AAPL.OQ");
+  ASSERT_THAT(patch.random_price_sources(),
+              Optional(ElementsAre(Eq(expected))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsNullDatasourceId) {
+  constexpr std::string_view json{
+      R"({"randomPriceSources":[{"datasourceId":null,"symbol":"MSFT"}]})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  data_layer::ListingRandomPriceSource::Patch expected;
+  expected.with_symbol("MSFT");
+  ASSERT_THAT(patch.random_price_sources(),
+              Optional(ElementsAre(Eq(expected))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsAbsentDatasourceId) {
+  constexpr std::string_view json{
+      R"({"randomPriceSources":[{"symbol":"MSFT"}]})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.random_price_sources(),
+              Optional(ElementsAre(Property(
+                  &data_layer::ListingRandomPriceSource::Patch::datasource_id,
+                  Eq(std::nullopt)))));
 }
 
 // NOLINTEND(*magic-numbers*)

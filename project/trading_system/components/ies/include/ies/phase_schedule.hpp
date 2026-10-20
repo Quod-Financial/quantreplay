@@ -15,8 +15,8 @@ namespace simulator::trading_system::ies {
 // An auction's nominal end-of-call and the +/- window around it within which
 // the uncrossing is randomised.
 struct AuctionTiming {
-  std::chrono::minutes end{0};
-  std::chrono::minutes end_range{0};
+  std::chrono::seconds end{0};
+  std::chrono::seconds end_range{0};
 
   auto operator==(const AuctionTiming& other) const -> bool = default;
 };

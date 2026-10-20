@@ -658,7 +658,7 @@ TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsMarketPhasesKeyNotExist) {
 }
 
 TEST_F(HttpJsonVenueUnmarshaller,
-       ThrowsExceptionOnUnmarshallingMarketPhasesNotAnArray) {
+       ThrowsExceptionOnUnmarshallingMarketPhasesNotArray) {
   constexpr std::string_view json{R"({"phases":{}})"};
 
   EXPECT_THROW(VenueUnmarshaller::unmarshall(json, patch), std::runtime_error);

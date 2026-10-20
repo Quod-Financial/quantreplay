@@ -8,7 +8,6 @@
 #include "core/common/unreachable.hpp"
 #include "core/tools/overload.hpp"
 #include "ih/market_data/depth/depth_level.hpp"
-#include "ih/market_data/depth/depth_stats_reader.hpp"
 #include "ih/market_data/depth/full_depth_update.hpp"
 #include "ih/market_data/depth/incremental_depth_update.hpp"
 #include "log/logging.hpp"
@@ -79,22 +78,6 @@ auto DepthCache::has_update(const StreamingSettings& settings) const -> bool {
           sheet_has_update(bid_depth_, settings)) ||
          (offer_side_requested(settings) &&
           sheet_has_update(offer_depth_, settings));
-}
-
-auto DepthCache::capture(protocol::InstrumentState& state) const -> void {
-  DepthStatsReader reader;
-
-  reader.read(bid_depth_.view());
-  state.current_bid_depth = CurrentBidDepth(reader.levels_count());
-  if (const auto tob_price = reader.tob_price()) {
-    state.best_bid_price = BestBidPrice(*tob_price);
-  }
-
-  reader.read(offer_depth_.view());
-  state.current_offer_depth = CurrentOfferDepth(reader.levels_count());
-  if (const auto tob_price = reader.tob_price()) {
-    state.best_offer_price = BestOfferPrice(*tob_price);
-  }
 }
 
 auto DepthCache::update(const std::vector<OrderBookNotification>& updates)
@@ -188,8 +171,9 @@ auto DepthCache::build_incremental_update(
   }
 }
 
-auto DepthCache::sheet_has_update(
-    const auto& sheet, const StreamingSettings& settings) const -> bool {
+auto DepthCache::sheet_has_update(const auto& sheet,
+                                  const StreamingSettings& settings) const
+    -> bool {
   const auto updated = [](const DepthLevel& level) {
     return level.is_updated();
   };

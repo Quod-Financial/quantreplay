@@ -76,13 +76,14 @@ struct MatchingEngineTradeAtLastAmendment : public Test {
     return update;
   }
 
-  static auto amend_priced_to(OrderId identifier,
-                              OrderPrice price) -> LimitUpdate {
+  static auto amend_priced_to(OrderId identifier, OrderPrice price)
+      -> LimitUpdate {
     return amend_to(identifier, OrderQuantity{100}, price);
   }
 
-  static auto amend_with_time_in_force(
-      OrderId identifier, TimeInForce time_in_force) -> LimitUpdate {
+  static auto amend_with_time_in_force(OrderId identifier,
+                                       TimeInForce time_in_force)
+      -> LimitUpdate {
     return amend_to(identifier,
                     OrderQuantity{100},
                     OrderPrice{ClosingPrice.value()},
@@ -106,7 +107,7 @@ struct MatchingEngineTradeAtLastAmendmentWithClosingPrice
 };
 
 TEST_F(MatchingEngineTradeAtLastAmendmentWithClosingPrice,
-       RejectsAmendmentPricedAwayFromTheClosingPrice) {
+       RejectsAmendmentPricedAwayFromClosingPrice) {
   rest_trade_at_last_order(OrderId{1});
 
   EXPECT_CALL(event_listener,
@@ -116,7 +117,7 @@ TEST_F(MatchingEngineTradeAtLastAmendmentWithClosingPrice,
 }
 
 TEST_F(MatchingEngineTradeAtLastAmendmentWithClosingPrice,
-       RejectsAmendmentThatChangesTheTimeInForce) {
+       RejectsAmendmentThatChangesTimeInForce) {
   rest_trade_at_last_order(OrderId{1});
 
   EXPECT_CALL(event_listener,
@@ -127,7 +128,7 @@ TEST_F(MatchingEngineTradeAtLastAmendmentWithClosingPrice,
 }
 
 TEST_F(MatchingEngineTradeAtLastAmendmentWithClosingPrice,
-       LeavesTheOrderUntouchedWhenTheAmendmentIsRejected) {
+       LeavesOrderUntouchedWhenAmendmentIsRejected) {
   rest_trade_at_last_order(OrderId{1}, OrderQuantity{100});
 
   amendment(amend_priced_to(OrderId{1}, OrderPrice{43}));
@@ -140,7 +141,7 @@ TEST_F(MatchingEngineTradeAtLastAmendmentWithClosingPrice,
 }
 
 TEST_F(MatchingEngineTradeAtLastAmendmentWithClosingPrice,
-       ConfirmsAmendmentOfARestingTradeAtLastOrder) {
+       ConfirmsAmendmentOfRestingTradeAtLastOrder) {
   rest_trade_at_last_order(OrderId{1});
 
   EXPECT_CALL(event_listener,
@@ -151,7 +152,7 @@ TEST_F(MatchingEngineTradeAtLastAmendmentWithClosingPrice,
 }
 
 TEST_F(MatchingEngineTradeAtLastAmendmentWithClosingPrice,
-       AppliesTheAmendedQuantityToTheRestingOrder) {
+       AppliesAmendedQuantityToRestingOrder) {
   rest_trade_at_last_order(OrderId{1}, OrderQuantity{100});
 
   amendment(amend_to(OrderId{1}, OrderQuantity{50}));
@@ -162,7 +163,7 @@ TEST_F(MatchingEngineTradeAtLastAmendmentWithClosingPrice,
 }
 
 TEST_F(MatchingEngineTradeAtLastAmendmentWithClosingPrice,
-       KeepsTheQueuePositionWhenTheQuantityDecreases) {
+       KeepsQueuePositionWhenQuantityDecreases) {
   rest_trade_at_last_order(OrderId{1}, OrderQuantity{100}, arrival(1));
   rest_trade_at_last_order(OrderId{2}, OrderQuantity{100}, arrival(2));
 
@@ -174,7 +175,7 @@ TEST_F(MatchingEngineTradeAtLastAmendmentWithClosingPrice,
 }
 
 TEST_F(MatchingEngineTradeAtLastAmendmentWithClosingPrice,
-       LosesTheQueuePositionWhenTheQuantityIncreases) {
+       LosesQueuePositionWhenQuantityIncreases) {
   rest_trade_at_last_order(OrderId{1}, OrderQuantity{100}, arrival(1));
   rest_trade_at_last_order(OrderId{2}, OrderQuantity{100}, arrival(2));
 
@@ -192,7 +193,7 @@ struct MatchingEngineTradeAtLastAmendmentWithoutClosingPrice
 };
 
 TEST_F(MatchingEngineTradeAtLastAmendmentWithoutClosingPrice,
-       RejectsAmendmentOfARestingTradeAtLastOrder) {
+       RejectsAmendmentOfRestingTradeAtLastOrder) {
   rest_trade_at_last_order(OrderId{1});
 
   EXPECT_CALL(event_listener,

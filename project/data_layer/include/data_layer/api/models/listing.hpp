@@ -4,7 +4,9 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <vector>
 
+#include "data_layer/api/models/listing_random_price_source.hpp"
 #include "data_layer/api/models/patch_field.hpp"
 #include "data_layer/api/predicate/definitions.hpp"
 
@@ -50,11 +52,13 @@ class Listing {
     RandomAggressiveQtyMinimum,
     RandomAggressiveQtyMaximum,
     RandomAggressiveAmtMinimum,
-    RandomAggressiveAmtMaximum
+    RandomAggressiveAmtMaximum,
+    RandomPriceExcludeCurrentListing
   };
 
   static constexpr bool DefaultEnabledFlag{true};
   static constexpr bool DefaultRandomOrdersEnabledFlag{true};
+  static constexpr bool DefaultRandomPriceExcludeCurrentListingFlag{false};
 
   [[nodiscard]]
   static auto create(Listing::Patch snapshot, std::uint64_t id) -> Listing;
@@ -151,6 +155,10 @@ class Listing {
   auto random_orders_enabled_flag() const noexcept -> std::optional<bool>;
 
   [[nodiscard]]
+  auto random_price_exclude_current_listing_flag() const noexcept
+      -> std::optional<bool>;
+
+  [[nodiscard]]
   auto random_aggressive_qty_minimum() const noexcept -> std::optional<double>;
 
   [[nodiscard]]
@@ -161,6 +169,10 @@ class Listing {
 
   [[nodiscard]]
   auto random_aggressive_amt_maximum() const noexcept -> std::optional<double>;
+
+  [[nodiscard]]
+  auto random_price_sources() const noexcept
+      -> const std::vector<ListingRandomPriceSource>&;
 
  private:
   Listing() = default;
@@ -181,6 +193,8 @@ class Listing {
   std::optional<std::string> bloomberg_symbol_id_;
 
   std::string venue_id_;
+
+  std::vector<ListingRandomPriceSource> random_price_sources_;
 
   std::optional<double> qty_minimum_;
   std::optional<double> qty_maximum_;
@@ -204,6 +218,7 @@ class Listing {
 
   std::optional<bool> enabled_flag_;
   std::optional<bool> random_orders_enabled_flag_;
+  std::optional<bool> random_price_exclude_current_listing_flag_;
 };
 
 class Listing::Patch {
@@ -337,6 +352,12 @@ class Listing::Patch {
       -> Patch&;
 
   [[nodiscard]]
+  auto random_price_exclude_current_listing_flag() const noexcept
+      -> PatchField<bool>;
+  auto with_random_price_exclude_current_listing_flag(
+      std::optional<bool> flag) noexcept -> Patch&;
+
+  [[nodiscard]]
   auto random_aggressive_qty_minimum() const noexcept -> PatchField<double>;
   auto with_random_aggressive_qty_minimum(std::optional<double> qty) noexcept
       -> Patch&;
@@ -356,6 +377,13 @@ class Listing::Patch {
   auto with_random_aggressive_amt_maximum(std::optional<double> amount) noexcept
       -> Patch&;
 
+  [[nodiscard]]
+  auto random_price_sources() const noexcept
+      -> const std::optional<std::vector<ListingRandomPriceSource::Patch>>&;
+  auto with_random_price_source(ListingRandomPriceSource::Patch patch_snapshot)
+      -> Patch&;
+  auto without_random_price_sources() noexcept -> Patch&;
+
  private:
   std::optional<std::string> symbol_;
   std::optional<std::string> venue_id_;
@@ -372,6 +400,9 @@ class Listing::Patch {
   PatchField<std::string> ric_id_;
   PatchField<std::string> exchange_symbol_id_;
   PatchField<std::string> bloomberg_symbol_id_;
+
+  std::optional<std::vector<ListingRandomPriceSource::Patch>>
+      random_price_sources_;
 
   PatchField<double> qty_minimum_;
   PatchField<double> qty_maximum_;
@@ -393,6 +424,7 @@ class Listing::Patch {
 
   PatchField<bool> enabled_flag_;
   PatchField<bool> random_orders_enabled_flag_;
+  PatchField<bool> random_price_exclude_current_listing_flag_;
 };
 
 }  // namespace simulator::data_layer

@@ -1,6 +1,7 @@
 #ifndef SIMULATOR_DATA_LAYER_INCLUDE_DATA_LAYER_API_DATA_ACCESS_LAYER_HPP_
 #define SIMULATOR_DATA_LAYER_INCLUDE_DATA_LAYER_API_DATA_ACCESS_LAYER_HPP_
 
+#include <string>
 #include <vector>
 
 #include "cfg/api/cfg.hpp"
@@ -39,6 +40,11 @@ auto select_one_datasource(const database::Context& context,
 auto select_all_datasources(
     const database::Context& context,
     std::optional<Datasource::Predicate> predicate = std::nullopt)
+    -> std::vector<data_layer::Datasource>;
+
+[[nodiscard]]
+auto select_enabled_venue_datasources(const database::Context& context,
+                                      const std::string& venue_id)
     -> std::vector<data_layer::Datasource>;
 
 auto update_one_datasource(const database::Context& context,

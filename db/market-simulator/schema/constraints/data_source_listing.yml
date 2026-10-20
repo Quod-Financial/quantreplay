@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_constraint_data_source_listing_1
+      labels: schema,v13
+      comment: Add NOT NULL constraint data_source_listing_data_source_id_idx on data_source_listing.data_source_id
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source_listing
+        - columnExists:
+            tableName: data_source_listing
+            columnName: data_source_id
+      changes:
+        - addNotNullConstraint:
+            constraintName: data_source_listing_data_source_id_idx
+            tableName: data_source_listing
+            columnName: data_source_id
+            validate: true
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_constraint_data_source_listing_2
+      labels: schema,v13
+      comment: Add NOT NULL constraint data_source_listing_symbol_idx on data_source_listing.symbol
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source_listing
+        - columnExists:
+            tableName: data_source_listing
+            columnName: symbol
+      changes:
+        - addNotNullConstraint:
+            constraintName: data_source_listing_symbol_idx
+            tableName: data_source_listing
+            columnName: symbol
+            validate: true

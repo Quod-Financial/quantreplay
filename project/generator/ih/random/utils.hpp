@@ -2,7 +2,7 @@
 #define SIMULATOR_GENERATOR_IH_RANDOM_UTILS_HPP_
 
 #include "core/domain/attributes.hpp"
-#include "ih/context/order_market_data_provider.hpp"
+#include "ih/market_data/market_state.hpp"
 
 namespace simulator::generator::random::Utils {
 

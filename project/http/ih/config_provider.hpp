@@ -60,6 +60,26 @@ class ConfigProviderImpl : public ConfigProvider {
 };
 
 [[nodiscard]]
+auto find_default_session_section(
+    const std::vector<core::FixSessionSettings>& sessions)
+    -> const core::FixSessionSettings*;
+
+[[nodiscard]]
+auto resolve_session_setting(const core::FixSessionSettings& session,
+                             const core::FixSessionSettings* default_section,
+                             std::string_view key)
+    -> std::optional<std::string>;
+
+[[nodiscard]]
+auto is_initiator_session(const core::FixSessionSettings& session,
+                          const core::FixSessionSettings* default_section)
+    -> bool;
+
+[[nodiscard]]
+auto has_acceptor_session(const std::vector<core::FixSessionSettings>& sessions,
+                          std::string_view session_id) -> bool;
+
+[[nodiscard]]
 auto collect_session_dictionaries(
     const std::vector<core::FixSessionSettings>& sessions,
     std::string_view session_id)

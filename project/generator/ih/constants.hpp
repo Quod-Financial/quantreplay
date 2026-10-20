@@ -1,6 +1,7 @@
 #ifndef SIMULATOR_GENERATOR_IH_CONSTANTS_HPP_
 #define SIMULATOR_GENERATOR_IH_CONSTANTS_HPP_
 
+#include <cstdint>
 #include <string_view>
 
 #include "core/domain/attributes.hpp"
@@ -42,16 +43,15 @@ constexpr std::string_view OfferParty{"AskParty"};
 
 }  // namespace column
 
-namespace source {
-
-constexpr std::string_view Csv{"CSV"};
-constexpr std::string_view Postgres{"PSQL"};
-
-}  // namespace source
-
 constexpr std::string_view DefaultCounterpartyPattern{"CP{}"};
 
 }  // namespace historical
+
+namespace market_data {
+
+constexpr std::string_view DatasourceCounterpartyPattern{"DS{}"};
+
+}  // namespace market_data
 
 }  // namespace simulator::generator::constant
 

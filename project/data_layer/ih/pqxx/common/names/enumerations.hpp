@@ -8,6 +8,7 @@ namespace datasource_format {
 
 constexpr std::string_view Csv{"CSV"};
 constexpr std::string_view Postgres{"PSQL"};
+constexpr std::string_view Fix{"FIX"};
 
 }  // namespace datasource_format
 

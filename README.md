@@ -32,7 +32,8 @@ A realistic market simulator for testing and building better trading strategies.
 * **Market Phases.** Continuous trading, plus scheduled Closed, TradeAtLast, PreOpen, PreClose, and intraday Auction phases, with indicative auction prices and randomized uncrossing times.
 * **Daily Market Statistics.** Open, close, previous close, high, low, mid, and daily traded volume, rolled over daily whether or not auctions are configured.
 * **Random Order Generation.** Realistic pseudo-random order activity at a configurable update rate, quantity, and price range, with an optional seed for reproducible runs.
-* **Historic Data Playback.** Playback of historic multi level market data from a database or CSV file, with flexible column mapping and tolerance of sparse depth data.
+* **Multi-listed Instruments.** Synchronization of prices for random order generation across multiple listings of the same instrument, using other listings of the venue or an external FIX market data feed as price sources.
+* **Historic and Real-Time Data Playback.** Playback of historic multi level market data from a database or CSV file, with flexible column mapping and tolerance of sparse depth data, or of a real-time FIX market data feed, in a way it can be traded against.
 * **Recovery Options.** Save, recover, and reset system state on demand.
 * **API.** FIX API for trading functions and REST API for remote administration of settings and status. The REST API also serves downloadable FIX data dictionaries and reports session configuration and connection status.
 
@@ -97,8 +98,6 @@ These features can be used in different trading and execution scenarios.
 
 ## Roadmap
 
-* **Multi-listed Instruments.** Synchronization of prices for random order generation across multiple listings of the same instrument.
-* **Real-Time Data Playback.** In addition to playback of historic data recorded in a database or file, also the ability to take a real-time FIX feed of market data, and play it back through the simulator in a way it can be traded against.
 * **High Availability Recovery.** Additional recovery option to run multiple simulator instances and seamlessly recover from application failures during long test runs.
 * **Client Simulation Mode.** Simulator acting as a client, generating random orders to populate activity in a third party trading system able to receive orders through FIX.
 * **Extreme Market Events.** Scheduling extreme events such as high volatility, large price swings, and increased market impact as part of random order generation.

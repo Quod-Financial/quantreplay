@@ -38,13 +38,13 @@ It is possible to compare the Database and GET REST request.
 
 Through REST it is possible to:
 
-* see some specific listing / venue / data sources
+* see some specific listing / venue / datasources
 * see all listings / venues / price seed
 * see venue / multiple venues status
 * see order generation status
 * start / stop order generation
-* update some listing / venue / price seed / data sources /settings
-* add listing / venue / price seed / data sources / settings
+* update some listing / venue / price seed / datasources /settings
+* add listing / venue / price seed / datasources / settings
 * send order
 
 Market Simulator gets data from the Database at its start, as a result, Market Simulator provides only *_current_* data to REST.
@@ -172,17 +172,21 @@ Market Simulators use the DELETE request to remove one or more existing resource
 
 The following data types are used in the request and response bodies of the Market Simulator REST API:
 
-* <<general-dataformat-strings>>;
-* <<general-dataformat-numbers>>;
-* <<general-dataformat-datetime>>.
+* <<general-dataformat-strings>>
+* <<general-dataformat-numbers>>
+* <<general-dataformat-datetime>>
 
-In the case where an indication of "no value" is required, a null property value may be specified.
+In the case where an indication of "no value" is required, a null property value may be specified, which is
+represented in the database as NULL or as a default value.
 
-A null property value is represented in the database as NULL or as a default value.
-There is a different behaviour if the property is omitted:
+If instead the property is omitted completely:
 
-* In a POST request, the default value for that property is used (if any) or is NULL;
-* In a PUT request, the property is not updated and retains its previous value.
+* In a POST request, the default value for that property is used (if any) or is NULL
+* In a PUT request, the property is not updated and retains its previous value
+
+This is the case if _any_ property is omitted, including arrays. If the property for an array is specified but the
+array is empty, it indicates to save an empty array. If the array property is omitted completely, it would still be
+saved as an empty array in a POST request, but leave the original list of array values not updated in a PUT request.
 
 [[general-dataformat-requestheaders]]
 ==== Request Headers
@@ -351,11 +355,20 @@ prices per instrument (across all listings of that instrument).
 After the book has resting orders, the initial value is taken from the best prices in the book. 
 In both cases, the initial value is adjusted to incorporate the configured spread as described above.
 Specifically, prices for new resting Bid orders and aggressive Sell orders use an initial starting value of the best Ask price in the order book subtracting
- the configured spread, or the best Bid price directly if there are no resting Ask orders, or failing that the configured Bid price directly
- from the table of starting prices (or Mid price if there is no Bid). 
- Respectively, prices for new resting Ask orders and aggressive Buy orders use an initial starting value of the best Bid price in the order book 
- adding the configured spread, or the best Ask price directly if there are no resting Bid orders, or failing that the configured Bid price directly 
- from the table of starting prices (or Mid price if there is no Ask).
+the configured spread, or the best Bid price directly if there are no resting Ask orders, or failing that the configured Bid price directly
+from the table of starting prices (or Mid price if there is no Bid). 
+Respectively, prices for new resting Ask orders and aggressive Buy orders use an initial starting value of the best Bid price in the order book 
+adding the configured spread, or the best Ask price directly if there are no resting Bid orders, or failing that the configured Bid price directly 
+from the table of starting prices (or Mid price if there is no Ask).
+
+In order to support coordination of randomly generated prices across multiple listings of a common instrument, each listing can also base these initial
+Bid and Ask values on an aggregation of market data from one or more configured datasources in addition to its own order book
+by configuring the random price sources of the listing (see <<adminsets-listings-randpricesrc,this section>>).
+In that case the initial Bid and Ask prices are selected from the top of book values of the aggregation of the current listing's order book and the top
+of the book of each configured datasource symbol.
+A random price source can also refer to another listing of the local venue instead of a datasource,
+in which case the top of the book of that listing is taken directly from its order book on the running simulator instance.
+Alternatively, it is also possible to configure the current listing's order book to be excluded from this, so it is _only_ the top of the book of each configured datasource symbol that is usedfor the initial Bid and Ask.
 
 Once this initial price value is determined, the setting Listings → randomTickRange is used to determine the number of ticks by which to vary the price of random orders 
 relative to the starting value. 
@@ -403,17 +416,17 @@ rounded to the nearest multiple of the setting Listings → qtyMultiple.
 Documentation TBC (controlling high volatility, spikes, market impact, etc.).
 
 [[general-datasource]]
-=== Data Source Playback
+=== Datasource Playback
 
-The market simulator can read data from an external data source and play it back through the main order book of the simulator to allow clients to consume this as 
+The market simulator can read data from an external datasource and play it back through the main order book of the simulator to allow clients to consume this as 
 tradable market data. 
-For instance, a data source with bid/ask market data is turned into orders that are sent into the simulator’s matching engine, 
+For instance, a datasource with bid/ask market data is turned into orders that are sent into the simulator’s matching engine, 
 which then results in published market data and the ability for other clients to send orders into the same matching engine’s order book.
 
-The market simulator currently supports either CSV file format or databases such as PostgreSQL and TimescaleDB. 
+The market simulator currently supports CSV file format, databases such as PostgreSQL and TimescaleDB, and a market data feed received over a FIX connection.
 The simulator can read market data in the form of multiple bid/ask order book levels.
 
-See <<adminsets-data,this section>> for specific details of configuring data sources.
+See <<adminsets-data,this section>> for specific details of configuring datasources.
 
 [[general-datasource-formatconfig]]
 ==== Format Specific Configuration
@@ -432,14 +445,14 @@ Following usual CSV standards:
 
 An additional point is that currently all Date/Time strings are expected to be specified in the format: "YYYY-MM-DD HH:MM:SS.MMM"
 
-The following data source properties can be configured to indicate aspects specific to the format of a CSV file:
+The following datasource properties can be configured to indicate aspects specific to the format of a CSV file:
 
-* textDelimeter - delimiter used to separate values ("," by default if not specified)
+* textDelimiter - delimiter used to separate values ("," by default if not specified)
 * textHeaderRow - 1-based row index of where header row is located (0 indicates no header row)
 * textDataRow - 1-based row index of where the first row of data is located. Cannot be 0, and must be greater than `textHeaderRow`
 
-Specifically for CSV format files, and only when textHeaderRow is 0 or not specified, the column mapping properties of the data source can be used to map columns by index number. 
-The columnTo property of the column mapping can be used to specify a 1-based column number to map to in the data source. 
+Specifically for CSV format files, and only when textHeaderRow is 0 or not specified, the column mapping properties of the datasource can be used to map columns by index number. 
+The columnTo property of the column mapping can be used to specify a 1-based column number to map to in the datasource. 
 In this case, if no column mappings are indicated, the following default order of columns is expected:
 
  ReceivedTimeStamp, MessageTimeStamp, Instrument, BidParty, BidQuantity, BidPrice, AskPrice, AskQuantity, AskParty
@@ -450,7 +463,7 @@ If at least one of the columns for a depth level is defined (BidParty, BidPrice,
 
 Specifically, one of ReceivedTimeStamp or MessageTimeStamp must be mapped either explicitly or implicitly. If only one is specified, its value is used for the other.
 
-The following examples show sample generic CSV formats using these data source properties:
+The following examples show sample generic CSV formats using these datasource properties:
 
 _textDelimiter absent / textHeaderRow=1 / textDataRow=2_
 
@@ -482,44 +495,102 @@ _textDelimiter absent / textHeaderRow=0 / textDataRow=1_
 The connection string for a database is the URL containing the IP, port, authentication details, and database name required to connect to the database instance. 
 For example: “postgresql://myuser:mypassword@10.0.1.1:5432/mydatabasename”
 
-The following data source properties can be configured to indicate aspects specific to the format of a database:
+The following datasource properties can be configured to indicate aspects specific to the format of a database:
 
 * tableName - name of table containing data in the database
 
+[[general-datasource-formatconfig-fix]]
+===== FIX Market Data Feed
+For the FIX format, the datasource is not a static set of records — market data is received over a FIX session from a live external market data feed subscription, for instance from another market simulator instance or any other FIX service publishing market data.
+
+The connection string for a FIX datasource names the initiator session through which the simulator reaches the market data feed and, optionally, the QuickFIX settings file defining that session,
+as one or two comma-separated values:
+
+* the session identifier, in the format `+{BeginString}:{SenderCompID}->{TargetCompID}:{SessionQualifier}+` (`+:{SessionQualifier}+` is only added if SessionQualifier is configured), 
+for example `+FIXT.1.1:SIMULATOR->FEED+`. On its own, it names an initiator session configured in the QuickFIX configuration file of the simulator instance.
+* optionally, after a comma, the path of a separate QuickFIX settings file in which the session is configured as an initiator session, 
+for example `+FIXT.1.1:SIMULATOR->FEED, /path/to/feed.cfg+`.
+
+Whitespace around the values and the comma is ignored. 
+A connection string in any other form — a malformed session identifier, an empty path or more than two values — is rejected.
+
+The following datasource properties can be configured to indicate aspects specific to the FIX format:
+
+* listings - the symbols to subscribe to on the feed
+* incrementalSubscriptions - when set, the subscriptions request incremental refreshes rather than full refreshes (see below)
+
+Note that the configured column mappings do not apply to the FIX format and are ignored, since mapping of each value follows the standard FIX specification.
+
+_Subscriptions_
+
+While order generation is running (see <<general-datasource-basicsgl,Basic Single Level Order Book>>), the simulator keeps one market data subscription 
+per distinct session and symbol across all enabled FIX datasources of the venue, requested with a MarketDataRequest (35=V) using the following values:
+
+* Symbol (55) - per each listing symbol configured on the datasource
+* MDReqID (262) - generated by the simulator
+* SubscriptionRequestType (263) - 1 (Snapshot + Updates)
+* MarketDepth (264) - 0 (Full Book) when any datasource with that session and symbol has randomPriceOnly unset and maxDepthLevels unset or 0; otherwise the largest maxDepthLevels among those datasources, counting 1 (Top of Book) for one with randomPriceOnly set
+* MDUpdateType (265) - 1 (Incremental Refresh) when incrementalSubscriptions is set on every datasource sharing the session and symbol, otherwise 0 (Full Refresh)
+* MDEntryType (269) - 0 (Bid) and 1 (Offer)
+
+A subscription is requested when order generation starts and again each time its session logs on while generation is running. It is cancelled (using MarketDataRequest (35=V) with SubscriptionRequestType (263) = 2) when order generation is stopped (see <<admincmds-ordergen-startstop,this section>>), and dropped without any message when the session disconnects. 
+
+_Deriving orders_
+
+Unless randomPriceOnly is set, every update received for a symbol that equals the symbol of an enabled listing of the venue is applied to the matching engine of that listing as one bid/ask order book, with the same logic as a row of a CSV or database datasource (see <<general-datasource-basicsgl,Basic Single Level Order Book>> and <<general-datasource-multi,Multiple Level Order Book>>):
+
+* the bid entries (269=0) form the bid levels 1, 2, etc in the order they appear in the message, and the offer entries (269=1) the ask levels; 
+entries of any other type and the entries of a side beyond the MarketDepth (264) of the subscription are ignored
+* the price and quantity of a level are MDEntryPx (270) and MDEntrySize (271)
+* the party of a level is MDEntryBuyer (288) for a bid and MDEntrySeller (289) for an offer when present; otherwise every level derived from the datasource carries 
+the party “DS” followed by the datasource id (for instance DS3), so that a level unchanged between two refreshes keeps matching its resting order and a shifted book 
+costs one new order rather than one amendment per level
+* an update resulting in no bid or offer entries cancels every order the simulator has generated for that listing
+
+Datasources sharing a subscription (the same session and symbol) derive orders from it only once: its refreshes are applied as long as one of them has randomPriceOnly unset, and every level without MDEntryBuyer (288) or MDEntrySeller (289) carries the party of one of those datasources with randomPriceOnly unset; which one is not specified.
+Configure a single datasource per session and symbol when the party of the derived orders matters.
+
+A symbol matching no enabled listing of the venue is still subscribed to, so that it can serve as a price source, but derives no orders.
+
+Each update is applied as soon as it is received, with no delay between refreshes; the repeat property has no meaning for a FIX feed. Refreshes received while order generation is stopped are discarded, and the orders already derived stay in the matching engine until the next refresh is applied.
+
+A FIX datasource, with either value of randomPriceOnly, can also provide the top of the book that random order generation of a listing bases its prices on, when the listing names the datasource and the symbol among its random price sources (see <<adminsets-listings-randpricesrc,this section>>).
+
 [[general-datasource-basicsgl]]
 ==== Basic Single Level Order Book
-For a simple data source where each row contains only a single level bid/ask order book, the simulator starts reading the single level of depth from 
+For a simple datasource where each row contains only a single level bid/ask order book, the simulator starts reading the single level of depth from 
 the first row of the datasource, and then proceeds to read each subsequent row after that. 
-The trigger for playing back the content of a data source follows the same logic as the configuration used to indicate whether or not to generate random orders. 
-The orderOnStartup property of a venue determines whether to play back any configured data sources when the simulator starts, and the genstart REST API can be used to start play back on demand. 
-If the randomOrdersEnabled property of a listing is true, then both random order generation and playback from a configured data source will begin and continue to run simultaneously.
+The trigger for playing back the content of a datasource follows the same logic as the configuration used to indicate whether or not to generate random orders. 
+The orderOnStartup property of a venue determines whether to play back any configured datasources when the simulator starts, and the genstart REST API can be used to start play back on demand.
+If the randomOrdersEnabled property of a listing is true, then both random order generation and playback from a configured datasource will begin and continue to run simultaneously.
+If the randomPriceOnly property of a datasource is true, no orders are derived from its rows, and the datasource is used only for deriving prices during random order generation (see <<adminsets-listings-randpricesrc,this section>>).
 
-In processing each data source row, the simulator compares the current state of the matching engine for the given listing of each row, and generates a series of order actions 
-(new orders, amends, cancels) to modify the current state of the matching engine to change to a state that matches the values from the current data source row being processed. 
+In processing each datasource row, the simulator compares the current state of the matching engine for the given listing of each row, and generates a series of order actions 
+(new orders, amends, cancels) to modify the current state of the matching engine to change to a state that matches the values from the current datasource row being processed. 
 Multiple orders for the same counter party are supported on either one or both sides of the order book.
 When applying changes from a new order book snapshot, the actions are performed in a specific sequence: first all necessary cancels, then new orders, and finally amends.
 
-The following logic is applied to derive order actions from each row of a data source:
+The following logic is applied to derive order actions from each row of a datasource:
 
-* Any existing orders from counter parties that do not match the party of the data source row being processed are canceled.
-* Any existing orders for the same party as the data source row being processed without a corresponding bid or ask entry in the data source are canceled.
-* Any existing orders for the same party and side as the data source row, but with a different price or quantity, are amended to the same price and quantity as the corresponding bid or ask entry in the data source.
-* Any bid or ask entries in the data source without a corresponding existing order for the same party results in a new order with the properties of that bid or ask entry 
-in the data source.
+* Any existing orders from counter parties that do not match the party of the datasource row being processed are canceled.
+* Any existing orders for the same party as the datasource row being processed without a corresponding bid or ask entry in the datasource are canceled.
+* Any existing orders for the same party and side as the datasource row, but with a different price or quantity, are amended to the same price and quantity as the corresponding bid or ask entry in the datasource.
+* Any bid or ask entries in the datasource without a corresponding existing order for the same party results in a new order with the properties of that bid or ask entry 
+in the datasource.
 
 This will result in all of the usual market data updates generated when any order actions are sent into the matching engine. 
 Each row of the datasource is played back into the matching engine at a rate that corresponds with the ReceivedTimeStamp property of the row. 
 The first row will be played back immediately, the second row will be played back with a delay of the difference between the ReceivedTimeStamp of the second and first rows, 
 and so on. 
-This continues until the last row of the data source, at which point if the repeat property of the venue is false, then play back will stop, 
-otherwise if it is true the simulator will continue to play back the content of the data source restarting from the first row.
+This continues until the last row of the datasource, at which point if the repeat property of the datasource is false, then play back will stop, 
+otherwise if it is true the simulator will continue to play back the content of the datasource restarting from the first row.
 
-The order actions derived from each data source row processed by the simulator use the bid and ask party, quantity, and price values to update the state of the matching engine. 
+The order actions derived from each datasource row processed by the simulator use the bid and ask party, quantity, and price values to update the state of the matching engine. 
 While ReceivedTimeStamp is used only to determine when the order actions are played back into the matching engine, the MessageTimeStamp is used to set the timestamp property 
 (generally set by the sender) of each order action. 
 The MessageTimeStamp property value used to set the timestamp on each order action is adjusted with the difference between the ReceivedTimeStamp of the first row and the current time of day at that moment.
 
-For example, if the following 2 first rows from a data source were being played back at a current time of day of 14:30:00.500 :
+For example, if the following 2 first rows from a datasource were being played back at a current time of day of 14:30:00.500 :
 
 ----
 ReceivedTimeStamp,MessageTimeStamp,...
@@ -536,7 +607,7 @@ ReceivedTimeStamp,MessageTimeStamp,...
 NOTE: Note that the simulator will play back order actions with at least the same delay between values of ReceivedTimeStamp for each row, 
 though the actual delay may be longer if the simulator is unable to play back the order actions for each row for too small of a specified delay.
 
-For database format and CSV file format with a non-zero textHeaderRow value, the column mapping properties of the data source can be used to map columns by name.
+For database format and CSV file format with a non-zero textHeaderRow value, the column mapping properties of the datasource can be used to map columns by name.
 The columnFrom property of the column mapping is used to select the internal simulator field that will be mapped from, and the columnTo property indicates the data
 source column that the simulator field will be mapped to. 
 
@@ -546,13 +617,13 @@ If at least one of the columns for a depth level is defined (BidParty, BidPrice,
 
 Specifically, one of ReceivedTimeStamp or MessageTimeStamp must be mapped either explicitly or implicitly. If only one is specified, its value is used for the other.
 
-See the section <<adminsets-data-colmapping,Market Simulator REST API | Column Mapping Sub List>> for descriptions of all possible fields that can be mapped from a data source as configured using the 
-columnFrom property of a data source column mapping. 
+See the section <<adminsets-data-colmapping,Market Simulator REST API | Column Mapping Sub List>> for descriptions of all possible fields that can be mapped from a datasource as configured using the 
+columnFrom property of a datasource column mapping. 
 If any bid or ask level is missing a price or quantity value, that bid or ask entry is considered to be empty and removed from the state of the matching engine. 
 If the party value for a bid
-or ask level is missing, a default value of “CP1” is used for data sources with a single level bid/ask order book.
+or ask level is missing, a default value of “CP1” is used for datasources with a single level bid/ask order book.
 
-The following shows a sample data source list of single level bid/ask order books, which can be interpreted either as a CSV or database format.
+The following shows a sample datasource list of single level bid/ask order books, which can be interpreted either as a CSV or database format.
 
 ----
 ReceivedTimeStamp,MessageTimeStamp,Instrument,BidParty,BidQuantity,BidPrice,AskPrice,AskQuantity,AskParty
@@ -563,29 +634,29 @@ ReceivedTimeStamp,MessageTimeStamp,Instrument,BidParty,BidQuantity,BidPrice,AskP
 
 [[general-datasource-multi]]
 ==== Multiple Level Order Book
-For a more complex data source where each row contains a bid/ask order book with more than one level, the simulator processes each row much like as described above
-for a single level order book, but changing the state of the matching engine to have the multiple bid/ask levels indicated by each row of the data source.
+For a more complex datasource where each row contains a bid/ask order book with more than one level, the simulator processes each row much like as described above
+for a single level order book, but changing the state of the matching engine to have the multiple bid/ask levels indicated by each row of the datasource.
 
-The column mapping properties of the data source can be used to map to multiple simulator fields corresponding to the columnFrom values of BidParty, BidQuantity, 
+The column mapping properties of the datasource can be used to map to multiple simulator fields corresponding to the columnFrom values of BidParty, BidQuantity, 
 BidPrice, AskPrice, AskQuantity, AskParty. 
 For each of these columnFrom values, a 1-based index can be appended to indicate which bid or ask level that value should be applied to, for example BidParty1 
 for the first bid level, BidParty2 for the second bid level, and so on. 
 In this case, the columnTo property still works the same way, indicating either the name or (for a CSV file format when textHeaderRow is 0 or not specified) the index 
-position of the data source column to map to.
+position of the datasource column to map to.
 
 If any bid or ask level is missing a price or quantity value, that particular bid or ask entry, along with all subsequent entries on that side, will be considered empty. These entries will be removed from the state of the matching engine.
-If the party value for a bid or ask level is missing for data sources with multiple bid/ask levels, a default value of “CP#” is used, where # is the index for each level 
+If the party value for a bid or ask level is missing for datasources with multiple bid/ask levels, a default value of “CP#” is used, where # is the index for each level 
 (e.g. level 1 would use CP1, etc).
 
-Note that the # character can also be appended to either the columnFrom or columnTo data source column mappings to indicate that all available depth levels can be mapped. 
+Note that the # character can also be appended to either the columnFrom or columnTo datasource column mappings to indicate that all available depth levels can be mapped. 
 For instance a column mapping of columnFrom=BidPrice# and columnTo=bidpx# indicates that a simulator field of BidPrice for level 1 of bids would be mapped to a column name 
-in the data source of bidpx1, and a simulator field of BidPrice for level 2 of bids would be mapped to a column name in the data source of bidpx2, and so on.
+in the datasource of bidpx1, and a simulator field of BidPrice for level 2 of bids would be mapped to a column name in the datasource of bidpx2, and so on.
 
-It is also possible to limit the number of depth levels processed from a data source using the maxDepthLevels property of a venue. 
-This value can optionally be used to indicate the maximum number of bid/ask levels that will be processed by the simulator in the data source, after which the remaining 
+It is also possible to limit the number of depth levels processed from a datasource using the maxDepthLevels property of a datasource. 
+This value can optionally be used to indicate the maximum number of bid/ask levels that will be processed by the simulator in the datasource, after which the remaining 
 levels will be ignored and treated as empty.
 
-The following shows a sample data source list of bid/ask order books with multiple (5) levels, some with empty entries, which can be interpreted either as a CSV or database format.
+The following shows a sample datasource list of bid/ask order books with multiple (5) levels, some with empty entries, which can be interpreted either as a CSV or database format.
 
 ----
 ReceivedTimeStamp,MessageTimeStamp,Instrument,BidParty1,BidQuantity1,BidPrice1,BidParty2,BidQuantity2,BidPrice2,BidParty3,BidQuantity3,BidPrice3,BidParty4,BidQuantity4,BidPrice4,BidParty5,BidQuantity5,BidPrice5,AskPrice1,AskQuantity1,AskParty1,AskPrice2,AskQuantity2,AskParty2,AskPrice3,AskQuantity3,AskParty3,AskPrice4,AskQuantity4,AskParty4,AskPrice5,AskQuantity5,AskParty5
@@ -618,7 +689,7 @@ Some examples of this include:
 last part of phase2 and continue past it (phase2 follows phase1 which then becomes the Open phase if no other
 phase is scheduled).
 
-See <<adminsets-venues-mktphasessublist,this section>> for specific details of configuring market phases on venues.
+See <<adminsets-venues,this section>> for specific details of configuring market phases on venues.
 
 The following indicates details on the operation of each specific phase while it is active. 
 
@@ -640,6 +711,8 @@ An auction phase collects orders over a call period and then crosses them in a s
 There are three auction phase types — PreOpen (opening auction), PreClose (closing auction) and Auction (intraday auction).
 They behave identically and differ only in the trading-session values reported to clients over the FIX interface.
 
+[[general-mktphs-auction-general]]
+===== General Rules
 An auction runs in two consecutive sub-phases:
 
 * *Call*. Begins at the phase start time. New limit orders with a Time In Force of Day, GoodTillDate or GoodTillCancel are accepted and added to the order book by price/time priority, but no orders are crossed. Market orders are also accepted and rest ahead of all limit orders, ordered only by the time they were received (they carry no price). Limit orders with a Time In Force of ImmediateOrCancel or FillOrKill are rejected. Amends and cancels are accepted and follow the usual priority rules; resting market orders can also be amended (only their quantity) and cancelled. An indicative auction price and volume are recalculated on every accepted order action and published with the resulting book update, and are additionally republished on a fixed 30-second interval while the order book is crossed. The market data entries carrying these values, and the auction imbalance published alongside them, are described in the Market Simulator FIX Rules of Engagement.
@@ -649,9 +722,228 @@ The exact time at which the uncrossing begins is chosen randomly within `endTime
 The window never reaches back before the start of the auction: for an auction configured with a `startTime` of 17:00, an `endTime` of 17:10 and an `endTimeRange` of 20, the uncrossing time is drawn between 17:00 and 17:30.
 When the uncrossing completes, the simulator immediately switches to the phase scheduled to be active at the auction's configured `endTime` or at the moment the auction actually finished, whichever is later. An auction that finishes early therefore starts the following phase ahead of schedule only if that phase is configured to start exactly at the auction's `endTime`; an auction that finishes late enters whichever phase is scheduled to be active at that moment. As with any phase, if no phase is scheduled at that time, the simulator falls back to the Open phase.
 
+During an auction's call sub-phase, market data is published on every order action, exactly as during normal trading. The book reported to clients combines the orders already resting at the start of the phase with the orders placed during the call. Resting market orders are reported as Market Bid (269=b) and Market Offer (269=c) depth entries that carry no MDEntryPx and are ranked ahead of all priced levels; these entries are received only by clients that requested the 269=b/c entry types — a plain Bid (0) / Offer (1) subscription does not include them.
+
+Snapshots taken during an auction also carry the last known values of the session-level entries:
+
+* Opening Price (269=4);
+* Closing Price (269=5);
+* Previous Closing Price (269=e);
+* Auction Clearing Price (269=Q), with its volume;
+* Trade Volume (269=B).
+
+Each of these entries is included only if the corresponding entry type was requested, and any value that has never been determined is simply omitted. During an opening or a closing auction call, the Opening Price (269=4) or the Closing Price (269=5) carries that auction's indicative price and volume instead of the value of a previous session. An intraday auction has no session-level entry of its own: it publishes its indicative value as a Settlement Price (269=6) entry that exists only for the duration of the call.
+
 While an auction phase is active (in either sub-phase), halt and resume requests are rejected (see <<admincmds-mktphshalt-haltresume,Halt/Resume Market Phase>>). Conversely, if the market is halted at the moment an auction is scheduled to start, the halt is discarded and the auction starts as scheduled.
 
+[[general-mktphs-auction-uncrossing]]
+===== Uncrossing
+
+The uncrossing crosses the book at the last IEP calculated during the call, for a total quantity equal to the IEV, in price-time priority. Orders are crossed in three passes, all executing at the IEP:
+
+. market orders against opposing market orders, in time priority;
+. the market orders left on one side (market orders can remain on one side only) against the opposing limit orders priced at or better than the IEP, best price first and oldest first within a price;
+. the remaining limit orders priced at or better than the IEP against one another, best price and oldest first on both sides.
+
+Every cross produces the usual ExecutionReport messages for both orders and a trade market data entry. Market orders that remain unexecuted once the passes are complete are cancelled, and their owners receive an ExecutionReport with *ExecType* (150) = 4 (Canceled). If no IEP could be calculated — the book was not crossed at the end of the call — nothing is crossed and all market orders are cancelled. Because the IEP maximises the tradable quantity, the book is no longer crossed once the uncrossing completes; limit orders priced through the IEP may nevertheless remain in the book when the opposing side is exhausted.
+
+Continuing the example above, the uncrossing takes place at 60.08 for 1300:
+
+* the two at-auction orders cross first — order 8 against order 7 for 500;
+* order 8's remaining 500 crosses against the offers eligible at 60.08: 300 against order 2 and 200 against order 5;
+* the eligible bids then cross against order 5's remaining 300 — 100 from order 1 and 200 from order 3.
+
+1300 shares change hands, all at 60.08, and the book is left with order 4 (300 at 60.07) on the bid side and order 6 (300 at 60.11) on the offer side. Order 4 and order 6 were never eligible at the IEP, so neither trades.
+
+When the uncrossing sub-phase begins, the indicative entries are withdrawn:
+
+* Early Price (269=P) — deleted;
+* Imbalance (269=A) — deleted;
+* Settlement Price (269=6) — deleted, for an intraday auction;
+* Opening Price (269=4) and Closing Price (269=5) — kept at their indicative value until the auction's outcome replaces or clears it, as described below.
+
+Each individual cross is reported as it occurs:
+
+* a client subscribed to full snapshots (MarketDataSnapshotFullRefresh, 35=W) receives, for every cross, a snapshot of the order book _as it stood immediately before the uncrossing started_ together with that cross's trade (Last Trade, 269=2);
+* a client subscribed to incremental updates (MarketDataIncrementalRefresh, 35=X) receives only the trade for each cross, with no bids or offers;
+* a client not subscribed to trades receives nothing for the individual crosses.
+
+Once all crosses are complete, the simulator publishes a single fresh full snapshot of the resulting order book to every subscription, regardless of its update type. An auction in which nothing crosses produces no per-cross messages but still publishes this closing snapshot.
+
+This closing snapshot reflects the auction's outcome. A closing auction first carries the last settled Closing Price (269=5) — the price of an earlier session, never the indicative value published during the call — into the Previous Closing Price (269=e), whether or not the auction crossed. The remaining entries depend on the outcome.
+
+An auction that crossed sets:
+
+* Auction Clearing Price (269=Q) — the IEP and IEV the book was crossed at;
+* Opening Price (269=4) — set by an opening auction to the clearing price, reported with *MDEntryPx* (270) only, replacing the indicative price and volume published during the call;
+* Closing Price (269=5) — set by a closing auction to the clearing price;
+* Trading Session High Price (269=7) and Trading Session Low Price (269=8) — reset by an opening auction to the opening price, and tracked from there on;
+* Trade Volume (269=B) — reset by an opening auction to the auction's clearing volume; a closing or an intraday auction adds its clearing volume to it.
+
+If an auction does not cross, no clearing price can be calculated, and the entries are instead cleared and omitted from updates until a price can next be determined:
+
+* Auction Clearing Price (269=Q) — cleared for any auction type;
+* Opening Price (269=4) — cleared by an opening auction;
+* Closing Price (269=5) — cleared by a closing auction;
+* Trade Volume (269=B) — cleared by an opening auction;
+* Trading Session High Price (269=7) and Trading Session Low Price (269=8) — left untouched.
+
 The precise FIX trading-status and market-data reporting for each sub-phase is described in the FIX Rules of Engagement.
+
+[[general-mktphs-auction-general-indicative]]
+===== Indicative Auction Price, Volume and Imbalance
+
+Throughout the call sub-phase of an Auction phase, the simulator maintains an indicative equilibrium price (IEP), an indicative equilibrium volume (IEV) and an imbalance (a size and a side) for the instrument. They are recalculated after every order placement, amendment and cancellation accepted during the call, and are reported in the *same* market data message that carries the resulting book change — no separate message is emitted for them.
+
+The entry type carrying the indicative price and volume depends on the auction phase:
+
+[cols="35,20,45"]
+|===
+| Auction phase | MDEntryType (269) | Entry
+
+| Opening auction (PreOpen) | 4 | Opening Price
+| Closing auction (PreClose) | 5 | Closing Price
+| Intraday auction (Auction) | 6 | Settlement Price
+|===
+
+While the order book is crossed (the best bid is priced at or above the best offer), two entries are published:
+
+* the auction phase's price entry (269=4, 269=5 or 269=6), with *MDEntryPx* (270) = IEP and *MDEntrySize* (271) = IEV;
+* an imbalance entry, with *MDEntryType* (269) = A, *MDEntrySize* (271) = imbalance size and *TradeCondition* (277) = imbalance side (`P` — more buyers, `Q` — more sellers). This entry carries no *MDEntryPx* (270). Venues normally suppress the imbalance when they already publish market depth; the simulator publishes both.
+
+While the order book is not crossed, no equilibrium price exists. Only the auction phase's price entry is published, with *MDEntrySize* (271) = 0 and no *MDEntryPx* (270), and any imbalance entry published earlier is deleted.
+
+In addition, the same indicative price and volume are republished as an Early Price (269=P) entry on a fixed 30-second interval while the book is crossed, whether or not the value changed. The entry is deleted when the uncrossing begins, and a snapshot request returns its last published value immediately, without waiting for the next interval. If the book stops being crossed during the call, the entry is neither updated nor deleted — it keeps its last value until the uncrossing, so it may report an equilibrium price while the auction phase's own price entry reports a zero volume and no price.
+
+The following logic is applied during the calculation of the Indicative Price, Volume and Imbalance.
+
+*1 — Candidate prices.* The candidates are every distinct limit order price in the book that lies between the best offer and the best bid, inclusive. If the book is not crossed the range is empty, so there is no candidate and no indicative price.
+
+*2 — Cumulative quantities.* For each candidate price stem:[p]:
+
+* the cumulative buy quantity stem:[CQB(p)] is the total quantity of all buy orders eligible to trade at stem:[p] — every buy limit order priced at stem:[p] or higher, plus every buy market ("at-auction") order, which is eligible at every candidate price;
+* the cumulative sell quantity stem:[CQS(p)] is the total quantity of all sell orders eligible to trade at stem:[p] — every sell limit order priced at stem:[p] or lower, plus every sell market order.
+
+*3 — Tradable quantity and imbalance.* For each candidate price stem:[p]:
+
+* stem:[TradeQty(p) = \min(CQB(p), CQS(p))];
+* stem:[Imb(p) = CQB(p) - CQS(p)]. A positive imbalance means demand exceeds supply at that price, a negative one that supply exceeds demand.
+
+*4 — Selecting the IEP.* The following rules are applied in order, each one narrowing the candidates left by the previous rule, until a single price remains:
+
+. the price with the highest stem:[TradeQty(p)];
+. the price with the lowest stem:[\lvert Imb(p) \rvert];
+. if the remaining imbalances are non-zero and all share the same sign: the highest of the remaining prices when the imbalance is positive, the lowest when it is negative;
+. otherwise — the remaining imbalances are all zero, or they are equal in size but differ in sign — the remaining price closest to the reference price. The reference price is the last known Closing Price (269=5) for an opening auction, and the last trade price of the preceding Open phase for a closing or an intraday auction;
+. when no reference price has been determined yet the previous rule cannot apply: the lowest of the remaining prices is used.
+
+*5 — Reported values.* The IEV is stem:[TradeQty(IEP)] and the imbalance size is stem:[\lvert Imb(IEP) \rvert]. The imbalance side is `P` (more buyers) for a positive imbalance and `Q` (more sellers) for a negative one. When the imbalance at the IEP is zero, the side is taken from the heavier surplus across all candidate prices — `Q` if the largest sell surplus exceeds the largest buy surplus, `P` otherwise.
+
+_Example_
+
+Consider the following order book during a call for auction. The book is crossed: the best bid (60.10) is above the best offer (60.07).
+
+[cols="10,12,12,12,12,10"]
+|===
+| Order # | Bid Size | Bid Price | Ask Price | Ask Size | Order #
+
+| 1 | 100 | 60.10 | 60.07 | 300 | 2
+| 3 | 200 | 60.09 | 60.08 | 500 | 5
+| 4 | 300 | 60.07 | 60.11 | 300 | 6
+|===
+
+The candidate prices are the book's limit prices between 60.07 and 60.10 inclusive: {60.07, 60.08, 60.09, 60.10}. The order at 60.11 lies outside the range and is not a candidate.
+
+[cols="20,20,20,20,20"]
+|===
+| Candidate price stem:[p] | stem:[CQB(p)] | stem:[CQS(p)] | stem:[TradeQty(p)] | stem:[Imb(p)]
+
+| 60.07 | 600 | 300 | 300 | +300
+| 60.08 | 300 | 800 | 300 | −500
+| 60.09 | 300 | 800 | 300 | −500
+| 60.10 | 100 | 800 | 100 | −700
+|===
+
+The maximum tradable quantity, 300, occurs at 60.07, 60.08 and 60.09; among those, the lowest absolute imbalance (300) singles out 60.07. The values published are therefore:
+
+* Opening/Closing/Settlement Price entry: *MDEntryPx* (270) = 60.07, *MDEntrySize* (271) = 300;
+* Imbalance entry (269=A): *MDEntrySize* (271) = 300, *TradeCondition* (277) = `P` (more buyers).
+
+Suppose a sell market ("at-auction") order for 500 is now entered:
+
+[cols="10,12,12,12,12,10"]
+|===
+| Order # | Bid Size | Bid Price | Ask Price | Ask Size | Order #
+
+| | | | At-Auction | 500 | 7
+| 1 | 100 | 60.10 | 60.07 | 300 | 2
+| 3 | 200 | 60.09 | 60.08 | 500 | 5
+| 4 | 300 | 60.07 | 60.11 | 300 | 6
+|===
+
+The market order is eligible at every candidate price, so it raises stem:[CQS(p)] across the whole range:
+
+[cols="20,20,20,20,20"]
+|===
+| Candidate price stem:[p] | stem:[CQB(p)] | stem:[CQS(p)] | stem:[TradeQty(p)] | stem:[Imb(p)]
+
+| 60.07 | 600 | 800 | 600 | −200
+| 60.08 | 300 | 1300 | 300 | −1000
+| 60.09 | 300 | 1300 | 300 | −1000
+| 60.10 | 100 | 1300 | 100 | −1200
+|===
+
+The maximum tradable quantity is now 600, at 60.07 alone, so the values published are:
+
+* Opening/Closing/Settlement Price entry: *MDEntryPx* (270) = 60.07, *MDEntrySize* (271) = 600;
+* Imbalance entry (269=A): *MDEntrySize* (271) = 200, *TradeCondition* (277) = `Q` (more sellers).
+
+Suppose a buy market order for 1,000 is entered on top of that:
+
+[cols="10,12,12,12,12,10"]
+|===
+| Order # | Bid Size | Bid Price | Ask Price | Ask Size | Order #
+
+| 8 | 1,000 | At-Auction | At-Auction | 500 | 7
+| 1 | 100 | 60.10 | 60.07 | 300 | 2
+| 3 | 200 | 60.09 | 60.08 | 500 | 5
+| 4 | 300 | 60.07 | 60.11 | 300 | 6
+|===
+
+[cols="20,20,20,20,20"]
+|===
+| Candidate price stem:[p] | stem:[CQB(p)] | stem:[CQS(p)] | stem:[TradeQty(p)] | stem:[Imb(p)]
+
+| 60.07 | 1600 | 800 | 800 | +800
+| 60.08 | 1300 | 1300 | 1300 | 0
+| 60.09 | 1300 | 1300 | 1300 | 0
+| 60.10 | 1100 | 1300 | 1100 | −200
+|===
+
+The maximum tradable quantity, 1300, is reached at both 60.08 and 60.09, and both leave a zero imbalance, so the reference price decides — 60.08 if it is the closer of the two. The values published are:
+
+* Opening/Closing/Settlement Price entry: *MDEntryPx* (270) = 60.08, *MDEntrySize* (271) = 1300;
+* Imbalance entry (269=A): *MDEntrySize* (271) = 0, *TradeCondition* (277) = `P`. There is no imbalance at the IEP, so the side is taken from the heavier surplus across the candidates (800 on the buy side against 200 on the sell side).
+
+[[general-mktphs-noauction]]
+==== Daily Session Price Reset Without Auction Phases
+
+The session-level L1 prices are normally reset by the opening and closing auctions, as described above:
+
+* Opening Price (269=4);
+* Closing Price (269=5);
+* Previous Closing Price (269=e);
+* Trading Session High Price (269=7);
+* Trading Session Low Price (269=8);
+* Mid Price (269=H).
+
+When a venue's phase schedule does not include the corresponding auction, the simulator instead resets these values to the day's trades so they still roll over once per day.
+
+When no opening auction (PreOpen) is scheduled, the Opening Price (269=4) is set from the price of the first trade that occurs after midnight in the venue's configured time zone, and the session high (269=7) and low (269=8) prices are reset to that opening price and tracked from there on.
+
+When no closing auction (PreClose) is scheduled, the Closing Price (269=5) is set to the price of the last trade before midnight in the venue's configured time zone. As with the closing auction, each rollover first carries the last known Closing Price into the Previous Closing Price (269 = e).
+
+The daily Trade Volume (269=B) follows the same daily cycle. During the Open phase and during the TradeAtLast phase, the quantity matched by each trade is added to it. When an opening auction is scheduled, the auction resets it to the auction's clearing volume; when no opening auction is scheduled, it is instead reset to the matched quantity of the first trade that occurs after midnight in the venue's configured time zone. Closing and intraday auctions add their clearing volume on top.
 
 [[general-mktphs-tal]]
 ==== Trade At Last Phase
@@ -668,6 +960,10 @@ The orders already resting in the order book are neither matched nor modified, a
 
 Only the orders accepted during the phase can be amended and cancelled: a request identifying any other order is rejected as not found and leaves that order untouched, and amended values must satisfy the same rules as a new order.
 When the phase ends, every order still resting in its queues is cancelled and reported to its owner, whichever phase follows.
+
+During the TradeAtLast phase, market data is published on every accepted order action, exactly as during normal trading. The orders accepted during the phase appear in the Bid (269=0) and Offer (269=1) depth entries like any other resting order; since all of them are priced at the closing price, they aggregate into a single price level, together with any order an earlier phase left at that price.
+
+Every cross between two orders of the phase is published as a Trade (269=2) entry priced at the closing price, carrying TradingSessionID (336) = 1 (Day), TradingSessionSubID (625) = 5 (Post-Trading) and SecurityTradingStatus (326) = 3 (Resume). Their quantity is added to the daily Trade Volume (269=B), and their price updates the Trading Session High Price (269=7), the Trading Session Low Price (269=8) and the Mid Price (269=H) derived from them. The Closing Price (269=5) the phase trades at is not changed by them.
 
 The phase can be halted and resumed like the Open phase, both on demand and through a scheduled halt (see <<general-mktphs-halt,Phase Halt>>).
 While it is halted, new orders and amends are rejected, and cancels are processed only if allowCancels is set — and then still only for the orders accepted during the phase.
@@ -694,7 +990,6 @@ halted phase would reject only new order and amend order requests, or also rejec
 In this way, if allowCancels is true, a halted phase may still process order cancel requests.
 
 A currently halted phase can also be removed on demand through a resume request to reactive the otherwise currently active scheduled market phase.
-
 
 [[general-persiststate]]
 === Persisted Market State

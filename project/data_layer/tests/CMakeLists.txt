@@ -13,15 +13,19 @@ add_target_tests(
     unit_tests/converters/column_mapping_tests.cpp
     unit_tests/inspectors/column_mapping_inspectors_tests.cpp
     unit_tests/inspectors/datasource_inspectors_tests.cpp
+    unit_tests/inspectors/datasource_listing_inspectors_tests.cpp
     unit_tests/inspectors/fix_session_inspectors_tests.cpp
     unit_tests/inspectors/listing_inspectors_tests.cpp
+    unit_tests/inspectors/listing_random_price_source_inspectors_tests.cpp
     unit_tests/inspectors/market_phase_inspectors_tests.cpp
     unit_tests/inspectors/price_seed_inspectors_tests.cpp
     unit_tests/inspectors/setting_inspectors_tests.cpp
     unit_tests/inspectors/venue_inspectors_tests.cpp
     unit_tests/models/column_mapping_tests.cpp
+    unit_tests/models/datasource_listing_tests.cpp
     unit_tests/models/datasource_tests.cpp
     unit_tests/models/fix_session_tests.cpp
+    unit_tests/models/listing_random_price_source_tests.cpp
     unit_tests/models/listing_tests.cpp
     unit_tests/models/market_phase_tests.cpp
     unit_tests/models/patch_field_tests.cpp

@@ -7,7 +7,7 @@
 #include "ih/context/component_context.hpp"
 #include "ih/context/instrument_context.hpp"
 #include "ih/context/order_generation_context.hpp"
-#include "ih/context/order_market_data_provider.hpp"
+#include "ih/market_data/market_data_provider.hpp"
 #include "ih/registry/generated_orders_registry.hpp"
 
 namespace simulator::generator {
@@ -61,11 +61,8 @@ class OrderGenerationContextImpl : public OrderGenerationContext {
 
   OrderGenerationContextImpl(
       std::shared_ptr<OrderInstrumentContext> instrument_ctx,
-      data_layer::PriceSeed configured_prices) noexcept;
-
-  static auto create(std::shared_ptr<OrderInstrumentContext> instrument_ctx,
-                     const data_layer::PriceSeed& configured_prices)
-      -> std::shared_ptr<OrderGenerationContextImpl>;
+      data_layer::PriceSeed configured_prices,
+      std::unique_ptr<mdata::MarketDataProvider> market_data_provider) noexcept;
 
   [[nodiscard]]
   auto get_synthetic_identifier() noexcept -> std::string override;
@@ -96,7 +93,7 @@ class OrderGenerationContextImpl : public OrderGenerationContext {
   data_layer::PriceSeed configured_prices_;
 
   std::shared_ptr<OrderInstrumentContext> instrument_context_;
-  std::shared_ptr<OrderMarketDataProvider> market_data_provider_;
+  std::unique_ptr<mdata::MarketDataProvider> market_data_provider_;
 };
 
 }  // namespace simulator::generator

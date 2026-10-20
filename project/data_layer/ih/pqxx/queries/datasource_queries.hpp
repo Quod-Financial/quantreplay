@@ -6,8 +6,10 @@
 
 #include "api/inspectors/column_mapping.hpp"
 #include "api/inspectors/datasource.hpp"
+#include "api/inspectors/datasource_listing.hpp"
 #include "api/models/column_mapping.hpp"
 #include "api/models/datasource.hpp"
+#include "api/models/datasource_listing.hpp"
 #include "ih/pqxx/common/names/database_entries.hpp"
 #include "ih/pqxx/queries/detail/delete_query_builder.hpp"
 #include "ih/pqxx/queries/detail/insert_query_builder.hpp"
@@ -24,7 +26,7 @@ class Insert {
   template <typename Sanitizer>
   static auto prepare(const PatchType& snapshot, Sanitizer& sanitizer)
       -> Insert {
-    Insert query{};
+    Insert query;
     query.build(snapshot, sanitizer);
     return query;
   }
@@ -40,7 +42,7 @@ class Insert {
   }
 
  private:
-  Insert() : builder_(std::string{table::Datasource}) {}
+  Insert() : builder_{std::string{table::Datasource}} {}
 
   template <typename Sanitizer>
   auto build(const PatchType& snapshot, Sanitizer& sanitizer) -> void {
@@ -82,7 +84,7 @@ class Select {
   }
 
  private:
-  Select() : builder_(std::string{table::Datasource}) {}
+  Select() : builder_{std::string{table::Datasource}} {}
 
   detail::SelectQueryBuilder builder_;
 };
@@ -95,7 +97,7 @@ class Update {
   template <typename Sanitizer>
   static auto prepare(const PatchType& snapshot, Sanitizer& sanitizer)
       -> Update {
-    Update query{};
+    Update query;
     query.build(snapshot, sanitizer);
     return query;
   }
@@ -117,7 +119,7 @@ class Update {
   }
 
  private:
-  Update() : builder_(std::string{table::Datasource}) {}
+  Update() : builder_{std::string{table::Datasource}} {}
 
   template <typename Sanitizer>
   auto build(const PatchType& snapshot, Sanitizer& sanitizer) -> void {
@@ -142,7 +144,7 @@ class Insert {
   template <typename Sanitizer>
   static auto prepare(const ColumnMapping& mapping, Sanitizer& sanitizer)
       -> Insert {
-    Insert query{};
+    Insert query;
     query.build(mapping, sanitizer);
     return query;
   }
@@ -153,7 +155,7 @@ class Insert {
   }
 
  private:
-  Insert() : builder_(std::string{table::ColumnMapping}) {}
+  Insert() : builder_{std::string{table::ColumnMapping}} {}
 
   template <typename Sanitizer>
   auto build(const ColumnMapping& mapping, Sanitizer& sanitizer) -> void {
@@ -187,7 +189,7 @@ class Select {
   }
 
  private:
-  Select() : builder_(std::string{table::ColumnMapping}) {}
+  Select() : builder_{std::string{table::ColumnMapping}} {}
 
   detail::SelectQueryBuilder builder_;
 };
@@ -210,12 +212,94 @@ class Delete {
   }
 
  private:
-  Delete() : builder_(std::string{table::ColumnMapping}) {}
+  Delete() : builder_{std::string{table::ColumnMapping}} {}
 
   detail::DeleteQueryBuilder builder_;
 };
 
 }  // namespace column_mapping_query
+
+namespace datasource_listing_query {
+
+class Insert {
+ public:
+  template <typename Sanitizer>
+  static auto prepare(const DatasourceListing& listing, Sanitizer& sanitizer)
+      -> Insert {
+    Insert query;
+    query.build(listing, sanitizer);
+    return query;
+  }
+
+  [[nodiscard]]
+  auto compose() const -> std::string {
+    return builder_.compose();
+  }
+
+ private:
+  Insert() : builder_{std::string{table::DatasourceListing}} {}
+
+  template <typename Sanitizer>
+  auto build(const DatasourceListing& listing, Sanitizer& sanitizer) -> void {
+    auto data_extractor = builder_.make_data_extractor(sanitizer);
+
+    using PatchReader = DatasourceListingReader<decltype(data_extractor)>;
+    PatchReader reader{data_extractor};
+    reader.read(listing);
+
+    builder_.build(data_extractor);
+  }
+
+  detail::InsertQueryBuilder builder_;
+};
+
+class Select {
+ public:
+  static auto prepare() -> Select { return Select{}; }
+
+  template <typename Sanitizer>
+  auto by_datasource_id(std::uint64_t datasource_id, Sanitizer& sanitizer)
+      -> Select& {
+    constexpr auto column = DatasourceListing::Attribute::DatasourceId;
+    builder_.with_eq_predicate(column, datasource_id, sanitizer);
+    return *this;
+  }
+
+  [[nodiscard]]
+  auto compose() const -> std::string {
+    return builder_.compose();
+  }
+
+ private:
+  Select() : builder_{std::string{table::DatasourceListing}} {}
+
+  detail::SelectQueryBuilder builder_;
+};
+
+class Delete {
+ public:
+  static auto prepare() -> Delete { return Delete{}; }
+
+  template <typename Sanitizer>
+  auto by_datasource_id(std::uint64_t datasource_id, Sanitizer& sanitizer)
+      -> Delete& {
+    constexpr auto column = DatasourceListing::Attribute::DatasourceId;
+    builder_.with_eq_predicate(column, datasource_id, sanitizer);
+    return *this;
+  }
+
+  [[nodiscard]]
+  auto compose() const -> std::string {
+    return builder_.compose();
+  }
+
+ private:
+  Delete() : builder_{std::string{table::DatasourceListing}} {}
+
+  detail::DeleteQueryBuilder builder_;
+};
+
+}  // namespace datasource_listing_query
 }  // namespace simulator::data_layer::internal_pqxx
 
 #endif  // SIMULATOR_DATA_LAYER_IH_PQXX_QUERIES_DATASOURCE_QUERIES_HPP_

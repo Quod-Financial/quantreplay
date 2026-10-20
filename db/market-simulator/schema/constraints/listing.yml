@@ -95,3 +95,42 @@ databaseChangeLog:
             columnDataType: bool
             defaultNullValue: true
             validate: true
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_constraint_listing_6
+      labels: schema,v13
+      comment: Set `false` default value for listing.random_price_exclude_current_listing column
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_price_exclude_current_listing
+      changes:
+        - addDefaultValue:
+            tableName: listing
+            columnName: random_price_exclude_current_listing
+            defaultValueBoolean: false
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_constraint_listing_7
+      labels: schema,v13
+      comment: Add NOT NULL constraint listing_random_price_exclude_current_listing_not_null on listing.random_price_exclude_current_listing
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_price_exclude_current_listing
+      changes:
+        - addNotNullConstraint:
+            constraintName: listing_random_price_exclude_current_listing_not_null
+            tableName: listing
+            columnName: random_price_exclude_current_listing
+            columnDataType: bool
+            defaultNullValue: false
+            validate: true

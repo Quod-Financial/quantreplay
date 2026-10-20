@@ -9,11 +9,14 @@
 #include <utility>
 
 #include "data_layer/api/models/datasource.hpp"
+#include "ih/constants.hpp"
 #include "ih/historical/mapping/specification.hpp"
 #include "log/logging.hpp"
 
 namespace simulator::generator::historical::mapping {
 namespace {
+
+namespace column = constant::historical::column;
 
 auto column_from(data_layer::converter::ColumnFrom::Column column,
                  std::uint32_t level) -> data_layer::converter::ColumnFrom {
@@ -72,10 +75,10 @@ auto append_non_level_default_mapping(
     -> void {
   using namespace data_layer::converter;
 
-  const std::map<ColumnFrom, std::string> default_configs{
-      {ColumnFrom::ReceivedTimestamp, "ReceivedTimeStamp"},
-      {ColumnFrom::MessageTimestamp, "MessageTimeStamp"},
-      {ColumnFrom::Instrument, "Instrument"}};
+  const std::map<ColumnFrom, std::string_view> default_configs{
+      {ColumnFrom::ReceivedTimestamp, column::ReceivedTimestamp},
+      {ColumnFrom::MessageTimestamp, column::MessageTimestamp},
+      {ColumnFrom::Instrument, column::Instrument}};
   for (const auto& [column_from, column_to] : default_configs) {
     if (!column_configs.contains(column_from)) {
       column_configs.emplace(column_from, column_to);
@@ -93,17 +96,17 @@ auto append_level_default_mapping(
 
   if (!any_level_column_specified(column_configs)) {
     column_configs.emplace(column_from(ColumnFrom::Column::BidParty, 1),
-                           "BidParty");
+                           column::BidParty);
     column_configs.emplace(column_from(ColumnFrom::Column::BidQuantity, 1),
-                           "BidQuantity");
+                           column::BidQuantity);
     column_configs.emplace(column_from(ColumnFrom::Column::BidPrice, 1),
-                           "BidPrice");
+                           column::BidPrice);
     column_configs.emplace(column_from(ColumnFrom::Column::OfferPrice, 1),
-                           "AskPrice");
+                           column::OfferPrice);
     column_configs.emplace(column_from(ColumnFrom::Column::OfferQuantity, 1),
-                           "AskQuantity");
+                           column::OfferQuantity);
     column_configs.emplace(column_from(ColumnFrom::Column::OfferParty, 1),
-                           "AskParty");
+                           column::OfferParty);
     log::debug("default first level mapping was appended");
 
     return true;

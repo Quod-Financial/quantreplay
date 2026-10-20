@@ -34,9 +34,6 @@ class HeadProcessorImpl final : public HeadProcessor {
       -> void override;
 
  private:
-  [[nodiscard]]
-  auto has_session(const std::string& session_id) const -> bool;
-
   auto relay_data_dictionaries(const Pistache::Rest::Request& request,
                                Pistache::Http::ResponseWriter& response,
                                const std::string& venue_id,

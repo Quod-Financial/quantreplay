@@ -29,12 +29,12 @@ add_static_library(
     ih/context/instrument_context.hpp
     ih/context/order_generation_context.hpp
     ih/context/order_generation_context_impl.hpp
-    ih/context/order_market_data_provider.hpp
     ih/factory/executable_factory.hpp
     ih/factory/executable_factory_impl.hpp
     ih/historical/adapters/csv_reader.hpp
     ih/historical/adapters/data_access_adapter.hpp
     ih/historical/adapters/postgresql_connector.hpp
+    ih/historical/data/level_checks.hpp
     ih/historical/data/provider.hpp
     ih/historical/data/record.hpp
     ih/historical/data/time.hpp
@@ -46,10 +46,29 @@ add_static_library(
     ih/historical/parsing/params.hpp
     ih/historical/parsing/row.hpp
     ih/historical/parsing/parsing.hpp
-    ih/historical/processor.hpp
-    ih/historical/record_applier.hpp
+    ih/historical/processing/action_processor.hpp
+    ih/historical/processing/action_sink.hpp
+    ih/historical/processing/composite_processor.hpp
+    ih/historical/processing/price_processor.hpp
+    ih/historical/processing/record_applier.hpp
+    ih/historical/processing/record_sink.hpp
     ih/historical/replier.hpp
     ih/historical/scheduler.hpp
+    ih/market_data/best_prices_sink.hpp
+    ih/market_data/historical_random_price_source_registry.hpp
+    ih/market_data/market_data_book_cache.hpp
+    ih/market_data/market_data_provider.hpp
+    ih/market_data/market_data_router.hpp
+    ih/market_data/market_state.hpp
+    ih/market_data/order_book_derivation.hpp
+    ih/market_data/order_book_prices.hpp
+    ih/market_data/price_cache.hpp
+    ih/market_data/record_factory.hpp
+    ih/market_data/subscription/local_subscription_manager.hpp
+    ih/market_data/subscription/subscription.hpp
+    ih/market_data/subscription/subscription_manager.hpp
+    ih/market_data/subscription_requirement.hpp
+    ih/market_data/utils.hpp
     ih/random/algorithm/generation_algorithm.hpp
     ih/random/algorithm/order_generation_algorithm.hpp
     ih/random/algorithm/utils/attributes_setter.hpp
@@ -93,11 +112,11 @@ add_static_library(
     src/adaptation/generated_message.cpp
     src/context/generation_manager.cpp
     src/context/order_generation_context_impl.cpp
-    src/context/order_market_data_provider.cpp
     src/factory/executable_factory_impl.cpp
     src/historical/adapters/csv_reader.cpp
     src/historical/adapters/data_access_adapter.cpp
     src/historical/adapters/postgresql_connector.cpp
+    src/historical/data/level_checks.cpp
     src/historical/data/provider.cpp
     src/historical/data/record.cpp
     src/historical/mapping/column_mapping_filter.cpp
@@ -107,10 +126,22 @@ add_static_library(
     src/historical/mapping/specification.cpp
     src/historical/parsing/params.cpp
     src/historical/parsing/parsing.cpp
-    src/historical/processor.cpp
-    src/historical/record_applier.cpp
+    src/historical/processing/action_processor.cpp
+    src/historical/processing/composite_processor.cpp
+    src/historical/processing/price_processor.cpp
+    src/historical/processing/record_applier.cpp
     src/historical/replier.cpp
     src/historical/scheduler.cpp
+    src/market_data/historical_random_price_source_registry.cpp
+    src/market_data/market_data_book_cache.cpp
+    src/market_data/market_data_provider.cpp
+    src/market_data/market_data_router.cpp
+    src/market_data/order_book_derivation.cpp
+    src/market_data/price_cache.cpp
+    src/market_data/record_factory.cpp
+    src/market_data/subscription/local_subscription_manager.cpp
+    src/market_data/subscription/subscription_manager.cpp
+    src/market_data/utils.cpp
     src/random/algorithm/order_generation_algorithm.cpp
     src/random/algorithm/utils/quantity_params_selector.cpp
     src/random/generators/counterparty_generator.cpp

@@ -4,6 +4,7 @@
 #include "core/domain/instrument_descriptor.hpp"
 #include "ih/instruments_container.hpp"
 #include "ih/lookup/lookup.hpp"
+#include "test_utils/utils.hpp"
 
 namespace simulator::trading_system::instrument::lookup::test {
 namespace {
@@ -110,7 +111,8 @@ TEST_F(InstrumentsLookup, CreatesWithBloombergStrategy) {
 
 TEST_F(InstrumentsLookup, ReportsErrorForUnknwonSecurityIdSource) {
   descriptor.security_id = SecurityId{"123456789"};
-  descriptor.security_id_source = static_cast<SecurityIdSource::Option>(0xFF);
+  descriptor.security_id_source =
+      instrument::test::invalid_enum_value<SecurityIdSource::Option>();
 
   auto lookup = Lookup::create(descriptor);
 

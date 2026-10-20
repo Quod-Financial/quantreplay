@@ -10,6 +10,7 @@
 #include "protocol/app/order_placement_request.hpp"
 #include "protocol/types/session.hpp"
 #include "tools/protocol_tools.hpp"
+#include "tools/utils.hpp"
 
 namespace simulator::trading_system::matching_engine::order::test {
 namespace {
@@ -57,7 +58,7 @@ struct SideSupportedChecker : public Test {
 TYPED_TEST_SUITE(SideSupportedChecker, SideSupportedCheckerInputs);
 
 TYPED_TEST(SideSupportedChecker, ReportsUnknownSide) {
-  this->input.side = static_cast<Side::Option>(0xFF);
+  this->input.side = matching_engine::test::invalid_enum_value<Side::Option>();
 
   ASSERT_THAT(this->checker(this->input),
               Optional(Eq(ValidationError::SideUnknown)));
@@ -191,7 +192,8 @@ struct OrderTypeSupportedChecker : public Test {
 TYPED_TEST_SUITE(OrderTypeSupportedChecker, OrderTypeSupportedCheckerInputs);
 
 TYPED_TEST(OrderTypeSupportedChecker, ReportsUnknownOrderType) {
-  this->input.order_type = static_cast<OrderType::Option>(0xFF);
+  this->input.order_type =
+      matching_engine::test::invalid_enum_value<OrderType::Option>();
 
   ASSERT_THAT(this->checker(this->input),
               Optional(Eq(ValidationError::OrderTypeUnknown)));

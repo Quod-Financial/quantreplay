@@ -59,6 +59,15 @@ auto select_all_datasources(const database::Context& context,
   return std::vector<Datasource>{std::move(command.result())};
 }
 
+auto select_enabled_venue_datasources(const database::Context& context,
+                                      const std::string& venue_id)
+    -> std::vector<Datasource> {
+  return select_all_datasources(
+      context,
+      DatasourceCmp::eq(Datasource::Attribute::VenueId, venue_id) &&
+          DatasourceCmp::eq(Datasource::Attribute::Enabled, true));
+}
+
 auto update_one_datasource(const database::Context& context,
                            Datasource::Patch update,
                            Datasource::Predicate predicate) -> Datasource {

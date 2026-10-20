@@ -73,11 +73,6 @@ auto MarketDataFacade::process(const protocol::MarketDataRequest& request)
   log::debug("market data request processed");
 }
 
-auto MarketDataFacade::capture(protocol::InstrumentState& state) -> void {
-  cache_manager_.capture(state);
-  log::trace("market data state captured");
-}
-
 auto MarketDataFacade::store_state(
     std::optional<Trade>& last_trade,
     std::optional<market_state::InstrumentInfo>& info) -> void {

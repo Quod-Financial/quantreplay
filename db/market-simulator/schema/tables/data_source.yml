@@ -87,3 +87,44 @@ databaseChangeLog:
               - column:
                   name: max_depth_levels
                   type: int
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_table_data_source_4
+      labels: schema,v13
+      comment: Add random_price_only column
+      preConditions:
+        - tableExists:
+            tableName: data_source
+        - not:
+            - columnExists:
+                tableName: data_source
+                columnName: random_price_only
+      changes:
+        - addColumn:
+            tableName: data_source
+            columns:
+              - column:
+                  name: random_price_only
+                  type: bool
+
+  - changeSet:
+      author: vskotarenko
+      id: market_simulator_schema_table_data_source_5
+      labels: schema,v13
+      comment: Add incremental_subscriptions column
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: data_source
+        - not:
+            - columnExists:
+                tableName: data_source
+                columnName: incremental_subscriptions
+      changes:
+        - addColumn:
+            tableName: data_source
+            columns:
+              - column:
+                  name: incremental_subscriptions
+                  type: bool

@@ -263,7 +263,7 @@ TEST_F(MatchingEngineOrderSystemFacadePlacementRouting,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadePlacementRouting,
-       StampsTradesWithTheOngoingOpenPhase) {
+       StampsTradesWithOngoingOpenPhase) {
   facade.handle(
       transition(TradingPhase::Option::Open, TradingStatus::Option::Resume));
 
@@ -407,7 +407,7 @@ TEST_F(MatchingEngineOrderSystemFacadeAuctionUncross,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeAuctionUncross,
-       DoesNotCarryAuctionResultOverIntoANewAuctionCallSession) {
+       DoesNotCarryAuctionResultOverIntoNewAuctionCallSession) {
   enter_call();
   place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{100});
   place_limit(Side::Option::Buy, OrderPrice{100}, OrderQuantity{150});
@@ -430,7 +430,7 @@ TEST_F(MatchingEngineOrderSystemFacadeAuctionUncross,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeAuctionUncross,
-       UncrossReflectsAnOrderAmendedDuringTheCall) {
+       UncrossReflectsOrderAmendedDuringCall) {
   enter_call();
   place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{60});
   place_identifiable_limit(Side::Option::Buy,
@@ -458,7 +458,7 @@ TEST_F(MatchingEngineOrderSystemFacadeAuctionUncross,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeAuctionUncross,
-       UncrossReflectsAnOrderCancelledDuringTheCall) {
+       UncrossReflectsOrderCancelledDuringCall) {
   enter_call();
   place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{60});
   place_identifiable_limit(Side::Option::Sell,
@@ -483,7 +483,7 @@ TEST_F(MatchingEngineOrderSystemFacadeAuctionUncross,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeAuctionUncross,
-       IncludesMarketOrderQuantityPlacedDuringTheCallInTheClearingQuantity) {
+       IncludesMarketOrderQuantityPlacedDuringCallInClearingQuantity) {
   enter_call();
   place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{100});
   place_limit(Side::Option::Buy, OrderPrice{100}, OrderQuantity{50});
@@ -565,7 +565,7 @@ TEST_F(MatchingEngineOrderSystemFacadeEarlyPrice,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeEarlyPrice,
-       KeepsLastKnownEarlyPriceWhenTheBookDecrossesMidCall) {
+       KeepsLastKnownEarlyPriceWhenBookDecrossesMidCall) {
   enter_call();
   place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{100});
   place_identifiable_limit(Side::Option::Buy,
@@ -623,7 +623,7 @@ TEST_F(MatchingEngineOrderSystemFacadeReferencePrice,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeReferencePrice,
-       FeedsResolvedReferencePriceToTheAuctionPriceCalculator) {
+       FeedsResolvedReferencePriceToAuctionPriceCalculator) {
   ON_CALL(reference_price_provider, closing_price())
       .WillByDefault(Return(Price{110}));
   enter_call(TradingPhase::Option::OpeningAuction);
@@ -694,7 +694,7 @@ struct MatchingEngineOrderSystemFacadeIndicativePrice
 };
 
 TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
-       PublishesIndicativePriceAndQuantityOnPlacementDuringTheCall) {
+       PublishesIndicativePriceAndQuantityOnPlacementDuringCall) {
   enter_call();
   place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{100});
 
@@ -705,7 +705,7 @@ TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
-       PublishesIndicativeQuantityIncludingMarketOrdersPlacedDuringTheCall) {
+       PublishesIndicativeQuantityIncludingMarketOrdersPlacedDuringCall) {
   enter_call();
   place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{100});
   place_limit(Side::Option::Buy, OrderPrice{100}, OrderQuantity{50});
@@ -717,7 +717,7 @@ TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
-       PublishesIndicativeQuantityOnAmendmentDuringTheCall) {
+       PublishesIndicativeQuantityOnAmendmentDuringCall) {
   enter_call();
   place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{100});
   place_identifiable_limit(Side::Option::Buy,
@@ -735,7 +735,7 @@ TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
-       PublishesIndicativeQuantityOnCancellationDuringTheCall) {
+       PublishesIndicativeQuantityOnCancellationDuringCall) {
   enter_call();
   place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{100});
   place_limit(Side::Option::Buy, OrderPrice{100}, OrderQuantity{40});
@@ -784,7 +784,7 @@ TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
-       ReportsTheOngoingAuctionPhaseInTheIndicativeUpdate) {
+       ReportsOngoingAuctionPhaseInIndicativeUpdate) {
   enter_call(TradingPhase::Option::ClosingAuction);
 
   EXPECT_CALL(event_listener,
@@ -908,7 +908,7 @@ TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
-       RejectsOrderPricedAwayFromTheClosingPrice) {
+       RejectsOrderPricedAwayFromClosingPrice) {
   enter_trade_at_last();
 
   EXPECT_CALL(event_listener,
@@ -930,7 +930,7 @@ TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
-       RejectsOrderWithoutPriceWithTheGenericReason) {
+       RejectsOrderWithoutPriceWithGenericReason) {
   enter_trade_at_last();
 
   EXPECT_CALL(event_listener, on(RejectedWith("order price missing")));
@@ -939,7 +939,7 @@ TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
-       RejectsOrderWhileTheTradeAtLastPhaseIsHalted) {
+       RejectsOrderWhileTradeAtLastPhaseIsHalted) {
   facade.handle(transition(TradingPhase::Option::PostTrading,
                            TradingStatus::Option::Halt));
 
@@ -951,7 +951,7 @@ TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
-       AcceptsDayLimitOrderAtTheClosingPrice) {
+       AcceptsDayLimitOrderAtClosingPrice) {
   enter_trade_at_last();
 
   EXPECT_CALL(
@@ -966,7 +966,7 @@ TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
-       DoesNotCrossTradeAtLastOrdersWithOrdersRestingFromTheOpenPhase) {
+       DoesNotCrossTradeAtLastOrdersWithOrdersRestingFromOpenPhase) {
   enter_open();
   place_at_closing_price(Side::Option::Sell);
   enter_trade_at_last();
@@ -979,7 +979,7 @@ TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
-       StampsTradesWithTheTradeAtLastPhase) {
+       StampsTradesWithTradeAtLastPhase) {
   enter_trade_at_last();
   place_at_closing_price(Side::Option::Sell);
 
@@ -991,7 +991,7 @@ TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
-       RejectsAmendmentOfAnOrderPlacedBeforeThePhase) {
+       RejectsAmendmentOfOrderPlacedBeforePhase) {
   enter_open();
   place_identifiable_at_closing_price(Side::Option::Buy, ClientOrderId{"bid"});
   enter_trade_at_last();
@@ -1002,7 +1002,7 @@ TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
-       RejectsAmendmentPricedAwayFromTheClosingPrice) {
+       RejectsAmendmentPricedAwayFromClosingPrice) {
   enter_trade_at_last();
   place_identifiable_at_closing_price(Side::Option::Buy, ClientOrderId{"bid"});
 
@@ -1017,7 +1017,7 @@ TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
-       RejectsAmendmentOfAMarketOrder) {
+       RejectsAmendmentOfMarketOrder) {
   enter_trade_at_last();
 
   EXPECT_CALL(event_listener,
@@ -1038,7 +1038,7 @@ TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast, AmendsTradeAtLastOrder) {
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
-       RejectsCancellationOfAnOrderPlacedBeforeThePhase) {
+       RejectsCancellationOfOrderPlacedBeforePhase) {
   enter_open();
   place_identifiable_at_closing_price(Side::Option::Buy, ClientOrderId{"bid"});
   enter_trade_at_last();
@@ -1075,7 +1075,7 @@ TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
-       CancelsAnOrderPlacedBeforeThePhaseOnceThePhaseEnds) {
+       CancelsOrderPlacedBeforePhaseOncePhaseEnds) {
   enter_open();
   place_identifiable_at_closing_price(Side::Option::Buy, ClientOrderId{"bid"});
   enter_trade_at_last();
@@ -1124,7 +1124,7 @@ TEST_F(MatchingEngineOrderSystemFacadeTradeAtLastExpiry,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeTradeAtLastExpiry,
-       DoesNotExpireOrdersWhenTheTradeAtLastPhaseBecomesHalted) {
+       DoesNotExpireOrdersWhenTradeAtLastPhaseBecomesHalted) {
   enter_trade_at_last();
   place_identifiable_at_closing_price(Side::Option::Buy, ClientOrderId{"bid"});
 
@@ -1134,7 +1134,7 @@ TEST_F(MatchingEngineOrderSystemFacadeTradeAtLastExpiry,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeTradeAtLastExpiry,
-       ExpiresRestingDayOrdersOfTheRegularBookOnTheClosedTransitionAsWell) {
+       ExpiresRestingDayOrdersOfRegularBookOnClosedTransitionAsWell) {
   enter_open();
   place_identifiable_at_closing_price(Side::Option::Buy,
                                       ClientOrderId{"regular"});
@@ -1150,7 +1150,7 @@ TEST_F(MatchingEngineOrderSystemFacadeTradeAtLastExpiry,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeTradeAtLastExpiry,
-       LeavesNoOrdersBehindForTheNextTradeAtLastPhase) {
+       LeavesNoOrdersBehindForNextTradeAtLastPhase) {
   enter_trade_at_last();
   place_at_closing_price(Side::Option::Buy);
   enter_open();

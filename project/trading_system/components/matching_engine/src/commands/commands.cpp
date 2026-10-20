@@ -125,19 +125,6 @@ auto ProcessMarketDataRequest::name() const -> std::string_view {
   return "ProcessMarketDataRequest";
 }
 
-CaptureInstrumentState::CaptureInstrumentState(
-    protocol::InstrumentState& state,
-    MarketDataRequestProcessor& request_processor)
-    : state_(state), request_processor_(request_processor) {}
-
-auto CaptureInstrumentState::execute() const -> void {
-  request_processor_.capture(state_);
-}
-
-auto CaptureInstrumentState::name() const -> std::string_view {
-  return "CaptureInstrumentState";
-}
-
 StoreState::StoreState(market_state::InstrumentState& state,
                        OrderRequestProcessor& request_processor,
                        MarketDataRequestProcessor& mdata_processor)

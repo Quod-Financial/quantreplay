@@ -44,6 +44,9 @@ class Marshaller {
   MOCK_METHOD(void,
               optional_uint32,
               (Attribute, const std::optional<std::uint32_t>&));
+  MOCK_METHOD(void,
+              optional_uint64,
+              (Attribute, const std::optional<std::uint64_t>&));
   MOCK_METHOD(void, optional_real, (Attribute, const std::optional<double>&));
   MOCK_METHOD(void,
               optional_string,
@@ -76,6 +79,8 @@ class Marshaller {
                               optional_uint16);
   DEFINE_MARSHALLING_OPERATOR(const std::optional<std::uint32_t>&,
                               optional_uint32);
+  DEFINE_MARSHALLING_OPERATOR(const std::optional<std::uint64_t>&,
+                              optional_uint64);
   DEFINE_MARSHALLING_OPERATOR(const std::optional<std::string>&,
                               optional_string);
   DEFINE_MARSHALLING_OPERATOR(const std::optional<Venue::EngineType>&,

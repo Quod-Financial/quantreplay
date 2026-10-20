@@ -140,9 +140,8 @@ TEST_F(TradingSystemIesOpenState, SetsScheduledHalt) {
   ASSERT_EQ(get_open(new_state).phase(), open_halted);
 }
 
-TEST_F(
-    TradingSystemIesOpenState,
-    TransformsFromHaltedOpenStateToHaltedOpenStateIfTheSettingsAreDifferent) {
+TEST_F(TradingSystemIesOpenState,
+       TransformsFromHaltedOpenStateToHaltedOpenStateIfSettingsAreDifferent) {
   const Phase open_halted_allow_cancels_true{TradingPhase::Option::Open,
                                              TradingStatus::Option::Halt,
                                              {.allow_cancels = true}};
@@ -161,7 +160,7 @@ TEST_F(
             open_halted_allow_cancels_false);
 }
 
-TEST_F(TradingSystemIesOpenState, DoesNotTransformsToTheSamePhase) {
+TEST_F(TradingSystemIesOpenState, DoesNotTransformsToSamePhase) {
   const Phase open{
       TradingPhase::Option::Open, TradingStatus::Option::Resume, {}};
   const auto new_state = open_state.update(open);

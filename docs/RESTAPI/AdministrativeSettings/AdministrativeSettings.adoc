@@ -10,7 +10,7 @@ endif::[]
 
 Manage general settings across all market simulator instances.
 
-[1,1,1]
+[cols="1,1,1"]
 |===
 | Path | Type |Description
 
@@ -20,7 +20,7 @@ Manage general settings across all market simulator instances.
 
 A list of settings, currently defined in the Market Simulator backend:
 
-[1,1,1]
+[cols="1,1,1"]
 |===
 | Setting | Key | Meaning
 
@@ -62,8 +62,8 @@ Content-Length: XXX
 {
     "settings" : [
         {
-            "key":"DisplayName",
-            "value":"SITE NAME"
+            "key" : "DisplayName",
+            "value" : "SITE NAME"
         },
         {
             "key" : "SeedPriceDatabaseConnection",
@@ -98,8 +98,8 @@ Host: localhost
 {
     "settings" : [
       {
-        "key":"DisplayName",
-        "value":"MKTSIMULATOR-DEV"
+        "key" : "DisplayName",
+        "value" : "MKTSIMULATOR-DEV"
       },
       {
         "key" : "SeedPriceDatabaseConnection",
@@ -145,8 +145,7 @@ Manage settings for each market simulator venue entity.
 
 _Resource Properties_
 
-
-[1,1,1]
+[cols="1,1,1"]
 |===
 | Path | Type | Description
 
@@ -176,12 +175,12 @@ For reference: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 * True - any of the live resting orders that were placed through that COMPID should be cancelled, the rejection messages the next time that COMPID reconnects should be sent.
 | persistenceEnabled	| Boolean	| Whether a matching engine persisted state functionality should be enabled
 | persistenceFilePath	| Text	| A file path to the persistence file where matching engine state should be stored/recovered
+| phases | Array | Scheduled phase changes
 |=== 
 
-[[adminsets-venues-mktphasessublist]]
-==== Market Phases Sub-List
+_Phases Sub-List_
 
-[1,1,1]
+[cols="1,1,1"]
 |===
 | Path | Type |Description
 
@@ -242,7 +241,7 @@ Content-Length: XXX
     "supportTifFok" : true,
     "supportTifDay" : true,
     "includeOwnOrders" : true,
-    "restPort":9184,
+    "restPort" :9184,
     "orderOnStartup" : false,
     "randomPartyCount" : 10,
     "timeAndSalesEnabled" : true,
@@ -252,7 +251,7 @@ Content-Length: XXX
     "timezone" : "America/Los_Angeles",
     "cancelOnDisconnect" : false,
     "persistenceEnabled" : true,
-    "persistenceFilePath" : "/path/to/LSE-state.json"
+    "persistenceFilePath" : "/path/to/LSE-state.json",
     "phases" : [
         {
              "phase" : "Open",
@@ -311,26 +310,26 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "venues": [
+    "venues" : [
         {
-            "id": "FASTMATCH",
-            "name": "FASTMATCH",
-            "engineType": "Quoting",
-            "supportTifIoc": true,
-            "supportTifFok": true,
-            "supportTifDay": true,
-            "includeOwnOrders": true,
-            "restPort": 9182,
-            "orderOnStartup": false,
-            "randomPartyCount": 10,
-            "timeAndSalesEnabled": true,
-            "timeAndSalesQuantityEnabled": true,
-            "timeAndSalesSideEnabled": true,
-            "timeAndSalesPartiesEnabled": true,
+            "id" : "FASTMATCH",
+            "name" : "FASTMATCH",
+            "engineType" : "Quoting",
+            "supportTifIoc" : true,
+            "supportTifFok" : true,
+            "supportTifDay" : true,
+            "includeOwnOrders" : true,
+            "restPort" : 9182,
+            "orderOnStartup" : false,
+            "randomPartyCount" : 10,
+            "timeAndSalesEnabled" : true,
+            "timeAndSalesQuantityEnabled" : true,
+            "timeAndSalesSideEnabled" : true,
+            "timeAndSalesPartiesEnabled" : true,
             "timezone" : "America/Los_Angeles",
-            "cancelOnDisconnect": false,
+            "cancelOnDisconnect" : false,
             "persistenceEnabled" : false,
-            "phases": []
+            "phases" : []
         },
         {
             "id" : "LSE",
@@ -340,7 +339,7 @@ Content-Length: XXX
             "supportTifFok" : true,
             "supportTifDay" : true,
             "includeOwnOrders" : true,
-            "restPort":9184,
+            "restPort" :9184,
             "orderOnStartup" : false,
             "randomPartyCount" : 10,
             "timeAndSalesEnabled" : true,
@@ -350,7 +349,7 @@ Content-Length: XXX
             "timezone" : "America/Los_Angeles",
             "cancelOnDisconnect" : false,
             "persistenceEnabled" : true,
-            "persistenceFilePath" : "/path/to/LSE-state.json"
+            "persistenceFilePath" : "/path/to/LSE-state.json",
             "phases" : [
                 {
                    "phase" : "Open",
@@ -367,95 +366,6 @@ Content-Length: XXX
             ]
         }
     ]
-}
-----
-
-
-[[adminsets-venues-data-dictionaries]]
-==== Download Session Data Dictionaries
-Download a ZIP archive of all QuickFIX data dictionary files associated with a single
-configured session of a venue.
-
-The `sessionId` - session identifier in the format: `+{BeginString}:{SenderCompID}->{TargetCompID}:{SessionQualifier}+`.
-`+:{SessionQualifier}+` is only added if SessionQualifier is configured.
-
-The archive gathers a unique list of every data dictionary referenced by the
-session, taken from the following settings:
-
-* `DataDictionary`
-* `TransportDataDictionary`
-* `AppDataDictionary` (including granular `AppDataDictionary.<BeginString>` overrides)
-
-These settings are resolved from both the session and the `DEFAULT` sections of
-the QuickFIX configuration. Files are stored under a directory structure rooted
-at the common base of all referenced paths.
-
-A `HEAD` request to the same resource applies the same resolution logic but
-returns no body — only the status code — so a client can determine whether any
-files are available before initiating the download.
-
-_Resource URI_
-
-----
-GET  /api/venues/{venueId}/sessions/{sessionId}/dataDictionaries
-----
-
-_Example_: Request the data dictionaries of session `+FIX.4.4:MDSERVER->MDCLIENT+` on venue `LSE`
-
-[,http]
-----
-GET /api/venues/LSE/sessions/FIX.4.4%3AMDSERVER-%3EMDCLIENT/dataDictionaries HTTP/1.1
-Host: localhost
-----
-
-_Example_: Positive reply
-
-[,http]
-----
-HTTP/1.1 200 OK
-Content-Type: application/zip
-Content-Disposition: attachment; filename="LSE_FIX44-MDSERVER--MDCLIENT_Dictionaries.zip"
-Content-Length: XXX
-
-<binary ZIP archive>
-----
-
-_Example_: The session cannot be resolved on the venue
-
-[,http]
-----
-HTTP/1.1 404 Not Found
-Connection: Close
-Content-Length: XXX
-
-{
-    "result" : "Can not resolve a single session by a given session ID"
-}
-----
-
-_Example_: The destination venue cannot be resolved
-
-[,http]
-----
-HTTP/1.1 502 Bad Gateway
-Connection: Close
-Content-Length: XXX
-
-{
-    "result" : "Could not resolve destination instance with LSE identifier"
-}
-----
-
-_Example_: The destination venue is known but not running
-
-[,http]
-----
-HTTP/1.1 502 Bad Gateway
-Connection: Close
-Content-Length: XXX
-
-{
-    "result" : "Could not access an instance with LSE identifier"
 }
 ----
 
@@ -502,7 +412,7 @@ Connection: Keep-Alive
 Content-Length: XXX
 
 {
-    "result":"Successfully inserted a new Venue"
+    "result" : "Successfully inserted a new Venue"
 }
 ----
 
@@ -515,7 +425,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result":"Requested operation violates data integrity constraints"
+    "result" : "Requested operation violates data integrity constraints"
 }
 ----
 
@@ -566,7 +476,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result":"No such venue"
+    "result" : "No such venue"
 }
 ----
 
@@ -647,10 +557,33 @@ Used only for passive orders if randomAggQtyMaximum and/or randomAggAmtMaximum h
 | randomOrdersRate	| Integer	| The number of order actions (new order/modification/cancel/wait) per second during Random Order Generation
 | randomTickRange	| Integer	| Range of price ticks used to calculate prices created by the Random Order Generator (10 by default)
 | randomOrdersEnabled	| Boolean	| Indicates if the Random Order Generator has to generate random orders on a listing
+| randomPriceSources	| Array	| Market data of datasources, or of other listings of the same venue, used as the base price for random order generation on this listing, see <<adminsets-listings-randpricesrc,Random Price Sources Sub-List>>
+| randomPriceExcludeCurrentListing	| Boolean	| Indicates if the order book of the listing itself is excluded from the aggregation of its random price sources (false by default)
 | enabled	| Boolean	| Indicates if the listing is enabled and should be used by the Market Simulator
 
 |=== 
 
+[[adminsets-listings-randpricesrc]]
+==== Random Price Sources Sub-List
+By default, the Random Order Generator uses the top of book of the listing itself as the base price for deriving the price for randomly generated orders.
+A listing can also use a base price from the market data of one or more datasources of any format, as configured in this sub-list.
+A random price source can also refer to another listing of the local venue, the venue of the listing itself, instead of a datasource:
+the prices are then taken directly from the order book of that listing on the running simulator instance, with no datasource involved.
+The market data of these sources is then aggregated with the order book of the listing itself to determine the base price, or the order book of the listing can be excluded using the `randomPriceExcludeCurrentListing` setting.
+See <<general-randomorder-distrprice,this section>> for details of how these prices are used to derive the price for each randomly generated order.
+
+[cols="15,15,70"]
+|===
+| Path | Type |Description
+
+| listingId	| Integer	| An identifier of the listing record which has a random price source.
+Users may omit to send this value in the requests.
+| datasourceId	| Integer or null	| An identifier of the datasource to take the prices from.
+It must refer to an existing datasource on the same venue as the listing.
+A `null` value, or omitting the key, selects the local venue: the prices are taken from the top of the book of the listing of the same venue whose symbol matches `symbol`.
+| symbol	| Text	| Symbol to take base prices from, on the specified datasource or, when no datasource is specified, on the local venue. On a datasource it must match a symbol consumed as market data from that datasource.
+
+|===
 
 [[adminsets-listings-get-sgl]]
 ==== Get Single Listing
@@ -722,7 +655,19 @@ Content-Length: XXX
     "randomAggQtyMinimum" : 2.0,
     "randomAggQtyMaximum" : 200.0,
     "randomAggAmtMinimum" : 1000.0,
-    "randomAggAmtMaximum" : 3000.0
+    "randomAggAmtMaximum" : 3000.0,
+    "randomPriceExcludeCurrentListing" : false,
+    "randomPriceSources" : [
+        {
+            "listingId" : 1,
+            "datasourceId" : 3,
+            "symbol" : "SAP"
+        },
+        {
+            "listingId" : 1,
+            "symbol" : "SIE"
+        }
+    ]
 }
 ----
 
@@ -770,74 +715,84 @@ Content-Type: application/json;charset=UTF-8
 Content-Length: XXX
 
 {
-    "listings": [
+    "listings" : [
         {
-            "id": 1,
-            "symbol": "DE0007664005",
-            "venueId": "XETRA",
-            "securityType": "CS",
-            "priceCurrency": "EUR",
-            "fxBaseCurrency": "",
-            "instrSymbol": "DE0007664005",
-            "securityExchange": "XETR",
-            "partyId": "",
-            "partyRole": "",
-            "cusipId": "",
-            "sedolId": "",
-            "isinId": "DE0007664005",
-            "ricId": "",
-            "exchangeSymbolId": "",
-            "bloombergSymbolId": "",
-            "qtyMinimum": 1,
-            "qtyMaximum": 1000000,
-            "qtyMultiple": 1,
-            "priceTickSize": 0.001,
-            "randomQtyMinimum": 1,
-            "randomQtyMaximum": 1000,
-            "randomAmtMinimum": 0,
-            "randomAmtMaximum": 0,
-            "randomDepthLevels": 10,
-            "randomOrdersSpread": 1,
-            "randomOrdersRate": 1,
-            "randomTickRange": 10,
+            "id" : 1,
+            "symbol" : "DE0007664005",
+            "venueId" : "XETRA",
+            "securityType" : "CS",
+            "priceCurrency" : "EUR",
+            "fxBaseCurrency" : "",
+            "instrSymbol" : "DE0007664005",
+            "securityExchange" : "XETR",
+            "partyId" : "",
+            "partyRole" : "",
+            "cusipId" : "",
+            "sedolId" : "",
+            "isinId" : "DE0007664005",
+            "ricId" : "",
+            "exchangeSymbolId" : "",
+            "bloombergSymbolId" : "",
+            "qtyMinimum" : 1,
+            "qtyMaximum" : 1000000,
+            "qtyMultiple" : 1,
+            "priceTickSize" : 0.001,
+            "randomQtyMinimum" : 1,
+            "randomQtyMaximum" : 1000,
+            "randomAmtMinimum" : 0,
+            "randomAmtMaximum" : 0,
+            "randomDepthLevels" : 10,
+            "randomOrdersSpread" : 1,
+            "randomOrdersRate" : 1,
+            "randomTickRange" : 10,
             "randomAggQtyMinimum" : 2.0,
             "randomAggQtyMaximum" : 200.0,
             "randomAggAmtMinimum" : 1000.0,
-            "randomAggAmtMaximum" : 3000.0
+            "randomAggAmtMaximum" : 3000.0,
+            "randomPriceExcludeCurrentListing" : false,
+            "randomPriceSources" : [
+                {
+                    "listingId" : 1,
+                    "datasourceId" : 3,
+                    "symbol" : "SAP"
+                }
+            ]
         },
         {
-            "id": 3,
-            "symbol": "EUR/USD",
-            "venueId": "FASTMATCH",
-            "securityType": "FXSPOT",
-            "priceCurrency": "USD",
-            "fxBaseCurrency": "EUR",
-            "instrSymbol": "EUR/USD",
-            "securityExchange": "FASTMATCH",
-            "partyId": "",
-            "partyRole": "",
-            "cusipId": "",
-            "sedolId": "",
-            "isinId": "",
-            "ricId": "",
-            "exchangeSymbolId": "",
-            "bloombergSymbolId": "",
-            "qtyMinimum": 1,
-            "qtyMaximum": 1.0E8,
-            "qtyMultiple": 1,
-            "priceTickSize": 0.001,
-            "randomQtyMinimum": 1,
-            "randomQtyMaximum": 1.0E7,
-            "randomAmtMinimum": 0,
-            "randomAmtMaximum": 0,
-            "randomDepthLevels": 3,
-            "randomOrdersSpread": 1.0E-4,
-            "randomOrdersRate": 1,
-            "randomTickRange": 10,
+            "id" : 3,
+            "symbol" : "EUR/USD",
+            "venueId" : "FASTMATCH",
+            "securityType" : "FXSPOT",
+            "priceCurrency" : "USD",
+            "fxBaseCurrency" : "EUR",
+            "instrSymbol" : "EUR/USD",
+            "securityExchange" : "FASTMATCH",
+            "partyId" : "",
+            "partyRole" : "",
+            "cusipId" : "",
+            "sedolId" : "",
+            "isinId" : "",
+            "ricId" : "",
+            "exchangeSymbolId" : "",
+            "bloombergSymbolId" : "",
+            "qtyMinimum" : 1,
+            "qtyMaximum" : 1.0E8,
+            "qtyMultiple" : 1,
+            "priceTickSize" : 0.001,
+            "randomQtyMinimum" : 1,
+            "randomQtyMaximum" : 1.0E7,
+            "randomAmtMinimum" : 0,
+            "randomAmtMaximum" : 0,
+            "randomDepthLevels" : 3,
+            "randomOrdersSpread" : 1.0E-4,
+            "randomOrdersRate" : 1,
+            "randomTickRange" : 10,
             "randomAggQtyMinimum" : 2.0,
             "randomAggQtyMaximum" : 200.0,
             "randomAggAmtMinimum" : 1000.0,
-            "randomAggAmtMaximum" : 3000.0
+            "randomAggAmtMaximum" : 3000.0,
+            "randomPriceExcludeCurrentListing" : false,
+            "randomPriceSources" : []
         }
     ]
 }
@@ -887,7 +842,20 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result":"Successfully inserted a new Listing"
+    "result" : "Successfully inserted a new Listing"
+}
+----
+
+_Example_: Negative reply, a random price source refers to a datasource of another venue
+
+[,http]
+----
+HTTP/1.1 400 Bad Request
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "datasourceId `1' must refer to a datasource on the `XETRA' venue"
 }
 ----
 
@@ -992,38 +960,56 @@ The VenueID value is taken from the simulator instance configuration.
 
 
 [[adminsets-data]]
-=== Data Sources
-Manage settings for specific data sources on each market simulator instance.
+=== Datasources
+Manage settings for specific datasources on each market simulator instance.
 
-See <<general-datasource,this section>> for more information about playback of data from data sources.
+See <<general-datasource,this section>> for more information about playback of data from datasources.
 
 _Resource Properties_
 
-[1,1,1]
+[cols="1,1,1"]
 |===
 | Path | Type |Description
 
 | id	| Numeric	| Unique primary key
-| enabled	| Boolean	| Whether or not this data source is enabled or disabled
-| name	| Text	| Name for this data source, unique to the venue
-| venueId	| Text	| Unique venue key for a data source
-| connection	| Text	| Connection string for the datasource (eg a file path for CSV files, or a database connection string for database connections).
+| enabled	| Boolean	| Whether or not this datasource is enabled or disabled
+| name	| Text	| Name for this datasource, unique to the venue
+| venueId	| Text	| Unique venue key for a datasource
+| connection	| Text	a| Connection string for the datasource:
+
+* CSV Format - a local server file path
+* PSQL Format - a database connection string
+* FIX Format - the initiator session ID to use to subscribe to market data, as `+{BeginString}:{SenderCompID}->{TargetCompID}:{SessionQualifier}+` (`+:{SessionQualifier}+` only if configured), optionally followed by a comma and the path of a separate QuickFIX settings file defining that session, read when the instance starts or is reset. See <<general-datasource-formatconfig-fix,FIX Market Data Feed>>
+
 | format	| Text	a| Indicates the type of historic data storage. Supported values:
 
 *	CSV - comma-separated value file
 *	PSQL - PostgreSQL (or TimescaleDB) database
+*	FIX - market data feed received over a FIX connection
 
-| type	| Text	a| Indicates the data source format. Supported values:
+| type	| Text	a| Indicates the datasource format. Supported values:
 
 *	OrderBook - L1/L2 market data format
 
-| repeat	| Boolean	| Whether to start reading from the beginning of the data source when the end is reached (supported only for files and databases)
-| textDelimeter	| Char	| Delimiter used to separate values ("," by default if not specified) (supported only for CSV format)
+| repeat	| Boolean	| Whether to start reading from the beginning of the datasource when the end is reached (supported only for files and databases)
+| textDelimiter	| Char	| Delimiter used to separate values ("," by default if not specified) (supported only for CSV format)
 | textHeaderRow	| Integer	| 1-based row index of where header row is located (0 indicates no header row) (supported only for CSV format)
 | textDataRow	| Integer	| 1-based row index of where the first row of data is located. 
 Cannot be 0, and must be greater than `textHeaderRow`, if present (supported only for CSV format)
 | tableName	| Text	| Name of table (supported only for databases)
-| maxDepthLevels	| Integer	| Maximum depth levels to read from the data source. 0 or unspecified indicates to read all levels.
+| maxDepthLevels	| Integer	a| Maximum depth levels to read from the datasource. 0 or unspecified indicates to read all levels. For FIX Format, this value is used in tag MarketDepth (264) of each market data subscription, unless randomPriceOnly is set (the subscription then requests the top of the book only) or another enabled datasource subscribing to the same symbol over the same session requests more levels (see <<general-datasource-formatconfig-fix,FIX Market Data Feed>>).
+| incrementalSubscriptions	| Boolean	a| For FIX Format, whether the market data subscriptions are made as incremental rather than full refresh subscriptions, using MDUpdateType (265)
+
+*   When `false` (the default), each subscription requests full refreshes (265 = 0).
+*   When `true`, each subscription requests incremental refreshes (265 = 1), unless another enabled datasource subscribing to the same symbol over the same session requests full refreshes (see <<general-datasource-formatconfig-fix,FIX Market Data Feed>>).
+
+| columnMapping	| Array	| Mapping between the internal simulator fields and the columns of the datasource (supported only for CSV and PSQL formats),
+see <<adminsets-data-colmapping>>
+| listings	| Array	| For FIX Format, list of Symbols to subscribe to market data. An empty list results in no subscriptions. See <<adminsets-data-listings,Listings Sub-List>>.
+| randomPriceOnly	| Boolean	a| Whether this datasource is used only as a source for deriving prices during random order generation, and will not result in playback of data through associated configured listings.
+
+*   When `false` (the default), orders are derived from the datasource and it can also be used as a random order price source.
+*   When `true`, no orders are derived from it, and it is available only as a random order price source
 
 |=== 
 
@@ -1034,13 +1020,14 @@ Cannot be 0, and must be greater than `textHeaderRow`, if present (supported onl
 |===
 | Path | Type |Description
 
-| dataSourceId	| Integer	| An identifier of the data source record which has a column mapping config.
+| datasourceId	| Integer	| An identifier of the datasource record which has a column mapping config.
 Users may omit to send this value in the requests.
 | columnFrom	| Enum	a| Internal simulator field for mapping data. Supported values (part 1, continued on next page):
 
 *	ReceivedTimeStamp - timestamp market data update was received (required, date/time precision to the ms, e.g. `2019-03-07 15:00:00.243`)
 *	MessageTimeStamp - timestamp from original sent market data message (required, date/time precision to the ms, e.g. `2019-03-07 15:00:00.115`)
-*	Instrument - instrument symbol matching one of the listing’s Symbol for this venue (required, string)
+*	Instrument - instrument symbol matching a Symbol for one of the listings of this venue, or a symbol named by a random price source of a listing
+when no order is derived from the datasource (required, string)
 *	BidParty - bid level counter party (optional, string, e.g. `CP1`)
 *	BidQuantity - bid level quantity (optional, float, e.g. `10`)
 *	BidPrice - bid level price (optional, float, e.g. `133.5`)
@@ -1058,7 +1045,7 @@ For example, BidParty1, BidParty2 etc.
 
 The # character can also be used with these fields to indicate reading from whatever index levels are specified in the file or database itself. 
 For example, BidParty#, BidQuantity# etc.
-| columnTo	| Text	| External data source column name for mapping data.
+| columnTo	| Text	| External datasource column name for mapping data.
 
 If the datasource contains several levels, the # character can be used as a placeholder for the level number. 
 For instance, `bidparty#` instead of `bidparty1`, `bidparty2`, etc.
@@ -1068,20 +1055,35 @@ To use this method, `textHeaderRow`  for the datasource must be 0.
 
 |===
 
+[[adminsets-data-listings]]
+==== Listings Sub-List
+
+Listings that a FIX format datasource subscribes to as an external market data feed. The list is currently ignored for the CSV and PSQL datasource formats.
+
+[cols="15,15,70"]
+|===
+| Path | Type |Description
+
+| datasourceId	| Integer	| An identifier of the datasource record which has a listing entry. Users may omit to send this value in requests.
+| symbol	| Text	| The symbol requested from the market data feed (tag 55).
+See <<general-datasource-formatconfig-fix,this section>> for how the received market data is applied.
+
+|===
+
 [[adminsets-data-get-sgl]]
-==== Get Single Data Source
-Request a single market simulator data source entity.
+==== Get Single Datasource
+Request a single market simulator datasource entity.
 
 _Resource URI_
 ----
 GET /api/datasources/{id}
 ----
 
-_Example_: Request single data source
+_Example_: Request single datasource
 
 [,http]
 ----
-GET /api/datasource/1 HTTP/1.1
+GET /api/datasources/1 HTTP/1.1
 Accept: application/json;charset=UTF-8
 Host: localhost
 ----
@@ -1103,27 +1105,28 @@ Content-Length: XXX
     "format" : "CSV",
     "type" : "OrderBook",
     "repeat" : false,
-    "textDelimeter" : "|",
+    "textDelimiter" : "|",
     "textHeaderRow" : 0,
     "textDataRow" : 1,
-    "maxDepthLevels": 3,
-    "columnMapping": [
+    "maxDepthLevels" : 3,
+    "columnMapping" : [
         {
-            "dataSourceId" : 1,
+            "datasourceId" : 1,
             "columnFrom" : "ReceivedTimeStamp",
             "columnTo" : "ActionTime"
         },
         {
-            "dataSourceId" : 1,
+            "datasourceId" : 1,
             "columnFrom" : "MessageTimeStamp",
             "columnTo" : "2"
         },
         {
-            "dataSourceId" : 1,
+            "datasourceId" : 1,
             "columnFrom" : "BidPrice3",
             "columnTo" : "bid_price_three"
         }
-    ]
+    ],
+    "listings" : []
 }
 ----
 
@@ -1136,20 +1139,20 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "No such data source"
+    "result" : "No such datasource"
 }
 ----
 
 [[adminsets-data-get-multi]]
-==== Get Multiple Data Sources
-Request all market simulator data sources entities.
+==== Get Multiple Datasources
+Request all market simulator datasources entities.
 
 _Resource URI_
 ----
 GET /api/datasources
 ----
 
-_Example_: Get all data sources
+_Example_: Get all datasources
 
 [,http]
 ----
@@ -1167,7 +1170,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "dataSources": [
+    "dataSources" : [
         {
             "id" : 1,
             "enabled" : true,
@@ -1178,18 +1181,19 @@ Content-Length: XXX
             "type" : "OrderBook",
             "repeat" : true,
             "tableName" : "historical_data",
-            "columnMapping": [
+            "columnMapping" : [
                 {
-                    "dataSourceId" : 1,
+                    "datasourceId" : 1,
                     "columnFrom" : "ReceivedTimeStamp",
                     "columnTo" : "ActionTime"
                 },
                 {
-                    "dataSourceId" : 1,
+                    "datasourceId" : 1,
                     "columnFrom" : "MessageTimeStamp",
                     "columnTo" : "2"
-                },
-            ]
+                }
+            ],
+            "listings" : []
         },
         {
             "id" : 2,
@@ -1200,25 +1204,49 @@ Content-Length: XXX
             "format" : "CSV",
             "type" : "OrderBook",
             "repeat" : true,
-            "textDelimeter" : ";",
+            "textDelimiter" : ";",
             "textHeaderRow" : 1,
             "textDataRow" : 2,
-            "columnMapping" : []
+            "columnMapping" : [],
+            "listings" : []
+        },
+        {
+            "id" : 3,
+            "enabled" : true,
+            "name" : "XETRA-FEED",
+            "venueId" : "XETRA",
+            "connection" : "FIXT.1.1:XETRA_FEED_CLIENT->FEED_SERVER",
+            "format" : "FIX",
+            "type" : "OrderBook",
+            "maxDepthLevels" : 1,
+            "randomPriceOnly" : false,
+            "incrementalSubscriptions" : false,
+            "columnMapping" : [],
+            "listings" : [
+                {
+                    "datasourceId" : 3,
+                    "symbol" : "VOW"
+                },
+                {
+                    "datasourceId" : 3,
+                    "symbol" : "BMW"
+                }
+            ]
         }
     ]
 }
 ----
 
 [[adminsets-data-add]]
-==== Add Data Sources
-Add a new market simulator data source entity.
+==== Add Datasources
+Add a new market simulator datasource entity.
 
 _Resource URI_
 ----
 POST /api/datasources
 ----
 
-_Example_: Request to add a new data source entity
+_Example_: Request to add a new datasource entity
 
 [,http]
 ----
@@ -1237,10 +1265,60 @@ Host: localhost
     "textDelimiter" : ",",
     "textHeaderRow" : 0,
     "textDataRow" : 100,
-    "columnMapping": [
+    "columnMapping" : [
         {
             "columnFrom" : "ReceivedTimeStamp",
             "columnTo" : "ActionTime"
+        }
+    ]
+}
+----
+
+_Example_: Request to add a new datasource entity reading an external FIX market data feed
+
+[,http]
+----
+POST /api/datasources HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+
+{
+    "enabled" : true,
+    "name" : "XETRA-FEED",
+    "venueId" : "XETRA",
+    "connection" : "FIXT.1.1:XETRA_FEED_CLIENT->FEED_SERVER",
+    "format" : "FIX",
+    "type" : "OrderBook",
+    "maxDepthLevels" : 1,
+    "randomPriceOnly" : true,
+    "incrementalSubscriptions" : true,
+    "listings" : [
+        {
+            "symbol" : "VOW"
+        }
+    ]
+}
+----
+
+_Example_: Request to add a datasource whose feed session is defined in a separate QuickFIX settings file
+
+[,http]
+----
+POST /api/datasources HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+
+{
+    "enabled" : true,
+    "name" : "XETRA-FEED-2",
+    "venueId" : "XETRA",
+    "connection" : "FIXT.1.1:XETRA_FEED_CLIENT->SECOND_FEED_SERVER, /rodata/second-feed.cfg",
+    "format" : "FIX",
+    "type" : "OrderBook",
+    "maxDepthLevels" : 1,
+    "listings" : [
+        {
+            "symbol" : "BMW"
         }
     ]
 }
@@ -1255,7 +1333,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result":"Successfully inserted a new datasource"
+    "result" : "Successfully inserted a new datasource"
 }
 ----
 
@@ -1268,20 +1346,20 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result":"Requested operation violates data integrity constraints"
+    "result" : "Requested operation violates data integrity constraints"
 }
 ----
 
 [[adminsets-data-update]]
-==== Update Data Sources
-Update existing market simulator data source entities.
+==== Update Datasources
+Update existing market simulator datasource entities.
 
 _Resource URI_
 ----
 PUT /api/datasources/{id}
 ----
 
-_Example_: Request to update a data source entity
+_Example_: Request to update a datasource entity
 
 [,http]
 ----
@@ -1305,7 +1383,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "Requested update of the data source with identifier - 1"
+    "result" : "Requested update of the datasource with identifier - 1"
 }
 ----
 
@@ -1318,7 +1396,20 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "No such data source"
+    "result" : "No such datasource"
+}
+----
+
+_Example_: Negative reply, the update would leave a FIX datasource without a valid `connection`
+
+[,http]
+----
+HTTP/1.1 400 Bad Request
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "connection must be a FIX session identifier in the form BeginString:SenderCompID->TargetCompID[:SessionQualifier], optionally followed by a comma and a path to a QuickFIX settings file, if the format is FIX."
 }
 ----
 
@@ -1525,7 +1616,7 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result":"Successfully inserted new price seed"
+    "result" : "Successfully inserted new price seed"
 }
 ----
 

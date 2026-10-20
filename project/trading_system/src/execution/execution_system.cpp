@@ -39,12 +39,6 @@ auto make_operation(protocol::SecurityStatusRequest request) {
   };
 }
 
-auto make_operation(protocol::InstrumentState& state) {
-  return [state = std::ref(state)](TradingEngine& engine) {
-    engine.provide_state(state);
-  };
-}
-
 auto make_store_operation(market_state::InstrumentState& state) {
   return [state = std::ref(state)](TradingEngine& engine) mutable {
     engine.store_state(state);
@@ -104,18 +98,6 @@ auto ExecutionSystem::execute_request(
     unicast(view->instrument().identifier, make_operation(std::move(request)));
   } else {
     reject_notifier_.reject(request, describe(view.error()));
-  }
-}
-
-auto ExecutionSystem::execute_request(
-    const protocol::InstrumentStateRequest& request,
-    protocol::InstrumentState& reply) const -> void {
-  const auto view = instrument_resolver_.resolve_instrument(request.instrument);
-  if (view.has_value()) {
-    unicast(view->instrument().identifier, make_operation(reply));
-  } else {
-    // This is an internal request, sent by generator, we cannot reject it
-    log::warn("failed to resolve instrument, ignoring - {}", request);
   }
 }
 

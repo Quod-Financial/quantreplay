@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "ih/market_data/validation/errors.hpp"
+#include "tools/utils.hpp"
 
 namespace simulator::trading_system::matching_engine::mdata::test {
 namespace {
@@ -24,7 +25,7 @@ INSTANTIATE_TEST_SUITE_P(
     Description,
     MarketDataValidationErrorsDescription,
     Values(
-        std::make_pair(static_cast<ValidationError>(0xFF), "unknown market data validation error"),
+        std::make_pair(matching_engine::test::invalid_enum_value<ValidationError>(), "unknown market data validation error"),
         std::make_pair(ValidationError::LowPriceTickViolated, "low price tick constraint violated"),
         std::make_pair(ValidationError::HighPriceTickViolated, "high price tick constraint violated"),
         std::make_pair(ValidationError::LowPriceIsLessThanOrEqualToHighPriceViolated, "low price is less than or equal to high price constraint violated"),
@@ -48,7 +49,7 @@ INSTANTIATE_TEST_SUITE_P(
     Formatting,
     MarketDataValidationErrorsFormatting,
     Values(
-        std::make_pair(static_cast<ValidationError>(0xFF), "UnknownMarketDataValidationError"),
+        std::make_pair(matching_engine::test::invalid_enum_value<ValidationError>(), "UnknownMarketDataValidationError"),
         std::make_pair(ValidationError::LowPriceTickViolated, "LowPriceTickViolated"),
         std::make_pair(ValidationError::HighPriceTickViolated, "HighPriceTickViolated"),
         std::make_pair(ValidationError::LowPriceIsLessThanOrEqualToHighPriceViolated, "LowPriceIsLessThanOrEqualToHighPriceViolated"),

@@ -4,7 +4,6 @@
 #include <memory>
 
 #include "middleware/channels/detail/receiver.hpp"
-#include "protocol/app/instrument_state_request.hpp"
 #include "protocol/app/market_data_request.hpp"
 #include "protocol/app/order_cancellation_request.hpp"
 #include "protocol/app/order_modification_request.hpp"
@@ -19,17 +18,14 @@ struct TradingRequestReceiver : public detail::Receiver {
   virtual auto process(protocol::OrderCancellationRequest request) -> void = 0;
   virtual auto process(protocol::MarketDataRequest request) -> void = 0;
   virtual auto process(protocol::SecurityStatusRequest request) -> void = 0;
-
-  virtual auto process(const protocol::InstrumentStateRequest& request,
-                       protocol::InstrumentState& reply) -> void = 0;
 };
 
 // Allows the receiver receiving messages sent via the channel,
-// unbinds previous receiver from the channel if any.
+// keeps previously bound receivers.
 auto bind_trading_request_channel(
     std::shared_ptr<TradingRequestReceiver> receiver) -> void;
 
-// Unbinds previous receiver from the channel if any.
+// Unbinds all receivers from the channel.
 auto release_trading_request_channel() noexcept -> void;
 
 }  // namespace simulator::middleware

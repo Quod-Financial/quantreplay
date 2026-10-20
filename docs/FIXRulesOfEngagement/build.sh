@@ -6,8 +6,8 @@ if [ ! -d "output" ]; then
 fi
 rm -f output/*.html
 
-asciidoctor "FIXRulesOfEngagement.adoc" -a imagesDir="../images" -D "output"
+asciidoctor "FIXRulesOfEngagement.adoc" -v -a imagesDir="../images" -D "output"
 echo HTML Done
 
-asciidoctor-pdf -a allow-uri-read -a pdf-theme="../common/pdf/PDFTheme.yml" "FIXRulesOfEngagement.adoc" -D "output"
+asciidoctor-pdf -a allow-uri-read -a pdf-theme="../common/pdf/PDFTheme.yml" "FIXRulesOfEngagement.adoc" -v -D "output"
 echo PDF Done

@@ -62,17 +62,21 @@ add_static_library(
     include/data_layer/api/database/context.hpp
     include/data_layer/api/exceptions/exceptions.hpp
     include/data_layer/api/inspectors/column_mapping.hpp
+    include/data_layer/api/inspectors/datasource_listing.hpp
     include/data_layer/api/inspectors/datasource.hpp
     include/data_layer/api/inspectors/fix_session.hpp
     include/data_layer/api/inspectors/listing.hpp
+    include/data_layer/api/inspectors/listing_random_price_source.hpp
     include/data_layer/api/inspectors/market_phase.hpp
     include/data_layer/api/inspectors/price_seed.hpp
     include/data_layer/api/inspectors/setting.hpp
     include/data_layer/api/inspectors/venue.hpp
     include/data_layer/api/models/column_mapping.hpp
+    include/data_layer/api/models/datasource_listing.hpp
     include/data_layer/api/models/datasource.hpp
     include/data_layer/api/models/fix_session.hpp
     include/data_layer/api/models/listing.hpp
+    include/data_layer/api/models/listing_random_price_source.hpp
     include/data_layer/api/models/market_phase.hpp
     include/data_layer/api/models/patch_field.hpp
     include/data_layer/api/models/price_seed.hpp
@@ -91,9 +95,11 @@ add_static_library(
     src/api/database/context.cpp
     src/api/exceptions/exceptions.cpp
     src/api/models/column_mapping.cpp
+    src/api/models/datasource_listing.cpp
     src/api/models/datasource.cpp
     src/api/models/fix_session.cpp
     src/api/models/listing.cpp
+    src/api/models/listing_random_price_source.cpp
     src/api/models/market_phase.cpp
     src/api/models/price_seed.cpp
     src/api/models/setting.cpp

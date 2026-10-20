@@ -16,7 +16,7 @@
 namespace simulator::data_layer::internal_pqxx {
 
 DatasourceDao::DatasourceDao(pqxx::connection pqxx_connection) noexcept
-    : connection_(std::move(pqxx_connection)) {}
+    : connection_{std::move(pqxx_connection)} {}
 
 auto DatasourceDao::setup_with(const internal_pqxx::Context& context)
     -> DatasourceDao {
@@ -58,15 +58,17 @@ auto DatasourceDao::execute(SelectAllCommand& command) -> void {
 }
 
 auto DatasourceDao::execute(UpdateOneCommand& command) -> void {
-  const Datasource::Patch& patch = command.patch();
-  if (const auto valid = validation::valid(patch); !valid.has_value()) {
-    throw MalformedPatch{valid.error()};
-  }
-
   Transaction transaction{connection_};
   const Predicate& predicate = command.predicate();
 
-  Datasource updated = update(patch, predicate, transaction.handler());
+  Datasource updated =
+      update(command.patch(), predicate, transaction.handler());
+
+  // The rules depend on stored fields the patch may not carry, so the merged
+  // row is validated and throwing before the commit rolls the update back.
+  if (const auto valid = validation::valid(updated); !valid.has_value()) {
+    throw MalformedPatch{valid.error()};
+  }
 
   transaction.commit();
   command.set_result(std::move(updated));
@@ -98,6 +100,10 @@ auto DatasourceDao::insert(const Datasource::Patch& snapshot,
 
   if (const auto& column_mapping = snapshot.columns_mapping()) {
     insert_columns_mapping(inserted_id, *column_mapping, transaction_handler);
+  }
+
+  if (const auto& listings = snapshot.listings()) {
+    insert_listings(inserted_id, *listings, transaction_handler);
   }
 
   return select_single(inserted_id, transaction_handler);
@@ -189,6 +195,11 @@ auto DatasourceDao::update(const Datasource::Patch& patch,
     insert_columns_mapping(updated_id, *patched_mapping, transaction_handler);
   }
 
+  if (const auto& patched_listings = patch.listings()) {
+    drop_listings(updated_id, transaction_handler);
+    insert_listings(updated_id, *patched_listings, transaction_handler);
+  }
+
   return select_single(updated_id, transaction_handler);
 }
 
@@ -204,6 +215,13 @@ auto DatasourceDao::decode_datasource(
                 std::make_move_iterator(columns_mapping.end()),
                 [&](ColumnMapping::Patch&& entry) {
                   selected.with_column_mapping(std::move(entry));
+                });
+
+  auto listings = select_listings(selected_id, transaction_handler);
+  std::for_each(std::make_move_iterator(listings.begin()),
+                std::make_move_iterator(listings.end()),
+                [&](DatasourceListing::Patch&& entry) {
+                  selected.with_listing(std::move(entry));
                 });
 
   return Datasource::create(std::move(selected), selected_id);
@@ -292,6 +310,93 @@ auto DatasourceDao::drop_columns_mapping(
   const pqxx::result result = transaction_handler.exec0(query);
   log::debug(
       "{} column mapping records deleted with `{}' datasource identifier",
+      result.affected_rows(),
+      datasource_id);
+}
+
+auto DatasourceDao::insert_listings(
+    std::uint64_t datasource_id,
+    std::vector<DatasourceListing::Patch> patches,
+    Transaction::Handler transaction_handler) const -> void {
+  std::vector<DatasourceListing> listings;
+  listings.reserve(patches.size());
+  std::transform(std::make_move_iterator(patches.begin()),
+                 std::make_move_iterator(patches.end()),
+                 std::back_inserter(listings),
+                 [datasource_id](DatasourceListing::Patch&& patch) {
+                   return DatasourceListing::create(std::move(patch),
+                                                    datasource_id);
+                 });
+
+  insert_listings(listings, transaction_handler);
+}
+
+auto DatasourceDao::insert_listings(
+    const std::vector<DatasourceListing>& listings,
+    Transaction::Handler transaction_handler) const -> void {
+  using Query = datasource_listing_query::Insert;
+
+  ValueSanitizer sanitizer{connection_};
+  log::debug("inserting {} datasource listing records", listings.size());
+
+  for (const auto& listing : listings) {
+    const std::string query = Query::prepare(listing, sanitizer).compose();
+    log::debug("executing `{}", query);
+    try {
+      transaction_handler.exec0(query);
+      log::debug("datasource listing insertion query executed");
+    } catch (const std::exception& exception) {
+      log::warn("failed to insert a datasource listing, error occurred: `{}'",
+                exception.what());
+    }
+  }
+}
+
+auto DatasourceDao::select_listings(
+    std::uint64_t datasource_id, Transaction::Handler transaction_handler) const
+    -> std::vector<DatasourceListing::Patch> {
+  using Query = datasource_listing_query::Select;
+
+  ValueSanitizer sanitizer{connection_};
+  const std::string query =
+      Query::prepare().by_datasource_id(datasource_id, sanitizer).compose();
+
+  log::debug("executing `{}'", query);
+  const pqxx::result selected = transaction_handler.exec(query);
+  log::debug(
+      "{} datasource listing records selected with `{}' datasource identifier",
+      selected.size(),
+      datasource_id);
+
+  std::vector<DatasourceListing::Patch> patches;
+  patches.reserve(static_cast<std::size_t>(selected.size()));
+
+  for (const pqxx::row& row : selected) {
+    try {
+      patches.emplace_back(DatasourceListingParser::parse(row));
+    } catch (const std::exception& exception) {
+      log::warn("failed to decode a datasource listing, error occurred: `{}'",
+                exception.what());
+    }
+  }
+
+  log::debug("{} datasource listing records decoded", patches.size());
+  return patches;
+}
+
+auto DatasourceDao::drop_listings(
+    std::uint64_t datasource_id, Transaction::Handler transaction_handler) const
+    -> void {
+  using Query = datasource_listing_query::Delete;
+
+  ValueSanitizer sanitizer{connection_};
+  const std::string query =
+      Query::prepare().by_datasource_id(datasource_id, sanitizer).compose();
+
+  log::debug("executing `{}'", query);
+  const pqxx::result result = transaction_handler.exec0(query);
+  log::debug(
+      "{} datasource listing records deleted with `{}' datasource identifier",
       result.affected_rows(),
       datasource_id);
 }

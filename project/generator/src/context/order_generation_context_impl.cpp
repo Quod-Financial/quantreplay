@@ -64,20 +64,13 @@ auto OrderInstrumentContextImpl::take_registry() noexcept
 
 OrderGenerationContextImpl::OrderGenerationContextImpl(
     std::shared_ptr<OrderInstrumentContext> instrument_ctx,
-    data_layer::PriceSeed configured_prices) noexcept
+    data_layer::PriceSeed configured_prices,
+    std::unique_ptr<mdata::MarketDataProvider> market_data_provider) noexcept
     : configured_prices_{std::move(configured_prices)},
-      instrument_context_{std::move(instrument_ctx)} {
+      instrument_context_{std::move(instrument_ctx)},
+      market_data_provider_{std::move(market_data_provider)} {
   assert(instrument_context_);
-  market_data_provider_ = std::make_unique<OrderMarketDataProvider>(
-      instrument_context_->get_instrument_descriptor());
-}
-
-auto OrderGenerationContextImpl::create(
-    std::shared_ptr<OrderInstrumentContext> instrument_ctx,
-    const data_layer::PriceSeed& configured_prices)
-    -> std::shared_ptr<OrderGenerationContextImpl> {
-  return std::make_shared<OrderGenerationContextImpl>(std::move(instrument_ctx),
-                                                      configured_prices);
+  assert(market_data_provider_);
 }
 
 auto OrderGenerationContextImpl::get_synthetic_identifier() noexcept
@@ -116,7 +109,7 @@ auto OrderGenerationContextImpl::get_price_seed() const noexcept
 
 auto OrderGenerationContextImpl::get_current_market_state() const
     -> MarketState {
-  return market_data_provider_->get_market_state();
+  return market_data_provider_->market_state();
 }
 
 }  // namespace simulator::generator

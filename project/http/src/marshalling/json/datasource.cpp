@@ -4,6 +4,7 @@
 
 #include "data_layer/api/inspectors/column_mapping.hpp"
 #include "data_layer/api/inspectors/datasource.hpp"
+#include "data_layer/api/inspectors/datasource_listing.hpp"
 #include "ih/marshalling/json/detail/keys.hpp"
 #include "ih/marshalling/json/detail/marshaller.hpp"
 #include "ih/marshalling/json/detail/unmarshaller.hpp"
@@ -44,6 +45,7 @@ auto DatasourceMarshaller::marshall(const data_layer::Datasource& datasource,
   data_layer::DatasourceReader<decltype(marshaller)> reader{marshaller};
   reader.read(datasource);
   marshall(datasource.columns_mapping(), dest);
+  marshall(datasource.listings(), dest);
 }
 
 auto DatasourceMarshaller::marshall(
@@ -67,6 +69,28 @@ auto DatasourceMarshaller::marshall(
   parent.AddMember(make_key(key), columns_mapping_list, allocator);
 }
 
+auto DatasourceMarshaller::marshall(
+    const std::vector<data_layer::DatasourceListing>& listings,
+    rapidjson::Document& parent) -> void {
+  auto& allocator = parent.GetAllocator();
+  rapidjson::Document listings_list{std::addressof(allocator)};
+  listings_list.SetObject().SetArray();
+
+  for (const auto& listing : listings) {
+    rapidjson::Document listing_doc{std::addressof(allocator)};
+    Marshaller marshaller{listing_doc};
+
+    data_layer::DatasourceListingReader<decltype(marshaller)> reader{
+        marshaller};
+    reader.read(listing);
+
+    listings_list.PushBack(listing_doc, allocator);
+  }
+
+  constexpr auto key = datasource_key::Listings;
+  parent.AddMember(make_key(key), listings_list, allocator);
+}
+
 auto DatasourceUnmarshaller::unmarshall(std::string_view json,
                                         data_layer::Datasource::Patch& dest)
     -> void {
@@ -83,6 +107,7 @@ auto DatasourceUnmarshaller::unmarshall(std::string_view json,
   writer.write(dest);
 
   unmarshall_column_mapping(document, dest);
+  unmarshall_listings(document, dest);
 }
 
 auto DatasourceUnmarshaller::unmarshall_column_mapping(
@@ -120,6 +145,44 @@ auto DatasourceUnmarshaller::unmarshall_column_mapping(
     writer.write(column_mapping);
 
     dest.with_column_mapping(std::move(column_mapping));
+  }
+}
+
+auto DatasourceUnmarshaller::unmarshall_listings(
+    const rapidjson::Document& datasource_doc,
+    data_layer::Datasource::Patch& dest) -> void {
+  using data_layer::DatasourceListingPatchWriter;
+  constexpr auto list_key = datasource_key::Listings;
+
+  if (!datasource_doc.HasMember(list_key.data())) {
+    return;
+  }
+
+  const auto& listings_list = datasource_doc[list_key.data()];
+  if (!listings_list.IsArray()) {
+    throw std::runtime_error{
+        "can not parse `listings' key in Datasource JSON, which "
+        "is not a JSON array"};
+  }
+
+  const auto array = listings_list.GetArray();
+  if (array.Empty()) {
+    dest.without_listings();
+    return;
+  }
+
+  for (const auto& object : array) {
+    if (!object.IsObject()) {
+      throw std::runtime_error{
+          "can not parse a JSON object in `listings' JSON array"};
+    }
+
+    data_layer::DatasourceListing::Patch listing;
+    Unmarshaller unmarshaller{object};
+    DatasourceListingPatchWriter<decltype(unmarshaller)> writer{unmarshaller};
+    writer.write(listing);
+
+    dest.with_listing(std::move(listing));
   }
 }
 

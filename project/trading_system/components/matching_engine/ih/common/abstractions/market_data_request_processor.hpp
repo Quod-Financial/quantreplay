@@ -3,7 +3,6 @@
 
 #include "common/instrument_state.hpp"
 #include "common/trade.hpp"
-#include "protocol/app/instrument_state_request.hpp"
 #include "protocol/app/market_data_request.hpp"
 #include "protocol/types/session.hpp"
 
@@ -24,8 +23,6 @@ class MarketDataRequestProcessor {
   // clang-format on
 
   virtual auto process(const protocol::MarketDataRequest& request) -> void = 0;
-
-  virtual auto capture(protocol::InstrumentState& state) -> void = 0;
 
   virtual auto store_state(std::optional<Trade>& last_trade,
                            std::optional<market_state::InstrumentInfo>& info)

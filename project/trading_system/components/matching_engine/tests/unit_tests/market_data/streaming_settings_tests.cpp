@@ -45,7 +45,7 @@ TEST_F(StreamingSettings, DefaultSettings) {
   EXPECT_EQ(settings.excluded_orders_owner(), std::nullopt);
 }
 
-TEST_F(StreamingSettings, EachRequestableDataTypeOwnsADistinctFlag) {
+TEST_F(StreamingSettings, EachRequestableDataTypeOwnsDistinctFlag) {
   using Option = MdEntryType::Option;
 
   // Every requestable entry type must map to its own flag, so enabling one

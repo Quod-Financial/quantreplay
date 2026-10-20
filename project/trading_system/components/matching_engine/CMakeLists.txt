@@ -35,7 +35,6 @@ add_static_library(
     ih/market_data/depth/depth_quantity_list.hpp
     ih/market_data/depth/depth_sheet.hpp
     ih/market_data/depth/depth_record.hpp
-    ih/market_data/depth/depth_stats_reader.hpp
     ih/market_data/depth/full_depth_update.hpp
     ih/market_data/depth/incremental_depth_update.hpp
     ih/market_data/subscriptions/subscription.hpp

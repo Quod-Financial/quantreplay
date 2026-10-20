@@ -38,8 +38,6 @@ class MatchingEngine final : public TradingEngine {
 
   auto execute(protocol::SecurityStatusRequest request) -> void override;
 
-  auto provide_state(protocol::InstrumentState& reply) -> void override;
-
   auto store_state(market_state::InstrumentState& state) -> void override;
 
   auto recover_state(market_state::InstrumentState state) -> void override;

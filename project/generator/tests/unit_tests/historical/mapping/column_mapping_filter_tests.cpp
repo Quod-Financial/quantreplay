@@ -27,7 +27,7 @@ auto column_config(data_layer::converter::ColumnFrom::Column column_from,
 }
 
 TEST(GeneratorHistoricalMappingColumnMappingFilter,
-     ReturnsTheSameMappingWhenNoVariableDepth) {
+     ReturnsSameMappingWhenNoVariableDepth) {
   using ColumnFrom = data_layer::converter::ColumnFrom;
   const std::vector<data_layer::ColumnMapping> mappings{
       column_mapping("ReceivedTimeStamp", "timestamp"),

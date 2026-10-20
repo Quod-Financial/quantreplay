@@ -5,6 +5,9 @@
 #include <vector>
 
 #include "middleware/channels/generator_admin_channel.hpp"
+#include "middleware/channels/generator_initiator_event_channel.hpp"
+#include "middleware/channels/market_data_reply_channel.hpp"
+#include "middleware/channels/market_data_request_channel.hpp"
 #include "middleware/channels/trading_admin_channel.hpp"
 #include "middleware/channels/trading_reply_channel.hpp"
 #include "middleware/channels/trading_request_channel.hpp"
@@ -48,9 +51,15 @@ class EventChannel {
 };
 
 using GeneratorAdminChannel = RequestChannel<GeneratorAdminRequestReceiver>;
+using GeneratorInitiatorConnectionEventChannel =
+    EventChannel<GeneratorInitiatorConnectionEventListener>;
+using GeneratorInitiatorTerminationEventChannel =
+    EventChannel<GeneratorInitiatorTerminationEventListener>;
+using MarketDataReplyChannel = EventChannel<MarketDataReplyReceiver>;
+using MarketDataRequestChannel = EventChannel<MarketDataRequestReceiver>;
 using TradingAdminChannel = RequestChannel<TradingAdminRequestReceiver>;
 using TradingReplyChannel = EventChannel<TradingReplyReceiver>;
-using TradingRequestChannel = RequestChannel<TradingRequestReceiver>;
+using TradingRequestChannel = EventChannel<TradingRequestReceiver>;
 using TradingSessionConnectionEventChannel =
     EventChannel<TradingSessionConnectionEventListener>;
 using TradingSessionTerminationEventChannel =

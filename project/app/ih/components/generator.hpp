@@ -5,12 +5,20 @@
 #include "generator/generator.hpp"
 #include "log/logging.hpp"
 #include "middleware/channels/generator_admin_channel.hpp"
+#include "middleware/channels/generator_initiator_event_channel.hpp"
+#include "middleware/channels/market_data_reply_channel.hpp"
 #include "middleware/channels/trading_reply_channel.hpp"
+#include "protocol/app/session_connected_event.hpp"
+#include "protocol/app/session_terminated_event.hpp"
 
 namespace simulator {
 
-class Generator final : public middleware::TradingReplyReceiver,
-                        public middleware::GeneratorAdminRequestReceiver {
+class Generator final
+    : public middleware::TradingReplyReceiver,
+      public middleware::GeneratorAdminRequestReceiver,
+      public middleware::MarketDataReplyReceiver,
+      public middleware::GeneratorInitiatorConnectionEventListener,
+      public middleware::GeneratorInitiatorTerminationEventListener {
  public:
   explicit Generator(data_layer::database::Context database)
       : generator_(generator::create_generator(std::move(database))) {}
@@ -59,30 +67,15 @@ class Generator final : public middleware::TradingReplyReceiver,
   }
 
   auto process(protocol::MarketDataReject reject) -> void override {
-    // The generator does not send MarketDataRequest messages.
-    // Thus, it is not expected to receive MarketDataReject messages.
-    log::warn(
-        "unexpected MarketDataReject message received by the generator, "
-        "ignoring {}",
-        reject);
+    generator::accept_reply(reject, generator_);
   }
 
   auto process(protocol::MarketDataSnapshot snapshot) -> void override {
-    // The generator does not send MarketDataRequest messages/
-    // Thus, it is not expected to receive MarketDataSnapshot messages.
-    log::warn(
-        "unexpected MarketDataSnapshot message received by generator, "
-        "ignoring {}",
-        snapshot);
+    generator::accept_reply(snapshot, generator_);
   }
 
   auto process(protocol::MarketDataUpdate update) -> void override {
-    // The generator does not send MarketDataRequest messages/
-    // Thus, it is not expected to receive MarketDataUpdate messages
-    log::warn(
-        "unexpected MarketDataUpdate message received by generator, "
-        "ignoring {}",
-        update);
+    generator::accept_reply(update, generator_);
   }
 
   auto process(protocol::SecurityStatus status) -> void override {
@@ -92,6 +85,15 @@ class Generator final : public middleware::TradingReplyReceiver,
         "unexpected SecurityStatus message received by generator, "
         "ignoring {}",
         status);
+  }
+
+  auto on_event(const protocol::SessionConnectedEvent& event) -> void override {
+    generator::react_on(event, generator_);
+  }
+
+  auto on_event(const protocol::SessionTerminatedEvent& event)
+      -> void override {
+    generator::react_on(event, generator_);
   }
 
   auto process(const protocol::GenerationStatusRequest& request,

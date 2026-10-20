@@ -18,17 +18,21 @@ using namespace std::chrono_literals;
 namespace {
 
 auto parse_time_of_day(std::istream& buffer)
-    -> std::optional<std::chrono::minutes> {
-  std::optional<std::chrono::minutes> parsed;
+    -> std::optional<std::chrono::seconds> {
+  // HH:MM is the documented format; the optional seconds are undocumented
+  // and only allow phases shorter than a minute.
+  for (const auto* format : {"%H:%M:%S", "%H:%M"}) {
+    date::fields<std::chrono::seconds> fields;
+    buffer.clear();
+    buffer.seekg(0);
+    buffer >> date::parse(format, fields);
 
-  date::fields<std::chrono::seconds> fields;
-  buffer >> date::parse("%H:%M", fields);
-
-  if (buffer.good() && fields.has_tod) {
-    parsed = std::chrono::floor<std::chrono::minutes>(fields.tod.to_duration());
+    if (buffer.good() && fields.has_tod) {
+      return std::chrono::floor<std::chrono::seconds>(fields.tod.to_duration());
+    }
   }
 
-  return parsed;
+  return std::nullopt;
 }
 
 auto determine_trading_phase(data_layer::MarketPhase::Phase value)
@@ -76,7 +80,8 @@ auto PhaseEntryReader::operator()(const data_layer::MarketPhase& record)
     return;
   }
 
-  const auto end_range =
+  // endTimeRange is configured in minutes.
+  const std::chrono::seconds end_range =
       std::chrono::minutes(std::abs(record.end_time_range().value_or(0)));
 
   const auto allow_cancels = record.allow_cancels().value_or(false);

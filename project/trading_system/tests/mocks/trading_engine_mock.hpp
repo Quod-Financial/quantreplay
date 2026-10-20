@@ -15,7 +15,6 @@ struct TradingEngineMock : TradingEngine {
   MOCK_METHOD(void, execute, (protocol::OrderCancellationRequest request), (override));
   MOCK_METHOD(void, execute, (protocol::MarketDataRequest), (override));
   MOCK_METHOD(void, execute, (protocol::SecurityStatusRequest), (override));
-  MOCK_METHOD(void, provide_state, (protocol::InstrumentState & reply), (override));
   MOCK_METHOD(void, store_state, (market_state::InstrumentState& state), (override));
   MOCK_METHOD(void, recover_state, (market_state::InstrumentState event), (override));
   MOCK_METHOD(void, handle, (event::Tick event), (override));

@@ -318,6 +318,38 @@ TEST_F(DataLayerValidationDatasourcePatchValid,
   ASSERT_TRUE(valid(patch).has_value());
 }
 
+TEST_F(DataLayerValidationDatasourcePatchValid,
+       ReturnsErrorMessageIfFixConnectionIsNotSessionReference) {
+  patch.with_format(Datasource::Format::Fix)
+      .with_connection("/data/market_data.csv");
+  ASSERT_THAT(
+      valid(patch),
+      IsUnexpected("connection must be a FIX session identifier in the form "
+                   "BeginString:SenderCompID->TargetCompID[:SessionQualifier], "
+                   "optionally followed by a comma and a path to a QuickFIX "
+                   "settings file, if the format is FIX."));
+}
+
+TEST_F(DataLayerValidationDatasourcePatchValid,
+       ReturnsVoidIfFixConnectionIsSessionId) {
+  patch.with_format(Datasource::Format::Fix)
+      .with_connection("FIXT.1.1:SIM->EXCH");
+  ASSERT_TRUE(valid(patch).has_value());
+}
+
+TEST_F(DataLayerValidationDatasourcePatchValid,
+       ReturnsVoidIfFixConnectionIsSessionIdWithSettingsFile) {
+  patch.with_format(Datasource::Format::Fix)
+      .with_connection("FIXT.1.1:SIM->EXCH, /etc/quickfix/feed.cfg");
+  ASSERT_TRUE(valid(patch).has_value());
+}
+
+TEST_F(DataLayerValidationDatasourcePatchValid,
+       ReturnsVoidIfConnectionIsNotSessionIdWhenFormatIsNotSpecified) {
+  patch.with_connection("/data/market_data.csv");
+  ASSERT_TRUE(valid(patch).has_value());
+}
+
 struct DataLayerValidationDatasourceValid : public testing::Test {
   DataLayerValidationDatasourceValid() {
     patch.with_name("TestDatasource")
@@ -580,6 +612,32 @@ TEST_F(DataLayerValidationDatasourceValid,
       .with_column_mapping(c_m_patch("AskQuantity3", "askquantity3"))
       .with_column_mapping(c_m_patch("AskPrice3", "askprice3"));
 
+  ASSERT_TRUE(valid(create_datasource(patch)).has_value());
+}
+
+TEST_F(DataLayerValidationDatasourceValid,
+       ReturnsErrorMessageIfFixConnectionIsNotSessionReference) {
+  patch.with_format(Datasource::Format::Fix)
+      .with_connection("/data/market_data.csv");
+  ASSERT_THAT(
+      valid(create_datasource(patch)),
+      IsUnexpected("connection must be a FIX session identifier in the form "
+                   "BeginString:SenderCompID->TargetCompID[:SessionQualifier], "
+                   "optionally followed by a comma and a path to a QuickFIX "
+                   "settings file, if the format is FIX."));
+}
+
+TEST_F(DataLayerValidationDatasourceValid,
+       ReturnsVoidIfFixConnectionIsSessionId) {
+  patch.with_format(Datasource::Format::Fix)
+      .with_connection("FIXT.1.1:SIM->EXCH");
+  ASSERT_TRUE(valid(create_datasource(patch)).has_value());
+}
+
+TEST_F(DataLayerValidationDatasourceValid,
+       ReturnsVoidIfFixConnectionIsSessionIdWithSettingsFile) {
+  patch.with_format(Datasource::Format::Fix)
+      .with_connection("FIXT.1.1:SIM->EXCH, /etc/quickfix/feed.cfg");
   ASSERT_TRUE(valid(create_datasource(patch)).has_value());
 }
 

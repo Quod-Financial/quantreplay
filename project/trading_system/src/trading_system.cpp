@@ -163,13 +163,6 @@ auto process(protocol::SecurityStatusRequest request, System& trading_system)
   trading_system.implementation().execute(std::move(request));
 }
 
-auto process(const protocol::InstrumentStateRequest& request,
-             protocol::InstrumentState& reply,
-             System& trading_system) -> void {
-  log::debug("called the procedure to process InstrumentStateRequest");
-  trading_system.implementation().execute(request, reply);
-}
-
 auto process(const protocol::HaltPhaseRequest& request,
              protocol::HaltPhaseReply& reply,
              System& trading_system) -> void {

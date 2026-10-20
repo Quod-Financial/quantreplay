@@ -64,6 +64,25 @@ struct HttpFixSessionController : Test {
         .settings = {{"SOCKETACCEPTPORT", std::move(accept_port)}}};
   }
 
+  static auto make_initiator_default_section() -> core::FixSessionSettings {
+    return core::FixSessionSettings{
+        .heading = "DEFAULT",
+        .id = std::nullopt,
+        .settings = {{"CONNECTIONTYPE", "initiator"},
+                     {"SOCKETCONNECTHOST", "10.0.0.7"},
+                     {"SOCKETCONNECTPORT", "45001"}}};
+  }
+
+  static auto make_initiator_config_session(std::string id)
+      -> core::FixSessionSettings {
+    return core::FixSessionSettings{
+        .heading = "SESSION",
+        .id = std::move(id),
+        .settings = {{"CONNECTIONTYPE", "initiator"},
+                     {"SOCKETCONNECTHOST", "10.0.0.7"},
+                     {"SOCKETCONNECTPORT", "45001"}}};
+  }
+
   auto make_db_session(std::string session_id,
                        std::optional<core::sys_us> last_connected_time) const
       -> data_layer::FixSession {
@@ -179,6 +198,95 @@ TEST_F(HttpFixSessionController,
   auto sessions = controller.sessions();
   ASSERT_THAT(sessions, Contains(Key(session_id)));
   EXPECT_EQ(sessions[session_id].host_port, HostIp);
+}
+
+TEST_F(HttpFixSessionController, ExcludesInitiatorSessionFromSessions) {
+  const std::string session_id = "FIX.4.4:MDCLIENT->MDSERVER";
+  session_settings_ = {make_initiator_config_session(session_id)};
+
+  const auto controller = make_controller();
+
+  EXPECT_THAT(controller.sessions(), Not(Contains(Key(session_id))));
+}
+
+TEST_F(HttpFixSessionController,
+       ExcludesSessionInheritingInitiatorConnectionTypeFromDefaultSection) {
+  const std::string session_id = "FIX.4.4:MDCLIENT->MDSERVER";
+  session_settings_ = {make_initiator_default_section(),
+                       make_config_session_without_port(session_id)};
+
+  const auto controller = make_controller();
+
+  EXPECT_THAT(controller.sessions(), Not(Contains(Key(session_id))));
+}
+
+TEST_F(HttpFixSessionController,
+       IncludesAcceptorSessionWhenDefaultSectionIsInitiator) {
+  const std::string session_id = "FIX.4.4:MDSERVER->MDCLIENT";
+  session_settings_ = {
+      make_initiator_default_section(),
+      core::FixSessionSettings{.heading = "SESSION",
+                               .id = session_id,
+                               .settings = {{"CONNECTIONTYPE", "acceptor"},
+                                            {"SOCKETACCEPTPORT", "4500"}}}};
+
+  const auto controller = make_controller();
+
+  auto sessions = controller.sessions();
+  ASSERT_THAT(sessions, Contains(Key(session_id)));
+  EXPECT_EQ(sessions[session_id].host_port, HostIp + ":4500");
+}
+
+TEST_F(HttpFixSessionController,
+       DoesNotInsertInitiatorSessionIntoFixSessionTable) {
+  session_settings_ = {
+      make_initiator_config_session("FIX.4.4:MDCLIENT->MDSERVER")};
+
+  EXPECT_CALL(*accessor, add(_)).Times(0);
+
+  const auto controller = make_controller();
+}
+
+TEST_F(HttpFixSessionController, DeletesInitiatorSessionFromFixSessionTable) {
+  const std::string session_id = "FIX.4.4:MDCLIENT->MDSERVER";
+  session_settings_ = {make_initiator_config_session(session_id)};
+  db_sessions_ = {make_db_session(session_id, std::nullopt)};
+
+  EXPECT_CALL(*accessor, delete_all(Eq(VenueId), ElementsAre(session_id)))
+      .Times(1);
+
+  const auto controller = make_controller();
+}
+
+TEST_F(HttpFixSessionController,
+       IgnoresSessionConnectedEventOfInitiatorSession) {
+  session_settings_ = {
+      make_initiator_config_session("FIX.4.4:MDCLIENT->MDSERVER")};
+  auto controller = make_controller();
+
+  EXPECT_CALL(*accessor, update(_, _, _)).Times(0);
+
+  controller.handle(make_connected_event("MDCLIENT", "MDSERVER"));
+
+  EXPECT_THAT(controller.sessions(), IsEmpty());
+}
+
+TEST_F(HttpFixSessionController, UsesAcceptPortForAcceptorSession) {
+  const std::string session_id = "FIX.4.4:MDSERVER->MDCLIENT";
+  session_settings_ = {
+      core::FixSessionSettings{.heading = "SESSION",
+                               .id = session_id,
+                               .settings = {{"CONNECTIONTYPE", "acceptor"},
+                                            {"SOCKETACCEPTPORT", "4500"},
+                                            {"SOCKETCONNECTHOST", "10.0.0.7"},
+                                            {"SOCKETCONNECTPORT", "45001"}}}};
+  db_sessions_ = {make_db_session(session_id, std::nullopt)};
+
+  const auto controller = make_controller();
+
+  auto sessions = controller.sessions();
+  ASSERT_THAT(sessions, Contains(Key(session_id)));
+  EXPECT_EQ(sessions[session_id].host_port, HostIp + ":4500");
 }
 
 TEST_F(HttpFixSessionController,

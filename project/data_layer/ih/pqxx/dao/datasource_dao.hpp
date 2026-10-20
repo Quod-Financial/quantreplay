@@ -7,6 +7,7 @@
 
 #include "api/models/column_mapping.hpp"
 #include "api/models/datasource.hpp"
+#include "api/models/datasource_listing.hpp"
 #include "ih/common/command/commands.hpp"
 #include "ih/pqxx/context.hpp"
 #include "ih/pqxx/database/transaction.hpp"
@@ -89,6 +90,21 @@ class DatasourceDao {
   auto drop_columns_mapping(std::uint64_t datasource_id,
                             Transaction::Handler transaction_handler) const
       -> void;
+
+  auto insert_listings(std::uint64_t datasource_id,
+                       std::vector<DatasourceListing::Patch> patches,
+                       Transaction::Handler transaction_handler) const -> void;
+
+  auto insert_listings(const std::vector<DatasourceListing>& listings,
+                       Transaction::Handler transaction_handler) const -> void;
+
+  [[nodiscard]]
+  auto select_listings(std::uint64_t datasource_id,
+                       Transaction::Handler transaction_handler) const
+      -> std::vector<DatasourceListing::Patch>;
+
+  auto drop_listings(std::uint64_t datasource_id,
+                     Transaction::Handler transaction_handler) const -> void;
 
   pqxx::connection connection_;
 };

@@ -2,9 +2,11 @@
 #define SIMULATOR_APP_IH_PLATFORMS_VENUE_SIMULATION_PLATFORM_HPP_
 
 #include <memory>
+#include <vector>
 
 #include "data_layer/api/database/context.hpp"
-#include "ih/components/fix_acceptor.hpp"
+#include "ih/components/fix_generator_initiator.hpp"
+#include "ih/components/fix_trading_system_acceptor.hpp"
 #include "ih/components/generator.hpp"
 #include "ih/components/http_server.hpp"
 #include "ih/components/trading_engine.hpp"
@@ -25,7 +27,8 @@ class VenueSimulationPlatform final : public Platform {
 
  private:
   std::shared_ptr<TradingEngine> trading_engine_;
-  std::shared_ptr<FixAcceptor> fix_acceptor_;
+  std::shared_ptr<FixTradingSystemAcceptor> fix_trading_system_acceptor_;
+  std::vector<std::shared_ptr<FixGeneratorInitiator>> fix_generator_initiators_;
   std::shared_ptr<Generator> generator_;
   std::shared_ptr<HttpServer> http_server_;
 };

@@ -16,6 +16,7 @@ add_target_tests(
     tools/order_book_notification_builder.hpp
     tools/order_builder.hpp
     tools/protocol_tools.hpp
+    tools/utils.hpp
   UNIT_TESTS
     unit_tests/commands/phase_transition_command_tests.cpp
     unit_tests/commands/tick_command_tests.cpp
@@ -36,7 +37,6 @@ add_target_tests(
     unit_tests/market_data/depth_node_tests.cpp
     unit_tests/market_data/depth_quantity_list_tests.cpp
     unit_tests/market_data/depth_sheet_tests.cpp
-    unit_tests/market_data/depth_stats_reader_tests.cpp
     unit_tests/market_data/full_depth_update_tests.cpp
     unit_tests/market_data/incremental_depth_update_tests.cpp
     unit_tests/market_data/instrument_info_cache_tests.cpp

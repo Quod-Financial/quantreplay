@@ -11,6 +11,7 @@ namespace datasource_format {
 
 constexpr std::string_view Csv{"CSV"};
 constexpr std::string_view Postgres{"PSQL"};
+constexpr std::string_view Fix{"FIX"};
 
 }  // namespace datasource_format
 
@@ -73,6 +74,8 @@ auto EnumerationResolver::resolve(data_layer::Datasource::Format value)
       return datasource_format::Csv;
     case data_layer::Datasource::Format::Postgres:
       return datasource_format::Postgres;
+    case data_layer::Datasource::Format::Fix:
+      return datasource_format::Fix;
   }
 
   raise_bad_enumeration_error("Datasource::Format", value);
@@ -85,6 +88,8 @@ auto EnumerationResolver::resolve(const std::string& value,
     result = data_layer::Datasource::Format::Csv;
   } else if (value == datasource_format::Postgres) {
     result = data_layer::Datasource::Format::Postgres;
+  } else if (value == datasource_format::Fix) {
+    result = data_layer::Datasource::Format::Fix;
   } else {
     raise_bad_value_error("Datasource::Format", value);
   }

@@ -42,8 +42,6 @@ class CacheManager final : public MarketDataProvider,
                      const Trade& trade) const
       -> std::optional<MarketDataEntry> override;
 
-  auto capture(protocol::InstrumentState& state) const -> void;
-
   auto store_state(std::optional<Trade>& last_trade,
                    std::optional<market_state::InstrumentInfo>& info) -> void;
 

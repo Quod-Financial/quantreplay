@@ -58,29 +58,10 @@ TEST_F(TradingRequestChannel, SendsAsyncMarketDataRequest) {
   ASSERT_NO_THROW(send_trading_request(request));
 }
 
-TEST_F(TradingRequestChannel, SendsSyncInstrumentStateRequest) {
-  bind_channel();
-  protocol::InstrumentStateRequest request;
-  protocol::InstrumentState reply;
-
-  EXPECT_CALL(receiver,
-              process(A<const protocol::InstrumentStateRequest&>(),
-                      A<protocol::InstrumentState&>()))
-      .Times(1);
-  ASSERT_NO_THROW(send_trading_request(request, reply));
-}
-
 TEST_F(TradingRequestChannel, ReportsChannelNotBoundWhenSendingAsyncRequest) {
   const auto request = make_app_message<protocol::OrderPlacementRequest>();
 
   ASSERT_THROW(send_trading_request(request), ChannelUnboundError);
-}
-
-TEST_F(TradingRequestChannel, ReportsChannelNotBoundWhenSendingSyncRequest) {
-  protocol::InstrumentStateRequest request;
-  protocol::InstrumentState reply;
-
-  ASSERT_THROW(send_trading_request(request, reply), ChannelUnboundError);
 }
 
 }  // namespace

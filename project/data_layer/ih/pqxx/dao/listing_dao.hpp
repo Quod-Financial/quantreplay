@@ -6,6 +6,7 @@
 #include <pqxx/transaction>
 
 #include "api/models/listing.hpp"
+#include "api/models/listing_random_price_source.hpp"
 #include "ih/common/command/commands.hpp"
 #include "ih/pqxx/context.hpp"
 #include "ih/pqxx/database/transaction.hpp"
@@ -66,7 +67,27 @@ class ListingDao {
               Transaction::Handler transaction_handler) -> Listing;
 
   [[nodiscard]]
-  static auto decode_listing(const pqxx::row& row) -> Listing;
+  auto decode_listing(const pqxx::row& row,
+                      Transaction::Handler transaction_handler) const
+      -> Listing;
+
+  auto insert_random_price_sources(
+      std::uint64_t listing_id,
+      std::vector<ListingRandomPriceSource::Patch> patches,
+      Transaction::Handler transaction_handler) const -> void;
+
+  auto insert_random_price_sources(
+      const std::vector<ListingRandomPriceSource>& sources,
+      Transaction::Handler transaction_handler) const -> void;
+
+  [[nodiscard]]
+  auto select_random_price_sources(
+      std::uint64_t listing_id, Transaction::Handler transaction_handler) const
+      -> std::vector<ListingRandomPriceSource::Patch>;
+
+  auto drop_random_price_sources(std::uint64_t listing_id,
+                                 Transaction::Handler transaction_handler) const
+      -> void;
 
   pqxx::connection connection_;
 };

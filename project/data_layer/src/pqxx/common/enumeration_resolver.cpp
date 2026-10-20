@@ -59,6 +59,9 @@ auto EnumerationResolver::to_string(Datasource::Format format) -> std::string {
     case Datasource::Format::Postgres:
       string = internal_pqxx::datasource_format::Postgres;
       break;
+    case Datasource::Format::Fix:
+      string = internal_pqxx::datasource_format::Fix;
+      break;
   }
 
   if (!string.empty()) {
@@ -73,6 +76,8 @@ auto EnumerationResolver::from_string(std::string_view format,
     value = Datasource::Format::Csv;
   } else if (format == internal_pqxx::datasource_format::Postgres) {
     value = Datasource::Format::Postgres;
+  } else if (format == internal_pqxx::datasource_format::Fix) {
+    value = Datasource::Format::Fix;
   } else {
     throw EnumDecodingError("Datasource::Format", format);
   }

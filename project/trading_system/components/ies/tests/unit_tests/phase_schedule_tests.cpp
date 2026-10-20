@@ -132,7 +132,7 @@ TEST_F(PhaseScheduleTest, ReturnsPhaseWithLatestBeginTimeAndEarlierEndTime) {
                   {}));
 }
 
-TEST_F(PhaseScheduleTest, ReturnsHaltStatusWithSettingAtTheHaltBeginTime) {
+TEST_F(PhaseScheduleTest, ReturnsHaltStatusWithSettingAtHaltBeginTime) {
   schedule = {{.begin = 11h, .end = 14h, .phase = TradingPhase::Option::Open},
               {.begin = 12h, .end = 13h, .phase = TradingStatus::Option::Halt}};
 
@@ -205,6 +205,48 @@ TEST_F(PhaseScheduleTest, SurfacesConfiguredEndAndRangeForAuctionPhase) {
   ASSERT_TRUE(scheduled.auction.has_value());
   EXPECT_EQ(scheduled.auction->end, 13h);
   EXPECT_EQ(scheduled.auction->end_range, 5min);
+}
+
+TEST_F(PhaseScheduleTest, ReturnsOpenPhaseBeforeSubMinuteBeginTime) {
+  schedule = {{.begin = 12h + 15s,
+               .end = 12h + 25s,
+               .phase = TradingPhase::Option::OpeningAuction}};
+
+  ASSERT_EQ(
+      schedule.get_scheduled_phase(daytime(12h + 14s)).phase,
+      Phase(TradingPhase::Option::Open, TradingStatus::Option::Resume, {}));
+}
+
+TEST_F(PhaseScheduleTest, ReturnsPhaseAtSubMinuteBeginTime) {
+  schedule = {{.begin = 12h + 15s,
+               .end = 12h + 25s,
+               .phase = TradingPhase::Option::OpeningAuction}};
+
+  ASSERT_EQ(schedule.get_scheduled_phase(daytime(12h + 15s)).phase,
+            Phase(TradingPhase::Option::OpeningAuction,
+                  TradingStatus::Option::Resume,
+                  {}));
+}
+
+TEST_F(PhaseScheduleTest, ReturnsOpenPhaseAtSubMinuteEndTime) {
+  schedule = {{.begin = 12h + 15s,
+               .end = 12h + 25s,
+               .phase = TradingPhase::Option::OpeningAuction}};
+
+  ASSERT_EQ(
+      schedule.get_scheduled_phase(daytime(12h + 25s)).phase,
+      Phase(TradingPhase::Option::Open, TradingStatus::Option::Resume, {}));
+}
+
+TEST_F(PhaseScheduleTest, SurfacesSubMinuteEndForAuctionPhase) {
+  schedule = {{.begin = 12h,
+               .end = 12h + 30s,
+               .phase = TradingPhase::Option::OpeningAuction}};
+
+  const auto scheduled = schedule.get_scheduled_phase(daytime(12h + 10s));
+
+  ASSERT_THAT(scheduled.auction,
+              Optional(Field(&AuctionTiming::end, Eq(12h + 30s))));
 }
 
 TEST_F(PhaseScheduleTest, LeavesAuctionTimingUnsetForDefaultOpenPhase) {

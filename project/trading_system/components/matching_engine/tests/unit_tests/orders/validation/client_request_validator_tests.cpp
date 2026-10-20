@@ -8,6 +8,7 @@
 #include "protocol/app/order_modification_request.hpp"
 #include "protocol/app/order_placement_request.hpp"
 #include "tools/protocol_tools.hpp"
+#include "tools/utils.hpp"
 
 namespace simulator::trading_system::matching_engine::order::test {
 namespace {
@@ -76,7 +77,7 @@ TEST_F(OrderPlacementRequestValidation, FailsWhenSideUnspecified) {
 }
 
 TEST_F(OrderPlacementRequestValidation, FailsWhenSideInvalid) {
-  request.side = static_cast<Side::Option>(0xFF);
+  request.side = matching_engine::test::invalid_enum_value<Side::Option>();
 
   const auto conclusion = validate(request);
 
@@ -92,7 +93,8 @@ TEST_F(OrderPlacementRequestValidation, FailsWhenOrderTypeUnspecified) {
 }
 
 TEST_F(OrderPlacementRequestValidation, FailsWhenOrderTypeInvalid) {
-  request.order_type = static_cast<OrderType::Option>(0xFF);
+  request.order_type =
+      matching_engine::test::invalid_enum_value<OrderType::Option>();
 
   const auto conclusion = validate(request);
 
@@ -242,7 +244,7 @@ TEST_F(OrderModificationRequestValidation, FailsWhenSideUnspecified) {
 }
 
 TEST_F(OrderModificationRequestValidation, FailsWhenSideInvalid) {
-  request.side = static_cast<Side::Option>(0xFF);
+  request.side = matching_engine::test::invalid_enum_value<Side::Option>();
 
   const auto conclusion = validate(request);
 
@@ -258,7 +260,8 @@ TEST_F(OrderModificationRequestValidation, FailsWhenOrderTypeUnspecified) {
 }
 
 TEST_F(OrderModificationRequestValidation, FailsWhenOrderTypeInvalid) {
-  request.order_type = static_cast<OrderType::Option>(0xFF);
+  request.order_type =
+      matching_engine::test::invalid_enum_value<OrderType::Option>();
 
   const auto conclusion = validate(request);
 
@@ -404,7 +407,7 @@ TEST_F(OrderCancellationRequestValidation, FailsWhenSideUnspecified) {
 }
 
 TEST_F(OrderCancellationRequestValidation, FailsWhenSideInvalid) {
-  request.side = static_cast<Side::Option>(0xFF);
+  request.side = matching_engine::test::invalid_enum_value<Side::Option>();
 
   const auto conclusion = validate(request);
 

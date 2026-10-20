@@ -106,7 +106,7 @@ TEST_F(MatchingEngineCacheManager,
               Eq(std::nullopt));
 }
 
-TEST_F(MatchingEngineCacheManager, ComposesBookWithoutTheLastTrade) {
+TEST_F(MatchingEngineCacheManager, ComposesBookWithoutLastTrade) {
   settings.enable_data_type_streaming(MdEntryType::Option::Bid)
       .enable_data_type_streaming(MdEntryType::Option::Trade);
   push(resting_bid(Price{100}, Quantity{5}));
@@ -152,7 +152,7 @@ TEST_F(MatchingEngineCacheManager,
                           is_bid_at(Price{100})));
 }
 
-TEST_F(MatchingEngineCacheManager, ComposesUpdateAsDeltaOfTheLastBatchOnly) {
+TEST_F(MatchingEngineCacheManager, ComposesUpdateAsDeltaOfLastBatchOnly) {
   settings.enable_data_type_streaming(MdEntryType::Option::Bid)
       .enable_data_type_streaming(MdEntryType::Option::Trade);
   push(resting_bid(Price{100}, Quantity{5}));

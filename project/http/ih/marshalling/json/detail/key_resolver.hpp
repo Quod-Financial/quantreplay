@@ -3,7 +3,9 @@
 
 #include "data_layer/api/models/column_mapping.hpp"
 #include "data_layer/api/models/datasource.hpp"
+#include "data_layer/api/models/datasource_listing.hpp"
 #include "data_layer/api/models/listing.hpp"
+#include "data_layer/api/models/listing_random_price_source.hpp"
 #include "data_layer/api/models/market_phase.hpp"
 #include "data_layer/api/models/price_seed.hpp"
 #include "data_layer/api/models/setting.hpp"
@@ -22,7 +24,16 @@ class KeyResolver {
       -> std::string_view;
 
   [[nodiscard]]
+  static auto resolve_key(data_layer::DatasourceListing::Attribute attribute)
+      -> std::string_view;
+
+  [[nodiscard]]
   static auto resolve_key(data_layer::Listing::Attribute attribute)
+      -> std::string_view;
+
+  [[nodiscard]]
+  static auto resolve_key(
+      data_layer::ListingRandomPriceSource::Attribute attribute)
       -> std::string_view;
 
   [[nodiscard]]

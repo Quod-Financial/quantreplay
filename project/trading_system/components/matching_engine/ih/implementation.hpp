@@ -29,9 +29,6 @@ class MatchingEngine::Implementation {
   auto dispatch_client_disconnected_cmd(const protocol::Session& client_session)
       -> void;
 
-  auto dispatch_instrument_state_capture_cmd(protocol::InstrumentState& reply)
-      -> void;
-
   auto dispatch_store_state_cmd(market_state::InstrumentState& state) -> void;
 
   auto dispatch_recover_state_cmd(market_state::InstrumentState state) -> void;
@@ -60,9 +57,6 @@ class MatchingEngine::Implementation {
 
   auto create_process_market_data_request_command(
       protocol::MarketDataRequest request) -> command::ProcessMarketDataRequest;
-
-  auto create_capture_instrument_state_command(protocol::InstrumentState& reply)
-      -> command::CaptureInstrumentState;
 
   auto create_store_state_command(market_state::InstrumentState& state)
       -> command::StoreState;

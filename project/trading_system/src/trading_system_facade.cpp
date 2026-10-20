@@ -62,13 +62,6 @@ auto TradingSystemFacade::execute(
   execution_system_.execute_request(request);
 }
 
-auto TradingSystemFacade::execute(
-    const protocol::InstrumentStateRequest& request,
-    [[maybe_unused]] protocol::InstrumentState& reply) -> void {
-  log::debug("trading system received {}", request);
-  execution_system_.execute_request(request, reply);
-}
-
 auto TradingSystemFacade::execute(const protocol::HaltPhaseRequest& request,
                                   protocol::HaltPhaseReply& reply) -> void {
   event_controller_.process(request, reply);

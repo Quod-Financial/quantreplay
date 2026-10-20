@@ -12,9 +12,9 @@
 namespace simulator::trading_system::ies {
 
 struct PhaseRecord {
-  std::chrono::minutes begin = std::chrono::minutes(0);
-  std::chrono::minutes end = std::chrono::minutes(0);
-  std::chrono::minutes end_range = std::chrono::minutes(0);
+  std::chrono::seconds begin = std::chrono::seconds(0);
+  std::chrono::seconds end = std::chrono::seconds(0);
+  std::chrono::seconds end_range = std::chrono::seconds(0);
   std::variant<TradingPhase, TradingStatus> phase;
   bool allow_cancels_on_halt = false;
 
@@ -52,8 +52,8 @@ struct fmt::formatter<simulator::trading_system::ies::PhaseRecord> {
                           // clang-format off
                           "{{ "
                             "\"PhaseRecord\": {{ "
-                              "\"begin\": \"{:%H:%M}\", "
-                              "\"end\": \"{:%H:%M}\", "
+                              "\"begin\": \"{:%H:%M:%S}\", "
+                              "\"end\": \"{:%H:%M:%S}\", "
                               "\"end_range\": \"{:%Q%q}\", "
                               "\"phase\": \"{}\", "
                               "\"allow_cancels_on_halt\": \"{}\" "

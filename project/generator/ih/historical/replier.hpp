@@ -3,12 +3,10 @@
 
 #include <chrono>
 #include <memory>
-#include <vector>
 
 #include "data_layer/api/models/datasource.hpp"
-#include "ih/context/instrument_context.hpp"
 #include "ih/historical/data/provider.hpp"
-#include "ih/historical/processor.hpp"
+#include "ih/historical/processing/action_sink.hpp"
 #include "ih/historical/scheduler.hpp"
 #include "ih/utils/executable.hpp"
 
@@ -16,14 +14,10 @@ namespace simulator::generator::historical {
 
 class Replier : public generator::Executable {
  public:
-  using Datasources = std::vector<data_layer::Datasource>;
-  using InstrumentsContexts =
-      std::vector<std::shared_ptr<OrderInstrumentContext>>;
-
   Replier() = delete;
 
-  Replier(const Datasources& datasources,
-          const InstrumentsContexts& instruments_contexts);
+  Replier(const data_layer::Datasource& datasource,
+          std::unique_ptr<ActionSink> processor);
 
   [[nodiscard]]
   auto finished() const noexcept -> bool override;
@@ -36,10 +30,10 @@ class Replier : public generator::Executable {
   auto next_exec_timeout() const -> std::chrono::microseconds override;
 
  private:
-  static auto create_provider(const Datasources& datasources)
+  static auto create_provider(const data_layer::Datasource& datasource)
       -> std::unique_ptr<DataProvider>;
 
-  std::unique_ptr<Processor> historical_processor_;
+  std::unique_ptr<ActionSink> historical_processor_;
   std::unique_ptr<Scheduler> actions_scheduler_;
 };
 
