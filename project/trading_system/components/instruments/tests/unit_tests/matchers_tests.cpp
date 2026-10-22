@@ -331,7 +331,7 @@ struct InstrumentPartyIdMatcher : InstrumentMatcherTest {
     descriptor.parties = {{PartyId{"PARTY"},
                            PartyIdSource::Option::Proprietary,
                            PartyRole::Option::LiquidityProvider}};
-  };
+  }
 };
 
 TEST_F(InstrumentPartyIdMatcher, MatchWhenPartySpecifiedInInstrument) {

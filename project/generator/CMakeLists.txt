@@ -126,6 +126,7 @@ add_static_library(
     src/historical/mapping/specification.cpp
     src/historical/parsing/params.cpp
     src/historical/parsing/parsing.cpp
+    src/historical/parsing/row.cpp
     src/historical/processing/action_processor.cpp
     src/historical/processing/composite_processor.cpp
     src/historical/processing/price_processor.cpp

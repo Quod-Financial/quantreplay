@@ -15,6 +15,7 @@
 #include "middleware/routing/generator_initiator_event_channel.hpp"
 #include "middleware/routing/market_data_reply_channel.hpp"
 #include "middleware/routing/market_data_request_channel.hpp"
+#include "middleware/routing/trading_admin_channel.hpp"
 #include "middleware/routing/trading_reply_channel.hpp"
 #include "middleware/routing/trading_request_channel.hpp"
 #include "middleware/routing/trading_session_event_channel.hpp"

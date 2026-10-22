@@ -46,7 +46,7 @@ struct TzClock {
   using duration = std::chrono::nanoseconds;
   using time_point = std::chrono::time_point<TzClock, duration>;
 
-  explicit TzClock(std::string_view timezone);
+  explicit TzClock(std::string_view timezone_name);
 
   TzClock();
   TzClock(const TzClock&);

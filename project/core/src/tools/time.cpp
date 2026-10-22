@@ -50,8 +50,8 @@ class TzClock::Implementation {
   const date::time_zone* timezone_ = nullptr;
 };
 
-TzClock::TzClock(std::string_view timezone)
-    : impl_(std::make_unique<Implementation>(timezone)) {}
+TzClock::TzClock(std::string_view timezone_name)
+    : impl_(std::make_unique<Implementation>(timezone_name)) {}
 
 TzClock::TzClock() : TzClock("UTC") {}
 TzClock::TzClock(const TzClock&) = default;

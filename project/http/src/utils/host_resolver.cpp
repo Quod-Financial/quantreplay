@@ -8,6 +8,7 @@
 
 #include <array>
 #include <climits>
+#include <cstring>
 #include <string>
 
 #include "log/logging.hpp"
@@ -47,8 +48,8 @@ auto resolve_host_ip() -> std::string {
   }
 
   std::array<char, INET_ADDRSTRLEN> host_ip{};
-  const auto& address =
-      *reinterpret_cast<const sockaddr_in*>(resolved->ai_addr);  // NOLINT
+  sockaddr_in address{};
+  std::memcpy(&address, resolved->ai_addr, sizeof(address));
   const auto* converted =
       ::inet_ntop(AF_INET, &address.sin_addr, host_ip.data(), host_ip.size());
   ::freeaddrinfo(resolved);

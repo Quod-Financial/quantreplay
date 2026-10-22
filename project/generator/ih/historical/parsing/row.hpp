@@ -1,11 +1,8 @@
 #ifndef SIMULATOR_GENERATOR_IH_HISTORICAL_PARSING_ROW_HPP_
 #define SIMULATOR_GENERATOR_IH_HISTORICAL_PARSING_ROW_HPP_
 
-#include <fmt/format.h>
-
 #include <csv.hpp>
 #include <pqxx/row>
-#include <stdexcept>
 #include <string_view>
 #include <vector>
 
@@ -40,16 +37,7 @@ class Row {
   }
 
   [[nodiscard]]
-  auto operator[](std::size_t index) const -> std::string_view {
-    if (index < columns()) {
-      return cells_[index];
-    }
-
-    throw std::out_of_range(
-        fmt::format("column index {} is out of historical row column count {}",
-                    index,
-                    columns()));
-  }
+  auto operator[](std::size_t index) const -> std::string_view;
 
   auto emplace_next(std::string_view cell) -> void {
     cells_.emplace_back(cell);

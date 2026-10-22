@@ -52,7 +52,7 @@ template <>
 struct fmt::formatter<simulator::protocol::GenerationStatusRequest> {
   using formattable = simulator::protocol::GenerationStatusRequest;
 
-  constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); };
+  constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
   auto format(const formattable& request, format_context& context) const
       -> decltype(context.out());
@@ -62,7 +62,7 @@ template <>
 struct fmt::formatter<simulator::protocol::GenerationStatusReply> {
   using formattable = simulator::protocol::GenerationStatusReply;
 
-  constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); };
+  constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
   auto format(const formattable& reply, format_context& context) const
       -> decltype(context.out());

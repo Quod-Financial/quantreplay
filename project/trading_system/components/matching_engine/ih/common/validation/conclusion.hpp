@@ -20,7 +20,7 @@ class Conclusion {
   [[nodiscard]]
   static auto success() -> Conclusion {
     return {};
-  };
+  }
 
   [[nodiscard]]
   static auto failure(std::string_view reason) -> Conclusion {

@@ -5,7 +5,7 @@
 namespace simulator::log {
 
 auto EscapedPayloadFlag::format(const spdlog::details::log_msg& msg,
-                                const std::tm& tm_time,
+                                const std::tm& /*tm_time*/,
                                 spdlog::memory_buf_t& dest) -> void {
   // Debug fmt format. The string is quoted and special characters escaped:
   // a message with "quotation marks" -> "a message with \"quotation marks\""

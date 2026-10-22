@@ -58,33 +58,33 @@ class Marshaller {
 #define DEFINE_MARSHALLING_OPERATOR(TYPE, ACCEPTOR) \
   auto operator()(Attribute field, TYPE value)->void { ACCEPTOR(field, value); }
 
-  DEFINE_MARSHALLING_OPERATOR(bool, boolean);
-  DEFINE_MARSHALLING_OPERATOR(char, character);
-  DEFINE_MARSHALLING_OPERATOR(std::int32_t, int32);
-  DEFINE_MARSHALLING_OPERATOR(std::uint16_t, uint16);
-  DEFINE_MARSHALLING_OPERATOR(std::uint32_t, uint32);
-  DEFINE_MARSHALLING_OPERATOR(std::uint64_t, uint64);
-  DEFINE_MARSHALLING_OPERATOR(double, real);
-  DEFINE_MARSHALLING_OPERATOR(const std::string&, string);
-  DEFINE_MARSHALLING_OPERATOR(core::sys_us, timestamp);
-  DEFINE_MARSHALLING_OPERATOR(Venue::EngineType, engine_type);
-  DEFINE_MARSHALLING_OPERATOR(Datasource::Format, datasource_format);
-  DEFINE_MARSHALLING_OPERATOR(Datasource::Type, datasource_type);
-  DEFINE_MARSHALLING_OPERATOR(MarketPhase::Phase, market_phase_type);
-  DEFINE_MARSHALLING_OPERATOR(const std::optional<bool>&, optional_boolean);
+  DEFINE_MARSHALLING_OPERATOR(bool, boolean)
+  DEFINE_MARSHALLING_OPERATOR(char, character)
+  DEFINE_MARSHALLING_OPERATOR(std::int32_t, int32)
+  DEFINE_MARSHALLING_OPERATOR(std::uint16_t, uint16)
+  DEFINE_MARSHALLING_OPERATOR(std::uint32_t, uint32)
+  DEFINE_MARSHALLING_OPERATOR(std::uint64_t, uint64)
+  DEFINE_MARSHALLING_OPERATOR(double, real)
+  DEFINE_MARSHALLING_OPERATOR(const std::string&, string)
+  DEFINE_MARSHALLING_OPERATOR(core::sys_us, timestamp)
+  DEFINE_MARSHALLING_OPERATOR(Venue::EngineType, engine_type)
+  DEFINE_MARSHALLING_OPERATOR(Datasource::Format, datasource_format)
+  DEFINE_MARSHALLING_OPERATOR(Datasource::Type, datasource_type)
+  DEFINE_MARSHALLING_OPERATOR(MarketPhase::Phase, market_phase_type)
+  DEFINE_MARSHALLING_OPERATOR(const std::optional<bool>&, optional_boolean)
   DEFINE_MARSHALLING_OPERATOR(const std::optional<std::int32_t>&,
-                              optional_int32);
-  DEFINE_MARSHALLING_OPERATOR(const std::optional<double>&, optional_real);
+                              optional_int32)
+  DEFINE_MARSHALLING_OPERATOR(const std::optional<double>&, optional_real)
   DEFINE_MARSHALLING_OPERATOR(const std::optional<std::uint16_t>&,
-                              optional_uint16);
+                              optional_uint16)
   DEFINE_MARSHALLING_OPERATOR(const std::optional<std::uint32_t>&,
-                              optional_uint32);
+                              optional_uint32)
   DEFINE_MARSHALLING_OPERATOR(const std::optional<std::uint64_t>&,
-                              optional_uint64);
+                              optional_uint64)
   DEFINE_MARSHALLING_OPERATOR(const std::optional<std::string>&,
-                              optional_string);
+                              optional_string)
   DEFINE_MARSHALLING_OPERATOR(const std::optional<Venue::EngineType>&,
-                              optional_engine_type);
+                              optional_engine_type)
 
 #undef DEFINE_MARSHALLING_OPERATOR
 };
@@ -130,29 +130,29 @@ class Unmarshaller {
     return ACCEPTOR(field, type);                     \
   }
 
-  DEFINE_UNMARSHALLING_OPERATOR(bool&, boolean);
-  DEFINE_UNMARSHALLING_OPERATOR(char&, character);
-  DEFINE_UNMARSHALLING_OPERATOR(std::int32_t&, int32);
-  DEFINE_UNMARSHALLING_OPERATOR(std::uint16_t&, uint16);
-  DEFINE_UNMARSHALLING_OPERATOR(std::uint32_t&, uint32);
-  DEFINE_UNMARSHALLING_OPERATOR(std::uint64_t&, uint64);
-  DEFINE_UNMARSHALLING_OPERATOR(double&, real);
-  DEFINE_UNMARSHALLING_OPERATOR(std::string&, string);
-  DEFINE_UNMARSHALLING_OPERATOR(core::sys_us&, timestamp);
-  DEFINE_UNMARSHALLING_OPERATOR(Venue::EngineType&, engine_type);
-  DEFINE_UNMARSHALLING_OPERATOR(Datasource::Format&, datasource_format);
-  DEFINE_UNMARSHALLING_OPERATOR(Datasource::Type&, datasource_type);
-  DEFINE_UNMARSHALLING_OPERATOR(MarketPhase::Phase&, market_phase_type);
-  DEFINE_UNMARSHALLING_OPERATOR(std::optional<bool>&, optional_boolean);
-  DEFINE_UNMARSHALLING_OPERATOR(std::optional<char>&, optional_character);
-  DEFINE_UNMARSHALLING_OPERATOR(std::optional<std::int32_t>&, optional_int32);
-  DEFINE_UNMARSHALLING_OPERATOR(std::optional<std::uint16_t>&, optional_uint16);
-  DEFINE_UNMARSHALLING_OPERATOR(std::optional<std::uint32_t>&, optional_uint32);
-  DEFINE_UNMARSHALLING_OPERATOR(std::optional<std::uint64_t>&, optional_uint64);
-  DEFINE_UNMARSHALLING_OPERATOR(std::optional<double>&, optional_real);
-  DEFINE_UNMARSHALLING_OPERATOR(std::optional<std::string>&, optional_string);
+  DEFINE_UNMARSHALLING_OPERATOR(bool&, boolean)
+  DEFINE_UNMARSHALLING_OPERATOR(char&, character)
+  DEFINE_UNMARSHALLING_OPERATOR(std::int32_t&, int32)
+  DEFINE_UNMARSHALLING_OPERATOR(std::uint16_t&, uint16)
+  DEFINE_UNMARSHALLING_OPERATOR(std::uint32_t&, uint32)
+  DEFINE_UNMARSHALLING_OPERATOR(std::uint64_t&, uint64)
+  DEFINE_UNMARSHALLING_OPERATOR(double&, real)
+  DEFINE_UNMARSHALLING_OPERATOR(std::string&, string)
+  DEFINE_UNMARSHALLING_OPERATOR(core::sys_us&, timestamp)
+  DEFINE_UNMARSHALLING_OPERATOR(Venue::EngineType&, engine_type)
+  DEFINE_UNMARSHALLING_OPERATOR(Datasource::Format&, datasource_format)
+  DEFINE_UNMARSHALLING_OPERATOR(Datasource::Type&, datasource_type)
+  DEFINE_UNMARSHALLING_OPERATOR(MarketPhase::Phase&, market_phase_type)
+  DEFINE_UNMARSHALLING_OPERATOR(std::optional<bool>&, optional_boolean)
+  DEFINE_UNMARSHALLING_OPERATOR(std::optional<char>&, optional_character)
+  DEFINE_UNMARSHALLING_OPERATOR(std::optional<std::int32_t>&, optional_int32)
+  DEFINE_UNMARSHALLING_OPERATOR(std::optional<std::uint16_t>&, optional_uint16)
+  DEFINE_UNMARSHALLING_OPERATOR(std::optional<std::uint32_t>&, optional_uint32)
+  DEFINE_UNMARSHALLING_OPERATOR(std::optional<std::uint64_t>&, optional_uint64)
+  DEFINE_UNMARSHALLING_OPERATOR(std::optional<double>&, optional_real)
+  DEFINE_UNMARSHALLING_OPERATOR(std::optional<std::string>&, optional_string)
   DEFINE_UNMARSHALLING_OPERATOR(std::optional<Venue::EngineType>&,
-                                optional_engine_type);
+                                optional_engine_type)
 
 #undef DEFINE_UNMARSHALLING_OPERATOR
 };

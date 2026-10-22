@@ -13,7 +13,7 @@ struct fmt::formatter<std::optional<T>> {
   static constexpr std::string_view none{"none"};
 
  public:
-  constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); };
+  constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
   auto format(const std::optional<T>& value, format_context& context) const
       -> decltype(context.out()) {

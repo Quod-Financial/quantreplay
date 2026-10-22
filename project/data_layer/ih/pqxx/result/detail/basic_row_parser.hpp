@@ -194,8 +194,8 @@ class BasicRowParser {
 
   std::reference_wrapper<const pqxx::row> row_;
 
-  internal_pqxx::ColumnResolver column_resolver_;
-  internal_pqxx::EnumerationResolver enum_resolver_;
+  static constexpr internal_pqxx::ColumnResolver column_resolver_{};
+  static constexpr internal_pqxx::EnumerationResolver enum_resolver_{};
 };
 
 }  // namespace simulator::data_layer::internal_pqxx::detail

@@ -148,10 +148,10 @@ auto GeneratedOrdersRegistryImpl::update(Storage::iterator stored_it,
   remove_by_owner_association(stored_it);
 
   // Remove existent by-id association
-  auto by_id_assoc_it =
-      by_identifier_assoc_.find(stored_it->get_order_id().value());
-  assert(by_id_assoc_it != std::end(by_identifier_assoc_));
-  by_identifier_assoc_.erase(by_id_assoc_it);
+  [[maybe_unused]]
+  const auto erased_count =
+      by_identifier_assoc_.erase(stored_it->get_order_id().value());
+  assert(erased_count == 1);
 
   stored_it->apply(std::move(patch));
 

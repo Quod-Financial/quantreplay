@@ -42,7 +42,7 @@ template <>
 struct fmt::formatter<simulator::protocol::HaltPhaseRequest> {
   using formattable = simulator::protocol::HaltPhaseRequest;
 
-  constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); };
+  constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
   auto format(formattable request, format_context& context) const
       -> decltype(context.out());
@@ -61,7 +61,7 @@ template <>
 struct fmt::formatter<simulator::protocol::HaltPhaseReply> {
   using formattable = simulator::protocol::HaltPhaseReply;
 
-  constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); };
+  constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
   auto format(formattable reply, format_context& context) const
       -> decltype(context.out());
@@ -71,7 +71,7 @@ template <>
 struct fmt::formatter<simulator::protocol::ResumePhaseRequest> {
   using formattable = simulator::protocol::ResumePhaseRequest;
 
-  constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); };
+  constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
   auto format(formattable request, format_context& context) const
       -> decltype(context.out());
@@ -90,7 +90,7 @@ template <>
 struct fmt::formatter<simulator::protocol::ResumePhaseReply> {
   using formattable = simulator::protocol::ResumePhaseReply;
 
-  constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); };
+  constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
   auto format(formattable reply, format_context& context) const
       -> decltype(context.out());

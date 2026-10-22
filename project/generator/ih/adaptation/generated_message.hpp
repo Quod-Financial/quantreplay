@@ -28,7 +28,7 @@ struct GeneratedMessage {
   std::optional<OrderStatus> order_status;
 };
 
-auto operator<<(std::ostream& os, MessageType& message_type) -> std::ostream&;
+auto operator<<(std::ostream& os, MessageType message_type) -> std::ostream&;
 
 auto operator<<(std::ostream& os, const GeneratedMessage& message)
     -> std::ostream&;

@@ -9,8 +9,8 @@ namespace simulator::trading_system::test {
 
 struct RepositoryAccessorMock : public RepositoryAccessor {
   // clang-format off
-  MOCK_METHOD(void, unicast_impl, (InstrumentId, tl::function_ref<void(TradingEngine&)>), (const override));
-  MOCK_METHOD(void, broadcast_impl, (tl::function_ref<void(TradingEngine&)>), (const override));
+  MOCK_METHOD(void, unicast_impl, (InstrumentId, tl::function_ref<void(TradingEngine&)>), (const, override));
+  MOCK_METHOD(void, broadcast_impl, (tl::function_ref<void(TradingEngine&)>), (const, override));
   // clang-format on
 };
 

@@ -47,10 +47,14 @@ function(set_project_warnings project_name)
       -Wnull-dereference # warn if a null dereference is detected
       -Wdouble-promotion # warn if float is implicit promoted to double
       -Wformat=2 # warn on security issues around functions that format output (ie printf)
+      -Wsuggest-override # warn if an overriding function is not marked override
+      -Wcast-qual # warn if a cast removes a const or volatile qualifier
+      -Wextra-semi # warn about redundant semicolons after in-class function definitions
+      -Wundef # warn if an undefined identifier is evaluated in an #if directive
   )
 
   if(WARNINGS_AS_ERRORS)
-    #set(CLANG_WARNINGS ${CLANG_WARNINGS} -Werror)
+    set(CLANG_WARNINGS ${CLANG_WARNINGS} -Werror)
     set(MSVC_WARNINGS ${MSVC_WARNINGS} /WX)
   endif()
 
@@ -61,18 +65,27 @@ function(set_project_warnings project_name)
       -Wduplicated-branches # warn if if / else branches have duplicated code
       -Wlogical-op # warn about logical operations being used where bitwise were probably wanted
       -Wuseless-cast # warn if you perform a cast to the same type
+      -Wcast-align=strict # warn for casts increasing alignment even on targets that tolerate misaligned access
+      -Wmissing-declarations # warn if a global function is defined without a previous declaration
+      -Wredundant-decls # warn if anything is declared more than once in the same scope
+  )
+  list(REMOVE_ITEM GCC_WARNINGS -Wcast-align)
+
+  set(CLANG_ONLY_WARNINGS
+      -Wmissing-prototypes # warn if a global function is defined without a previous declaration
+      -Wimplicit-fallthrough # warn on unannotated switch fall-through, which GCC gets from -Wextra
   )
 
   if(MSVC)
     set(PROJECT_WARNINGS ${MSVC_WARNINGS})
   elseif(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang")
-    set(PROJECT_WARNINGS ${CLANG_WARNINGS})
+    set(PROJECT_WARNINGS ${CLANG_WARNINGS} ${CLANG_ONLY_WARNINGS})
   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     set(PROJECT_WARNINGS ${GCC_WARNINGS})
   else()
     message(AUTHOR_WARNING "No compiler warnings set for '${CMAKE_CXX_COMPILER_ID}' compiler.")
   endif()
 
-  target_compile_options(${project_name} INTERFACE ${PROJECT_WARNINGS})
+  target_compile_options(${project_name} PRIVATE ${PROJECT_WARNINGS})
 
 endfunction()
