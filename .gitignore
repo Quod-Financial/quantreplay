@@ -70,6 +70,7 @@ devenv/*
 # Ignore Python virtual environment
 env/*
 
-# Documentation test output
-docs/*/output/
+# Documentation build output, written next to each document's sources
+docs/*/*.html
+docs/*/*.pdf
 
