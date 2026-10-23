@@ -51,6 +51,8 @@ jobs:
         run: cmake --preset ci-gitlab-release-config -DSIM_VERSION=$SIM_VERSION
 
       - name: Build Project
+        id: build
+        shell: bash
         run: cmake --build --preset ci-gitlab-release --target all 2>&1 | tee compilation_log.txt
 
       - name: Upload Build Artifacts
@@ -60,6 +62,14 @@ jobs:
           path: |
             release-build/
             compilation_log.txt
+          retention-days: 2
+
+      - name: Upload Compilation Log
+        if: failure() && steps.build.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: compilation-log-${{ github.run_id }}
+          path: compilation_log.txt
           retention-days: 2
 
   release-test:

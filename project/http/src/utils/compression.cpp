@@ -1,7 +1,6 @@
 #include "ih/utils/compression.hpp"
 
 #include <fmt/format.h>
-#include <fmt/std.h>
 #include <zip.h>
 
 #include <algorithm>
@@ -133,9 +132,9 @@ auto compress_files_to_zip(const std::vector<ZipEntry>& entries)
     zip_source_t* file_source = zip_source_file(
         archive.get(), entry.source.string().c_str(), 0, ZIP_LENGTH_TO_END);
     if (file_source == nullptr) {
-      throw_archive_error(
-          fmt::format("failed to open '{}' for compression", entry.source),
-          archive.get());
+      throw_archive_error(fmt::format("failed to open '{}' for compression",
+                                      entry.source.string()),
+                          archive.get());
     }
 
     const zip_int64_t index =
