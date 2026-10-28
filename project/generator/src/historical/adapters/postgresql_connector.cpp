@@ -21,7 +21,8 @@ namespace simulator::generator::historical {
 PostgresConnector::PostgresConnector(historical::DatabaseParsingParams params,
                                      historical::MappingParams mapping_params,
                                      pqxx::connection connection)
-    : mapping_params_{std::move(mapping_params)},
+    : DataAccessAdapter{params.datasource_instrument_filter()},
+      mapping_params_{std::move(mapping_params)},
       parsing_params_{std::move(params)} {
   load_data(connection);
 

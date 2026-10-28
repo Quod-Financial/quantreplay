@@ -3,8 +3,10 @@
 
 #include <cstdint>
 #include <string>
+#include <utility>
 
 #include "data_layer/api/models/datasource.hpp"
+#include "ih/historical/data/instrument_filter.hpp"
 
 namespace simulator::generator::historical {
 
@@ -35,9 +37,19 @@ class GeneralDatasourceParams {
     max_depth_levels_ = levels;
   }
 
+  [[nodiscard]]
+  auto instrument_filter() const noexcept -> const InstrumentFilter& {
+    return instrument_filter_;
+  }
+
+  auto set_instrument_filter(InstrumentFilter filter) -> void {
+    instrument_filter_ = std::move(filter);
+  }
+
  private:
   std::string connection_;
   std::string name_;
+  InstrumentFilter instrument_filter_;
   std::uint32_t max_depth_levels_{data_layer::Datasource::AllDepthLevels};
 };
 
@@ -63,6 +75,12 @@ class CsvParsingParams {
   [[nodiscard]]
   auto datasource_max_depth_levels() const noexcept -> std::uint32_t {
     return general_params_.max_depth_levels();
+  }
+
+  [[nodiscard]]
+  auto datasource_instrument_filter() const noexcept
+      -> const InstrumentFilter& {
+    return general_params_.instrument_filter();
   }
 
   [[nodiscard]]
@@ -122,6 +140,12 @@ class DatabaseParsingParams {
   [[nodiscard]]
   auto datasource_max_depth_levels() const noexcept -> std::uint32_t {
     return general_params_.max_depth_levels();
+  }
+
+  [[nodiscard]]
+  auto datasource_instrument_filter() const noexcept
+      -> const InstrumentFilter& {
+    return general_params_.instrument_filter();
   }
 
   [[nodiscard]]

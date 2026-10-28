@@ -1,11 +1,13 @@
 #include "ih/historical/adapters/data_access_adapter.hpp"
 
+#include <cstddef>
 #include <stdexcept>
 #include <utility>
 
 #include "data_layer/api/models/datasource.hpp"
 #include "ih/historical/adapters/csv_reader.hpp"
 #include "ih/historical/adapters/postgresql_connector.hpp"
+#include "ih/historical/data/instrument_filter.hpp"
 #include "ih/historical/data/record.hpp"
 #include "ih/historical/mapping/params.hpp"
 #include "ih/historical/parsing/params.hpp"
@@ -13,7 +15,12 @@
 
 namespace simulator::generator::historical {
 
+DataAccessAdapter::DataAccessAdapter(InstrumentFilter instrument_filter)
+    : instrument_filter_{std::move(instrument_filter)} {}
+
 auto DataAccessAdapter::accept(const RecordVisitor& visitor) noexcept -> void {
+  std::size_t unlisted_records = 0;
+
   while (has_next_record()) {
     std::unique_ptr<Record::Builder> builder =
         std::make_unique<Record::BuilderImpl>();
@@ -28,11 +35,22 @@ auto DataAccessAdapter::accept(const RecordVisitor& visitor) noexcept -> void {
 
     try {
       Record record = builder->construct();
+      if (!instrument_filter_.accepts(record.instrument())) {
+        ++unlisted_records;
+        continue;
+      }
       visitor(std::move(record));
     } catch (const std::exception& exception) {
       log::warn("failed to process historical data record: {}",
                 exception.what());
     }
+  }
+
+  if (unlisted_records != 0) {
+    log::debug(
+        "skipped {} historical data records of instruments not listed by the "
+        "datasource",
+        unlisted_records);
   }
 }
 

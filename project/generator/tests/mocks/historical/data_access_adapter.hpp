@@ -13,6 +13,8 @@ namespace simulator::generator::mock {
 
 class DataAccessAdapter : public historical::DataAccessAdapter {
  public:
+  using historical::DataAccessAdapter::DataAccessAdapter;
+
   MOCK_METHOD(bool, has_next_record, (), (const, noexcept, override));
 
   MOCK_METHOD(void,

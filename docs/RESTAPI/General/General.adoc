@@ -564,6 +564,7 @@ The trigger for playing back the content of a datasource follows the same logic 
 The orderOnStartup property of a venue determines whether to play back any configured datasources when the simulator starts, and the genstart REST API can be used to start play back on demand.
 If the randomOrdersEnabled property of a listing is true, then both random order generation and playback from a configured datasource will begin and continue to run simultaneously.
 If the randomPriceOnly property of a datasource is true, no orders are derived from its rows, and the datasource is used only for deriving prices during random order generation (see <<adminsets-listings-randpricesrc,this section>>).
+If the listings property of a CSV or database datasource is not empty, only the rows whose Instrument value is one of the listed symbols are processed; the other rows are skipped as if they were absent from the datasource, including for the playback timing described below (see <<adminsets-data-listings,this section>>).
 
 In processing each datasource row, the simulator compares the current state of the matching engine for the given listing of each row, and generates a series of order actions 
 (new orders, amends, cancels) to modify the current state of the matching engine to change to a state that matches the values from the current datasource row being processed. 

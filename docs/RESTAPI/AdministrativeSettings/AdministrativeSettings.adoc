@@ -1005,7 +1005,7 @@ Cannot be 0, and must be greater than `textHeaderRow`, if present (supported onl
 
 | columnMapping	| Array	| Mapping between the internal simulator fields and the columns of the datasource (supported only for CSV and PSQL formats),
 see <<adminsets-data-colmapping>>
-| listings	| Array	| For FIX Format, list of Symbols to subscribe to market data. An empty list results in no subscriptions. See <<adminsets-data-listings,Listings Sub-List>>.
+| listings	| Array	| For FIX Format, list of Symbols to subscribe to market data. An empty list results in no subscriptions. For CSV and PSQL Formats, list of Symbols whose market data is processed. An empty list results in all Symbols being processed. See <<adminsets-data-listings,Listings Sub-List>>.
 | randomPriceOnly	| Boolean	a| Whether this datasource is used only as a source for deriving prices during random order generation, and will not result in playback of data through associated configured listings.
 
 *   When `false` (the default), orders are derived from the datasource and it can also be used as a random order price source.
@@ -1058,15 +1058,18 @@ To use this method, `textHeaderRow`  for the datasource must be 0.
 [[adminsets-data-listings]]
 ==== Listings Sub-List
 
-Listings that a FIX format datasource subscribes to as an external market data feed. The list is currently ignored for the CSV and PSQL datasource formats.
+Listings that a FIX format datasource subscribes to as an external market data feed.
+For the CSV and PSQL formats, only the rows of the listed symbols are processed, for playback and for random prices alike, or the rows of all symbols when there are no listings.
+A random price source naming an unlisted symbol therefore gets no prices from the datasource (see <<adminsets-listings-randpricesrc,Random Price Sources Sub-List>>).
 
 [cols="15,15,70"]
 |===
 | Path | Type |Description
 
 | datasourceId	| Integer	| An identifier of the datasource record which has a listing entry. Users may omit to send this value in requests.
-| symbol	| Text	| The symbol requested from the market data feed (tag 55).
+| symbol	| Text	| For FIX format, the symbol requested from the market data feed (tag 55).
 See <<general-datasource-formatconfig-fix,this section>> for how the received market data is applied.
+For CSV and PSQL formats, the symbol is matched exactly, including case, against the Instrument value of each row.
 
 |===
 

@@ -2,18 +2,38 @@
 
 #include <fmt/format.h>
 
+#include <algorithm>
+#include <iterator>
 #include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "data_layer/api/models/datasource.hpp"
+#include "data_layer/api/models/datasource_listing.hpp"
+#include "ih/historical/data/instrument_filter.hpp"
 
 namespace simulator::generator::historical {
 namespace {
+
+auto make_instrument_filter(const data_layer::Datasource& datasource)
+    -> InstrumentFilter {
+  const std::vector<data_layer::DatasourceListing>& listings =
+      datasource.listings();
+  std::vector<std::string> listed_instruments;
+  listed_instruments.reserve(listings.size());
+  std::ranges::transform(listings,
+                         std::back_inserter(listed_instruments),
+                         &data_layer::DatasourceListing::symbol);
+  return InstrumentFilter{std::move(listed_instruments)};
+}
 
 auto make_general_params(const data_layer::Datasource& datasource)
     -> GeneralDatasourceParams {
   GeneralDatasourceParams general_params;
   general_params.set_name(datasource.name());
   general_params.set_connection(datasource.connection());
+  general_params.set_instrument_filter(make_instrument_filter(datasource));
 
   if (const auto& depth = datasource.max_depth_levels()) {
     general_params.set_max_depth_levels(depth.value());

@@ -30,6 +30,7 @@ add_target_tests(
     unit_tests/historical/adapters/csv_reader_tests.cpp
     unit_tests/historical/adapters/data_access_adapter_tests.cpp
     unit_tests/historical/data/action_tests.cpp
+    unit_tests/historical/data/instrument_filter_tests.cpp
     unit_tests/historical/data/level_checks_tests.cpp
     unit_tests/historical/data/level_tests.cpp
     unit_tests/historical/data/provider_tests.cpp

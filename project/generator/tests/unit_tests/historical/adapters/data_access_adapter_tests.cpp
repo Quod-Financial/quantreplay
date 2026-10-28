@@ -4,8 +4,11 @@
 #include <chrono>
 #include <exception>
 #include <functional>
+#include <string>
+#include <vector>
 
 #include "ih/historical/adapters/data_access_adapter.hpp"
+#include "ih/historical/data/instrument_filter.hpp"
 #include "ih/historical/data/record.hpp"
 #include "mocks/historical/data_access_adapter.hpp"
 
@@ -14,10 +17,10 @@ namespace {
 
 using namespace ::testing;
 
-ACTION(CreateValidRecord) {
+ACTION_P(CreateValidRecordOf, instrument) {
   std::unique_ptr<historical::Record::Builder>& record_builder = arg0;
   record_builder->with_received_time(std::chrono::system_clock::now())
-      .with_instrument("AAPL")
+      .with_instrument(instrument)
       .with_source_row(1);
 }
 
@@ -87,12 +90,33 @@ TEST(Generator_Historical_DataAccessAdapter, Accept_ValidRecord) {
       .WillRepeatedly(Return(false));
   EXPECT_CALL(adapter, parse_next_record)
       .Times(1)
-      .WillOnce(CreateValidRecord());
+      .WillOnce(CreateValidRecordOf("AAPL"));
 
   NoopRecordVisitor visitor{};
   EXPECT_CALL(visitor, accept).Times(1);
 
   EXPECT_NO_THROW(adapter.accept(visitor));
+}
+
+TEST(Generator_Historical_DataAccessAdapter,
+     Accept_PassesOnlyRecordsOfListedInstruments) {
+  mock::DataAccessAdapter adapter{
+      InstrumentFilter{std::vector<std::string>{"AAPL"}}};
+  EXPECT_CALL(adapter, has_next_record)
+      .Times(3)
+      .WillOnce(Return(true))
+      .WillOnce(Return(true))
+      .WillRepeatedly(Return(false));
+  EXPECT_CALL(adapter, parse_next_record)
+      .Times(2)
+      .WillOnce(CreateValidRecordOf("MSFT"))
+      .WillOnce(CreateValidRecordOf("AAPL"));
+
+  NoopRecordVisitor visitor{};
+  EXPECT_CALL(visitor, accept(Property(&Record::instrument, Eq("AAPL"))))
+      .Times(1);
+
+  adapter.accept(visitor);
 }
 
 }  // namespace

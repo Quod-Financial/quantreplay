@@ -34,6 +34,7 @@ add_static_library(
     ih/historical/adapters/csv_reader.hpp
     ih/historical/adapters/data_access_adapter.hpp
     ih/historical/adapters/postgresql_connector.hpp
+    ih/historical/data/instrument_filter.hpp
     ih/historical/data/level_checks.hpp
     ih/historical/data/provider.hpp
     ih/historical/data/record.hpp
@@ -116,6 +117,7 @@ add_static_library(
     src/historical/adapters/csv_reader.cpp
     src/historical/adapters/data_access_adapter.cpp
     src/historical/adapters/postgresql_connector.cpp
+    src/historical/data/instrument_filter.cpp
     src/historical/data/level_checks.cpp
     src/historical/data/provider.cpp
     src/historical/data/record.cpp

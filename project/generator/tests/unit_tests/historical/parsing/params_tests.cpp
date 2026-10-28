@@ -1,6 +1,10 @@
 #include <gtest/gtest.h>
 
+#include <string>
+#include <utility>
+
 #include "data_layer/api/models/datasource.hpp"
+#include "data_layer/api/models/datasource_listing.hpp"
 #include "ih/historical/parsing/params.hpp"
 
 namespace simulator::generator::historical::test {
@@ -20,6 +24,12 @@ auto make_datasource_patch() -> data_layer::Datasource::Patch {
 auto make_datasource(const data_layer::Datasource::Patch& patch)
     -> data_layer::Datasource {
   return data_layer::Datasource::create(patch, 0);
+}
+
+auto make_listing(std::string symbol) -> data_layer::DatasourceListing::Patch {
+  data_layer::DatasourceListing::Patch listing;
+  listing.with_symbol(std::move(symbol));
+  return listing;
 }
 
 struct GeneratorHistoricalParsingMakeCsvParsingParams : public ::testing::Test {
@@ -74,6 +84,16 @@ TEST_F(GeneratorHistoricalParsingMakeCsvParsingParams,
   const auto datasource = make_datasource(patch);
   const auto params = make_csv_parsing_params(datasource);
   ASSERT_EQ(params.datasource_max_depth_levels(), 42);
+}
+
+TEST_F(GeneratorHistoricalParsingMakeCsvParsingParams,
+       MakesWithInstrumentFilterAcceptingOnlyDatasourceListings) {
+  patch.with_listing(make_listing("AAPL"));
+
+  const auto datasource = make_datasource(patch);
+  const auto params = make_csv_parsing_params(datasource);
+  EXPECT_TRUE(params.datasource_instrument_filter().accepts("AAPL"));
+  EXPECT_FALSE(params.datasource_instrument_filter().accepts("MSFT"));
 }
 
 TEST_F(GeneratorHistoricalParsingMakeCsvParsingParams,
@@ -158,6 +178,16 @@ TEST_F(GeneratorHistoricalParsingMakeDatabaseParsingParams,
 
   const auto params = make_database_parsing_params(datasource);
   ASSERT_EQ(params.datasource_max_depth_levels(), 42);
+}
+
+TEST_F(GeneratorHistoricalParsingMakeDatabaseParsingParams,
+       MakesWithInstrumentFilterAcceptingOnlyDatasourceListings) {
+  patch.with_table_name("my_table").with_listing(make_listing("AAPL"));
+  const auto datasource = make_datasource(patch);
+
+  const auto params = make_database_parsing_params(datasource);
+  EXPECT_TRUE(params.datasource_instrument_filter().accepts("AAPL"));
+  EXPECT_FALSE(params.datasource_instrument_filter().accepts("MSFT"));
 }
 
 }  // namespace

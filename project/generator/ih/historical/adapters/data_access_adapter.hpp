@@ -4,6 +4,7 @@
 #include <functional>
 #include <memory>
 
+#include "ih/historical/data/instrument_filter.hpp"
 #include "ih/historical/data/record.hpp"
 
 namespace simulator::data_layer {
@@ -19,6 +20,8 @@ class DataAccessAdapter {
   using RecordVisitor = std::function<void(historical::Record)>;
 
   DataAccessAdapter() = default;
+
+  explicit DataAccessAdapter(InstrumentFilter instrument_filter);
 
   DataAccessAdapter(const DataAccessAdapter&) = default;
   auto operator=(const DataAccessAdapter&) -> DataAccessAdapter& = default;
@@ -36,6 +39,8 @@ class DataAccessAdapter {
 
   virtual auto parse_next_record(std::unique_ptr<Record::Builder>& builder)
       -> void = 0;
+
+  InstrumentFilter instrument_filter_;
 };
 
 class DataAccessAdapterFactory {

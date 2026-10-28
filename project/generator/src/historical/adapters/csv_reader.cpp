@@ -17,7 +17,8 @@ namespace simulator::generator::historical {
 CsvReader::CsvReader(historical::CsvParsingParams params,
                      MappingParams mapping_params,
                      csv::CSVReader& reader)
-    : parsing_params_(std::move(params)),
+    : DataAccessAdapter{params.datasource_instrument_filter()},
+      parsing_params_(std::move(params)),
       mapping_params_{std::move(mapping_params)} {
   load_csv_data(reader);
   init_mapping_params(reader);

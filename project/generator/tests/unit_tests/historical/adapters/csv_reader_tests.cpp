@@ -3,8 +3,11 @@
 
 #include <csv.hpp>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "ih/historical/adapters/csv_reader.hpp"
+#include "ih/historical/data/instrument_filter.hpp"
 #include "ih/historical/data/record.hpp"
 #include "ih/historical/mapping/params.hpp"
 #include "ih/historical/parsing/params.hpp"
@@ -22,13 +25,16 @@ class Generator_Historical_CsvReader : public testing::Test {
 
   static auto make_parsing_params(std::uint64_t header_row = 0,
                                   std::uint64_t data_row = 1,
-                                  char delimiter = ',') -> CsvParsingParams {
+                                  char delimiter = ',',
+                                  InstrumentFilter instrument_filter = {})
+      -> CsvParsingParams {
     std::string mock_path{"/a/path/to/nonexistent/csv-file.csv"};
     std::string mock_name{"Mock datasource name"};
 
     GeneralDatasourceParams general_params{};
     general_params.set_name(mock_name);
     general_params.set_connection(mock_path);
+    general_params.set_instrument_filter(std::move(instrument_filter));
 
     CsvParsingParams params{general_params};
     params.set_header_row(header_row);
@@ -207,6 +213,28 @@ TEST_F(Generator_Historical_CsvReader, ReadCsv_FromSpecificRow) {
 
   MockFunction<void(Record)> record_visitor;
   EXPECT_CALL(record_visitor, Call).Times(2);
+
+  historical::CsvReader reader{parsing_params, mapping_params, csv};
+  reader.accept(record_visitor.AsStdFunction());
+}
+
+TEST_F(Generator_Historical_CsvReader, ReadCsv_OnlyListedInstruments) {
+  // clang-format off
+  constexpr std::string_view csv_content =
+    "ReceivedTimeStamp,MessageTimeStamp,Instrument,BidParty,BidQuantity,BidPrice,AskPrice,AskQuantity,AskParty\r\n"
+    "2023-01-20 12:00:32.345,2023-01-20 12:00:33.006,AUD/CAD,BP1,120,12,22,220,AP1\r\n"
+    "2023-01-20 12:00:32.345,2023-01-20 12:00:33.006,EUR/USD,BP2,320,32,42,420,AP2\r\n";
+  // clang-format on
+
+  const MappingParams mapping_params = make_default_mapping();
+  const CsvParsingParams parsing_params = make_parsing_params(
+      1, 2, ',', InstrumentFilter{std::vector<std::string>{"EUR/USD"}});
+  csv::CSVReader csv = parse_csv(csv_content, parsing_params);
+
+  MockFunction<void(Record)> record_visitor;
+  EXPECT_CALL(record_visitor,
+              Call(Property(&Record::instrument, Eq("EUR/USD"))))
+      .Times(1);
 
   historical::CsvReader reader{parsing_params, mapping_params, csv};
   reader.accept(record_visitor.AsStdFunction());
