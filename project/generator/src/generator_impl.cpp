@@ -355,7 +355,7 @@ auto GeneratorImpl::make_orders_processor(
   }
 
   return hist_executor_factory_->create_orders_processor(
-      order_listings_contexts_);
+      order_listings_contexts_, datasource.datasource_id());
 }
 
 auto GeneratorImpl::make_price_source_processor(
@@ -378,9 +378,8 @@ auto GeneratorImpl::make_price_source_processor(
 
 auto GeneratorImpl::initialize_datasource_subscriptions(
     const std::vector<data_layer::Datasource>& datasources) -> void {
-  order_book_derivation_ = std::make_shared<mdata::OrderBookDerivation>(
-      std::make_shared<historical::ActionProcessor>(order_listings_contexts_),
-      generation_manager_);
+  order_book_derivation_ =
+      std::make_shared<mdata::OrderBookDerivation>(generation_manager_);
   market_data_router_ = std::make_unique<mdata::MarketDataRouter>(
       book_cache_,
       price_cache_,
@@ -425,7 +424,9 @@ auto GeneratorImpl::initialize_datasource_subscriptions(
         mdata::OrderDerivationRequirement{
             .symbol = requirement.symbol,
             .depth = subscription->depth,
-            .counterparty = *requirement.order_counterparty});
+            .counterparty = *requirement.order_counterparty},
+        std::make_shared<historical::ActionProcessor>(
+            order_listings_contexts_, requirement.datasource_id));
   }
 }
 

@@ -10,6 +10,7 @@
 #include "core/domain/attributes.hpp"
 #include "core/domain/market_data_entry.hpp"
 #include "ih/historical/data/record.hpp"
+#include "ih/historical/processing/record_sink.hpp"
 #include "ih/market_data/order_book_derivation.hpp"
 #include "ih/market_data/subscription_requirement.hpp"
 #include "mocks/context/component_context.hpp"
@@ -29,7 +30,7 @@ struct GeneratorOrderBookDerivation : public Test {
       std::make_shared<NiceMock<mock::RecordSink>>();
   std::shared_ptr<NiceMock<mock::ComponentContext>> context =
       std::make_shared<NiceMock<mock::ComponentContext>>();
-  OrderBookDerivation derivation{processor, context};
+  OrderBookDerivation derivation{context};
 
   GeneratorOrderBookDerivation() {
     ON_CALL(*context, is_component_running()).WillByDefault(Return(true));
@@ -38,10 +39,18 @@ struct GeneratorOrderBookDerivation : public Test {
   auto bind(const MdRequestId& request_id,
             Symbol symbol,
             MarketDepth depth = AllDepthLevels) -> void {
+    bind(request_id, std::move(symbol), depth, processor);
+  }
+
+  auto bind(const MdRequestId& request_id,
+            Symbol symbol,
+            MarketDepth depth,
+            std::shared_ptr<historical::RecordSink> bound_processor) -> void {
     derivation.add(request_id,
                    OrderDerivationRequirement{.symbol = std::move(symbol),
                                               .depth = depth,
-                                              .counterparty = PartyId{"DS42"}});
+                                              .counterparty = PartyId{"DS42"}},
+                   std::move(bound_processor));
   }
 
   auto expect_converted_records() -> void {
@@ -147,6 +156,29 @@ TEST_F(GeneratorOrderBookDerivation, NumbersConvertedRecordsPerSubscription) {
   EXPECT_THAT(converted_records[0].source_row(), Eq(1));
   EXPECT_THAT(converted_records[1].source_row(), Eq(2));
   EXPECT_THAT(converted_records[2].source_row(), Eq(1));
+}
+
+TEST_F(GeneratorOrderBookDerivation,
+       AppliesRecordWithProcessorOfItsSubscription) {
+  const auto other_processor = std::make_shared<StrictMock<mock::RecordSink>>();
+  bind(MdRequestId{"MD-1"}, Symbol{"AAPL"});
+  bind(MdRequestId{"MD-2"}, Symbol{"MSFT"}, AllDepthLevels, other_processor);
+
+  EXPECT_CALL(*processor, process(_)).Times(0);
+  EXPECT_CALL(*other_processor, process(_));
+
+  derivation.process(make_snapshot(MdRequestId{"MD-2"}));
+}
+
+TEST_F(GeneratorOrderBookDerivation,
+       KeepsFirstBoundProcessorOfSharedSubscription) {
+  const auto other_processor = std::make_shared<StrictMock<mock::RecordSink>>();
+  bind(MdRequestId{"MD-1"}, Symbol{"AAPL"});
+  bind(MdRequestId{"MD-1"}, Symbol{"AAPL"}, AllDepthLevels, other_processor);
+
+  EXPECT_CALL(*processor, process(_));
+
+  derivation.process(make_snapshot(MdRequestId{"MD-1"}));
 }
 
 TEST_F(GeneratorOrderBookDerivation, TruncatesRecordToSubscriptionDepth) {

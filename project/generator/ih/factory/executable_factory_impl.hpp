@@ -1,6 +1,7 @@
 #ifndef SIMULATOR_GENERATOR_IH_FACTORY_EXECUTABLE_FACTORY_IMPL_HPP_
 #define SIMULATOR_GENERATOR_IH_FACTORY_EXECUTABLE_FACTORY_IMPL_HPP_
 
+#include <cstdint>
 #include <memory>
 
 #include "data_layer/api/models/datasource.hpp"
@@ -35,7 +36,8 @@ class HistoricalReplierFactoryImpl final
   HistoricalReplierFactoryImpl() = default;
 
   [[nodiscard]]
-  auto create_orders_processor(const InstrumentsContexts& contexts)
+  auto create_orders_processor(const InstrumentsContexts& contexts,
+                               std::uint64_t datasource_id)
       -> std::unique_ptr<historical::ActionSink> override;
 
   [[nodiscard]]

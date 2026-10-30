@@ -38,7 +38,7 @@ struct GeneratorMarketDataRouter : public Test {
       std::make_shared<MarketDataBookCache>();
   std::shared_ptr<PriceCache> price_cache = std::make_shared<PriceCache>();
   std::shared_ptr<OrderBookDerivation> derivation =
-      std::make_shared<OrderBookDerivation>(record_sink, context);
+      std::make_shared<OrderBookDerivation>(context);
   MockFunction<void(const MdRequestId&)> handle_divergence;
   MarketDataRouter router{
       book_cache, price_cache, derivation, handle_divergence.AsStdFunction()};
@@ -64,7 +64,8 @@ struct GeneratorMarketDataRouter : public Test {
     derivation->add(request_id,
                     OrderDerivationRequirement{.symbol = Symbol{"VOW"},
                                                .depth = AllDepthLevels,
-                                               .counterparty = PartyId{"DS1"}});
+                                               .counterparty = PartyId{"DS1"}},
+                    record_sink);
   }
 
   [[nodiscard]]

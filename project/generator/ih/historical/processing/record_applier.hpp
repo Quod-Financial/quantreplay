@@ -23,7 +23,9 @@ class RecordApplier {
 
   RecordApplier() = delete;
 
-  static auto apply(historical::Record record, ContextPointer context) noexcept
+  static auto apply(historical::Record record,
+                    ContextPointer context,
+                    std::uint64_t datasource_id) noexcept
       -> std::vector<GeneratedMessage>;
 
  private:
@@ -43,7 +45,7 @@ class RecordApplier {
     std::optional<double> min_stale_offer;
   };
 
-  explicit RecordApplier(ContextPointer context) noexcept;
+  RecordApplier(ContextPointer context, std::uint64_t datasource_id) noexcept;
 
   auto process(historical::Record record) -> void;
 
@@ -59,6 +61,16 @@ class RecordApplier {
 
   auto find_same_party_side_order(const Order& order)
       -> std::optional<GeneratedOrderData>;
+
+  [[nodiscard]]
+  auto find_reachable_orders_of(const std::string& party)
+      -> std::vector<GeneratedOrderData>;
+
+  [[nodiscard]]
+  auto belongs_to_another_datasource(const GeneratedOrderData& order) const
+      -> bool;
+
+  auto adopt(const GeneratedOrderData& order) -> void;
 
   auto cancel(const GeneratedOrdersRegistry::Predicate& cancel_criteria)
       -> void;
@@ -88,6 +100,7 @@ class RecordApplier {
 
   ContextPointer context_;
 
+  std::uint64_t datasource_id_;
   std::uint64_t party_id_counter_{0};
 
   bool skip_bids_{false};

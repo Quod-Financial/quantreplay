@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <mutex>
 
 #include "ih/context/component_context.hpp"
 #include "ih/context/instrument_context.hpp"
@@ -45,6 +46,9 @@ class OrderInstrumentContextImpl : public OrderInstrumentContext {
 
   auto take_registry() noexcept -> GeneratedOrdersRegistry& override;
 
+  [[nodiscard]]
+  auto lock_record_application() -> std::unique_lock<std::mutex> override;
+
  private:
   data_layer::Listing instrument_;
 
@@ -53,6 +57,8 @@ class OrderInstrumentContextImpl : public OrderInstrumentContext {
   std::shared_ptr<ComponentContext> global_context_;
 
   std::unique_ptr<GeneratedOrdersRegistry> instrument_orders_registry_;
+
+  std::mutex record_application_mutex_;
 };
 
 class OrderGenerationContextImpl : public OrderGenerationContext {
@@ -82,6 +88,9 @@ class OrderGenerationContextImpl : public OrderGenerationContext {
 
   [[nodiscard]]
   auto take_registry() noexcept -> GeneratedOrdersRegistry& override;
+
+  [[nodiscard]]
+  auto lock_record_application() -> std::unique_lock<std::mutex> override;
 
   [[nodiscard]]
   auto get_price_seed() const noexcept -> const data_layer::PriceSeed& override;

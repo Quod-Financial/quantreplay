@@ -21,7 +21,8 @@
 namespace simulator::generator::historical {
 
 auto RecordApplier::apply(historical::Record record,
-                          RecordApplier::ContextPointer context) noexcept
+                          RecordApplier::ContextPointer context,
+                          std::uint64_t datasource_id) noexcept
     -> std::vector<GeneratedMessage> {
   bool failed = false;
   std::vector<GeneratedMessage> replies;
@@ -30,7 +31,7 @@ auto RecordApplier::apply(historical::Record record,
   const std::optional<std::string> source_name = record.source_name();
   const std::optional<std::string> source_conn = record.source_connection();
 
-  RecordApplier applier{std::move(context)};
+  RecordApplier applier{std::move(context), datasource_id};
 
   try {
     applier.process(std::move(record));
@@ -63,8 +64,9 @@ auto RecordApplier::apply(historical::Record record,
   return replies;
 }
 
-RecordApplier::RecordApplier(RecordApplier::ContextPointer context) noexcept
-    : context_{std::move(context)} {}
+RecordApplier::RecordApplier(RecordApplier::ContextPointer context,
+                             std::uint64_t datasource_id) noexcept
+    : context_{std::move(context)}, datasource_id_{datasource_id} {}
 
 void RecordApplier::process(historical::Record record) {
   if (record.has_levels()) {
@@ -83,8 +85,10 @@ void RecordApplier::process(historical::Record record) {
     cancel_offer_part();
 
     log::debug(
-        "created cancel messages for all bid and offer generated orders, "
-        "no levels are present in historical {}",
+        "created cancel messages for all bid and offer orders of the "
+        "datasource (id: {}) and random generation, no levels are present in "
+        "historical {}",
+        datasource_id_,
         record);
   }
 }
@@ -171,7 +175,7 @@ auto RecordApplier::apply_orders(std::vector<Order> incoming_orders) -> void {
     }
 
     auto order_message = RequestBuilder::construct(std::move(message_builder));
-    OrderRegistryUpdater::update(registry, order_message);
+    OrderRegistryUpdater::update(registry, order_message, datasource_id_);
 
     const auto& new_order_id = order_message.client_order_id->value();
     matched_order_ids_.insert(new_order_id);
@@ -182,13 +186,9 @@ auto RecordApplier::apply_orders(std::vector<Order> incoming_orders) -> void {
 
 auto RecordApplier::filter_already_placed_orders(
     std::vector<Order>& incoming_orders) -> void {
-  auto& context = *context_;
-  auto& registry = context.take_registry();
-
-  auto matches_existing_order = [this,
-                                 &registry](const Order& incoming) -> bool {
+  auto matches_existing_order = [this](const Order& incoming) -> bool {
     for (const auto& existing :
-         registry.find_all_by_owner(incoming.counterparty_id)) {
+         find_reachable_orders_of(incoming.counterparty_id)) {
       if (matched_order_ids_.contains(existing.get_order_id().value())) {
         continue;
       }
@@ -198,6 +198,7 @@ auto RecordApplier::filter_already_placed_orders(
         const auto& order_id = existing.get_order_id().value();
         matched_order_ids_.insert(order_id);
         placed_client_order_ids_.insert(order_id);
+        adopt(existing);
         return true;
       }
     }
@@ -209,10 +210,7 @@ auto RecordApplier::filter_already_placed_orders(
 
 auto RecordApplier::find_same_party_side_order(const Order& order)
     -> std::optional<GeneratedOrderData> {
-  auto& context = *context_;
-  auto& registry = context.take_registry();
-
-  const auto orders = registry.find_all_by_owner(order.counterparty_id);
+  const auto orders = find_reachable_orders_of(order.counterparty_id);
   auto it = std::ranges::find_if(orders, [this, &order](const auto& existing) {
     return !matched_order_ids_.contains(existing.get_order_id().value()) &&
            existing.get_order_side() == order.side;
@@ -221,12 +219,44 @@ auto RecordApplier::find_same_party_side_order(const Order& order)
   return it != orders.end() ? std::optional{*it} : std::nullopt;
 }
 
+auto RecordApplier::find_reachable_orders_of(const std::string& party)
+    -> std::vector<GeneratedOrderData> {
+  auto orders = context_->take_registry().find_all_by_owner(party);
+  std::erase_if(orders, [this](const GeneratedOrderData& order) {
+    return belongs_to_another_datasource(order);
+  });
+
+  std::ranges::stable_partition(orders, [](const GeneratedOrderData& order) {
+    return order.get_datasource_id().has_value();
+  });
+  return orders;
+}
+
+auto RecordApplier::belongs_to_another_datasource(
+    const GeneratedOrderData& order) const -> bool {
+  const auto owner = order.get_datasource_id();
+  return owner.has_value() && *owner != datasource_id_;
+}
+
+auto RecordApplier::adopt(const GeneratedOrderData& order) -> void {
+  if (order.get_datasource_id().has_value()) {
+    return;
+  }
+
+  GeneratedOrderData::Patch adoption;
+  adoption.set_updated_datasource_id(datasource_id_);
+  context_->take_registry().update_by_identifier(order.get_order_id().value(),
+                                                 std::move(adoption));
+}
+
 auto RecordApplier::cancel(
     const GeneratedOrdersRegistry::Predicate& cancel_criteria) -> void {
   GeneratedOrdersRegistry& registry = context_->take_registry();
 
-  const std::vector<GeneratedOrderData> orders =
-      registry.select_by(cancel_criteria);
+  const std::vector<GeneratedOrderData> orders = registry.select_by(
+      [this, &cancel_criteria](const GeneratedOrderData& order) {
+        return !belongs_to_another_datasource(order) && cancel_criteria(order);
+      });
 
   if (orders.empty()) {
     return;

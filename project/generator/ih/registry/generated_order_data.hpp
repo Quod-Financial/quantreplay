@@ -1,6 +1,7 @@
 #ifndef SIMULATOR_GENERATOR_IH_REGISTRY_GENERATED_ORDER_DATA_HPP_
 #define SIMULATOR_GENERATOR_IH_REGISTRY_GENERATED_ORDER_DATA_HPP_
 
+#include <cstdint>
 #include <optional>
 #include <string>
 
@@ -35,10 +36,17 @@ class GeneratedOrderData {
       return *this;
     }
 
+    auto set_updated_datasource_id(std::uint64_t updated_datasource_id) noexcept
+        -> Patch& {
+      opt_new_datasource_id_ = updated_datasource_id;
+      return *this;
+    }
+
    private:
     std::optional<ClientOrderId> opt_new_order_id_;
     std::optional<OrderPrice> opt_new_px_;
     std::optional<Quantity> opt_new_qty_;
+    std::optional<std::uint64_t> opt_new_datasource_id_;
   };
 
   class Builder {
@@ -73,9 +81,15 @@ class GeneratedOrderData {
       return *this;
     }
 
+    auto set_datasource_id(std::uint64_t datasource_id) noexcept -> Builder& {
+      new_order_datasource_id_ = datasource_id;
+      return *this;
+    }
+
    private:
     PartyId new_order_owner_;
     ClientOrderId new_order_id_;
+    std::optional<std::uint64_t> new_order_datasource_id_;
 
     OrderPrice new_order_price_{0.0};
     Quantity new_order_qty_{0.0};
@@ -90,6 +104,7 @@ class GeneratedOrderData {
         owner_id_{std::move(builder.new_order_owner_)},
         order_px_{builder.new_order_price_},
         order_qty_{builder.new_order_qty_},
+        datasource_id_{builder.new_order_datasource_id_},
         order_side_{builder.new_order_side_} {}
 
   auto apply(Patch&& patch) -> void {
@@ -106,6 +121,9 @@ class GeneratedOrderData {
     }
     if (patch.opt_new_qty_.has_value()) {
       order_qty_ = *patch.opt_new_qty_;
+    }
+    if (patch.opt_new_datasource_id_.has_value()) {
+      datasource_id_ = patch.opt_new_datasource_id_;
     }
   }
 
@@ -140,6 +158,11 @@ class GeneratedOrderData {
     return order_side_;
   }
 
+  [[nodiscard]]
+  auto get_datasource_id() const noexcept -> std::optional<std::uint64_t> {
+    return datasource_id_;
+  }
+
  private:
   ClientOrderId order_id_;
   std::optional<OrigClientOrderId> orig_order_id_;
@@ -147,6 +170,8 @@ class GeneratedOrderData {
 
   OrderPrice order_px_;
   Quantity order_qty_;
+
+  std::optional<std::uint64_t> datasource_id_;
 
   Side order_side_;
 };

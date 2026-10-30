@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <cstdint>
 #include <stdexcept>
 
 #include "core/domain/attributes.hpp"
@@ -127,6 +128,19 @@ TEST_F(GeneratedOrderDataTest, AppliesQuantityFromPatch) {
   data.apply(std::move(patch));
 
   EXPECT_DOUBLE_EQ(data.get_order_qty().value(), new_quantity.value());
+}
+
+TEST_F(GeneratedOrderDataTest, AppliesDatasourceIdFromPatch) {
+  constexpr std::uint64_t datasource_id = 3;
+
+  builder.set_datasource_id(datasource_id + 1);
+  GeneratedOrderData data{std::move(builder)};
+
+  patch.set_updated_datasource_id(datasource_id);
+  data.apply(std::move(patch));
+
+  ASSERT_TRUE(data.get_datasource_id().has_value());
+  EXPECT_EQ(*data.get_datasource_id(), datasource_id);
 }
 
 }  // namespace

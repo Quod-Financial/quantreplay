@@ -426,6 +426,11 @@ which then results in published market data and the ability for other clients to
 The market simulator currently supports CSV file format, databases such as PostgreSQL and TimescaleDB, and a market data feed received over a FIX connection.
 The simulator can read market data in the form of multiple bid/ask order book levels.
 
+All enabled datasources of a venue are played back simultaneously.
+Each CSV or database datasource is played back on its own timeline (see <<general-datasource-basicsgl,Basic Single Level Order Book>>), while the updates of a FIX datasource are applied as soon as they are received.
+Each datasource manages its own orders: it never reuses, amends or cancels an order derived from another datasource, even one with the same party.
+Several datasources can therefore feed the same listing, whose order book then shows the orders of all of them aggregated together, and orders of different datasources trade with one another when their prices cross.
+
 See <<adminsets-data,this section>> for specific details of configuring datasources.
 
 [[general-datasource-formatconfig]]
@@ -545,9 +550,9 @@ entries of any other type and the entries of a side beyond the MarketDepth (264)
 * the party of a level is MDEntryBuyer (288) for a bid and MDEntrySeller (289) for an offer when present; otherwise every level derived from the datasource carries 
 the party “DS” followed by the datasource id (for instance DS3), so that a level unchanged between two refreshes keeps matching its resting order and a shifted book 
 costs one new order rather than one amendment per level
-* an update resulting in no bid or offer entries cancels every order the simulator has generated for that listing
+* an update resulting in no bid or offer entries cancels every order of that listing derived from the datasource and every random order of that listing, leaving the orders of other datasources in place
 
-Datasources sharing a subscription (the same session and symbol) derive orders from it only once: its refreshes are applied as long as one of them has randomPriceOnly unset, and every level without MDEntryBuyer (288) or MDEntrySeller (289) carries the party of one of those datasources with randomPriceOnly unset; which one is not specified.
+Datasources sharing a subscription (the same session and symbol) derive orders from it only once: its refreshes are applied as long as one of them has randomPriceOnly unset, and every level without MDEntryBuyer (288) or MDEntrySeller (289) carries the party of one of those datasources with randomPriceOnly unset, and all the derived orders are managed as the orders of that same datasource; which one is not specified.
 Configure a single datasource per session and symbol when the party of the derived orders matters.
 
 A symbol matching no enabled listing of the venue is still subscribed to, so that it can serve as a price source, but derives no orders.
@@ -562,7 +567,7 @@ For a simple datasource where each row contains only a single level bid/ask orde
 the first row of the datasource, and then proceeds to read each subsequent row after that. 
 The trigger for playing back the content of a datasource follows the same logic as the configuration used to indicate whether or not to generate random orders. 
 The orderOnStartup property of a venue determines whether to play back any configured datasources when the simulator starts, and the genstart REST API can be used to start play back on demand.
-If the randomOrdersEnabled property of a listing is true, then both random order generation and playback from a configured datasource will begin and continue to run simultaneously.
+If the randomOrdersEnabled property of a listing is true, then both random order generation and playback from the configured datasources will begin and continue to run simultaneously.
 If the randomPriceOnly property of a datasource is true, no orders are derived from its rows, and the datasource is used only for deriving prices during random order generation (see <<adminsets-listings-randpricesrc,this section>>).
 If the listings property of a CSV or database datasource is not empty, only the rows whose Instrument value is one of the listed symbols are processed; the other rows are skipped as if they were absent from the datasource, including for the playback timing described below (see <<adminsets-data-listings,this section>>).
 
@@ -571,25 +576,33 @@ In processing each datasource row, the simulator compares the current state of t
 Multiple orders for the same counter party are supported on either one or both sides of the order book.
 When applying changes from a new order book snapshot, the actions are performed in a specific sequence: first all necessary cancels, then new orders, and finally amends.
 
-The following logic is applied to derive order actions from each row of a datasource:
+The following logic is applied to derive order actions from each row of a datasource, where the existing orders are the orders of the listing previously derived from the same datasource and the orders placed by random order generation;
+the orders derived from any other datasource are never canceled or amended:
 
 * Any existing orders from counter parties that do not match the party of the datasource row being processed are canceled.
 * Any existing orders for the same party as the datasource row being processed without a corresponding bid or ask entry in the datasource are canceled.
 * Any existing orders for the same party and side as the datasource row, but with a different price or quantity, are amended to the same price and quantity as the corresponding bid or ask entry in the datasource.
-* Any bid or ask entries in the datasource without a corresponding existing order for the same party results in a new order with the properties of that bid or ask entry 
+* Any bid or ask entries in the datasource without a corresponding existing order for the same party results in a new order with the properties of that bid or ask entry
 in the datasource.
+* A row without any bid or ask entry cancels all existing orders.
+
+A random order that is amended by a datasource row, or that already has the party, side, price and quantity of an entry of the row, is from then on treated as an order of that datasource.
 
 This will result in all of the usual market data updates generated when any order actions are sent into the matching engine. 
 Each row of the datasource is played back into the matching engine at a rate that corresponds with the ReceivedTimeStamp property of the row. 
-The first row will be played back immediately, the second row will be played back with a delay of the difference between the ReceivedTimeStamp of the second and first rows, 
-and so on. 
+The first row will be played back immediately, the second row will be played back with a delay of the difference between the ReceivedTimeStamp of the second and first rows,
+and so on.
+When several CSV or database datasources are enabled, each of them follows this timeline on its own: the first row of every datasource is played back immediately,
+each later row is delayed relative to the first row of the same datasource, and the ReceivedTimeStamp values of different datasources are not compared with each other.
+For instance, if the second row of one datasource is due 10 seconds after its first row and the second row of another datasource 5 seconds after its first row,
+the second row of the other datasource is played back first.
 This continues until the last row of the datasource, at which point if the repeat property of the datasource is false, then play back will stop, 
 otherwise if it is true the simulator will continue to play back the content of the datasource restarting from the first row.
 
 The order actions derived from each datasource row processed by the simulator use the bid and ask party, quantity, and price values to update the state of the matching engine. 
 While ReceivedTimeStamp is used only to determine when the order actions are played back into the matching engine, the MessageTimeStamp is used to set the timestamp property 
 (generally set by the sender) of each order action. 
-The MessageTimeStamp property value used to set the timestamp on each order action is adjusted with the difference between the ReceivedTimeStamp of the first row and the current time of day at that moment.
+The MessageTimeStamp property value used to set the timestamp on each order action is adjusted with the difference between the ReceivedTimeStamp of the first row of the same datasource and the current time of day at that moment.
 
 For example, if the following 2 first rows from a datasource were being played back at a current time of day of 14:30:00.500 :
 

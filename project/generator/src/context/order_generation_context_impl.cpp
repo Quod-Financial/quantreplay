@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <memory>
+#include <mutex>
 #include <utility>
 
 #include "ih/registry/generated_orders_registry_impl.hpp"
@@ -62,6 +63,11 @@ auto OrderInstrumentContextImpl::take_registry() noexcept
   return *instrument_orders_registry_;
 }
 
+auto OrderInstrumentContextImpl::lock_record_application()
+    -> std::unique_lock<std::mutex> {
+  return std::unique_lock{record_application_mutex_};
+}
+
 OrderGenerationContextImpl::OrderGenerationContextImpl(
     std::shared_ptr<OrderInstrumentContext> instrument_ctx,
     data_layer::PriceSeed configured_prices,
@@ -100,6 +106,11 @@ auto OrderGenerationContextImpl::next_message_number() noexcept -> std::size_t {
 auto OrderGenerationContextImpl::take_registry() noexcept
     -> GeneratedOrdersRegistry& {
   return instrument_context_->take_registry();
+}
+
+auto OrderGenerationContextImpl::lock_record_application()
+    -> std::unique_lock<std::mutex> {
+  return instrument_context_->lock_record_application();
 }
 
 auto OrderGenerationContextImpl::get_price_seed() const noexcept

@@ -9,6 +9,7 @@
 
 #include "core/domain/attributes.hpp"
 #include "ih/context/component_context.hpp"
+#include "ih/historical/data/record.hpp"
 #include "ih/historical/processing/record_sink.hpp"
 #include "ih/market_data/subscription_requirement.hpp"
 #include "protocol/app/market_data_snapshot.hpp"
@@ -19,26 +20,31 @@ class OrderBookDerivation {
  public:
   OrderBookDerivation() = delete;
 
-  OrderBookDerivation(std::shared_ptr<historical::RecordSink> processor,
-                      std::shared_ptr<ComponentContext> context);
+  explicit OrderBookDerivation(std::shared_ptr<ComponentContext> context);
 
   auto add(const MdRequestId& request_id,
-           OrderDerivationRequirement requirement) -> void;
+           OrderDerivationRequirement requirement,
+           std::shared_ptr<historical::RecordSink> processor) -> void;
 
   auto process(const protocol::MarketDataSnapshot& snapshot) -> void;
 
  private:
   struct Binding {
     OrderDerivationRequirement requirement;
+    std::shared_ptr<historical::RecordSink> processor;
     std::uint64_t converted_records = 0;
+  };
+
+  struct Conversion {
+    historical::Record record;
+    std::shared_ptr<historical::RecordSink> processor;
   };
 
   [[nodiscard]]
   auto convert(const protocol::MarketDataSnapshot& snapshot)
-      -> std::optional<historical::Record>;
+      -> std::optional<Conversion>;
 
   std::map<MdRequestId, Binding> bindings_;
-  std::shared_ptr<historical::RecordSink> processor_;
   std::shared_ptr<ComponentContext> context_;
   std::mutex mutex_;
 };

@@ -2,7 +2,10 @@
 #include <gmock/gmock.h>
 
 #include <cstddef>
+#include <cstdint>
+#include <future>
 #include <memory>
+#include <mutex>
 #include <utility>
 #include <vector>
 
@@ -14,6 +17,7 @@
 #include "ih/historical/processing/action_processor.hpp"
 #include "ih/market_data/order_book_derivation.hpp"
 #include "ih/market_data/subscription_requirement.hpp"
+#include "ih/registry/generated_order_data.hpp"
 #include "ih/registry/generated_orders_registry_impl.hpp"
 #include "middleware/channels/trading_request_channel.hpp"
 #include "mocks/context/component_context.hpp"
@@ -49,12 +53,14 @@ MATCHER_P4(IsOrderPlacement, side, price, quantity, party_id, "") {
 // (ActionProcessor, RecordApplier, orders registry) and observes the trading
 // requests derived from them, as the acceptance criteria describe.
 struct GeneratorOrderDerivation : public Test {
+  static constexpr std::uint64_t DatasourceId = 42;
   const MdRequestId request_id{"MD-1"};
   const PartyId counterparty{"DS42"};
 
   data_layer::Listing listing = make_listing();
   InstrumentDescriptor descriptor;
   GeneratedOrdersRegistryImpl registry;
+  std::mutex record_application_mutex;
   StrictMock<mock::TradingRequestReceiver> receiver;
   std::shared_ptr<NiceMock<mock::OrderInstrumentContext>> instrument_context =
       std::make_shared<NiceMock<mock::OrderInstrumentContext>>();
@@ -71,20 +77,22 @@ struct GeneratorOrderDerivation : public Test {
         .WillByDefault(ReturnRef(descriptor));
     ON_CALL(*instrument_context, take_registry())
         .WillByDefault(ReturnRef(registry));
+    ON_CALL(*instrument_context, lock_record_application())
+        .WillByDefault(
+            [this] { return std::unique_lock{record_application_mutex}; });
     ON_CALL(*instrument_context, get_synthetic_identifier())
         .WillByDefault(
             [this] { return fmt::format("GEN-{}", ++generated_identifiers_); });
 
-    derivation = std::make_unique<OrderBookDerivation>(
-        std::make_shared<historical::ActionProcessor>(
-            historical::ActionProcessor::Contexts{instrument_context}),
-        component_context);
+    derivation = std::make_unique<OrderBookDerivation>(component_context);
     derivation->add(
         request_id,
-        OrderDerivationRequirement{
-            .symbol = Symbol{"AAPL"},
-            .depth = AllDepthLevels,
-            .counterparty = counterparty});
+        OrderDerivationRequirement{.symbol = Symbol{"AAPL"},
+                                   .depth = AllDepthLevels,
+                                   .counterparty = counterparty},
+        std::make_shared<historical::ActionProcessor>(
+            historical::ActionProcessor::Contexts{instrument_context},
+            DatasourceId));
   }
 
   auto derive(std::vector<MarketDataEntry> entries) -> void {
@@ -93,6 +101,15 @@ struct GeneratorOrderDerivation : public Test {
     snapshot.request_id = request_id;
     snapshot.market_data_entries = std::move(entries);
     derivation->process(snapshot);
+  }
+
+  [[nodiscard]]
+  auto is_record_application_locked() -> bool {
+    return !std::async(std::launch::async, [this] {
+              return std::unique_lock{record_application_mutex,
+                                      std::try_to_lock}
+                  .owns_lock();
+            }).get();
   }
 
   [[nodiscard]]
@@ -226,6 +243,53 @@ TEST_F(GeneratorOrderDerivation, CancelsDerivedOrdersOnEmptySnapshot) {
                         Optional(Eq(Side::Option::Sell))))));
 
   derive({});
+}
+
+TEST_F(GeneratorOrderDerivation, DerivedOrderBelongsToBoundDatasource) {
+  EXPECT_CALL(receiver, process(An<protocol::OrderPlacementRequest>()));
+
+  derive({bid(100.0, 10.0)});
+
+  const auto derived_orders = registry.find_all_by_owner(counterparty.value());
+  ASSERT_THAT(derived_orders, SizeIs(1));
+  EXPECT_THAT(derived_orders.front().get_datasource_id(),
+              Optional(DatasourceId));
+}
+
+TEST_F(GeneratorOrderDerivation,
+       LeavesOrderOfAnotherDatasourceOnEmptySnapshot) {
+  GeneratedOrderData::Builder other_order{
+      counterparty, ClientOrderId{"OtherBid"}, Side::Option::Buy};
+  other_order.set_price(OrderPrice{100.0})
+      .set_quantity(Quantity{10.0})
+      .set_datasource_id(DatasourceId + 1);
+  registry.add(GeneratedOrderData{std::move(other_order)});
+
+  EXPECT_CALL(receiver, process(An<protocol::OrderCancellationRequest>()))
+      .Times(0);
+
+  derive({});
+}
+
+TEST_F(GeneratorOrderDerivation, UpdatesRegistryUnderRecordApplicationLock) {
+  EXPECT_CALL(*instrument_context, take_registry())
+      .WillRepeatedly([this]() -> GeneratedOrdersRegistry& {
+        EXPECT_TRUE(is_record_application_locked());
+        return registry;
+      });
+  EXPECT_CALL(receiver, process(An<protocol::OrderPlacementRequest>()));
+
+  derive({bid(100.0, 10.0)});
+}
+
+TEST_F(GeneratorOrderDerivation,
+       SendsDerivedRequestsAfterReleasingRecordApplicationLock) {
+  EXPECT_CALL(receiver, process(An<protocol::OrderPlacementRequest>()))
+      .WillOnce([this](const protocol::OrderPlacementRequest& /*request*/) {
+        EXPECT_FALSE(is_record_application_locked());
+      });
+
+  derive({bid(100.0, 10.0)});
 }
 
 // NOLINTEND(*magic-numbers*)

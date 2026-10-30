@@ -1,6 +1,7 @@
 #ifndef SIMULATOR_GENERATOR_IH_FACTORY_EXECUTABLE_FACTORY_HPP_
 #define SIMULATOR_GENERATOR_IH_FACTORY_EXECUTABLE_FACTORY_HPP_
 
+#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -38,7 +39,8 @@ class InstrumentHistoricalReplierFactory {
   virtual ~InstrumentHistoricalReplierFactory() = default;
 
   [[nodiscard]]
-  virtual auto create_orders_processor(const InstrumentsContexts& contexts)
+  virtual auto create_orders_processor(const InstrumentsContexts& contexts,
+                                       std::uint64_t datasource_id)
       -> std::unique_ptr<historical::ActionSink> = 0;
 
   [[nodiscard]]

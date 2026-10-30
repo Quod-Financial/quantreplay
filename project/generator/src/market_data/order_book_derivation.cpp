@@ -1,6 +1,7 @@
 #include "ih/market_data/order_book_derivation.hpp"
 
 #include <cassert>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <utility>
@@ -12,21 +13,23 @@
 namespace simulator::generator::mdata {
 
 OrderBookDerivation::OrderBookDerivation(
-    std::shared_ptr<historical::RecordSink> processor,
     std::shared_ptr<ComponentContext> context)
-    : processor_{std::move(processor)}, context_{std::move(context)} {
-  assert(processor_);
+    : context_{std::move(context)} {
   assert(context_);
 }
 
 auto OrderBookDerivation::add(const MdRequestId& request_id,
-                              OrderDerivationRequirement requirement) -> void {
+                              OrderDerivationRequirement requirement,
+                              std::shared_ptr<historical::RecordSink> processor)
+    -> void {
+  assert(processor);
   const std::lock_guard lock{mutex_};
 
   const auto binding = bindings_.find(request_id);
   if (binding == bindings_.end()) {
     bindings_.emplace(request_id,
-                      Binding{.requirement = std::move(requirement)});
+                      Binding{.requirement = std::move(requirement),
+                              .processor = std::move(processor)});
     return;
   }
 
@@ -35,7 +38,7 @@ auto OrderBookDerivation::add(const MdRequestId& request_id,
   log::debug(
       "reused the order derivation of the `{}' market data subscription for "
       "another requirement on `{}' with the {} depth, keeping the `{}' "
-      "counterparty",
+      "counterparty and the datasource owning the derived orders",
       request_id,
       bound.symbol,
       bound.depth,
@@ -44,18 +47,18 @@ auto OrderBookDerivation::add(const MdRequestId& request_id,
 
 auto OrderBookDerivation::process(const protocol::MarketDataSnapshot& snapshot)
     -> void {
-  auto record = convert(snapshot);
-  if (!record.has_value()) {
+  auto conversion = convert(snapshot);
+  if (!conversion.has_value()) {
     return;
   }
 
   // Applied outside the lock, so no downstream work of the derivation runs
   // under it.
-  processor_->process(*std::move(record));
+  conversion->processor->process(std::move(conversion->record));
 }
 
 auto OrderBookDerivation::convert(const protocol::MarketDataSnapshot& snapshot)
-    -> std::optional<historical::Record> {
+    -> std::optional<Conversion> {
   if (!snapshot.request_id.has_value()) {
     log::debug(
         "ignoring a market data snapshot without a request identifier as an "
@@ -83,8 +86,10 @@ auto OrderBookDerivation::convert(const protocol::MarketDataSnapshot& snapshot)
   }
 
   Binding& bound = binding->second;
-  return std::make_optional(make_order_book_record(
-      snapshot, bound.requirement, ++bound.converted_records));
+  return std::make_optional(
+      Conversion{.record = make_order_book_record(
+                     snapshot, bound.requirement, ++bound.converted_records),
+                 .processor = bound.processor});
 }
 
 }  // namespace simulator::generator::mdata

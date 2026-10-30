@@ -1,6 +1,7 @@
 #include "ih/factory/executable_factory_impl.hpp"
 
 #include <cassert>
+#include <cstdint>
 #include <memory>
 #include <utility>
 
@@ -36,9 +37,9 @@ auto InstrumentRandomGeneratorFactoryImpl::create_orders_executable(
 }
 
 auto HistoricalReplierFactoryImpl::create_orders_processor(
-    const InstrumentsContexts& contexts)
+    const InstrumentsContexts& contexts, std::uint64_t datasource_id)
     -> std::unique_ptr<historical::ActionSink> {
-  return std::make_unique<historical::ActionProcessor>(contexts);
+  return std::make_unique<historical::ActionProcessor>(contexts, datasource_id);
 }
 
 auto HistoricalReplierFactoryImpl::create_price_source_processor(

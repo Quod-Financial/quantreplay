@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 
 #include <chrono>
+#include <cstdint>
 #include <initializer_list>
 #include <memory>
 #include <optional>
@@ -35,8 +36,10 @@ class GeneratorHistoricalRecordApplierFixture : public testing::Test {
 
   auto context() -> mock::OrderInstrumentContext& { return *context_; }
 
-  auto apply(historical::Record record) -> std::vector<GeneratedMessage> {
-    return RecordApplier::apply(std::move(record), context_);
+  auto apply(historical::Record record,
+             std::uint64_t datasource_id = DatasourceId)
+      -> std::vector<GeneratedMessage> {
+    return RecordApplier::apply(std::move(record), context_, datasource_id);
   }
 
   auto make_record(std::initializer_list<historical::Level> levels)
@@ -71,6 +74,7 @@ class GeneratorHistoricalRecordApplierFixture : public testing::Test {
  protected:
   inline static const std::string Symbol{"AAPL"};
   inline static const std::string VenueId{"NYSE"};
+  static constexpr std::uint64_t DatasourceId = 1;
 
   static auto create_listing(const std::string& smbl,
                              const std::string& venue_id)
@@ -2534,6 +2538,176 @@ TEST_F(GeneratorHistoricalRecordApplier,
                                     10.03,
                                     100.0,
                                     offer_counterparty));
+}
+
+class GeneratorHistoricalRecordApplierOwnership
+    : public GeneratorHistoricalRecordApplier {
+ protected:
+  static constexpr std::uint64_t OtherDatasourceId = 2;
+  static constexpr double BidQuantity = 10.0;
+  const PartyId party{"CP1"};
+
+  auto register_bid(const std::string& order_id,
+                    double price,
+                    std::optional<std::uint64_t> owner_datasource_id,
+                    const PartyId& owner) -> void {
+    GeneratedOrderData::Builder builder{
+        owner, ClientOrderId{order_id}, Side::Option::Buy};
+    builder.set_price(OrderPrice{price}).set_quantity(Quantity{BidQuantity});
+    if (owner_datasource_id.has_value()) {
+      builder.set_datasource_id(*owner_datasource_id);
+    }
+    registry().add(GeneratedOrderData{std::move(builder)});
+  }
+
+  auto register_bid(const std::string& order_id,
+                    double price,
+                    std::optional<std::uint64_t> owner_datasource_id) -> void {
+    register_bid(order_id, price, owner_datasource_id, party);
+  }
+
+  auto make_bid_record(double price) -> historical::Record {
+    return make_record({make_level(price,
+                                   BidQuantity,
+                                   party.value(),
+                                   std::nullopt,
+                                   std::nullopt,
+                                   std::nullopt)});
+  }
+
+  auto datasource_of(const std::string& order_id)
+      -> std::optional<std::uint64_t> {
+    const auto order = registry().find_by_identifier(order_id);
+    return order.has_value() ? order->get_datasource_id() : std::nullopt;
+  }
+};
+
+TEST_F(GeneratorHistoricalRecordApplierOwnership,
+       PlacesNewOrderInsteadOfAmendingOrderOfAnotherDatasource) {
+  register_bid("OtherBid", 100.0, OtherDatasourceId);
+  EXPECT_CALL(context(), get_synthetic_identifier).WillOnce(Return("NewBid"));
+
+  const auto messages = apply(make_bid_record(101.0));
+
+  EXPECT_THAT(messages,
+              ElementsAre(IsNewOrderRequest(Side::Option::Buy,
+                                            ClientOrderId{"NewBid"},
+                                            101.0,
+                                            BidQuantity,
+                                            party)));
+}
+
+TEST_F(GeneratorHistoricalRecordApplierOwnership,
+       PlacesNewOrderEvenIfAnotherDatasourceHasIdenticalOne) {
+  register_bid("OtherBid", 100.0, OtherDatasourceId);
+  EXPECT_CALL(context(), get_synthetic_identifier).WillOnce(Return("NewBid"));
+
+  const auto messages = apply(make_bid_record(100.0));
+
+  EXPECT_THAT(messages,
+              ElementsAre(IsNewOrderRequest(Side::Option::Buy,
+                                            ClientOrderId{"NewBid"},
+                                            100.0,
+                                            BidQuantity,
+                                            party)));
+}
+
+TEST_F(GeneratorHistoricalRecordApplierOwnership,
+       DoesNotCancelOrderOfAnotherDatasourceMissingFromRecord) {
+  register_bid("OtherBid", 99.0, OtherDatasourceId, PartyId{"CP2"});
+  EXPECT_CALL(context(), get_synthetic_identifier).WillOnce(Return("NewBid"));
+
+  const auto messages = apply(make_bid_record(100.0));
+
+  EXPECT_THAT(messages,
+              ElementsAre(IsNewOrderRequest(Side::Option::Buy,
+                                            ClientOrderId{"NewBid"},
+                                            100.0,
+                                            BidQuantity,
+                                            party)));
+}
+
+TEST_F(GeneratorHistoricalRecordApplierOwnership,
+       RecordWithoutLevelsCancelsOwnAndRandomOrdersOnly) {
+  register_bid("OwnBid", 100.0, DatasourceId);
+  register_bid("RandomBid", 99.0, std::nullopt);
+  register_bid("OtherBid", 98.0, OtherDatasourceId);
+
+  const auto messages = apply(make_record({}));
+
+  EXPECT_THAT(messages,
+              UnorderedElementsAre(IsCancelRequest(Side::Option::Buy,
+                                                   ClientOrderId{"OwnBid"},
+                                                   100.0,
+                                                   BidQuantity,
+                                                   party),
+                                   IsCancelRequest(Side::Option::Buy,
+                                                   ClientOrderId{"RandomBid"},
+                                                   99.0,
+                                                   BidQuantity,
+                                                   party)));
+}
+
+TEST_F(GeneratorHistoricalRecordApplierOwnership, AdoptsAmendedRandomOrder) {
+  register_bid("RandomBid", 100.0, std::nullopt);
+
+  const auto messages = apply(make_bid_record(101.0));
+
+  ASSERT_THAT(messages,
+              ElementsAre(IsModificationRequest(Side::Option::Buy,
+                                                ClientOrderId{"RandomBid"},
+                                                101.0,
+                                                BidQuantity,
+                                                party)));
+  EXPECT_THAT(datasource_of("RandomBid"), Optional(DatasourceId));
+}
+
+TEST_F(GeneratorHistoricalRecordApplierOwnership,
+       AdoptsIdenticalRandomOrderWithoutMessages) {
+  register_bid("RandomBid", 100.0, std::nullopt);
+
+  const auto messages = apply(make_bid_record(100.0));
+
+  ASSERT_THAT(messages, IsEmpty());
+  EXPECT_THAT(datasource_of("RandomBid"), Optional(DatasourceId));
+}
+
+TEST_F(GeneratorHistoricalRecordApplierOwnership,
+       AmendsOwnOrderRatherThanRandomOrderOfSameParty) {
+  register_bid("RandomBid", 99.0, std::nullopt);
+  register_bid("OwnBid", 98.0, DatasourceId);
+
+  const auto messages = apply(make_bid_record(100.0));
+
+  EXPECT_THAT(
+      messages,
+      UnorderedElementsAre(IsCancelRequest(Side::Option::Buy,
+                                           ClientOrderId{"RandomBid"},
+                                           99.0,
+                                           BidQuantity,
+                                           party),
+                           IsModificationRequest(Side::Option::Buy,
+                                                 ClientOrderId{"OwnBid"},
+                                                 100.0,
+                                                 BidQuantity,
+                                                 party)));
+}
+
+TEST_F(GeneratorHistoricalRecordApplierOwnership,
+       DatasourcesWithSamePartyKeepSeparateOrders) {
+  EXPECT_CALL(context(), get_synthetic_identifier)
+      .WillOnce(Return("FirstBid"))
+      .WillOnce(Return("SecondBid"));
+  apply(make_bid_record(100.0), DatasourceId);
+
+  const auto messages = apply(make_bid_record(101.0), OtherDatasourceId);
+
+  EXPECT_THAT(messages,
+              ElementsAre(IsNewOrderRequest(Side::Option::Buy,
+                                            ClientOrderId{"SecondBid"},
+                                            101.0,
+                                            BidQuantity,
+                                            party)));
 }
 
 }  // namespace

@@ -1,6 +1,7 @@
 #ifndef SIMULATOR_GENERATOR_TESTS_MOCKS_CONTEXT_ORDER_CONTEXT_HPP_
 #define SIMULATOR_GENERATOR_TESTS_MOCKS_CONTEXT_ORDER_CONTEXT_HPP_
 
+#include <mutex>
 #include <string>
 
 #include "data_layer/api/models/listing.hpp"
@@ -37,6 +38,11 @@ class OrderInstrumentContext : public generator::OrderInstrumentContext {
               take_registry,
               (),
               (noexcept, override));
+
+  MOCK_METHOD(std::unique_lock<std::mutex>,
+              lock_record_application,
+              (),
+              (override));
 };
 
 class OrderGenerationContext : public generator::OrderGenerationContext {
@@ -64,6 +70,11 @@ class OrderGenerationContext : public generator::OrderGenerationContext {
               take_registry,
               (),
               (noexcept, override));
+
+  MOCK_METHOD(std::unique_lock<std::mutex>,
+              lock_record_application,
+              (),
+              (override));
 
   MOCK_METHOD(const simulator::data_layer::PriceSeed&,
               get_price_seed,

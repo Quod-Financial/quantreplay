@@ -1,7 +1,9 @@
 #ifndef SIMULATOR_GENERATOR_IH_REGISTRY_REGISTRY_UPDATER_HPP_
 #define SIMULATOR_GENERATOR_IH_REGISTRY_REGISTRY_UPDATER_HPP_
 
+#include <cstdint>
 #include <functional>
+#include <optional>
 
 #include "ih/adaptation/generated_message.hpp"
 #include "ih/registry/generated_orders_registry.hpp"
@@ -10,10 +12,14 @@ namespace simulator::generator {
 
 class OrderRegistryUpdater {
  public:
-  explicit OrderRegistryUpdater(GeneratedOrdersRegistry& registry) noexcept;
+  explicit OrderRegistryUpdater(
+      GeneratedOrdersRegistry& registry,
+      std::optional<std::uint64_t> datasource_id = std::nullopt) noexcept;
 
   static auto update(GeneratedOrdersRegistry& registry,
-                     const GeneratedMessage& message) -> void;
+                     const GeneratedMessage& message,
+                     std::optional<std::uint64_t> datasource_id = std::nullopt)
+      -> void;
 
   auto update(const GeneratedMessage& message) -> void;
 
@@ -40,6 +46,7 @@ class OrderRegistryUpdater {
   static auto validate_execution(const GeneratedMessage& message) -> void;
 
   std::reference_wrapper<GeneratedOrdersRegistry> registry_ref_;
+  std::optional<std::uint64_t> datasource_id_;
 };
 
 }  // namespace simulator::generator

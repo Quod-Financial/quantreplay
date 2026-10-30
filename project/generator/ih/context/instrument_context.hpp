@@ -1,6 +1,7 @@
 #ifndef SIMULATOR_GENERATOR_IH_CONTEXT_INSTRUMENT_CONTEXT_HPP_
 #define SIMULATOR_GENERATOR_IH_CONTEXT_INSTRUMENT_CONTEXT_HPP_
 
+#include <mutex>
 #include <string>
 
 #include "core/domain/instrument_descriptor.hpp"
@@ -35,6 +36,9 @@ class OrderInstrumentContext : public InstrumentContext {
 
   [[nodiscard]]
   virtual auto take_registry() noexcept -> GeneratedOrdersRegistry& = 0;
+
+  [[nodiscard]]
+  virtual auto lock_record_application() -> std::unique_lock<std::mutex> = 0;
 };
 
 }  // namespace simulator::generator

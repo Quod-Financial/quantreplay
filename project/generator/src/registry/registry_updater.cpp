@@ -1,6 +1,8 @@
 #include "ih/registry/registry_updater.hpp"
 
 #include <cassert>
+#include <cstdint>
+#include <optional>
 #include <stdexcept>
 #include <utility>
 
@@ -48,12 +50,15 @@ auto validate_order_status(const GeneratedMessage& message) -> void {
 }  // namespace
 
 OrderRegistryUpdater::OrderRegistryUpdater(
-    GeneratedOrdersRegistry& registry) noexcept
-    : registry_ref_{registry} {}
+    GeneratedOrdersRegistry& registry,
+    std::optional<std::uint64_t> datasource_id) noexcept
+    : registry_ref_{registry}, datasource_id_{datasource_id} {}
 
-void OrderRegistryUpdater::update(GeneratedOrdersRegistry& registry,
-                                  const GeneratedMessage& message) {
-  OrderRegistryUpdater updater{registry};
+auto OrderRegistryUpdater::update(GeneratedOrdersRegistry& registry,
+                                  const GeneratedMessage& message,
+                                  std::optional<std::uint64_t> datasource_id)
+    -> void {
+  OrderRegistryUpdater updater{registry, datasource_id};
   updater.update(message);
 }
 
@@ -101,6 +106,9 @@ auto OrderRegistryUpdater::handle_new_order(const GeneratedMessage& message)
   GeneratedOrderData::Builder ord_builder{owner_id, *order_id, *side};
   ord_builder.set_price(message.order_price.value_or(OrderPrice{0.}))
       .set_quantity(message.quantity.value_or(Quantity{0.}));
+  if (datasource_id_.has_value()) {
+    ord_builder.set_datasource_id(*datasource_id_);
+  }
 
   GeneratedOrderData order{std::move(ord_builder)};
   const bool inserted = registry().add(std::move(order));
@@ -134,6 +142,9 @@ auto OrderRegistryUpdater::handle_modification(const GeneratedMessage& message)
   }
   if (const auto qty = message.quantity) {
     update.set_updated_quantity(*qty);
+  }
+  if (datasource_id_.has_value()) {
+    update.set_updated_datasource_id(*datasource_id_);
   }
 
   // Use identifier-based update to support multiple orders per counterparty

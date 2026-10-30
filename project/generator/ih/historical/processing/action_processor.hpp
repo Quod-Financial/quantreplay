@@ -1,6 +1,7 @@
 #ifndef SIMULATOR_GENERATOR_IH_HISTORICAL_PROCESSING_ACTION_PROCESSOR_HPP_
 #define SIMULATOR_GENERATOR_IH_HISTORICAL_PROCESSING_ACTION_PROCESSOR_HPP_
 
+#include <cstdint>
 #include <memory>
 #include <string_view>
 #include <unordered_map>
@@ -37,7 +38,8 @@ class ActionProcessor : public historical::ActionSink,
 
   ActionProcessor() = delete;
 
-  explicit ActionProcessor(const Contexts& available_contexts);
+  ActionProcessor(const Contexts& available_contexts,
+                  std::uint64_t datasource_id);
 
   auto process(historical::Action action) -> void override;
 
@@ -45,6 +47,7 @@ class ActionProcessor : public historical::ActionSink,
 
  private:
   ContextsRegistry ctx_registry_;
+  std::uint64_t datasource_id_;
 };
 
 }  // namespace simulator::generator::historical

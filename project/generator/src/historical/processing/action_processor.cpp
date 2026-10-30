@@ -1,6 +1,8 @@
 #include "ih/historical/processing/action_processor.hpp"
 
+#include <cstdint>
 #include <memory>
+#include <mutex>
 #include <string_view>
 #include <vector>
 
@@ -34,6 +36,15 @@ auto send_message(const GeneratedMessage& message,
   }
 }
 
+[[nodiscard]]
+auto apply_exclusively(historical::Record record,
+                       const std::shared_ptr<OrderInstrumentContext>& context,
+                       std::uint64_t datasource_id)
+    -> std::vector<GeneratedMessage> {
+  const std::unique_lock lock = context->lock_record_application();
+  return RecordApplier::apply(std::move(record), context, datasource_id);
+}
+
 }  // namespace
 
 ActionProcessor::ContextsRegistry::ContextsRegistry(
@@ -64,8 +75,9 @@ auto ActionProcessor::ContextsRegistry::resolve_context(
 }
 
 ActionProcessor::ActionProcessor(
-    const ActionProcessor::Contexts& available_contexts)
-    : ctx_registry_{available_contexts} {}
+    const ActionProcessor::Contexts& available_contexts,
+    std::uint64_t datasource_id)
+    : ctx_registry_{available_contexts}, datasource_id_{datasource_id} {}
 
 auto ActionProcessor::process(historical::Action action) -> void {
   action.steal_records(
@@ -83,7 +95,7 @@ auto ActionProcessor::process(historical::Record record) -> void {
   }
 
   const std::vector<GeneratedMessage> historical_messages =
-      RecordApplier::apply(std::move(record), context);
+      apply_exclusively(std::move(record), context, datasource_id_);
   const InstrumentDescriptor& instrument = context->get_instrument_descriptor();
 
   for (const auto& historical_request : historical_messages) {

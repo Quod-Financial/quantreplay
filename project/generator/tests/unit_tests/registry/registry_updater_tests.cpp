@@ -1,9 +1,12 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cstdint>
+#include <functional>
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #include "ih/constants.hpp"
 #include "ih/registry/generated_order_data.hpp"
@@ -19,6 +22,7 @@ using namespace testing;  // NOLINT
 
 struct GeneratorOrderRegistryUpdater : public Test {
   static constexpr auto side = Side::Option::Buy;
+  static constexpr std::uint64_t datasource_id = 7;
   const ClientOrderId order_id{"OrderID"};
   const PartyId owner_id{"OwnerID"};
 
@@ -133,6 +137,20 @@ TEST_F(GeneratorOrderRegistryUpdaterRestingNewOrderSingle, CallsAddOnUpdate) {
       OrderRegistryUpdater::update(registry, resting_new_order_single));
 }
 
+TEST_F(GeneratorOrderRegistryUpdaterRestingNewOrderSingle,
+       RegistersNewOrderAsOwnedByDatasource) {
+  std::optional<std::uint64_t> registered_datasource_id;
+  EXPECT_CALL(registry, add(_)).WillOnce([&](GeneratedOrderData&& order) {
+    registered_datasource_id = order.get_datasource_id();
+    return true;
+  });
+
+  OrderRegistryUpdater::update(
+      registry, resting_new_order_single, datasource_id);
+
+  EXPECT_THAT(registered_datasource_id, Optional(datasource_id));
+}
+
 struct GeneratorOrderRegistryUpdaterRestingOrderCancelReplaceRequest
     : public GeneratorOrderRegistryUpdater {
   GeneratedMessage resting_order_cancel_replace_request =
@@ -146,7 +164,23 @@ struct GeneratorOrderRegistryUpdaterRestingOrderCancelReplaceRequest
     resting_order_cancel_replace_request.client_order_id = order_id;
     resting_order_cancel_replace_request.party = generated_party(owner_id);
   }
+
+  [[nodiscard]]
+  auto make_stored_order(std::optional<std::uint64_t> owner_datasource_id) const
+      -> GeneratedOrderData {
+    GeneratedOrderData::Builder builder{owner_id, order_id, side};
+    if (owner_datasource_id.has_value()) {
+      builder.set_datasource_id(*owner_datasource_id);
+    }
+    return GeneratedOrderData{std::move(builder)};
+  }
 };
+
+ACTION_P(ApplyPatchTo, order) {
+  GeneratedOrderData::Patch& patch = arg1;
+  order.get().apply(std::move(patch));
+  return true;
+}
 
 TEST_F(GeneratorOrderRegistryUpdaterRestingOrderCancelReplaceRequest,
        DoesNotUpdateAggressiveToRegistry) {
@@ -233,6 +267,29 @@ TEST_F(GeneratorOrderRegistryUpdaterRestingOrderCancelReplaceRequest,
       .Times(1);
 
   OrderRegistryUpdater::update(registry, resting_order_cancel_replace_request);
+}
+
+TEST_F(GeneratorOrderRegistryUpdaterRestingOrderCancelReplaceRequest,
+       TransfersAmendedOrderToDatasource) {
+  GeneratedOrderData stored_order = make_stored_order(std::nullopt);
+  EXPECT_CALL(registry, update_by_identifier(Eq(order_id.value()), _))
+      .WillOnce(ApplyPatchTo(std::ref(stored_order)));
+
+  OrderRegistryUpdater::update(
+      registry, resting_order_cancel_replace_request, datasource_id);
+
+  EXPECT_THAT(stored_order.get_datasource_id(), Optional(datasource_id));
+}
+
+TEST_F(GeneratorOrderRegistryUpdaterRestingOrderCancelReplaceRequest,
+       KeepsDatasourceOfOrderAmendedByRandomGeneration) {
+  GeneratedOrderData stored_order = make_stored_order(datasource_id);
+  EXPECT_CALL(registry, update_by_identifier(Eq(order_id.value()), _))
+      .WillOnce(ApplyPatchTo(std::ref(stored_order)));
+
+  OrderRegistryUpdater::update(registry, resting_order_cancel_replace_request);
+
+  EXPECT_THAT(stored_order.get_datasource_id(), Optional(datasource_id));
 }
 
 struct GeneratorOrderRegistryUpdaterOrderCancelRequest
