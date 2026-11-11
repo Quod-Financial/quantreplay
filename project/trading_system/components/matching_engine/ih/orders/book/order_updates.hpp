@@ -4,11 +4,16 @@
 #include <optional>
 
 #include "common/attributes.hpp"
+#include "core/domain/attributes.hpp"
 #include "ih/orders/book/limit_order.hpp"
 #include "ih/orders/book/market_order.hpp"
 #include "protocol/types/session.hpp"
 
 namespace simulator::trading_system::matching_engine {
+
+[[nodiscard]]
+auto is_amendable_quantity(OrderQuantity quantity,
+                           CumExecutedQuantity executed_quantity) -> bool;
 
 struct LimitUpdate {
   LimitUpdate(protocol::Session session, Side side, LimitOrder::Update diff);
@@ -19,6 +24,7 @@ struct LimitUpdate {
   std::optional<OrigClientOrderId> orig_client_order_id;
   std::optional<OrderId> order_id;
   Side order_side;
+  bool time_in_force_specified = false;
 };
 
 struct MarketUpdate {
@@ -30,6 +36,7 @@ struct MarketUpdate {
   std::optional<OrigClientOrderId> orig_client_order_id;
   std::optional<OrderId> order_id;
   Side order_side;
+  bool time_in_force_specified = false;
 };
 
 struct OrderCancel {

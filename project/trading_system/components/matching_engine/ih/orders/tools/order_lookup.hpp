@@ -12,8 +12,18 @@ auto find_target_limit_order(LimitOrdersContainer& orders,
     -> LimitOrdersContainer::iterator;
 
 [[nodiscard]]
+auto find_target_limit_order(LimitOrdersContainer& orders,
+                             const MarketUpdate& update)
+    -> LimitOrdersContainer::iterator;
+
+[[nodiscard]]
 auto find_target_market_order(MarketOrdersContainer& orders,
                               const MarketUpdate& update)
+    -> MarketOrdersContainer::iterator;
+
+[[nodiscard]]
+auto find_target_market_order(MarketOrdersContainer& orders,
+                              const LimitUpdate& update)
     -> MarketOrdersContainer::iterator;
 
 [[nodiscard]]

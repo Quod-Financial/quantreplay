@@ -1,6 +1,7 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_TRADE_AT_LAST_ACTIONS_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_TRADE_AT_LAST_ACTIONS_HPP_
 
+#include <gsl/pointers>
 #include <optional>
 #include <string_view>
 
@@ -44,6 +45,12 @@ auto acceptance_error(TimeInForce time_in_force,
 auto reject_market_order(EventListener& event_listener,
                          MarketOrder& order) -> void;
 
+// Rejects an amendment to market, as 'order not found' unless it names a
+// trade-at-last order.
+auto reject_market_amendment(EventListener& event_listener,
+                             OrderBook& order_book,
+                             const MarketUpdate& update) -> void;
+
 }  // namespace trade_at_last
 
 class TradeAtLastPlacement : private EventReporter {
@@ -65,8 +72,8 @@ class TradeAtLastPlacement : private EventReporter {
  private:
   auto reject(LimitOrder& order, std::string_view reason) -> void;
 
-  OrderBook& order_book_;
-  RegularMatcher& matcher_;
+  gsl::not_null<OrderBook*> order_book_;
+  gsl::not_null<RegularMatcher*> matcher_;
   std::optional<Price> closing_price_;
 };
 
@@ -88,7 +95,7 @@ class TradeAtLastAmendment : private EventReporter {
   auto operator()(LimitUpdate update) -> OrderBookUpdates;
 
  private:
-  RegularAmendment& amendment_;
+  gsl::not_null<RegularAmendment*> amendment_;
   std::optional<Price> closing_price_;
 };
 

@@ -6,6 +6,7 @@
 #include "common/attributes.hpp"
 #include "core/tools/time.hpp"
 #include "ih/orders/book/limit_order.hpp"
+#include "ih/orders/book/market_order.hpp"
 #include "tools/order_builder.hpp"
 
 namespace simulator::trading_system::matching_engine::test {
@@ -373,6 +374,105 @@ TEST_F(LimitOrderEntry, DoesNotReturnOwnerWhenNoExecutingFirmIsSpecified) {
   const auto order = builder.with_order_parties({exchange}).build_limit_order();
 
   ASSERT_THAT(order.owner(), std::nullopt);
+}
+
+struct LimitOrderConversion : public Test {
+  static constexpr OrderTime Arrival{
+      core::sys_us{core::sys_days{2025y / 1 / 25} + 13h + 14min + 1s}};
+
+  static auto resting_market_order(OrderQuantity quantity) -> MarketOrder {
+    return OrderBuilder{}
+        .with_order_id(OrderId{42})
+        .with_order_quantity(quantity)
+        .with_time_in_force(TimeInForce::Option::ImmediateOrCancel)
+        .with_order_time(Arrival)
+        .build_market_order();
+  }
+
+  static auto update_to(OrderPrice price, OrderQuantity quantity)
+      -> LimitOrder::Update {
+    OrderAttributes attributes;
+    attributes.set_client_order_id(ClientOrderId{"amended"});
+    attributes.set_time_in_force(TimeInForce::Option::Day);
+    return LimitOrder::Update{
+        .price = price, .quantity = quantity, .attributes = attributes};
+  }
+};
+
+TEST_F(LimitOrderConversion, ThrowsWhenQuantityNotAboveExecutedQuantity) {
+  auto market_order = resting_market_order(OrderQuantity{100});
+  market_order.execute(ExecutedQuantity{50}, ExecutionPrice{10});
+
+  ASSERT_THROW(
+      (LimitOrder{market_order, update_to(OrderPrice{10}, OrderQuantity{50})}),
+      std::logic_error);
+}
+
+TEST_F(LimitOrderConversion, KeepsOrderIdOfMarketOrder) {
+  const LimitOrder order{resting_market_order(OrderQuantity{100}),
+                         update_to(OrderPrice{10}, OrderQuantity{100})};
+
+  ASSERT_THAT(order.id(), Eq(OrderId{42}));
+}
+
+TEST_F(LimitOrderConversion, ContinuesExecutionIdSequenceOfMarketOrder) {
+  auto market_order = resting_market_order(OrderQuantity{100});
+  const auto market_execution_id = market_order.make_execution_id();
+
+  LimitOrder order{market_order, update_to(OrderPrice{10}, OrderQuantity{100})};
+
+  ASSERT_THAT(order.make_execution_id(), Ne(market_execution_id));
+}
+
+TEST_F(LimitOrderConversion, KeepsExecutedQuantityOfMarketOrder) {
+  auto market_order = resting_market_order(OrderQuantity{100});
+  market_order.execute(ExecutedQuantity{30}, ExecutionPrice{10});
+
+  const LimitOrder order{market_order,
+                         update_to(OrderPrice{10}, OrderQuantity{100})};
+
+  ASSERT_THAT(order.cum_executed_quantity(), Eq(CumExecutedQuantity{30}));
+}
+
+TEST_F(LimitOrderConversion, KeepsAveragePriceOfMarketOrder) {
+  auto market_order = resting_market_order(OrderQuantity{100});
+  market_order.execute(ExecutedQuantity{20}, ExecutionPrice{10});
+  market_order.execute(ExecutedQuantity{20}, ExecutionPrice{12});
+
+  const LimitOrder order{market_order,
+                         update_to(OrderPrice{10}, OrderQuantity{100})};
+
+  ASSERT_THAT(order.average_price(), Optional(Eq(AveragePrice{11})));
+}
+
+TEST_F(LimitOrderConversion, TakesAmendedPriceAndQuantity) {
+  const LimitOrder order{resting_market_order(OrderQuantity{100}),
+                         update_to(OrderPrice{7}, OrderQuantity{50})};
+
+  EXPECT_THAT(order.price(), Eq(OrderPrice{7}));
+  EXPECT_THAT(order.total_quantity(), Eq(OrderQuantity{50}));
+}
+
+TEST_F(LimitOrderConversion, TakesAmendedAttributes) {
+  const LimitOrder order{resting_market_order(OrderQuantity{100}),
+                         update_to(OrderPrice{10}, OrderQuantity{100})};
+
+  EXPECT_THAT(order.client_order_id(), Optional(Eq(ClientOrderId{"amended"})));
+  EXPECT_THAT(order.time_in_force(), Eq(TimeInForce::Option::Day));
+}
+
+TEST_F(LimitOrderConversion, SetsModifiedStatus) {
+  const LimitOrder order{resting_market_order(OrderQuantity{100}),
+                         update_to(OrderPrice{10}, OrderQuantity{100})};
+
+  ASSERT_THAT(order.status(), Eq(OrderStatus::Option::Modified));
+}
+
+TEST_F(LimitOrderConversion, LosesTimePriorityEvenWhenQuantityDecreases) {
+  const LimitOrder order{resting_market_order(OrderQuantity{100}),
+                         update_to(OrderPrice{10}, OrderQuantity{50})};
+
+  ASSERT_THAT(order.time(), Gt(Arrival));
 }
 
 // NOLINTEND(*-magic-numbers)

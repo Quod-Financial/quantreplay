@@ -33,8 +33,8 @@ auto MarketAmendment::amend_order(MarketUpdate update, OrderPage& page)
     return {};
   }
 
-  if (static_cast<double>(update.order_diff.quantity) <=
-      static_cast<double>(order_it->cum_executed_quantity())) {
+  if (!is_amendable_quantity(update.order_diff.quantity,
+                             order_it->cum_executed_quantity())) {
     emit(ClientNotification(prepare_modification_reject(update)
                                 .with_order_status(order_it->status())
                                 .with_reason(RejectText{"invalid quantity"})

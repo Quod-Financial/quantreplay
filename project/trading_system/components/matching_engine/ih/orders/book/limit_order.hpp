@@ -12,6 +12,8 @@
 
 namespace simulator::trading_system::matching_engine {
 
+class MarketOrder;
+
 class LimitOrder {
  public:
   struct Update {
@@ -27,6 +29,10 @@ class LimitOrder {
              OrderRecord record,
              CumExecutedQuantity cum_executed_quantity,
              double cum_px_qty);
+
+  // Keeps the order's identity and executions; the order loses its time
+  // priority.
+  LimitOrder(MarketOrder order, Update update);
 
   [[nodiscard]]
   auto id() const -> OrderId;
@@ -98,6 +104,8 @@ class LimitOrder {
   auto cancel() -> void;
 
  private:
+  friend class MarketOrder;
+
   std::shared_ptr<OrderRecord> record_;
   OrderPrice price_;
   OrderQuantity total_quantity_;
@@ -111,7 +119,7 @@ template <>
 struct fmt::formatter<simulator::trading_system::matching_engine::LimitOrder> {
   using formattable = simulator::trading_system::matching_engine::LimitOrder;
 
-  constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
+  constexpr static auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
   auto format(const formattable& order, format_context& context) const
       -> decltype(context.out());

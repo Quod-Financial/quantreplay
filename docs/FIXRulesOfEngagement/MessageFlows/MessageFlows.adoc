@@ -210,9 +210,23 @@ A successful modification is reported by an ExecutionReport message with *ExecTy
 
 image::10MktDataOrderReplace.png[width = 600, height=300]
 
+An OrderCancelReplaceRequest with an *OrdType* other than the type of the resting order changes the order type.
+The order keeps its OrderID and its executed quantity, takes the values of the request, and loses its time priority, as if it had just been submitted.
+The ExecutionReport with *ExecType=Replaced* reports the new *OrdType*:
+
+* *Limit to Market* (OrdType=Market). The request must specify neither Price (44) nor TimeInForce (59); the order becomes Immediate Or Cancel, whatever its previous TimeInForce.
+During the Open phase the order is executed immediately, as a new market order: the Replaced ExecutionReport is followed by the trades and by the cancellation of any non-executed remainder ('not enough liquidity to fully fill market order'), or, when the opposite side has no orders, by the cancellation of the whole order ('no facing orders found').
+During an auction call sub-phase the order rests as a market order behind the market orders already resting, and only the Replaced ExecutionReport is sent; the order takes part in the uncrossing like any other market order.
+* *Market to Limit* (OrdType=Limit). Possible only during an auction call sub-phase, the only time market orders rest.
+The request must specify a Price (44) and a TimeInForce (59), validated as for a new limit order placed during the auction call.
+The order rests at its new price, behind the orders already resting at that price.
+
+An order cannot be amended to Market during the TradeAtLast phase.
+
 An OrderCancelReplaceRequest message can be rejected by the simulator. 
-An application-level reject is always issued in the form of an *OrderCancelReject* message with *CxlRejResponseTo=OrderCancelReplaceRequest*, *OrdStatus=Rejected*, 
+An application-level reject is always issued in the form of an *OrderCancelReject* message with *CxlRejResponseTo=OrderCancelReplaceRequest* 
 and a Text field specifying the reason for a modification rejection. 
+The rejects 'invalid quantity', 'time in force can not be changed', 'time in force is not allowed', 'time in force missing', 'immediate-or-cancel and fill-or-kill orders are not accepted during an auction' and 'only limit orders are accepted during the trade-at-last phase' are issued for an order that was found and carry its current *OrdStatus*; every other reject carries *OrdStatus=Rejected*.
 An order is not modified if OrderCancelReplaceRequest is rejected.
 
 image::11MktDataCancelReject.png[width = 600, height=300]
@@ -235,10 +249,18 @@ Order is terminated (e.g. filled or cancelled)
 
 | New OrderQty (38) value is less than or equal to the already executed CumQty (14) for an order | – | ‘invalid quantity’
 
-| New TimeInForce (59) value does not match the original value specified for an order | – | ‘time in force can not be changed’
+| New TimeInForce (59) value does not match the original value specified for an order | Checked only when a limit order is amended without changing its type | ‘time in force can not be changed’
+
+| TimeInForce (59) is specified in an amend that changes a resting limit order to Market | Reported only for a TimeInForce that is otherwise valid; an unsupported value, or GoodTillDate with an invalid expiry, is rejected with the reason for that error | ‘time in force is not allowed’
+
+| TimeInForce (59) is missing in an amend that changes a resting market order to Limit | Market orders rest only during an auction call sub-phase | ‘time in force missing’
+
+| An amend that changes a resting market order to Limit specifies TimeInForce=ImmediateOrCancel or TimeInForce=FillOrKill | Reported during an auction call sub-phase, as for a new limit order | ‘immediate-or-cancel and fill-or-kill orders are not accepted during an auction’
 
 | Price (44) is missing in NewOrderSingle request | Reported when an order with OrdType=Limit is specified without a price | 
 ‘order price missing’
+
+| Price (44) is specified in OrderCancelReplaceRequest | Reported when an amend with OrdType=Market is specified with a price | ‘order price is not allowed’
 
 | OrderQty (38) is missing in NewOrderSingle request | – | ‘order quantity missing’
 
@@ -250,14 +272,14 @@ Order is terminated (e.g. filled or cancelled)
 
 | Value in OrderQty (38) is greater than the requested listing’s quantity maximum | – | ‘maximal order quantity constraint is violated’
 
-| Both ExpireDate (432) and ExpireTime (126) are missing for a GoodTillCancel order | Reported only for orders with TimeInForce=GoodTillCancel | 
+| Both ExpireDate (432) and ExpireTime (126) are missing for a GoodTillDate order | Reported only for orders with TimeInForce=GoodTillDate | 
 ‘neither expire date nor expire time specified’
 
-|  Both ExpireDate (432) and ExpireTime (126) are specified for a GoodTillCancel order | Reported only for orders with TimeInForce=GoodTillCancel | 
+|  Both ExpireDate (432) and ExpireTime (126) are specified for a GoodTillDate order | Reported only for orders with TimeInForce=GoodTillDate | 
 ‘both expire date and expire time specified’
 
-| A new GoodTillCancel order is already expired as per specified ExpireDate (432) or ExpireTime (126) | 
-Reported only for orders with TimeInForce=GoodTillCancel | ‘order already expired’
+| A GoodTillDate order is already expired as per specified ExpireDate (432) or ExpireTime (126) | 
+Reported only for orders with TimeInForce=GoodTillDate | ‘order already expired’
 
 a| The venue is in the Open or the TradeAtLast halted phase.
 
@@ -266,13 +288,13 @@ It means that in the message SecurityStatus (35=f),the tags are:
 * TradingSessionSubID is “(Continuous) Trading” - 625=3 or “Post-Trading” - 625=5
 * SecurityTradingStatus is “Trading halt” - 326=2 | – | ‘request cannot be processed during halted trading status'
 
-| OrderCancelReplaceRequest targets a market order (OrdType=Market) outside an auction call sub-phase | Market orders rest in the book only during an auction call, and only then can they be amended (their quantity); at any other time, the TradeAtLast phase included, an amendment of a market order is rejected | ‘unknown order type’
-
 | Any amend is submitted during an auction uncrossing sub-phase | Reported while an auction is uncrossing (SecurityTradingStatus 326=2 with an auction TradingSessionSubID 625=2/4/6) | ‘orders are not allowed during the uncrossing phase’
 
 | Any amend is submitted during the Closed phase | Reported while the Closed phase is active (SecurityTradingStatus 326=2 with TradingSessionSubID 625=10) | ‘request cannot be processed during closed phase’
 
 | An amend submitted during the TradeAtLast phase does not identify an order placed during that phase | During the TradeAtLast phase (TradingSessionSubID 625=5) amendments are resolved only against the orders accepted in that phase; an order resting from an earlier phase is left untouched | ‘order not found’
+
+| An amend with OrdType=Market submitted during the TradeAtLast phase identifies an order placed during that phase | – | ‘only limit orders are accepted during the trade-at-last phase’
 
 | An amend submitted during the TradeAtLast phase specifies a TimeInForce other than Day | The amended values must satisfy the same rules as a new order submitted during that phase | ‘only day orders are accepted during the trade-at-last phase’
 

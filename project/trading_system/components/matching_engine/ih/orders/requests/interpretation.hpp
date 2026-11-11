@@ -70,17 +70,16 @@ class PlacementInterpreter {
 class ModificationInterpreter {
  public:
   [[nodiscard]]
-  auto interpret(const protocol::OrderModificationRequest& request,
-                 bool allow_market_amendment = false) const
+  static auto interpret(const protocol::OrderModificationRequest& request)
       -> UpdateInterpretation;
 
  private:
-  auto interpret_as_limit_update(
-      const protocol::OrderModificationRequest& request) const
+  static auto interpret_as_limit_update(
+      const protocol::OrderModificationRequest& request)
       -> UpdateInterpretation;
 
-  auto interpret_as_market_update(
-      const protocol::OrderModificationRequest& request) const
+  static auto interpret_as_market_update(
+      const protocol::OrderModificationRequest& request)
       -> UpdateInterpretation;
 };
 
@@ -92,7 +91,7 @@ class ModificationInterpreter {
 class CancellationInterpreter {
  public:
   [[nodiscard]]
-  auto interpret(const protocol::OrderCancellationRequest& request) const
+  static auto interpret(const protocol::OrderCancellationRequest& request)
       -> CancelInterpretation;
 };
 

@@ -584,8 +584,6 @@ struct ModificationInterpretation : public Test {
   protocol::OrderModificationRequest limit_request{session};
   protocol::OrderModificationRequest market_request{session};
 
-  ModificationInterpreter interpreter;
-
  private:
   auto SetUp() -> void override {
     // Minimal set of required fields for a limit order update
@@ -606,7 +604,7 @@ struct ModificationInterpretation : public Test {
 TEST_F(ModificationInterpretation, ReportsOrderTypeIntepreationError) {
   raw_request.order_type = std::nullopt;
 
-  const auto error = interpreter.interpret(raw_request);
+  const auto error = ModificationInterpreter::interpret(raw_request);
 
   ASSERT_THAT(
       error,
@@ -617,7 +615,7 @@ TEST_F(ModificationInterpretation, ReportsSideInterpretationError) {
   raw_request.order_type = OrderType::Option::Limit;
   raw_request.side = std::nullopt;
 
-  const auto error = interpreter.interpret(raw_request);
+  const auto error = ModificationInterpreter::interpret(raw_request);
 
   ASSERT_THAT(
       error,
@@ -628,7 +626,7 @@ TEST_F(ModificationInterpretation, ReportsTimeInForceInterpretationError) {
   limit_request.time_in_force =
       matching_engine::test::invalid_enum_value<TimeInForce::Option>();
 
-  const auto error = interpreter.interpret(limit_request);
+  const auto error = ModificationInterpreter::interpret(limit_request);
 
   ASSERT_THAT(error,
               VariantWith<OrderRequestError>(
@@ -640,35 +638,45 @@ TEST_F(ModificationInterpretation, ReportsOrderIdInterpretationError) {
   raw_request.side = Side::Option::Sell;
   raw_request.venue_order_id = VenueOrderId{"4221-INVALID"};
 
-  const auto error = interpreter.interpret(raw_request);
+  const auto error = ModificationInterpreter::interpret(raw_request);
 
   ASSERT_THAT(
       error,
       VariantWith<OrderRequestError>(Eq(OrderRequestError::OrderIdInvalid)));
 }
 
-TEST_F(ModificationInterpretation,
-       ReportsInvalidOrderTypeForMarketUpdateWhenAmendmentNotAllowed) {
-  const auto error =
-      interpreter.interpret(market_request, /*allow_market_amendment=*/false);
-
-  ASSERT_THAT(
-      error,
-      VariantWith<OrderRequestError>(Eq(OrderRequestError::OrderTypeInvalid)));
-}
-
-TEST_F(ModificationInterpretation, InterpretsMarketUpdateWhenAmendmentAllowed) {
-  const auto update =
-      interpreter.interpret(market_request, /*allow_market_amendment=*/true);
+TEST_F(ModificationInterpretation, InterpretsMarketUpdate) {
+  const auto update = ModificationInterpreter::interpret(market_request);
 
   ASSERT_THAT(update, VariantWith<MarketUpdate>(_));
+}
+
+TEST_F(ModificationInterpretation,
+       ReportsTimeInForceAsSpecifiedForMarketUpdateWithTimeInForce) {
+  market_request.time_in_force = TimeInForce::Option::Day;
+
+  const auto update = ModificationInterpreter::interpret(market_request);
+
+  ASSERT_THAT(update,
+              VariantWith<MarketUpdate>(
+                  Field(&MarketUpdate::time_in_force_specified, IsTrue())));
+}
+
+TEST_F(ModificationInterpretation,
+       ReportsTimeInForceAsNotSpecifiedForMarketUpdateWithoutTimeInForce) {
+  market_request.time_in_force = std::nullopt;
+
+  const auto update = ModificationInterpreter::interpret(market_request);
+
+  ASSERT_THAT(update,
+              VariantWith<MarketUpdate>(
+                  Field(&MarketUpdate::time_in_force_specified, IsFalse())));
 }
 
 TEST_F(ModificationInterpretation, ReportsQuantityMissingForMarketUpdate) {
   market_request.order_quantity = std::nullopt;
 
-  const auto error =
-      interpreter.interpret(market_request, /*allow_market_amendment=*/true);
+  const auto error = ModificationInterpreter::interpret(market_request);
 
   ASSERT_THAT(
       error,
@@ -678,8 +686,7 @@ TEST_F(ModificationInterpretation, ReportsQuantityMissingForMarketUpdate) {
 TEST_F(ModificationInterpretation, SetsOrderSideForMarketUpdate) {
   market_request.side = Side::Option::Sell;
 
-  const auto update =
-      interpreter.interpret(market_request, /*allow_market_amendment=*/true);
+  const auto update = ModificationInterpreter::interpret(market_request);
 
   ASSERT_THAT(update, VariantWith<MarketUpdate>(_));
   ASSERT_THAT(std::get<MarketUpdate>(update).order_side,
@@ -689,8 +696,7 @@ TEST_F(ModificationInterpretation, SetsOrderSideForMarketUpdate) {
 TEST_F(ModificationInterpretation, SetsOrderQuantityForMarketUpdate) {
   market_request.order_quantity = OrderQuantity{50};
 
-  const auto update =
-      interpreter.interpret(market_request, /*allow_market_amendment=*/true);
+  const auto update = ModificationInterpreter::interpret(market_request);
 
   ASSERT_THAT(update, VariantWith<MarketUpdate>(_));
   ASSERT_THAT(std::get<MarketUpdate>(update).order_diff.quantity,
@@ -700,8 +706,7 @@ TEST_F(ModificationInterpretation, SetsOrderQuantityForMarketUpdate) {
 TEST_F(ModificationInterpretation, SetsOrderIdForMarketUpdate) {
   market_request.venue_order_id = VenueOrderId{"777"};
 
-  const auto update =
-      interpreter.interpret(market_request, /*allow_market_amendment=*/true);
+  const auto update = ModificationInterpreter::interpret(market_request);
 
   ASSERT_THAT(update, VariantWith<MarketUpdate>(_));
   ASSERT_THAT(std::get<MarketUpdate>(update).order_id,
@@ -711,8 +716,7 @@ TEST_F(ModificationInterpretation, SetsOrderIdForMarketUpdate) {
 TEST_F(ModificationInterpretation, ForcesIocTimeInForceForMarketUpdate) {
   market_request.time_in_force = TimeInForce::Option::Day;
 
-  const auto update =
-      interpreter.interpret(market_request, /*allow_market_amendment=*/true);
+  const auto update = ModificationInterpreter::interpret(market_request);
 
   ASSERT_THAT(update, VariantWith<MarketUpdate>(_));
   ASSERT_THAT(
@@ -725,8 +729,7 @@ TEST_F(ModificationInterpretation,
   market_request.side =
       matching_engine::test::invalid_enum_value<Side::Option>();
 
-  const auto error =
-      interpreter.interpret(market_request, /*allow_market_amendment=*/true);
+  const auto error = ModificationInterpreter::interpret(market_request);
 
   ASSERT_THAT(
       error,
@@ -737,8 +740,7 @@ TEST_F(ModificationInterpretation,
        ReportsOrderIdInterpretationErrorForMarketUpdate) {
   market_request.venue_order_id = VenueOrderId{"4221-INVALID"};
 
-  const auto error =
-      interpreter.interpret(market_request, /*allow_market_amendment=*/true);
+  const auto error = ModificationInterpreter::interpret(market_request);
 
   ASSERT_THAT(
       error,
@@ -750,8 +752,7 @@ TEST_F(ModificationInterpretation,
   market_request.time_in_force =
       matching_engine::test::invalid_enum_value<TimeInForce::Option>();
 
-  const auto error =
-      interpreter.interpret(market_request, /*allow_market_amendment=*/true);
+  const auto error = ModificationInterpreter::interpret(market_request);
 
   ASSERT_THAT(error,
               VariantWith<OrderRequestError>(
@@ -761,7 +762,7 @@ TEST_F(ModificationInterpretation,
 TEST_F(ModificationInterpretation, ReportsPriceMissingForLimitUpdate) {
   limit_request.order_price = std::nullopt;
 
-  const auto error = interpreter.interpret(limit_request);
+  const auto error = ModificationInterpreter::interpret(limit_request);
 
   ASSERT_THAT(
       error,
@@ -771,7 +772,7 @@ TEST_F(ModificationInterpretation, ReportsPriceMissingForLimitUpdate) {
 TEST_F(ModificationInterpretation, ReportsQuantityMissingForLimitUpdate) {
   limit_request.order_quantity = std::nullopt;
 
-  const auto error = interpreter.interpret(limit_request);
+  const auto error = ModificationInterpreter::interpret(limit_request);
 
   ASSERT_THAT(
       error,
@@ -779,7 +780,7 @@ TEST_F(ModificationInterpretation, ReportsQuantityMissingForLimitUpdate) {
 }
 
 TEST_F(ModificationInterpretation, InterpretsLimitUpdate) {
-  const auto update = interpreter.interpret(limit_request);
+  const auto update = ModificationInterpreter::interpret(limit_request);
 
   ASSERT_THAT(update, VariantWith<LimitUpdate>(_));
 }
@@ -790,7 +791,7 @@ TEST_F(ModificationInterpretation, SetsSessionForLimitUpdate) {
                              protocol::fix::SenderCompId{"SENDER"},
                              protocol::fix::TargetCompId{"TARGET"}}};
 
-  const auto update = interpreter.interpret(limit_request);
+  const auto update = ModificationInterpreter::interpret(limit_request);
 
   ASSERT_THAT(update, VariantWith<LimitUpdate>(_));
   ASSERT_THAT(std::get<LimitUpdate>(update).client_session,
@@ -800,7 +801,7 @@ TEST_F(ModificationInterpretation, SetsSessionForLimitUpdate) {
 TEST_F(ModificationInterpretation, SetsOrderSideForLimitUpdate) {
   limit_request.side = Side::Option::Sell;
 
-  const auto update = interpreter.interpret(limit_request);
+  const auto update = ModificationInterpreter::interpret(limit_request);
 
   ASSERT_THAT(update, VariantWith<LimitUpdate>(_));
   ASSERT_THAT(std::get<LimitUpdate>(update).order_side, Eq(Side::Option::Sell));
@@ -809,7 +810,7 @@ TEST_F(ModificationInterpretation, SetsOrderSideForLimitUpdate) {
 TEST_F(ModificationInterpretation, SetsOrderPriceForLimitUpdate) {
   limit_request.order_price = OrderPrice{200.0};
 
-  const auto update = interpreter.interpret(limit_request);
+  const auto update = ModificationInterpreter::interpret(limit_request);
 
   ASSERT_THAT(update, VariantWith<LimitUpdate>(_));
   ASSERT_THAT(std::get<LimitUpdate>(update).order_diff.price,
@@ -819,7 +820,7 @@ TEST_F(ModificationInterpretation, SetsOrderPriceForLimitUpdate) {
 TEST_F(ModificationInterpretation, SetsOrderQuantityForLimitUpdate) {
   limit_request.order_quantity = OrderQuantity{200};
 
-  const auto update = interpreter.interpret(limit_request);
+  const auto update = ModificationInterpreter::interpret(limit_request);
 
   ASSERT_THAT(update, VariantWith<LimitUpdate>(_));
   ASSERT_THAT(std::get<LimitUpdate>(update).order_diff.quantity,
@@ -832,7 +833,7 @@ TEST_F(ModificationInterpretation, SetsPartiesForLimitUpdate) {
                     PartyRole::Option::ExecutingFirm};
   limit_request.parties = {party};
 
-  const auto update = interpreter.interpret(limit_request);
+  const auto update = ModificationInterpreter::interpret(limit_request);
 
   ASSERT_THAT(update, VariantWith<LimitUpdate>(_));
   ASSERT_THAT(
@@ -843,7 +844,7 @@ TEST_F(ModificationInterpretation, SetsPartiesForLimitUpdate) {
 TEST_F(ModificationInterpretation, SetsOrderIdForLimitUpdate) {
   limit_request.venue_order_id = VenueOrderId{"4221"};
 
-  const auto update = interpreter.interpret(limit_request);
+  const auto update = ModificationInterpreter::interpret(limit_request);
 
   ASSERT_THAT(update, VariantWith<LimitUpdate>(_));
   ASSERT_THAT(std::get<LimitUpdate>(update).order_id, Eq(OrderId{4221}));
@@ -852,7 +853,7 @@ TEST_F(ModificationInterpretation, SetsOrderIdForLimitUpdate) {
 TEST_F(ModificationInterpretation, SetsOrigClientOrderIdForLimitUpdate) {
   limit_request.orig_client_order_id = OrigClientOrderId{"ORIG-1"};
 
-  const auto update = interpreter.interpret(limit_request);
+  const auto update = ModificationInterpreter::interpret(limit_request);
 
   ASSERT_THAT(update, VariantWith<LimitUpdate>(_));
   ASSERT_THAT(std::get<LimitUpdate>(update).orig_client_order_id,
@@ -862,7 +863,7 @@ TEST_F(ModificationInterpretation, SetsOrigClientOrderIdForLimitUpdate) {
 TEST_F(ModificationInterpretation, SetsClientOrderIdForLimitUpdate) {
   limit_request.client_order_id = ClientOrderId{"CLIENT-ORDER-ID"};
 
-  const auto update = interpreter.interpret(limit_request);
+  const auto update = ModificationInterpreter::interpret(limit_request);
 
   ASSERT_THAT(update, VariantWith<LimitUpdate>(_));
   ASSERT_THAT(
@@ -870,11 +871,31 @@ TEST_F(ModificationInterpretation, SetsClientOrderIdForLimitUpdate) {
       Eq(ClientOrderId{"CLIENT-ORDER-ID"}));
 }
 
+TEST_F(ModificationInterpretation,
+       ReportsTimeInForceAsSpecifiedForLimitUpdateWithTimeInForce) {
+  limit_request.time_in_force = TimeInForce::Option::GoodTillCancel;
+
+  const auto update = ModificationInterpreter::interpret(limit_request);
+
+  ASSERT_THAT(update,
+              VariantWith<LimitUpdate>(
+                  Field(&LimitUpdate::time_in_force_specified, IsTrue())));
+}
+
+TEST_F(ModificationInterpretation,
+       ReportsTimeInForceAsNotSpecifiedForLimitUpdateWithoutTimeInForce) {
+  limit_request.time_in_force = std::nullopt;
+
+  const auto update = ModificationInterpreter::interpret(limit_request);
+
+  ASSERT_THAT(update,
+              VariantWith<LimitUpdate>(
+                  Field(&LimitUpdate::time_in_force_specified, IsFalse())));
+}
+
 struct CancellationInterpretation : public Test {
   const protocol::Session session{protocol::generator::Session{}};
   protocol::OrderCancellationRequest request{session};
-
-  CancellationInterpreter interpreter;
 
  private:
   auto SetUp() -> void override {
@@ -886,7 +907,7 @@ struct CancellationInterpretation : public Test {
 TEST_F(CancellationInterpretation, ReportsSideInterpretationError) {
   request.side = std::nullopt;
 
-  const auto error = interpreter.interpret(request);
+  const auto error = CancellationInterpreter::interpret(request);
 
   ASSERT_THAT(error,
               VariantWith<OrderRequestError>(OrderRequestError::SideMissing));
@@ -895,13 +916,13 @@ TEST_F(CancellationInterpretation, ReportsSideInterpretationError) {
 TEST_F(CancellationInterpretation, ReportsOrderIdInterpretationError) {
   request.venue_order_id = VenueOrderId{"4221-INVALID"};
 
-  const auto error = interpreter.interpret(request);
+  const auto error = CancellationInterpreter::interpret(request);
 
   ASSERT_THAT(error, VariantWith<OrderRequestError>(_));
 }
 
 TEST_F(CancellationInterpretation, SetsRequestSession) {
-  const auto cancellation = interpreter.interpret(request);
+  const auto cancellation = CancellationInterpreter::interpret(request);
 
   ASSERT_THAT(cancellation, VariantWith<OrderCancel>(_));
   ASSERT_THAT(std::get<OrderCancel>(cancellation).client_session,
@@ -911,7 +932,7 @@ TEST_F(CancellationInterpretation, SetsRequestSession) {
 TEST_F(CancellationInterpretation, SetsRequestSide) {
   request.side = Side::Option::Sell;
 
-  const auto cancellation = interpreter.interpret(request);
+  const auto cancellation = CancellationInterpreter::interpret(request);
 
   ASSERT_THAT(cancellation, VariantWith<OrderCancel>(_));
   ASSERT_THAT(std::get<OrderCancel>(cancellation).order_side,
@@ -921,7 +942,7 @@ TEST_F(CancellationInterpretation, SetsRequestSide) {
 TEST_F(CancellationInterpretation, SetsRequestVenueOrderId) {
   request.venue_order_id = VenueOrderId{"4221"};
 
-  const auto cancellation = interpreter.interpret(request);
+  const auto cancellation = CancellationInterpreter::interpret(request);
 
   ASSERT_THAT(cancellation, VariantWith<OrderCancel>(_));
   ASSERT_THAT(std::get<OrderCancel>(cancellation).order_id, Eq(OrderId{4221}));
@@ -930,7 +951,7 @@ TEST_F(CancellationInterpretation, SetsRequestVenueOrderId) {
 TEST_F(CancellationInterpretation, SetsRequestClientOrderId) {
   request.client_order_id = ClientOrderId{"CLIENT-ORDER-ID"};
 
-  const auto cancellation = interpreter.interpret(request);
+  const auto cancellation = CancellationInterpreter::interpret(request);
 
   ASSERT_THAT(cancellation, VariantWith<OrderCancel>(_));
   ASSERT_THAT(std::get<OrderCancel>(cancellation).client_order_id,
@@ -940,7 +961,7 @@ TEST_F(CancellationInterpretation, SetsRequestClientOrderId) {
 TEST_F(CancellationInterpretation, SetsRequestOrigClientOrderId) {
   request.orig_client_order_id = OrigClientOrderId{"ORIG-CLIENT-ORDER-ID"};
 
-  const auto cancellation = interpreter.interpret(request);
+  const auto cancellation = CancellationInterpreter::interpret(request);
 
   ASSERT_THAT(cancellation, VariantWith<OrderCancel>(_));
   ASSERT_THAT(std::get<OrderCancel>(cancellation).orig_client_order_id,

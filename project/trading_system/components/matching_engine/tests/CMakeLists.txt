@@ -45,6 +45,7 @@ add_target_tests(
     unit_tests/market_data/streaming_settings_tests.cpp
     unit_tests/market_data/trade_cache_tests.cpp
     unit_tests/orders/actions/all_orders_elimination_tests.cpp
+    unit_tests/orders/actions/auction_amendment_tests.cpp
     unit_tests/orders/actions/auction_indicative_reporter_tests.cpp
     unit_tests/orders/actions/auction_placement_tests.cpp
     unit_tests/orders/actions/auction_uncross_tests.cpp
@@ -52,9 +53,11 @@ add_target_tests(
     unit_tests/orders/actions/closed_phase_elimination_tests.cpp
     unit_tests/orders/actions/early_price_reporter_tests.cpp
     unit_tests/orders/actions/limit_order_recover_tests.cpp
+    unit_tests/orders/actions/limit_to_market_amendment_tests.cpp
     unit_tests/orders/actions/on_disconnect_elimination_tests.cpp
     unit_tests/orders/actions/market_amendment_tests.cpp
     unit_tests/orders/actions/order_actions_tests.cpp
+    unit_tests/orders/actions/order_type_conversion_tests.cpp
     unit_tests/orders/actions/regular_amendment_tests.cpp
     unit_tests/orders/actions/regular_placement_tests.cpp
     unit_tests/orders/actions/system_elimination_tests.cpp

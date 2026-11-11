@@ -3,6 +3,7 @@
 #include <stdexcept>
 
 #include "core/tools/time.hpp"
+#include "ih/orders/book/limit_order.hpp"
 #include "ih/orders/book/market_order.hpp"
 #include "tools/order_builder.hpp"
 
@@ -213,6 +214,101 @@ TEST_F(MarketOrderAmendment, ThrowsWhenQuantityNotAboveExecutedQuantity) {
 
   ASSERT_THROW(order.amend(MarketOrder::Update{.quantity = OrderQuantity{5}}),
                std::logic_error);
+}
+
+struct MarketOrderConversion : public Test {
+  static constexpr OrderTime Arrival{
+      core::sys_us{core::sys_days{2025y / 1 / 25} + 13h + 14min + 1s}};
+
+  static auto resting_limit_order(OrderQuantity quantity) -> LimitOrder {
+    return OrderBuilder{}
+        .with_order_id(OrderId{42})
+        .with_order_price(OrderPrice{10})
+        .with_order_quantity(quantity)
+        .with_time_in_force(TimeInForce::Option::GoodTillCancel)
+        .with_order_time(Arrival)
+        .build_limit_order();
+  }
+
+  static auto update_to(OrderQuantity quantity) -> MarketOrder::Update {
+    OrderAttributes attributes;
+    attributes.set_client_order_id(ClientOrderId{"amended"});
+    attributes.set_time_in_force(TimeInForce::Option::ImmediateOrCancel);
+    return MarketOrder::Update{.quantity = quantity, .attributes = attributes};
+  }
+};
+
+TEST_F(MarketOrderConversion, ThrowsWhenQuantityNotAboveExecutedQuantity) {
+  auto limit_order = resting_limit_order(OrderQuantity{100});
+  limit_order.execute(ExecutedQuantity{50}, ExecutionPrice{10});
+
+  ASSERT_THROW((MarketOrder{limit_order, update_to(OrderQuantity{50})}),
+               std::logic_error);
+}
+
+TEST_F(MarketOrderConversion, KeepsOrderIdOfLimitOrder) {
+  const MarketOrder order{resting_limit_order(OrderQuantity{100}),
+                          update_to(OrderQuantity{100})};
+
+  ASSERT_THAT(order.id(), Eq(OrderId{42}));
+}
+
+TEST_F(MarketOrderConversion, ContinuesExecutionIdSequenceOfLimitOrder) {
+  auto limit_order = resting_limit_order(OrderQuantity{100});
+  const auto limit_execution_id = limit_order.make_execution_id();
+
+  MarketOrder order{limit_order, update_to(OrderQuantity{100})};
+
+  ASSERT_THAT(order.make_execution_id(), Ne(limit_execution_id));
+}
+
+TEST_F(MarketOrderConversion, KeepsExecutedQuantityOfLimitOrder) {
+  auto limit_order = resting_limit_order(OrderQuantity{100});
+  limit_order.execute(ExecutedQuantity{30}, ExecutionPrice{10});
+
+  const MarketOrder order{limit_order, update_to(OrderQuantity{100})};
+
+  ASSERT_THAT(order.cum_executed_quantity(), Eq(CumExecutedQuantity{30}));
+}
+
+TEST_F(MarketOrderConversion, KeepsAveragePriceOfLimitOrder) {
+  auto limit_order = resting_limit_order(OrderQuantity{100});
+  limit_order.execute(ExecutedQuantity{20}, ExecutionPrice{10});
+  limit_order.execute(ExecutedQuantity{20}, ExecutionPrice{12});
+
+  const MarketOrder order{limit_order, update_to(OrderQuantity{100})};
+
+  ASSERT_THAT(order.average_price(), Optional(Eq(AveragePrice{11})));
+}
+
+TEST_F(MarketOrderConversion, TakesAmendedQuantity) {
+  const MarketOrder order{resting_limit_order(OrderQuantity{100}),
+                          update_to(OrderQuantity{50})};
+
+  ASSERT_THAT(order.total_quantity(), Eq(OrderQuantity{50}));
+}
+
+TEST_F(MarketOrderConversion, TakesAmendedAttributes) {
+  const MarketOrder order{resting_limit_order(OrderQuantity{100}),
+                          update_to(OrderQuantity{100})};
+
+  EXPECT_THAT(order.client_order_id(), Optional(Eq(ClientOrderId{"amended"})));
+  EXPECT_THAT(order.time_in_force(),
+              Eq(TimeInForce::Option::ImmediateOrCancel));
+}
+
+TEST_F(MarketOrderConversion, SetsModifiedStatus) {
+  const MarketOrder order{resting_limit_order(OrderQuantity{100}),
+                          update_to(OrderQuantity{100})};
+
+  ASSERT_THAT(order.status(), Eq(OrderStatus::Option::Modified));
+}
+
+TEST_F(MarketOrderConversion, LosesTimePriorityEvenWhenQuantityDecreases) {
+  const MarketOrder order{resting_limit_order(OrderQuantity{100}),
+                          update_to(OrderQuantity{50})};
+
+  ASSERT_THAT(order.time(), Gt(Arrival));
 }
 
 // NOLINTEND(*-magic-numbers)

@@ -10,6 +10,7 @@
 #include "ih/orders/replies/modification_reply_builders.hpp"
 #include "ih/orders/replies/placement_reply_builders.hpp"
 #include "ih/orders/tools/notification_creators.hpp"
+#include "ih/orders/tools/order_lookup.hpp"
 #include "log/logging.hpp"
 
 namespace simulator::trading_system::matching_engine {
@@ -41,6 +42,22 @@ auto reject_market_order(EventListener& event_listener,
           .build())));
 }
 
+auto reject_market_amendment(EventListener& event_listener,
+                             OrderBook& order_book,
+                             const MarketUpdate& update) -> void {
+  auto& orders = order_book.take_page(update.order_side).trade_at_last_orders();
+  const auto order_it = find_target_limit_order(orders, update);
+
+  auto reject = prepare_modification_reject(update);
+  if (order_it == orders.end()) {
+    reject.with_reason(RejectText{"order not found"});
+  } else {
+    reject.with_order_status(order_it->status())
+        .with_reason(RejectText{std::string{LimitOrdersOnlyReject}});
+  }
+  event_listener.on(Event(ClientNotification(reject.build())));
+}
+
 }  // namespace trade_at_last
 
 TradeAtLastPlacement::TradeAtLastPlacement(EventListener& event_listener,
@@ -48,8 +65,8 @@ TradeAtLastPlacement::TradeAtLastPlacement(EventListener& event_listener,
                                            RegularMatcher& matcher,
                                            std::optional<Price> closing_price)
     : EventReporter(event_listener),
-      order_book_(order_book),
-      matcher_(matcher),
+      order_book_(&order_book),
+      matcher_(&matcher),
       closing_price_(closing_price) {}
 
 auto TradeAtLastPlacement::operator()(LimitOrder order) -> OrderBookUpdates {
@@ -65,13 +82,13 @@ auto TradeAtLastPlacement::operator()(LimitOrder order) -> OrderBookUpdates {
                               .with_execution_id(order.make_execution_id())
                               .build()));
 
-  matcher_.match(order);
+  matcher_->match(order);
 
   if (order.executed()) {
     return {};
   }
 
-  order_book_.take_page(order.side()).trade_at_last_orders().emplace(order);
+  order_book_->take_page(order.side()).trade_at_last_orders().emplace(order);
   emit(order::make_making_order_added_to_book_notification(order));
 
   return {OrderBookUpdate{.side = order.side(),
@@ -92,7 +109,7 @@ TradeAtLastAmendment::TradeAtLastAmendment(EventListener& event_listener,
                                            RegularAmendment& amendment,
                                            std::optional<Price> closing_price)
     : EventReporter(event_listener),
-      amendment_(amendment),
+      amendment_(&amendment),
       closing_price_(closing_price) {}
 
 auto TradeAtLastAmendment::operator()(LimitUpdate update) -> OrderBookUpdates {
@@ -108,7 +125,7 @@ auto TradeAtLastAmendment::operator()(LimitUpdate update) -> OrderBookUpdates {
     return {};
   }
 
-  return amendment_(std::move(update));
+  return (*amendment_)(std::move(update));
 }
 
 }  // namespace simulator::trading_system::matching_engine

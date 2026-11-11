@@ -205,8 +205,7 @@ auto PlacementInterpreter::interpret_as_market_order(
 // region ModificationInterpreter
 
 auto ModificationInterpreter::interpret(
-    const protocol::OrderModificationRequest& request,
-    bool allow_market_amendment) const -> UpdateInterpretation {
+    const protocol::OrderModificationRequest& request) -> UpdateInterpretation {
   const auto order_type = detail::interpret_order_type(request.order_type);
   if (!order_type.has_value()) {
     return order_type.error();
@@ -216,9 +215,6 @@ auto ModificationInterpreter::interpret(
     case OrderType::Option::Limit:
       return interpret_as_limit_update(request);
     case OrderType::Option::Market:
-      if (!allow_market_amendment) {
-        return OrderRequestError::OrderTypeInvalid;
-      }
       return interpret_as_market_update(request);
   }
 
@@ -226,8 +222,7 @@ auto ModificationInterpreter::interpret(
 }
 
 auto ModificationInterpreter::interpret_as_limit_update(
-    const protocol::OrderModificationRequest& request) const
-    -> UpdateInterpretation {
+    const protocol::OrderModificationRequest& request) -> UpdateInterpretation {
   const auto side = detail::interpret_side(request.side);
   if (!side.has_value()) {
     return side.error();
@@ -259,13 +254,13 @@ auto ModificationInterpreter::interpret_as_limit_update(
   update.order_id = order_id.value();
   update.client_order_id = request.client_order_id;
   update.orig_client_order_id = request.orig_client_order_id;
+  update.time_in_force_specified = request.time_in_force.has_value();
 
   return update;
 }
 
 auto ModificationInterpreter::interpret_as_market_update(
-    const protocol::OrderModificationRequest& request) const
-    -> UpdateInterpretation {
+    const protocol::OrderModificationRequest& request) -> UpdateInterpretation {
   const auto side = detail::interpret_side(request.side);
   if (!side.has_value()) {
     return side.error();
@@ -297,6 +292,7 @@ auto ModificationInterpreter::interpret_as_market_update(
   update.order_id = order_id.value();
   update.client_order_id = request.client_order_id;
   update.orig_client_order_id = request.orig_client_order_id;
+  update.time_in_force_specified = request.time_in_force.has_value();
 
   return update;
 }
@@ -306,8 +302,7 @@ auto ModificationInterpreter::interpret_as_market_update(
 // region CancellationInterpreter
 
 auto CancellationInterpreter::interpret(
-    const protocol::OrderCancellationRequest& request) const
-    -> CancelInterpretation {
+    const protocol::OrderCancellationRequest& request) -> CancelInterpretation {
   const auto side = detail::interpret_side(request.side);
   if (!side.has_value()) {
     return side.error();

@@ -2,8 +2,6 @@
 
 #include <chrono>
 #include <optional>
-#include <string>
-#include <string_view>
 #include <utility>
 
 #include "core/tools/time.hpp"
@@ -13,7 +11,6 @@
 #include "ih/orders/book/order_updates.hpp"
 #include "ih/orders/matchers/no_cross_matcher.hpp"
 #include "protocol/app/order_modification_confirmation.hpp"
-#include "protocol/app/order_modification_reject.hpp"
 #include "tests/mocks/event_listener_mock.hpp"
 #include "tools/matchers.hpp"
 #include "tools/order_builder.hpp"
@@ -24,13 +21,6 @@ namespace {
 using namespace ::testing;  // NOLINT
 
 // NOLINTBEGIN(*magic-numbers*)
-
-[[nodiscard]]
-auto RejectedWith(std::string_view reason) {
-  return IsClientNotification(VariantWith<protocol::OrderModificationReject>(
-      Field(&protocol::OrderModificationReject::reject_text,
-            Optional(Eq(RejectText{std::string{reason}})))));
-}
 
 struct MatchingEngineTradeAtLastAmendment : public Test {
   MatchingEngineTradeAtLastAmendment() {
@@ -111,7 +101,8 @@ TEST_F(MatchingEngineTradeAtLastAmendmentWithClosingPrice,
   rest_trade_at_last_order(OrderId{1});
 
   EXPECT_CALL(event_listener,
-              on(RejectedWith(trade_at_last::PriceNotAtClosingPriceReject)));
+              on(IsOrderModificationReject(
+                  trade_at_last::PriceNotAtClosingPriceReject)));
 
   amendment(amend_priced_to(OrderId{1}, OrderPrice{43}));
 }
@@ -120,8 +111,9 @@ TEST_F(MatchingEngineTradeAtLastAmendmentWithClosingPrice,
        RejectsAmendmentThatChangesTimeInForce) {
   rest_trade_at_last_order(OrderId{1});
 
-  EXPECT_CALL(event_listener,
-              on(RejectedWith(trade_at_last::DayOrdersOnlyReject)));
+  EXPECT_CALL(
+      event_listener,
+      on(IsOrderModificationReject(trade_at_last::DayOrdersOnlyReject)));
 
   amendment(amend_with_time_in_force(OrderId{1},
                                      TimeInForce::Option::GoodTillCancel));
@@ -197,9 +189,58 @@ TEST_F(MatchingEngineTradeAtLastAmendmentWithoutClosingPrice,
   rest_trade_at_last_order(OrderId{1});
 
   EXPECT_CALL(event_listener,
-              on(RejectedWith(trade_at_last::ClosingPriceUnavailableReject)));
+              on(IsOrderModificationReject(
+                  trade_at_last::ClosingPriceUnavailableReject)));
 
   amendment(amend_to(OrderId{1}, OrderQuantity{50}));
+}
+
+struct MatchingEngineTradeAtLastMarketAmendment
+    : public MatchingEngineTradeAtLastAmendment {
+  auto rest_regular_order(OrderId identifier) -> void {
+    order_book.take_page(Side::Option::Buy)
+        .limit_orders()
+        .emplace(OrderBuilder{}
+                     .with_order_id(identifier)
+                     .with_side(Side::Option::Buy)
+                     .build_limit_order());
+  }
+
+  auto reject_amendment_to_market(OrderId identifier) -> void {
+    MarketUpdate update{protocol::Session{protocol::generator::Session{}},
+                        Side::Option::Buy,
+                        MarketOrder::Update{.quantity = OrderQuantity{100}}};
+    update.order_id = identifier;
+    trade_at_last::reject_market_amendment(event_listener, order_book, update);
+  }
+};
+
+TEST_F(MatchingEngineTradeAtLastMarketAmendment,
+       RejectsAmendmentOfTradeAtLastOrderAsLimitOrdersOnly) {
+  rest_trade_at_last_order(OrderId{1});
+
+  EXPECT_CALL(
+      event_listener,
+      on(IsOrderModificationRejectWithStatus(
+          trade_at_last::LimitOrdersOnlyReject, OrderStatus::Option::New)));
+
+  reject_amendment_to_market(OrderId{1});
+}
+
+TEST_F(MatchingEngineTradeAtLastMarketAmendment,
+       RejectsAmendmentOfRegularBookOrderAsOrderNotFound) {
+  rest_regular_order(OrderId{1});
+
+  EXPECT_CALL(event_listener, on(IsOrderModificationReject("order not found")));
+
+  reject_amendment_to_market(OrderId{1});
+}
+
+TEST_F(MatchingEngineTradeAtLastMarketAmendment,
+       RejectsAmendmentOfUnknownOrderAsOrderNotFound) {
+  EXPECT_CALL(event_listener, on(IsOrderModificationReject("order not found")));
+
+  reject_amendment_to_market(OrderId{1});
 }
 
 // NOLINTEND(*magic-numbers*)

@@ -1,9 +1,10 @@
 #include "ih/orders/actions/order_actions.hpp"
 
+#include "ih/orders/actions/auction_amendment.hpp"
 #include "ih/orders/actions/auction_placement.hpp"
 #include "ih/orders/actions/cancellation.hpp"
 #include "ih/orders/actions/limit_order_recover.hpp"
-#include "ih/orders/actions/market_amendment.hpp"
+#include "ih/orders/actions/limit_to_market_amendment.hpp"
 #include "ih/orders/actions/regular_amendment.hpp"
 #include "ih/orders/actions/regular_placement.hpp"
 #include "ih/orders/actions/trade_at_last_actions.hpp"
@@ -79,12 +80,7 @@ auto amend_limit_order(EventListener& event_listener,
                        LimitUpdate update,
                        const OrderActionContext& context) -> OrderBookUpdates {
   if (context.mode == OrderActionMode::AuctionCall) {
-    NoCrossMatcher matcher;
-    RegularAmendment operation{event_listener,
-                               order_book,
-                               matcher,
-                               price_tick,
-                               LimitOrderQueue::Regular};
+    AuctionAmendment operation{event_listener, order_book, price_tick};
     log::debug("executing auction limit order amendment action");
     return operation(std::move(update));
   }
@@ -121,9 +117,28 @@ auto amend_limit_order(EventListener& event_listener,
 auto amend_market_order(EventListener& event_listener,
                         OrderBook& order_book,
                         std::optional<PriceTick> price_tick,
-                        MarketUpdate update) -> OrderBookUpdates {
-  MarketAmendment operation{event_listener, order_book, price_tick};
-  log::debug("executing market order amendment action");
+                        MarketUpdate update,
+                        const OrderActionContext& context) -> OrderBookUpdates {
+  if (context.mode == OrderActionMode::AuctionCall) {
+    AuctionAmendment operation{event_listener, order_book, price_tick};
+    log::debug("executing auction market order amendment action");
+    return operation(std::move(update));
+  }
+
+  if (context.mode == OrderActionMode::TradeAtLast) {
+    log::debug("rejecting amendment to market during the trade-at-last phase");
+    trade_at_last::reject_market_amendment(event_listener, order_book, update);
+    return {};
+  }
+
+  RegularOrderMatcher matcher{event_listener,
+                              order_book,
+                              price_tick,
+                              context.market_phase,
+                              LimitOrderQueue::Regular};
+  LimitToMarketAmendment operation{
+      event_listener, order_book, matcher, price_tick};
+  log::debug("executing limit to market order amendment action");
   return operation(std::move(update));
 }
 

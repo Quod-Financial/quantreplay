@@ -14,11 +14,11 @@
 #include "ih/orders/actions/trade_at_last_actions.hpp"
 #include "ih/orders/order_system_facade.hpp"
 #include "matching_engine/configuration.hpp"
+#include "protocol/app/execution_report.hpp"
 #include "protocol/app/order_cancellation_confirmation.hpp"
 #include "protocol/app/order_cancellation_reject.hpp"
 #include "protocol/app/order_cancellation_request.hpp"
 #include "protocol/app/order_modification_confirmation.hpp"
-#include "protocol/app/order_modification_reject.hpp"
 #include "protocol/app/order_modification_request.hpp"
 #include "protocol/app/order_placement_confirmation.hpp"
 #include "protocol/app/order_placement_reject.hpp"
@@ -68,7 +68,7 @@ struct MatchingEngineOrderSystemFacade : public Test {
   }
 
   auto place_identifiable_limit(Side side,
-                                ClientOrderId id,
+                                const ClientOrderId& identifier,
                                 OrderPrice price,
                                 OrderQuantity quantity) -> void {
     auto request = make_message<protocol::OrderPlacementRequest>();
@@ -76,7 +76,7 @@ struct MatchingEngineOrderSystemFacade : public Test {
     request.side = side;
     request.order_price = price;
     request.order_quantity = quantity;
-    request.client_order_id = id;
+    request.client_order_id = identifier;
     facade.process(request);
   }
 
@@ -88,8 +88,19 @@ struct MatchingEngineOrderSystemFacade : public Test {
     facade.process(request);
   }
 
+  auto place_identifiable_market(Side side,
+                                 const ClientOrderId& identifier,
+                                 OrderQuantity quantity) -> void {
+    auto request = make_message<protocol::OrderPlacementRequest>();
+    request.order_type = OrderType::Option::Market;
+    request.side = side;
+    request.order_quantity = quantity;
+    request.client_order_id = identifier;
+    facade.process(request);
+  }
+
   auto amend(Side side,
-             OrigClientOrderId id,
+             const OrigClientOrderId& identifier,
              OrderPrice price,
              OrderQuantity quantity) -> void {
     auto request = make_message<protocol::OrderModificationRequest>();
@@ -97,14 +108,39 @@ struct MatchingEngineOrderSystemFacade : public Test {
     request.side = side;
     request.order_price = price;
     request.order_quantity = quantity;
-    request.orig_client_order_id = id;
+    request.orig_client_order_id = identifier;
     facade.process(request);
   }
 
-  auto cancel(Side side, OrigClientOrderId id) -> void {
+  auto amend_market_to_limit(Side side,
+                             const OrigClientOrderId& identifier,
+                             OrderPrice price,
+                             OrderQuantity quantity) -> void {
+    auto request = make_message<protocol::OrderModificationRequest>();
+    request.order_type = OrderType::Option::Limit;
+    request.side = side;
+    request.order_price = price;
+    request.order_quantity = quantity;
+    request.time_in_force = TimeInForce::Option::Day;
+    request.orig_client_order_id = identifier;
+    facade.process(request);
+  }
+
+  auto amend_to_market(Side side,
+                       const OrigClientOrderId& identifier,
+                       OrderQuantity quantity) -> void {
+    auto request = make_message<protocol::OrderModificationRequest>();
+    request.order_type = OrderType::Option::Market;
+    request.side = side;
+    request.order_quantity = quantity;
+    request.orig_client_order_id = identifier;
+    facade.process(request);
+  }
+
+  auto cancel(Side side, const OrigClientOrderId& identifier) -> void {
     auto request = make_message<protocol::OrderCancellationRequest>();
     request.side = side;
-    request.orig_client_order_id = id;
+    request.orig_client_order_id = identifier;
     facade.process(request);
   }
 
@@ -141,13 +177,9 @@ TEST_F(MatchingEngineOrderSystemFacadeUncrossing, RejectsOrderPlacement) {
 TEST_F(MatchingEngineOrderSystemFacadeUncrossing, RejectsOrderModification) {
   enter_uncrossing(/*allow_cancels=*/false);
 
-  EXPECT_CALL(
-      event_listener,
-      on(IsClientNotification(
-          VariantWith<protocol::OrderModificationReject>(Field(
-              &protocol::OrderModificationReject::reject_text,
-              Optional(Eq(RejectText{
-                  "orders are not allowed during the uncrossing phase"})))))));
+  EXPECT_CALL(event_listener,
+              on(IsOrderModificationReject(
+                  "orders are not allowed during the uncrossing phase")));
 
   facade.process(make_message<protocol::OrderModificationRequest>());
 }
@@ -181,36 +213,60 @@ struct MatchingEngineOrderSystemFacadeMarketAmendment
     request.venue_order_id = VenueOrderId{"1"};
     return request;
   }
+
+  static auto market_modification_of(OrigClientOrderId identifier)
+      -> protocol::OrderModificationRequest {
+    auto request = make_message<protocol::OrderModificationRequest>();
+    request.order_type = OrderType::Option::Market;
+    request.side = Side::Option::Buy;
+    request.order_quantity = OrderQuantity{100};
+    request.orig_client_order_id = std::move(identifier);
+    return request;
+  }
 };
 
 TEST_F(MatchingEngineOrderSystemFacadeMarketAmendment,
-       RejectsMarketModificationOutsideAuctionAsUnknownOrderType) {
+       RejectsMarketModificationOfUnknownOrderOutsideAuctionAsOrderNotFound) {
   facade.handle(
       transition(TradingPhase::Option::Open, TradingStatus::Option::Resume));
 
-  EXPECT_CALL(
-      event_listener,
-      on(IsClientNotification(VariantWith<protocol::OrderModificationReject>(
-          Field(&protocol::OrderModificationReject::reject_text,
-                Optional(Eq(RejectText{"unknown order type"})))))));
+  EXPECT_CALL(event_listener, on(IsOrderModificationReject("order not found")));
 
   facade.process(market_modification());
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeMarketAmendment,
-       RoutesMarketModificationToAmendmentDuringCall) {
+       ExecutesLimitOrderAmendedToMarketOutsideAuction) {
+  facade.handle(
+      transition(TradingPhase::Option::Open, TradingStatus::Option::Resume));
+  place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{100});
+  place_identifiable_limit(Side::Option::Buy,
+                           ClientOrderId{"bid"},
+                           OrderPrice{90},
+                           OrderQuantity{100});
+
+  EXPECT_CALL(event_listener,
+              on(IsOrderBookNotification(VariantWith<Trade>(
+                  Field(&Trade::trade_price, Eq(Price{100}))))));
+
+  facade.process(market_modification_of(OrigClientOrderId{"bid"}));
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeMarketAmendment,
+       RestsLimitOrderAmendedToMarketDuringCall) {
   facade.handle(transition(TradingPhase::Option::OpeningAuction,
                            TradingStatus::Option::Resume));
+  place_identifiable_limit(Side::Option::Buy,
+                           ClientOrderId{"bid"},
+                           OrderPrice{90},
+                           OrderQuantity{100});
 
-  // No resting market order matches, so routing to the market amendment path
-  // surfaces "order not found" rather than the "unknown order type" gate.
-  EXPECT_CALL(
-      event_listener,
-      on(IsClientNotification(VariantWith<protocol::OrderModificationReject>(
-          Field(&protocol::OrderModificationReject::reject_text,
-                Optional(Eq(RejectText{"order not found"})))))));
+  EXPECT_CALL(event_listener,
+              on(IsOrderBookNotification(VariantWith<OrderAdded>(AllOf(
+                  Field(&OrderAdded::order_type, Eq(OrderType::Option::Market)),
+                  Field(&OrderAdded::order_price, Eq(std::nullopt)))))));
 
-  facade.process(market_modification());
+  facade.process(market_modification_of(OrigClientOrderId{"bid"}));
 }
 
 struct MatchingEngineOrderSystemFacadePlacementRouting
@@ -483,6 +539,30 @@ TEST_F(MatchingEngineOrderSystemFacadeAuctionUncross,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeAuctionUncross,
+       CrossesLimitOrderAmendedToMarketDuringCallAsMarketOrder) {
+  enter_call();
+  place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{100});
+  place_limit(Side::Option::Buy, OrderPrice{100}, OrderQuantity{50});
+  place_identifiable_limit(Side::Option::Buy,
+                           ClientOrderId{"bid"},
+                           OrderPrice{90},
+                           OrderQuantity{50});
+  amend_to_market(
+      Side::Option::Buy, OrigClientOrderId{"bid"}, OrderQuantity{50});
+
+  EXPECT_CALL(event_listener,
+              on(IsClientNotification(VariantWith<protocol::ExecutionReport>(
+                  AllOf(Field(&protocol::ExecutionReport::order_type,
+                              Optional(Eq(OrderType::Option::Market))),
+                        Field(&protocol::ExecutionReport::execution_price,
+                              Optional(Eq(ExecutionPrice{100}))),
+                        Field(&protocol::ExecutionReport::order_status,
+                              Optional(Eq(OrderStatus::Option::Filled))))))));
+
+  enter_uncrossing();
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeAuctionUncross,
        IncludesMarketOrderQuantityPlacedDuringCallInClearingQuantity) {
   enter_call();
   place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{100});
@@ -735,6 +815,42 @@ TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
+       PublishesIndicativePriceAndQuantityOnAmendmentToMarketDuringCall) {
+  enter_call();
+  place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{50});
+  place_limit(Side::Option::Sell, OrderPrice{105}, OrderQuantity{50});
+  place_limit(Side::Option::Buy, OrderPrice{105}, OrderQuantity{50});
+  place_identifiable_limit(Side::Option::Buy,
+                           ClientOrderId{"bid"},
+                           OrderPrice{95},
+                           OrderQuantity{50});
+
+  EXPECT_CALL(event_listener,
+              on(PublishesIndicative(Price{105}, Quantity{100})));
+
+  amend_to_market(
+      Side::Option::Buy, OrigClientOrderId{"bid"}, OrderQuantity{50});
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
+       PublishesIndicativePriceAndQuantityOnAmendmentToLimitDuringCall) {
+  enter_call();
+  place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{50});
+  place_limit(Side::Option::Sell, OrderPrice{105}, OrderQuantity{50});
+  place_limit(Side::Option::Buy, OrderPrice{105}, OrderQuantity{50});
+  place_identifiable_market(
+      Side::Option::Buy, ClientOrderId{"bid"}, OrderQuantity{50});
+
+  EXPECT_CALL(event_listener,
+              on(PublishesIndicative(Price{100}, Quantity{50})));
+
+  amend_market_to_limit(Side::Option::Buy,
+                        OrigClientOrderId{"bid"},
+                        OrderPrice{95},
+                        OrderQuantity{50});
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeIndicativePrice,
        PublishesIndicativeQuantityOnCancellationDuringCall) {
   enter_call();
   place_limit(Side::Option::Sell, OrderPrice{100}, OrderQuantity{100});
@@ -849,35 +965,33 @@ struct MatchingEngineOrderSystemFacadeTradeAtLast
     facade.process(request);
   }
 
-  auto place_identifiable_at_closing_price(Side side, ClientOrderId id)
+  auto place_identifiable_at_closing_price(Side side,
+                                           const ClientOrderId& identifier)
       -> void {
     place_identifiable_limit(
-        side, id, OrderPrice{ClosingPrice.value()}, OrderQuantity{100});
+        side, identifier, OrderPrice{ClosingPrice.value()}, OrderQuantity{100});
   }
 
-  auto amend_at_closing_price(OrigClientOrderId id, OrderQuantity quantity)
-      -> void {
-    amend(Side::Option::Buy, id, OrderPrice{ClosingPrice.value()}, quantity);
+  auto amend_at_closing_price(const OrigClientOrderId& identifier,
+                              OrderQuantity quantity) -> void {
+    amend(Side::Option::Buy,
+          identifier,
+          OrderPrice{ClosingPrice.value()},
+          quantity);
   }
 
-  auto amend_market(OrigClientOrderId id) -> void {
+  auto amend_market(const OrigClientOrderId& identifier) -> void {
     auto request = make_message<protocol::OrderModificationRequest>();
     request.order_type = OrderType::Option::Market;
     request.side = Side::Option::Buy;
     request.order_quantity = OrderQuantity{100};
-    request.orig_client_order_id = id;
+    request.orig_client_order_id = identifier;
     facade.process(request);
   }
 
   static auto RejectedWith(std::string_view reason) {
     return IsClientNotification(VariantWith<protocol::OrderPlacementReject>(
         Field(&protocol::OrderPlacementReject::reject_text,
-              Optional(Eq(RejectText{std::string{reason}})))));
-  }
-
-  static auto ModificationRejectedWith(std::string_view reason) {
-    return IsClientNotification(VariantWith<protocol::OrderModificationReject>(
-        Field(&protocol::OrderModificationReject::reject_text,
               Optional(Eq(RejectText{std::string{reason}})))));
   }
 
@@ -996,7 +1110,7 @@ TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
   place_identifiable_at_closing_price(Side::Option::Buy, ClientOrderId{"bid"});
   enter_trade_at_last();
 
-  EXPECT_CALL(event_listener, on(ModificationRejectedWith("order not found")));
+  EXPECT_CALL(event_listener, on(IsOrderModificationReject("order not found")));
 
   amend_at_closing_price(OrigClientOrderId{"bid"}, OrderQuantity{50});
 }
@@ -1007,7 +1121,7 @@ TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
   place_identifiable_at_closing_price(Side::Option::Buy, ClientOrderId{"bid"});
 
   EXPECT_CALL(event_listener,
-              on(ModificationRejectedWith(
+              on(IsOrderModificationReject(
                   trade_at_last::PriceNotAtClosingPriceReject)));
 
   amend(Side::Option::Buy,
@@ -1017,11 +1131,22 @@ TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
 }
 
 TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
-       RejectsAmendmentOfMarketOrder) {
+       RejectsAmendmentToMarketOfUnknownOrderAsOrderNotFound) {
   enter_trade_at_last();
 
-  EXPECT_CALL(event_listener,
-              on(ModificationRejectedWith("unknown order type")));
+  EXPECT_CALL(event_listener, on(IsOrderModificationReject("order not found")));
+
+  amend_market(OrigClientOrderId{"bid"});
+}
+
+TEST_F(MatchingEngineOrderSystemFacadeTradeAtLast,
+       RejectsAmendmentToMarketOfTradeAtLastOrder) {
+  enter_trade_at_last();
+  place_identifiable_at_closing_price(Side::Option::Buy, ClientOrderId{"bid"});
+
+  EXPECT_CALL(
+      event_listener,
+      on(IsOrderModificationReject(trade_at_last::LimitOrdersOnlyReject)));
 
   amend_market(OrigClientOrderId{"bid"});
 }
@@ -1100,11 +1225,11 @@ struct MatchingEngineOrderSystemFacadeTradeAtLastExpiry
                              TradingStatus::Option::Halt));
   }
 
-  static auto CancellationConfirmationFor(ClientOrderId id) {
+  static auto CancellationConfirmationFor(ClientOrderId identifier) {
     return IsClientNotification(
         VariantWith<protocol::OrderCancellationConfirmation>(
             Field(&protocol::OrderCancellationConfirmation::client_order_id,
-                  Optional(Eq(id)))));
+                  Optional(Eq(std::move(identifier))))));
   }
 
   static auto AnyCancellationConfirmation() {

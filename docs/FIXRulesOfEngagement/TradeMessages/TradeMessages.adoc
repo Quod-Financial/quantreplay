@@ -117,7 +117,20 @@ ExecutionReport ExecID values are unique per listing per order.
 
 | 38 | OrderQty | Y | Total quantity of the order (LeavesQty + CumQty).
 
+| 40 | OrdType | Y a| Order type. After an amendment that changes the order type, the new type is reported.
+
+* 1 - Market
+* 2 - Limit
+
 | 44 | Price | C | Limit price of the order. Required for OrdType (40) = Limit.
+
+| 59 | TimeInForce | N a| Time in force of the order. An accepted market order is reported as Immediate Or Cancel.
+
+* 0 - Day
+* 1 - Good Till Cancel
+* 3 - Immediate Or Cancel
+* 4 - Fill Or Kill
+* 6 - Good Till Date
 
 | 54 | Side | Y a| Side of order.
 
@@ -179,7 +192,9 @@ The exact value is reported as specified in NewOrderSingle/OrderCancelReplaceReq
 * 1 - Market
 * 2 - Limit
 
-| 44 | Price | C | Required for OrdType Limit.
+A value other than the type of the resting order changes the order type, see <<message-flows-trd-msg-odr-cl-rep-req>>.
+
+| 44 | Price | C | Required for OrdType Limit. Not allowed for OrdType Market.
 
 | 54 | Side | Y a| Side of order.
 
@@ -199,6 +214,27 @@ Required when SecurityIDSource = ISIN in the Instrument component.
 
 | 60 | TransactTime | Y | Time this order request was initiated/released.
 
+| 59 | TimeInForce | C a| Specifies how long the order remains in effect.
+
+* 0 - Day
+* 1 - Good Till Cancel
+* 3 - Immediate Or Cancel
+* 4 - Fill Or Kill
+* 6 - Good Till Date
+
+When a limit order is amended without changing its type, must be equal to the TimeInForce of the order. Absence of this field is interpreted as Day.
+
+Not allowed when a limit order is amended to Market; the order becomes Immediate Or Cancel.
+
+Required when a market order is amended to Limit; the order takes this value.
+
+Has no effect when a market order is amended without changing its type.
+
+| 432 | ExpireDate | C | Date of order expiration (last day the order can trade), always expressed in terms of the local market date.
+Conditionally required if TimeInForce (59) = GTD and ExpireTime (126) is not specified.
+
+| 126 | ExpireTime | C | Time/Date of order expiration (always expressed in UTC).
+Conditionally required if TimeInForce (59) = GTD and ExpireDate (432) is not specified.
 
 | Component | <<common-components-parties>> | N | 
 

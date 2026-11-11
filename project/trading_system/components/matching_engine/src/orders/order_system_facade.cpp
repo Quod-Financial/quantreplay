@@ -51,7 +51,7 @@ auto resolve_reference_price(TradingPhase phase,
                              const AuctionReferencePriceProvider& provider)
     -> std::optional<Price> {
   using Phase = TradingPhase::Option;
-  switch (phase) {
+  switch (static_cast<Phase>(phase)) {
     case Phase::OpeningAuction:
       return provider.closing_price();
     case Phase::ClosingAuction:
@@ -71,12 +71,12 @@ OrderSystemFacade::OrderSystemFacade(
     EventListener& event_listener,
     const AuctionReferencePriceProvider& reference_price_provider,
     const Instrument& instrument,
-    const Configuration& configuration,
+    Configuration configuration,
     std::unique_ptr<order::OrderIdGenerator> order_id_generator,
     std::unique_ptr<order::Validator> validator,
     std::unique_ptr<order::RejectNotifier> reject_notifier,
     std::unique_ptr<OrderBook> depr_order_book)
-    : configuration_(configuration),
+    : configuration_(std::move(configuration)),
       phase_handler_(event_listener),
       halt_not_closed_phase_setting_{},
       instrument_matcher_{instrument::Matcher::create(instrument)},
@@ -128,8 +128,6 @@ auto OrderSystemFacade::process(
     return;
   }
 
-  ModificationInterpreter interpreter;
-  const auto in_auction_call = phase_handler_.in_auction_call();
   const auto context = make_action_context();
   const auto dispatcher = core::overload(
       [&](LimitUpdate update) -> OrderBookUpdates {
@@ -143,14 +141,15 @@ auto OrderSystemFacade::process(
         return amend_market_order(*event_listener_,
                                   *depr_order_book_,
                                   configuration_.order_price_tick,
-                                  std::move(update));
+                                  std::move(update),
+                                  context);
       },
       [&](OrderRequestError error) -> OrderBookUpdates {
         reject_notifier_->notify_rejected(request, describe(error));
         return {};
       });
 
-  auto interpretation = interpreter.interpret(request, in_auction_call);
+  auto interpretation = ModificationInterpreter::interpret(request);
   refresh_auction_indicative(std::visit(dispatcher, interpretation));
 }
 
@@ -160,7 +159,6 @@ auto OrderSystemFacade::process(
     return;
   }
 
-  CancellationInterpreter interpreter;
   const auto context = make_action_context();
   const auto dispatcher = core::overload(
       [&](const OrderCancel& cancel) -> OrderBookUpdates {
@@ -175,7 +173,7 @@ auto OrderSystemFacade::process(
         return {};
       });
 
-  auto interpretation = interpreter.interpret(request);
+  auto interpretation = CancellationInterpreter::interpret(request);
   refresh_auction_indicative(std::visit(dispatcher, interpretation));
 }
 
@@ -358,7 +356,7 @@ auto OrderSystemFacade::handle(const event::PhaseTransition& phase_transition)
       prices.clearing_value =
           TradeResult{.price = result->price, .quantity = result->quantity};
     }
-    event_listener_->on(Event(OrderBookNotification{std::move(prices)}));
+    event_listener_->on(Event(OrderBookNotification{prices}));
     return PhaseTransitionOutcome::AuctionUncross;
   }
 

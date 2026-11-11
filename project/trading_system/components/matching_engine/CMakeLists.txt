@@ -49,6 +49,7 @@ add_static_library(
     ih/market_data/validation/validator.hpp
     ih/market_data/market_data_facade.hpp
     ih/market_data/streaming_settings.hpp
+    ih/orders/actions/auction_amendment.hpp
     ih/orders/actions/auction_indicative_reporter.hpp
     ih/orders/actions/auction_placement.hpp
     ih/orders/actions/auction_uncross.hpp
@@ -56,10 +57,13 @@ add_static_library(
     ih/orders/actions/early_price_reporter.hpp
     ih/orders/actions/elimination.hpp
     ih/orders/actions/limit_order_recover.hpp
+    ih/orders/actions/limit_to_market_amendment.hpp
     ih/orders/actions/market_amendment.hpp
     ih/orders/actions/order_actions.hpp
+    ih/orders/actions/order_type_conversion.hpp
     ih/orders/actions/regular_amendment.hpp
     ih/orders/actions/regular_placement.hpp
+    ih/orders/actions/taker_cancellation.hpp
     ih/orders/actions/time_reporter.hpp
     ih/orders/actions/trade_at_last_actions.hpp
     ih/orders/book/limit_order.hpp
@@ -116,6 +120,7 @@ add_static_library(
     src/market_data/validation/checkers.cpp
     src/market_data/validation/market_data_validator.cpp
     src/market_data/market_data_facade.cpp
+    src/orders/actions/auction_amendment.cpp
     src/orders/actions/auction_indicative_reporter.cpp
     src/orders/actions/auction_placement.cpp
     src/orders/actions/auction_uncross.cpp
@@ -123,10 +128,13 @@ add_static_library(
     src/orders/actions/early_price_reporter.cpp
     src/orders/actions/elimination.cpp
     src/orders/actions/limit_order_recover.cpp
+    src/orders/actions/limit_to_market_amendment.cpp
     src/orders/actions/market_amendment.cpp
     src/orders/actions/order_actions.cpp
+    src/orders/actions/order_type_conversion.cpp
     src/orders/actions/regular_amendment.cpp
     src/orders/actions/regular_placement.cpp
+    src/orders/actions/taker_cancellation.cpp
     src/orders/actions/time_reporter.cpp
     src/orders/actions/trade_at_last_actions.cpp
     src/orders/book/order_book.cpp

@@ -45,7 +45,8 @@ SenderCompID (Tag 49) + TargerCompID (Tag 56)
 New resting orders will be entered into the order queue by time priority (first in, first to match) within the range of orders at the same price as each other. 
 Amended orders will lose time priority if the price is amended to any new value, moving to the end of the queue for the range of orders at the new price. 
 Amended orders will also lose time priority if the quantity is amended to a larger value, moving to the end of the queue for the range of orders at the same existing price. 
-Orders that are not amended for price, but amended to a smaller quantity or for any other value of the order will not lose time priority, 
+Amended orders will also lose time priority if the order type is amended, as if they had just been submitted.
+Orders that are not amended for price or order type, but amended to a smaller quantity or for any other value of the order will not lose time priority, 
 maintaining its current position in the queue.
 
 

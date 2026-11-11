@@ -4,6 +4,7 @@
 #include <optional>
 #include <ranges>
 #include <stdexcept>
+#include <string_view>
 #include <utility>
 
 #include "core/tools/time.hpp"
@@ -14,6 +15,25 @@
 #include "ih/orders/book/order_updates.hpp"
 
 namespace simulator::trading_system::matching_engine {
+namespace {
+
+auto ensure_amendable_quantity(OrderQuantity quantity,
+                               CumExecutedQuantity executed_quantity,
+                               std::string_view operation) -> void {
+  if (!is_amendable_quantity(quantity, executed_quantity)) [[unlikely]] {
+    throw std::logic_error(
+        fmt::format("cannot {} - invalid quantity '{}'", operation, quantity));
+  }
+}
+
+auto apply_order_type_change(OrderRecord& record, OrderAttributes attributes)
+    -> void {
+  record.set_order_status(OrderStatus::Option::Modified);
+  record.set_order_attributes(std::move(attributes));
+  record.set_order_time(OrderTime(core::get_current_system_time()));
+}
+
+}  // namespace
 
 // region OrderAttributes
 
@@ -65,11 +85,11 @@ auto OrderAttributes::set_time_in_force(TimeInForce time_in_force) -> void {
 }
 
 auto OrderAttributes::set_expire_time(ExpireTime expire_time) -> void {
-  expire_time_ = std::move(expire_time);
+  expire_time_ = expire_time;
 }
 
 auto OrderAttributes::set_expire_date(ExpireDate expire_date) -> void {
-  expire_date_ = std::move(expire_date);
+  expire_date_ = expire_date;
 }
 
 auto OrderAttributes::set_short_sale_exemption_reason(
@@ -156,6 +176,18 @@ LimitOrder::LimitOrder(OrderPrice price,
       total_quantity_{quantity},
       cum_executed_quantity_{cum_executed_quantity},
       cum_px_qty_{cum_px_qty} {}
+
+LimitOrder::LimitOrder(MarketOrder order, Update update)
+    : record_{std::move(order.record_)},
+      price_{update.price},
+      total_quantity_{update.quantity},
+      cum_executed_quantity_{order.cum_executed_quantity_},
+      cum_px_qty_{order.cum_px_qty_} {
+  ensure_amendable_quantity(
+      total_quantity_, cum_executed_quantity_, "convert market order to limit");
+  assert(record_);
+  apply_order_type_change(*record_, std::move(update.attributes));
+}
 
 auto LimitOrder::id() const -> OrderId {
   assert(record_);
@@ -273,11 +305,8 @@ auto LimitOrder::execute(ExecutedQuantity quantity, ExecutionPrice price)
 }
 
 auto LimitOrder::amend(Update update) -> void {
-  if (static_cast<double>(update.quantity) <=
-      static_cast<double>(cum_executed_quantity_)) [[unlikely]] {
-    throw std::logic_error(fmt::format(
-        "cannot amend limit order - invalid quantity '{}'", update.quantity));
-  }
+  ensure_amendable_quantity(
+      update.quantity, cum_executed_quantity_, "amend limit order");
 
   assert(record_);
   record_->set_order_status(OrderStatus::Option::Modified);
@@ -297,18 +326,23 @@ auto LimitOrder::cancel() -> void {
 
 // endregion LimitOrder
 
+auto is_amendable_quantity(OrderQuantity quantity,
+                           CumExecutedQuantity executed_quantity) -> bool {
+  return static_cast<double>(quantity) > static_cast<double>(executed_quantity);
+}
+
 LimitUpdate::LimitUpdate(protocol::Session session,
                          Side side,
-                         LimitOrder::Update update)
+                         LimitOrder::Update diff)
     : client_session(std::move(session)),
-      order_diff(std::move(update)),
+      order_diff(std::move(diff)),
       order_side(side) {}
 
 MarketUpdate::MarketUpdate(protocol::Session session,
                            Side side,
-                           MarketOrder::Update update)
+                           MarketOrder::Update diff)
     : client_session(std::move(session)),
-      order_diff(std::move(update)),
+      order_diff(std::move(diff)),
       order_side(side) {}
 
 OrderCancel::OrderCancel(protocol::Session session, Side side)
@@ -321,6 +355,17 @@ MarketOrder::MarketOrder(OrderQuantity quantity, OrderRecord record)
       total_quantity_{quantity},
       cum_executed_quantity_{0.0},
       cum_px_qty_{0.0} {}
+
+MarketOrder::MarketOrder(LimitOrder order, Update update)
+    : record_{std::move(order.record_)},
+      total_quantity_{update.quantity},
+      cum_executed_quantity_{order.cum_executed_quantity_},
+      cum_px_qty_{order.cum_px_qty_} {
+  ensure_amendable_quantity(
+      total_quantity_, cum_executed_quantity_, "convert limit order to market");
+  assert(record_);
+  apply_order_type_change(*record_, std::move(update.attributes));
+}
 
 auto MarketOrder::id() const -> OrderId {
   assert(record_);
@@ -429,11 +474,8 @@ auto MarketOrder::execute(ExecutedQuantity quantity, ExecutionPrice price)
 }
 
 auto MarketOrder::amend(Update update) -> void {
-  if (static_cast<double>(update.quantity) <=
-      static_cast<double>(cum_executed_quantity_)) [[unlikely]] {
-    throw std::logic_error(fmt::format(
-        "cannot amend market order - invalid quantity '{}'", update.quantity));
-  }
+  ensure_amendable_quantity(
+      update.quantity, cum_executed_quantity_, "amend market order");
 
   assert(record_);
   record_->set_order_status(OrderStatus::Option::Modified);

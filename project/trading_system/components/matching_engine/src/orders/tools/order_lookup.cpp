@@ -92,8 +92,20 @@ auto find_target_limit_order(LimitOrdersContainer& orders,
   return find_target_order(orders, update);
 }
 
+auto find_target_limit_order(LimitOrdersContainer& orders,
+                             const MarketUpdate& update)
+    -> LimitOrdersContainer::iterator {
+  return find_target_order(orders, update);
+}
+
 auto find_target_market_order(MarketOrdersContainer& orders,
                               const MarketUpdate& update)
+    -> MarketOrdersContainer::iterator {
+  return find_target_order(orders, update);
+}
+
+auto find_target_market_order(MarketOrdersContainer& orders,
+                              const LimitUpdate& update)
     -> MarketOrdersContainer::iterator {
   return find_target_order(orders, update);
 }

@@ -46,7 +46,8 @@ auto amend_limit_order(EventListener& event_listener,
 auto amend_market_order(EventListener& event_listener,
                         OrderBook& order_book,
                         std::optional<PriceTick> price_tick,
-                        MarketUpdate update) -> OrderBookUpdates;
+                        MarketUpdate update,
+                        const OrderActionContext& context) -> OrderBookUpdates;
 
 auto cancel_order(EventListener& event_listener,
                   OrderBook& order_book,
