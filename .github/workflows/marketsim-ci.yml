@@ -24,7 +24,7 @@ jobs:
       image: ghcr.io/quod-financial/build_marketsim:v0.3
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Mark repository as safe
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
@@ -56,7 +56,7 @@ jobs:
         run: cmake --build --preset ci-gitlab-release --target all 2>&1 | tee compilation_log.txt
 
       - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-artifacts-${{ github.run_id }}
           path: |
@@ -66,7 +66,7 @@ jobs:
 
       - name: Upload Compilation Log
         if: failure() && steps.build.outcome == 'failure'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: compilation-log-${{ github.run_id }}
           path: compilation_log.txt
@@ -80,10 +80,10 @@ jobs:
       image: ghcr.io/quod-financial/build_marketsim:v0.3
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download Build Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: build-artifacts-${{ github.run_id }}
           path: .
@@ -95,7 +95,7 @@ jobs:
         run: ctest --preset ci-gitlab-release-test --output-junit test_report.xml
 
       - name: Upload Test Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-report-${{ github.run_id }}
           path: test_report.xml
@@ -107,10 +107,10 @@ jobs:
     if: ${{ (startsWith(github.ref, 'refs/tags/v') && github.ref_type == 'tag') || github.event_name == 'push' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download Build Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: build-artifacts-${{ github.run_id }}
           path: .
@@ -122,7 +122,7 @@ jobs:
           cp -r release-build/bin/marketsimulator package/quod/bin/
 
       - name: Upload Package Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: marketsim-package-${{ github.run_id }}
           path: package/quod
@@ -139,10 +139,10 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download Package Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: marketsim-package-${{ github.run_id }}
           path: package/quod
@@ -170,17 +170,17 @@ jobs:
           echo "Final image tag(s): $TAGS"
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build and Push Deploy Image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: .github/docker/Deploy_Marketsim.Dockerfile
