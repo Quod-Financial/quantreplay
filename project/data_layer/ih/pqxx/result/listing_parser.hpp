@@ -6,8 +6,10 @@
 #include "api/exceptions/exceptions.hpp"
 #include "api/inspectors/listing.hpp"
 #include "api/inspectors/listing_random_price_source.hpp"
+#include "api/inspectors/price_tick_range.hpp"
 #include "api/models/listing.hpp"
 #include "api/models/listing_random_price_source.hpp"
+#include "api/models/price_tick_range.hpp"
 #include "ih/pqxx/result/detail/basic_row_parser.hpp"
 
 namespace simulator::data_layer::internal_pqxx {
@@ -28,6 +30,27 @@ class ListingRandomPriceSourceParser {
       -> ListingRandomPriceSource::Patch {
     ListingRandomPriceSource::Patch parsed{};
     ListingRandomPriceSourceParser parser{database_row};
+    parser.parse_into(parsed);
+    return parsed;
+  }
+
+ private:
+  detail::BasicRowParser row_parser_;
+};
+
+class PriceTickRangeParser {
+ public:
+  explicit PriceTickRangeParser(const pqxx::row& database_row) noexcept
+      : row_parser_{database_row} {}
+
+  auto parse_into(PriceTickRange::Patch& destination_patch) -> void {
+    PriceTickRangePatchWriter<decltype(row_parser_)> writer{row_parser_};
+    writer.write(destination_patch);
+  }
+
+  static auto parse(const pqxx::row& database_row) -> PriceTickRange::Patch {
+    PriceTickRange::Patch parsed;
+    PriceTickRangeParser parser{database_row};
     parser.parse_into(parsed);
     return parsed;
   }

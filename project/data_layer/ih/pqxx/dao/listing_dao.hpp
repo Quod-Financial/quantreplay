@@ -4,9 +4,11 @@
 #include <pqxx/connection>
 #include <pqxx/row>
 #include <pqxx/transaction>
+#include <string>
 
 #include "api/models/listing.hpp"
 #include "api/models/listing_random_price_source.hpp"
+#include "api/models/price_tick_range.hpp"
 #include "ih/common/command/commands.hpp"
 #include "ih/pqxx/context.hpp"
 #include "ih/pqxx/database/transaction.hpp"
@@ -67,6 +69,15 @@ class ListingDao {
               Transaction::Handler transaction_handler) -> Listing;
 
   [[nodiscard]]
+  static auto update_columns(const std::string& query,
+                             Transaction::Handler transaction_handler)
+      -> std::uint64_t;
+
+  [[nodiscard]]
+  auto select_row(const Predicate& predicate,
+                  Transaction::Handler transaction_handler) const -> pqxx::row;
+
+  [[nodiscard]]
   auto decode_listing(const pqxx::row& row,
                       Transaction::Handler transaction_handler) const
       -> Listing;
@@ -87,6 +98,20 @@ class ListingDao {
 
   auto drop_random_price_sources(std::uint64_t listing_id,
                                  Transaction::Handler transaction_handler) const
+      -> void;
+
+  auto insert_price_tick_ranges(
+      std::uint64_t listing_id,
+      const std::vector<PriceTickRange::Patch>& patches,
+      Transaction::Handler transaction_handler) const -> void;
+
+  [[nodiscard]]
+  auto select_price_tick_ranges(std::uint64_t listing_id,
+                                Transaction::Handler transaction_handler) const
+      -> std::vector<PriceTickRange::Patch>;
+
+  auto drop_price_tick_ranges(std::uint64_t listing_id,
+                              Transaction::Handler transaction_handler) const
       -> void;
 
   pqxx::connection connection_;

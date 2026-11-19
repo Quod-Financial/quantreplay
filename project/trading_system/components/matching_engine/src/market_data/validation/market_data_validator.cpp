@@ -53,13 +53,13 @@ auto MarketDataValidation::validate(const Trade& trade) const -> Conclusion {
 
 auto MarketDataValidation::run(
     Validation<market_state::InstrumentInfo>& validation) const -> void {
-  validation.expect(LowPriceRespectsTick{config_.price_tick})
-      .expect(HighPriceRespectsTick{config_.price_tick})
+  validation.expect(LowPriceRespectsTick{config_.price_tick_ranges})
+      .expect(HighPriceRespectsTick{config_.price_tick_ranges})
       .expect(LowPriceIsLessThanOrEqualToHighPrice{});
 }
 
 auto MarketDataValidation::run(Validation<Trade>& validation) const -> void {
-  validation.expect(TradePriceRespectsTick{config_.price_tick})
+  validation.expect(TradePriceRespectsTick{config_.price_tick_ranges})
       .expect(TradedQuantityRespectsTick{config_.quantity_tick})
       .expect(TradedQuantityRespectsMinimum{config_.min_quantity})
       .expect(TradedQuantityRespectsMaximum{config_.max_quantity});

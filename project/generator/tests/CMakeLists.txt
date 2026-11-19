@@ -71,6 +71,7 @@ add_target_tests(
     unit_tests/random/generators/counterparty_generator_tests.cpp
     unit_tests/random/generators/event_generator_tests.cpp
     unit_tests/random/generators/price_generator_tests.cpp
+    unit_tests/random/generators/price_walk_tests.cpp
     unit_tests/random/generators/quantity_generator_tests.cpp
     unit_tests/random/generators/resting_order_action_generator_tests.cpp
     unit_tests/random/generators/value_generator_impl_tests.cpp

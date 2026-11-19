@@ -8,12 +8,15 @@
 
 namespace simulator::trading_system::matching_engine {
 
-RegularPlacement::RegularPlacement(EventListener& event_listener,
-                                   OrderBook& order_book,
-                                   RegularMatcher& matcher)
+RegularPlacement::RegularPlacement(
+    EventListener& event_listener,
+    OrderBook& order_book,
+    RegularMatcher& matcher,
+    const core::PriceTickRanges& price_tick_ranges)
     : EventReporter(event_listener),
       order_book_(order_book),
-      matcher_(matcher) {}
+      matcher_(matcher),
+      price_tick_ranges_{&price_tick_ranges} {}
 
 auto RegularPlacement::operator()(LimitOrder order) -> OrderBookUpdates {
   log::debug("running regular limit order placement operation");
@@ -31,7 +34,7 @@ auto RegularPlacement::operator()(MarketOrder order) -> OrderBookUpdates {
   log::debug("placing/matching market order: {}", order);
 
   if (!matcher_.has_facing_orders(order)) {
-    cancel_without_facing_orders(listener(), order, std::nullopt);
+    cancel_without_facing_orders(listener(), order, *price_tick_ranges_);
     return {};
   }
 
@@ -71,7 +74,7 @@ auto RegularPlacement::place_order(LimitOrder order) -> OrderBookUpdates {
 auto RegularPlacement::match_ioc_order(LimitOrder order) -> OrderBookUpdates {
   log::debug("matching IoC order {}", order);
   if (!matcher_.has_facing_orders(order)) {
-    cancel_without_facing_orders(listener(), order, std::nullopt);
+    cancel_without_facing_orders(listener(), order, *price_tick_ranges_);
     return {};
   }
 
@@ -86,14 +89,14 @@ auto RegularPlacement::match_fok_order(LimitOrder order) -> OrderBookUpdates {
   log::debug("matching FoK order {}", order);
 
   if (!matcher_.has_facing_orders(order)) {
-    cancel_without_facing_orders(listener(), order, std::nullopt);
+    cancel_without_facing_orders(listener(), order, *price_tick_ranges_);
     return {};
   }
 
   if (!matcher_.can_fully_trade(order)) {
     order.cancel();
     emit(ClientNotification(
-        prepare_cancellation_confirmation(order, std::nullopt)
+        prepare_cancellation_confirmation(order, *price_tick_ranges_)
             .with_leaving_quantity(LeavesQuantity{0})
             .with_execution_id(order.make_execution_id())
             .with_client_order_id(order.client_order_id())

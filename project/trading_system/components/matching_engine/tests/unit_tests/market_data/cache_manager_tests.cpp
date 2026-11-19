@@ -20,7 +20,8 @@ using namespace ::testing;  // NOLINT
 
 struct MatchingEngineCacheManager : Test {
   static auto make_configuration() -> Configuration {
-    return {.clock = core::TzClock{"Europe/Kyiv"}};
+    return {.clock = core::TzClock{"Europe/Kyiv"},
+            .order_price_tick_ranges = {}};
   }
 
   auto push(auto&& notification) -> void {

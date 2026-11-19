@@ -2,13 +2,16 @@
 #define SIMULATOR_GENERATOR_IH_RANDOM_VALUES_PRICE_GENERATION_PARAMS_HPP_
 
 #include <cstdint>
+#include <optional>
+
+#include "core/tools/price_tick_ranges.hpp"
 
 namespace simulator::generator::random {
 
 class PriceGenerationParams {
   struct Params {
-    double price_tick_size{0.};
-    double price_spread{0.};
+    core::PriceTickRanges price_tick_ranges;
+    std::optional<double> price_spread;
     std::uint32_t price_tick_range{0};
   };
 
@@ -19,7 +22,8 @@ class PriceGenerationParams {
    public:
     auto set_price_tick_range(std::uint32_t px_tick_range) noexcept -> void;
 
-    auto set_price_tick_size(double px_tick_size) noexcept -> void;
+    auto set_price_tick_ranges(core::PriceTickRanges px_tick_ranges) noexcept
+        -> void;
 
     auto set_price_spread(double px_spread) noexcept -> void;
 
@@ -35,10 +39,10 @@ class PriceGenerationParams {
   auto get_price_tick_range() const noexcept -> std::uint32_t;
 
   [[nodiscard]]
-  auto get_price_tick_size() const noexcept -> double;
+  auto get_price_tick_ranges() const noexcept -> const core::PriceTickRanges&;
 
   [[nodiscard]]
-  auto get_price_spread() const noexcept -> double;
+  auto get_price_spread() const noexcept -> std::optional<double>;
 
  private:
   Params params_;

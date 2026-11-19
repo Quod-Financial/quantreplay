@@ -1,5 +1,6 @@
 #include <gmock/gmock.h>
 
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/orders/actions/elimination.hpp"
 #include "tests/mocks/event_listener_mock.hpp"
 #include "tests/tools/matchers.hpp"
@@ -14,7 +15,7 @@ struct MatchingEngineSystemElimination : public Test {
   inline static const core::TzClock Timezone{"Europe/Kyiv"};
 
   auto make_eliminator(event::Tick tick) -> SystemElimination {
-    return SystemElimination{event_listener, std::move(tick), std::nullopt};
+    return SystemElimination{event_listener, tick, no_price_tick_ranges};
   }
 
   static auto default_tick() -> event::Tick {
@@ -27,6 +28,7 @@ struct MatchingEngineSystemElimination : public Test {
   NiceMock<EventListenerMock> event_listener;
   OrderBuilder builder;
   OrderBook order_book;
+  const core::PriceTickRanges no_price_tick_ranges;
 };
 
 struct MatchingEngineSystemEliminationDay

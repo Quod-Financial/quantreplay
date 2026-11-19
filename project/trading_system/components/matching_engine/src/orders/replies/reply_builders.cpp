@@ -13,20 +13,25 @@ namespace simulator::trading_system::matching_engine {
 namespace {
 
 auto rounded_average_price(const std::optional<AveragePrice>& average_price,
-                           const std::optional<PriceTick>& price_tick)
+                           const core::PriceTickRanges& price_tick_ranges)
     -> std::optional<AveragePrice> {
-  if (!average_price.has_value() || !price_tick.has_value()) {
+  if (!average_price.has_value()) {
     return average_price;
   }
-  return std::make_optional<AveragePrice>(core::round_to_tick(
-      static_cast<double>(*average_price), static_cast<double>(*price_tick)));
+
+  const auto price = static_cast<double>(*average_price);
+  const auto tick = price_tick_ranges.tick_of(price);
+  if (!tick.has_value()) {
+    return average_price;
+  }
+  return std::make_optional<AveragePrice>(core::round_to_tick(price, *tick));
 }
 
 }  // namespace
 
 CancellationConfirmationBuilder::CancellationConfirmationBuilder(
-    protocol::Session session, std::optional<PriceTick> price_tick)
-    : message_{std::move(session)}, price_tick_{price_tick} {}
+    protocol::Session session, const core::PriceTickRanges& price_tick_ranges)
+    : message_{std::move(session)}, price_tick_ranges_{&price_tick_ranges} {}
 
 auto CancellationConfirmationBuilder::build() const
     -> protocol::OrderCancellationConfirmation {
@@ -41,7 +46,7 @@ auto CancellationConfirmationBuilder::for_order(const LimitOrder& order)
   message_.cum_executed_quantity = order.cum_executed_quantity();
   message_.order_quantity = order.total_quantity();
   message_.average_price =
-      rounded_average_price(order.average_price(), price_tick_);
+      rounded_average_price(order.average_price(), *price_tick_ranges_);
   message_.order_price = order.price();
   message_.order_status = order.status();
   message_.side = order.side();
@@ -61,7 +66,7 @@ auto CancellationConfirmationBuilder::for_order(const MarketOrder& order)
   message_.cum_executed_quantity = order.cum_executed_quantity();
   message_.order_quantity = order.total_quantity();
   message_.average_price =
-      rounded_average_price(order.average_price(), price_tick_);
+      rounded_average_price(order.average_price(), *price_tick_ranges_);
   message_.order_status = order.status();
   message_.side = order.side();
   message_.time_in_force = order.time_in_force();
@@ -104,18 +109,20 @@ auto CancellationConfirmationBuilder::with_orig_client_order_id(
   return *this;
 }
 
-auto prepare_cancellation_confirmation(const LimitOrder& order,
-                                       std::optional<PriceTick> price_tick)
+auto prepare_cancellation_confirmation(
+    const LimitOrder& order, const core::PriceTickRanges& price_tick_ranges)
     -> CancellationConfirmationBuilder {
-  CancellationConfirmationBuilder builder{order.client_session(), price_tick};
+  CancellationConfirmationBuilder builder{order.client_session(),
+                                          price_tick_ranges};
   builder.for_order(order);
   return builder;
 }
 
-auto prepare_cancellation_confirmation(const MarketOrder& order,
-                                       std::optional<PriceTick> price_tick)
+auto prepare_cancellation_confirmation(
+    const MarketOrder& order, const core::PriceTickRanges& price_tick_ranges)
     -> CancellationConfirmationBuilder {
-  CancellationConfirmationBuilder builder{order.client_session(), price_tick};
+  CancellationConfirmationBuilder builder{order.client_session(),
+                                          price_tick_ranges};
   builder.for_order(order);
   return builder;
 }
@@ -187,8 +194,8 @@ auto prepare_cancellation_reject(const OrderCancel& cancel)
 }
 
 ExecutionReportBuilder::ExecutionReportBuilder(
-    protocol::Session session, std::optional<PriceTick> price_tick)
-    : message_{std::move(session)}, price_tick_{price_tick} {
+    protocol::Session session, const core::PriceTickRanges& price_tick_ranges)
+    : message_{std::move(session)}, price_tick_ranges_{&price_tick_ranges} {
   message_.execution_type = ExecutionType::Option::OrderTraded;
 }
 
@@ -207,7 +214,7 @@ auto ExecutionReportBuilder::for_order(const LimitOrder& order)
   message_.leaves_quantity = order.leaves_quantity();
   message_.cum_executed_quantity = order.cum_executed_quantity();
   message_.average_price =
-      rounded_average_price(order.average_price(), price_tick_);
+      rounded_average_price(order.average_price(), *price_tick_ranges_);
   message_.order_status = order.status();
   message_.side = order.side();
   message_.time_in_force = order.time_in_force();
@@ -228,7 +235,7 @@ auto ExecutionReportBuilder::for_order(const MarketOrder& order)
   message_.leaves_quantity = order.leaves_quantity();
   message_.cum_executed_quantity = order.cum_executed_quantity();
   message_.average_price =
-      rounded_average_price(order.average_price(), price_tick_);
+      rounded_average_price(order.average_price(), *price_tick_ranges_);
   message_.order_status = order.status();
   message_.side = order.side();
   message_.time_in_force = order.time_in_force();
@@ -266,24 +273,24 @@ auto ExecutionReportBuilder::with_counterparty(
 }
 
 auto prepare_execution_report(const LimitOrder& order,
-                              std::optional<PriceTick> price_tick)
+                              const core::PriceTickRanges& price_tick_ranges)
     -> ExecutionReportBuilder {
-  ExecutionReportBuilder builder{order.client_session(), price_tick};
+  ExecutionReportBuilder builder{order.client_session(), price_tick_ranges};
   builder.for_order(order);
   return builder;
 }
 
 auto prepare_execution_report(const MarketOrder& order,
-                              std::optional<PriceTick> price_tick)
+                              const core::PriceTickRanges& price_tick_ranges)
     -> ExecutionReportBuilder {
-  ExecutionReportBuilder builder{order.client_session(), price_tick};
+  ExecutionReportBuilder builder{order.client_session(), price_tick_ranges};
   builder.for_order(order);
   return builder;
 }
 
 ModificationConfirmationBuilder::ModificationConfirmationBuilder(
-    protocol::Session session, std::optional<PriceTick> price_tick)
-    : message_{std::move(session)}, price_tick_{price_tick} {}
+    protocol::Session session, const core::PriceTickRanges& price_tick_ranges)
+    : message_{std::move(session)}, price_tick_ranges_{&price_tick_ranges} {}
 
 auto ModificationConfirmationBuilder::build() const
     -> protocol::OrderModificationConfirmation {
@@ -301,7 +308,7 @@ auto ModificationConfirmationBuilder::for_order(const LimitOrder& order)
   message_.leaving_quantity = order.leaves_quantity();
   message_.cum_executed_quantity = order.cum_executed_quantity();
   message_.average_price =
-      rounded_average_price(order.average_price(), price_tick_);
+      rounded_average_price(order.average_price(), *price_tick_ranges_);
   message_.order_status = order.status();
   message_.side = order.side();
   message_.time_in_force = order.time_in_force();
@@ -322,7 +329,7 @@ auto ModificationConfirmationBuilder::for_order(const MarketOrder& order)
   message_.leaving_quantity = order.leaves_quantity();
   message_.cum_executed_quantity = order.cum_executed_quantity();
   message_.average_price =
-      rounded_average_price(order.average_price(), price_tick_);
+      rounded_average_price(order.average_price(), *price_tick_ranges_);
   message_.order_status = order.status();
   message_.side = order.side();
   message_.time_in_force = order.time_in_force();
@@ -346,18 +353,20 @@ auto ModificationConfirmationBuilder::with_orig_client_order_id(
   return *this;
 }
 
-auto prepare_modification_confirmation(const LimitOrder& order,
-                                       std::optional<PriceTick> price_tick)
+auto prepare_modification_confirmation(
+    const LimitOrder& order, const core::PriceTickRanges& price_tick_ranges)
     -> ModificationConfirmationBuilder {
-  ModificationConfirmationBuilder builder{order.client_session(), price_tick};
+  ModificationConfirmationBuilder builder{order.client_session(),
+                                          price_tick_ranges};
   builder.for_order(order);
   return builder;
 }
 
-auto prepare_modification_confirmation(const MarketOrder& order,
-                                       std::optional<PriceTick> price_tick)
+auto prepare_modification_confirmation(
+    const MarketOrder& order, const core::PriceTickRanges& price_tick_ranges)
     -> ModificationConfirmationBuilder {
-  ModificationConfirmationBuilder builder{order.client_session(), price_tick};
+  ModificationConfirmationBuilder builder{order.client_session(),
+                                          price_tick_ranges};
   builder.for_order(order);
   return builder;
 }

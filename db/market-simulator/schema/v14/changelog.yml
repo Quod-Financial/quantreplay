@@ -1,4 +1,8 @@
 databaseChangeLog:
+  # price_tick_range is filled from listing.price_tick_size before tables/listing.yml drops that column.
+  - include:
+      file: tables/price_tick_range.yml
+      relativeToChangelogFile: true
   - include:
       file: tables/listing.yml
       relativeToChangelogFile: true

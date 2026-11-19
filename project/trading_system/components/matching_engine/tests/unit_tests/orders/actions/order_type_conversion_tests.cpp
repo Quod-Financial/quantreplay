@@ -3,6 +3,7 @@
 #include <optional>
 #include <utility>
 
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/orders/actions/auction_placement.hpp"
 #include "ih/orders/actions/order_type_conversion.hpp"
 #include "ih/orders/book/order_book.hpp"
@@ -26,7 +27,8 @@ struct MatchingEngineOrderTypeConversion : public Test {
 
   NiceMock<EventListenerMock> event_listener;
   OrderBook order_book;
-  OrderTypeConversion conversion{event_listener, std::nullopt};
+  const core::PriceTickRanges no_price_tick_ranges;
+  OrderTypeConversion conversion{event_listener, no_price_tick_ranges};
 
   auto resting_limit_orders() -> LimitOrdersContainer& {
     return order_book.buy_page().limit_orders();

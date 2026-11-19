@@ -14,8 +14,8 @@ auto fmt::formatter<simulator::trading_system::Instrument>::format(
   return format_to(context.out(),
                    "Instrument={{ "
                    "{}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, "
-                   "{}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, "
-                   "{}={}, {}={}, {}={}"
+                   "{}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, "
+                   "PriceTickRanges={}, {}={}, {}={}, {}={}"
                    " }}",
                    name_of(instrument.identifier),
                    instrument.identifier,
@@ -47,8 +47,7 @@ auto fmt::formatter<simulator::trading_system::Instrument>::format(
                    instrument.party_id,
                    name_of(instrument.party_role),
                    instrument.party_role,
-                   name_of(instrument.price_tick),
-                   instrument.price_tick,
+                   instrument.price_tick_ranges,
                    name_of(instrument.quantity_tick),
                    instrument.quantity_tick,
                    name_of(instrument.min_quantity),

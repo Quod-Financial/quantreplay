@@ -1,9 +1,13 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cstdint>
 #include <memory>
 #include <optional>
+#include <utility>
 
+#include "core/tools/price_tick_ranges.hpp"
+#include "ih/market_data/market_state.hpp"
 #include "ih/random/generators/price_generator.hpp"
 #include "ih/random/values/event.hpp"
 #include "ih/random/values/price_generation_params.hpp"
@@ -42,7 +46,8 @@ class GeneratorRandomPriceGenerator : public testing::Test {
       gen_params_builder.set_price_tick_range(px_tick_range.value());
     }
     if (px_tick_size.has_value()) {
-      gen_params_builder.set_price_tick_size(px_tick_size.value());
+      gen_params_builder.set_price_tick_ranges(
+          {{.tick_size = px_tick_size.value()}});
     }
     if (px_spread.has_value()) {
       gen_params_builder.set_price_spread(px_spread.value());
@@ -517,6 +522,221 @@ TEST_F(GeneratorRandomPriceGenerator, Generate_AggressiveSell) {
   const double price = generate(px_gen_params, mkt_state, px_seed, event);
   EXPECT_DOUBLE_EQ(price, expected_px);
 }
+
+// NOLINTBEGIN(*magic-numbers*)
+
+struct GeneratorRandomPriceGeneratorTickRanges
+    : public GeneratorRandomPriceGenerator {
+  // Draws for the price tick range 10, named by the ticks they give.
+  static constexpr int NoTicksDraw = 12;
+  static constexpr int ThreeTicksDraw = 8;
+  static constexpr int FourTicksDraw = 7;
+  static constexpr int SixTicksDraw = 4;
+  static constexpr int SevenTicksDraw = 3;
+
+  auto draw(int random_value) -> void {
+    EXPECT_CALL(value_generator(),
+                generate_uniform(A<std::int64_t>(), A<std::int64_t>()))
+        .WillOnce(Return(random_value));
+  }
+
+  using GeneratorRandomPriceGenerator::generate;
+
+  auto generate(const PriceGenerationParams& params,
+                const MarketState& actual_prices,
+                RandomEvent event_type) -> double {
+    return generate(
+        params, actual_prices, make_px_seed(), make_event(event_type));
+  }
+
+  static auto make_params(core::PriceTickRanges px_tick_ranges,
+                          std::optional<double> px_spread = std::nullopt)
+      -> PriceGenerationParams {
+    PriceGenerationParams::Builder builder;
+    builder.set_price_tick_range(10);
+    builder.set_price_tick_ranges(std::move(px_tick_ranges));
+    if (px_spread.has_value()) {
+      builder.set_price_spread(*px_spread);
+    }
+    return PriceGenerationParams{std::move(builder)};
+  }
+
+  static auto coarser_above_ten() -> core::PriceTickRanges {
+    return {{.tick_size = 0.25, .upper_limit = 10.0}, {.tick_size = 0.5}};
+  }
+};
+
+TEST_F(GeneratorRandomPriceGeneratorTickRanges,
+       SpreadsRestingBuyByTickSizeOfBestOfferRange) {
+  const auto params = make_params(coarser_above_ten());
+  draw(NoTicksDraw);
+
+  const double price =
+      generate(params, make_mkt_state(8.0, 12.0), RandomEvent::RestingBuy);
+
+  ASSERT_DOUBLE_EQ(price, 11.5);
+}
+
+TEST_F(GeneratorRandomPriceGeneratorTickRanges,
+       SpreadsRestingSellByTickSizeOfBestBidRange) {
+  const auto params = make_params(coarser_above_ten());
+  draw(NoTicksDraw);
+
+  const double price =
+      generate(params, make_mkt_state(8.0, 12.0), RandomEvent::RestingSell);
+
+  ASSERT_DOUBLE_EQ(price, 8.25);
+}
+
+TEST_F(GeneratorRandomPriceGeneratorTickRanges,
+       SpreadsByTickSizeIfConfiguredSpreadIsLess) {
+  const auto params = make_params(coarser_above_ten(), 0.125);
+  draw(NoTicksDraw);
+
+  const double price = generate(
+      params, make_mkt_state(std::nullopt, 12.0), RandomEvent::RestingBuy);
+
+  ASSERT_DOUBLE_EQ(price, 11.5);
+}
+
+TEST_F(GeneratorRandomPriceGeneratorTickRanges,
+       SpreadsByConfiguredSpreadIfItIsGreaterThanTickSize) {
+  const auto params = make_params(coarser_above_ten(), 1.0);
+  draw(NoTicksDraw);
+
+  const double price = generate(
+      params, make_mkt_state(std::nullopt, 12.0), RandomEvent::RestingBuy);
+
+  ASSERT_DOUBLE_EQ(price, 11.0);
+}
+
+TEST_F(GeneratorRandomPriceGeneratorTickRanges,
+       SpreadsByConfiguredSpreadWithoutTickRanges) {
+  const auto params = make_params(core::PriceTickRanges{}, 0.5);
+  draw(SevenTicksDraw);
+
+  const double price = generate(
+      params, make_mkt_state(std::nullopt, 10.0), RandomEvent::RestingBuy);
+
+  ASSERT_DOUBLE_EQ(price, 9.5);
+}
+
+TEST_F(GeneratorRandomPriceGeneratorTickRanges,
+       ReturnsBestPriceWithoutTickRangesAndConfiguredSpread) {
+  const auto params = make_params(core::PriceTickRanges{});
+  draw(SevenTicksDraw);
+
+  const double price = generate(
+      params, make_mkt_state(std::nullopt, 10.0), RandomEvent::RestingBuy);
+
+  ASSERT_DOUBLE_EQ(price, 10.0);
+}
+
+TEST_F(GeneratorRandomPriceGeneratorTickRanges,
+       RoundsSpreadRestingBuyPriceDownInRangeWithAnotherTickSize) {
+  const auto params = make_params({{.tick_size = 0.2, .upper_limit = 1.5},
+                                   {.tick_size = 0.5, .upper_limit = 2.0}});
+  draw(NoTicksDraw);
+
+  const double price = generate(
+      params, make_mkt_state(std::nullopt, 2.0), RandomEvent::RestingBuy);
+
+  ASSERT_DOUBLE_EQ(price, 1.4);
+}
+
+TEST_F(GeneratorRandomPriceGeneratorTickRanges,
+       RoundsSpreadRestingSellPriceUpInRangeWithAnotherTickSize) {
+  const auto params = make_params({{.tick_size = 0.3, .upper_limit = 10.0},
+                                   {.tick_size = 0.5, .upper_limit = 20.0}});
+  draw(NoTicksDraw);
+
+  const double price =
+      generate(params, make_mkt_state(9.9), RandomEvent::RestingSell);
+
+  ASSERT_DOUBLE_EQ(price, 10.5);
+}
+
+TEST_F(GeneratorRandomPriceGeneratorTickRanges, WalksDrawnTicksAcrossRanges) {
+  const auto params = make_params({{.tick_size = 0.3, .upper_limit = 10.0},
+                                   {.tick_size = 0.5, .upper_limit = 20.0}});
+  draw(FourTicksDraw);
+
+  const double price = generate(
+      params, make_mkt_state(std::nullopt, 9.0), RandomEvent::AggressiveBuy);
+
+  ASSERT_DOUBLE_EQ(price, 10.5);
+}
+
+TEST_F(GeneratorRandomPriceGeneratorTickRanges,
+       ReturnsDistanceWalkedDownIfItIsNotLessThanStartPrice) {
+  const auto params = make_params({{.tick_size = 0.01}});
+  draw(SevenTicksDraw);
+
+  const double price =
+      generate(params, make_mkt_state(0.05), RandomEvent::AggressiveSell);
+
+  ASSERT_DOUBLE_EQ(price, 0.07);
+}
+
+TEST_F(GeneratorRandomPriceGeneratorTickRanges,
+       ReturnsDistanceWalkedUpIfItIsNotLessThanStartPrice) {
+  const auto params = make_params({{.tick_size = 0.01}});
+  draw(SevenTicksDraw);
+
+  const double price = generate(
+      params, make_mkt_state(std::nullopt, 0.05), RandomEvent::AggressiveBuy);
+
+  ASSERT_DOUBLE_EQ(price, 0.07);
+}
+
+TEST_F(GeneratorRandomPriceGeneratorTickRanges,
+       RoundsDistanceDownToTickSizeOfItsRangeWhenWalkingDown) {
+  const auto params = make_params(
+      {{.tick_size = 0.005, .upper_limit = 0.01}, {.tick_size = 0.01}});
+  draw(SevenTicksDraw);
+
+  const double price =
+      generate(params, make_mkt_state(0.05), RandomEvent::AggressiveSell);
+
+  ASSERT_DOUBLE_EQ(price, 0.05);
+}
+
+TEST_F(GeneratorRandomPriceGeneratorTickRanges,
+       RoundsDistanceUpToTickSizeOfItsRangeWhenWalkingUp) {
+  const auto params = make_params(
+      {{.tick_size = 0.001, .upper_limit = 0.005}, {.tick_size = 0.01}});
+  draw(ThreeTicksDraw);
+
+  const double price = generate(
+      params, make_mkt_state(std::nullopt, 0.004), RandomEvent::AggressiveBuy);
+
+  ASSERT_DOUBLE_EQ(price, 0.02);
+}
+
+TEST_F(GeneratorRandomPriceGeneratorTickRanges,
+       ReturnsTickSizeAtZeroIfDistanceRoundsDownToZero) {
+  const auto params = make_params(
+      {{.tick_size = 0.001, .upper_limit = 0.005}, {.tick_size = 0.1}});
+  draw(SixTicksDraw);
+
+  const double price =
+      generate(params, make_mkt_state(0.005), RandomEvent::AggressiveSell);
+
+  ASSERT_DOUBLE_EQ(price, 0.001);
+}
+
+TEST_F(GeneratorRandomPriceGeneratorTickRanges,
+       ReturnsZeroPriceForZeroDistance) {
+  const auto params = make_params({{.tick_size = 0.01}});
+  draw(NoTicksDraw);
+
+  const double price = generate(
+      params, make_mkt_state(std::nullopt, 0.01), RandomEvent::RestingBuy);
+
+  ASSERT_DOUBLE_EQ(price, 0.0);
+}
+
+// NOLINTEND(*magic-numbers*)
 
 }  // namespace
 }  // namespace simulator::generator::random::test

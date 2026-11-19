@@ -1,5 +1,6 @@
 #include <gmock/gmock.h>
 
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/orders/actions/elimination.hpp"
 #include "protocol/types/session.hpp"
 #include "tests/mocks/event_listener_mock.hpp"
@@ -27,12 +28,13 @@ struct MatchingEngineOnDisconnectElimination : public Test {
 
   auto make_eliminator() -> OnDisconnectElimination {
     return OnDisconnectElimination{
-        event_listener, DisconnectedSession, std::nullopt};
+        event_listener, DisconnectedSession, no_price_tick_ranges};
   }
 
   NiceMock<EventListenerMock> event_listener;
   OrderBuilder builder;
   OrderBook order_book;
+  const core::PriceTickRanges no_price_tick_ranges;
 };
 
 TEST_F(MatchingEngineOnDisconnectElimination,

@@ -43,6 +43,11 @@ auto ColumnResolver::operator()(PriceSeed::Attribute attribute) const
   return ColumnResolver::to_column_name(attribute);
 }
 
+auto ColumnResolver::operator()(PriceTickRange::Attribute attribute) const
+    -> std::string {
+  return ColumnResolver::to_column_name(attribute);
+}
+
 auto ColumnResolver::operator()(Setting::Attribute attribute) const
     -> std::string {
   return ColumnResolver::to_column_name(attribute);
@@ -189,9 +194,6 @@ auto ColumnResolver::to_column_name(Listing::Attribute attribute)
       break;
     case Listing::Attribute::QtyMultiple:
       column_name = listing_column::QtyMultiple;
-      break;
-    case Listing::Attribute::PriceTickSize:
-      column_name = listing_column::PriceTickSize;
       break;
     case Listing::Attribute::Enabled:
       column_name = listing_column::Enabled;
@@ -370,6 +372,31 @@ auto ColumnResolver::to_column_name(PriceSeed::Attribute attribute)
     return std::string{column_name};
   }
   throw ColumnNameEncodingError{table::PriceSeed, attribute};
+}
+
+auto ColumnResolver::to_column_name(PriceTickRange::Attribute attribute)
+    -> std::string {
+  std::string_view column_name;
+
+  switch (attribute) {
+    case PriceTickRange::Attribute::ListingId:
+      column_name = price_tick_range_column::ListingId;
+      break;
+    case PriceTickRange::Attribute::TickSize:
+      column_name = price_tick_range_column::TickSize;
+      break;
+    case PriceTickRange::Attribute::UpperLimit:
+      column_name = price_tick_range_column::UpperLimit;
+      break;
+    case PriceTickRange::Attribute::RowPosition:
+      column_name = price_tick_range_column::RowPosition;
+      break;
+  }
+
+  if (!column_name.empty()) {
+    return std::string{column_name};
+  }
+  throw ColumnNameEncodingError{table::PriceTickRange, attribute};
 }
 
 auto ColumnResolver::to_column_name(Setting::Attribute attribute)

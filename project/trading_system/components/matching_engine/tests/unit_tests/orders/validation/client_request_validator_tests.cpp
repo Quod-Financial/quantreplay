@@ -1,7 +1,10 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <utility>
+
 #include "common/instrument_state.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/orders/book/order_book.hpp"
 #include "ih/orders/validation/client_request_validator.hpp"
 #include "protocol/app/order_cancellation_request.hpp"
@@ -38,8 +41,8 @@ struct ValidationFixture {
     validator.configure(config);
   }
 
-  auto set_price_tick(PriceTick tick) -> void {
-    config.price_tick = tick;
+  auto set_price_tick_ranges(core::PriceTickRanges ranges) -> void {
+    config.price_tick_ranges = std::move(ranges);
     validator.configure(config);
   }
 
@@ -161,7 +164,7 @@ TEST_F(OrderPlacementRequestValidation,
 
 TEST_F(OrderPlacementRequestValidation,
        FailsWhenLimitOrderPriceIsNotMultipleOfTick) {
-  set_price_tick(PriceTick{0.002});
+  set_price_tick_ranges({{.tick_size = 0.002}});
   request.order_type = OrderType::Option::Limit;
   request.order_price = OrderPrice{945.105};
 
@@ -184,7 +187,7 @@ TEST_F(OrderPlacementRequestValidation,
   set_min_quantity(MinQuantity{100});
   set_max_quantity(MaxQuantity{300});
   set_quantity_tick(QuantityTick{0.2});
-  set_price_tick(PriceTick{0.05});
+  set_price_tick_ranges({{.tick_size = 0.05}});
   request.side = Side::Option::Sell;
   request.order_type = OrderType::Option::Limit;
   request.order_quantity = OrderQuantity{200};
@@ -329,7 +332,7 @@ TEST_F(OrderModificationRequestValidation,
 
 TEST_F(OrderModificationRequestValidation,
        FailsWhenLimitOrderPriceIsNotMultipleOfTick) {
-  set_price_tick(PriceTick{0.002});
+  set_price_tick_ranges({{.tick_size = 0.002}});
   request.order_type = OrderType::Option::Limit;
   request.order_price = OrderPrice{945.105};
 
@@ -365,7 +368,7 @@ TEST_F(OrderModificationRequestValidation,
   set_min_quantity(MinQuantity{100});
   set_max_quantity(MaxQuantity{300});
   set_quantity_tick(QuantityTick{0.2});
-  set_price_tick(PriceTick{0.05});
+  set_price_tick_ranges({{.tick_size = 0.05}});
   request.side = Side::Option::Sell;
   request.order_type = OrderType::Option::Limit;
   request.order_quantity = OrderQuantity{200};
@@ -521,7 +524,7 @@ TEST_F(MarketStateLimitOrderValidation,
 
 TEST_F(MarketStateLimitOrderValidation,
        FailsWhenOrderPriceIsNotMultipleOfTick) {
-  set_price_tick(PriceTick{0.002});
+  set_price_tick_ranges({{.tick_size = 0.002}});
   order.order_price = OrderPrice{945.105};
 
   const auto conclusion = validate(order, OrderBookSide::Buy);
@@ -583,7 +586,7 @@ TEST_F(MarketStateLimitOrderValidation, SuccessWhenAllConstraintsMet) {
   set_min_quantity(MinQuantity{50});
   set_max_quantity(MaxQuantity{300});
   set_quantity_tick(QuantityTick{0.2});
-  set_price_tick(PriceTick{0.05});
+  set_price_tick_ranges({{.tick_size = 0.05}});
 
   order.side = Side::Option::Sell;
   order.total_quantity = OrderQuantity{200};

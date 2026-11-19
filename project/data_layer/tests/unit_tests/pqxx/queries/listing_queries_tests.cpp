@@ -6,6 +6,7 @@
 #include "api/exceptions/exceptions.hpp"
 #include "api/models/listing.hpp"
 #include "api/models/listing_random_price_source.hpp"
+#include "api/models/price_tick_range.hpp"
 #include "api/predicate/predicate.hpp"
 #include "ih/pqxx/queries/listing_queries.hpp"
 #include "tests/test_utils/sanitizer_stub.hpp"
@@ -119,6 +120,25 @@ TEST_F(DataLayerPqxxListingQueryUpdate, Compose_WithListingIdReturning) {
             "RETURNING listing_id");
 }
 
+TEST_F(DataLayerPqxxListingQueryUpdate, HasColumnUpdatesFromPatchWithColumn) {
+  const PriceTickRange::Patch tick_range =
+      PriceTickRange::Patch{}.with_tick_size(0.01);
+  patch.with_symbol("AAPL").with_price_tick_range(tick_range);
+
+  const auto query = Update::prepare(patch, sanitizer);
+  EXPECT_TRUE(query.has_column_updates());
+}
+
+TEST_F(DataLayerPqxxListingQueryUpdate,
+       HasNoColumnUpdatesFromPatchWithOnlyPriceTickRanges) {
+  const PriceTickRange::Patch tick_range =
+      PriceTickRange::Patch{}.with_tick_size(0.01);
+  patch.with_price_tick_range(tick_range);
+
+  const auto query = Update::prepare(patch, sanitizer);
+  EXPECT_FALSE(query.has_column_updates());
+}
+
 }  // namespace
 }  // namespace simulator::data_layer::internal_pqxx::listing_query::test
 
@@ -181,3 +201,61 @@ TEST(DataLayerPqxxListingRandomPriceSourceQueryDelete,
 }  // namespace
 }  // namespace
    // simulator::data_layer::internal_pqxx::listing_random_price_source_query::test
+
+namespace simulator::data_layer::internal_pqxx::test {
+namespace {
+
+// NOLINTBEGIN(*magic-numbers*)
+
+TEST(DataLayerPqxxPriceTickRangeQueryInsert, CarriesRowPosition) {
+  SanitizerStub sanitizer;
+  PriceTickRange::Patch patch;
+  patch.with_tick_size(0.01).with_upper_limit(10.0);
+  const auto range = PriceTickRange::create(patch);
+
+  const auto query =
+      price_tick_range_query::Insert::prepare(42, range, 2, sanitizer);
+  EXPECT_EQ(query.compose(),
+            "INSERT INTO price_tick_range "
+            "(listing_id, tick_size, upper_limit, row_position) "
+            "VALUES (`42`, `0.01`, `10`, `2`)");
+}
+
+TEST(DataLayerPqxxPriceTickRangeQueryInsert, OmitsUpperLimitOfUnboundedRange) {
+  SanitizerStub sanitizer;
+  PriceTickRange::Patch patch;
+  patch.with_tick_size(0.01);
+  const auto range = PriceTickRange::create(patch);
+
+  const auto query =
+      price_tick_range_query::Insert::prepare(42, range, 0, sanitizer);
+  EXPECT_EQ(query.compose(),
+            "INSERT INTO price_tick_range "
+            "(listing_id, tick_size, row_position) "
+            "VALUES (`42`, `0.01`, `0`)");
+}
+
+TEST(DataLayerPqxxPriceTickRangeQuerySelect,
+     SelectsRangesOfListingOrderedByRowPosition) {
+  SanitizerStub sanitizer;
+
+  const auto query =
+      price_tick_range_query::Select::prepare().by_listing_id(42, sanitizer);
+  EXPECT_EQ(query.compose(),
+            "SELECT * FROM price_tick_range "
+            "WHERE listing_id = `42` ORDER BY row_position");
+}
+
+TEST(DataLayerPqxxPriceTickRangeQueryDelete, DeletesRangesOfListing) {
+  SanitizerStub sanitizer;
+
+  const auto query =
+      price_tick_range_query::Delete::prepare().by_listing_id(42, sanitizer);
+  EXPECT_EQ(query.compose(),
+            "DELETE FROM price_tick_range WHERE listing_id = `42`");
+}
+
+// NOLINTEND(*magic-numbers*)
+
+}  // namespace
+}  // namespace simulator::data_layer::internal_pqxx::test

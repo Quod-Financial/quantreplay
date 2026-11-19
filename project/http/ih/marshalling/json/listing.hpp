@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "data_layer/api/models/listing.hpp"
-#include "data_layer/api/models/listing_random_price_source.hpp"
 
 namespace simulator::http::json {
 
@@ -22,21 +21,12 @@ class ListingMarshaller {
  private:
   static auto marshall(const data_layer::Listing& listing,
                        rapidjson::Document& dest) -> void;
-
-  static auto marshall(const std::vector<data_layer::ListingRandomPriceSource>&
-                           random_price_sources,
-                       rapidjson::Document& parent) -> void;
 };
 
 class ListingUnmarshaller {
  public:
   static auto unmarshall(std::string_view json,
                          data_layer::Listing::Patch& dest) -> void;
-
- private:
-  static auto unmarshall_random_price_sources(
-      const rapidjson::Document& listing_doc, data_layer::Listing::Patch& dest)
-      -> void;
 };
 
 }  // namespace simulator::http::json

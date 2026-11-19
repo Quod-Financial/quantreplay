@@ -29,11 +29,11 @@ auto find_target(Container& orders, const OrderCancel& cancel) {
 
 Cancellation::Cancellation(EventListener& event_listener,
                            OrderBook& order_book,
-                           std::optional<PriceTick> price_tick,
+                           const core::PriceTickRanges& price_tick_ranges,
                            LimitOrderQueue queue)
     : EventReporter{event_listener},
       order_book_{order_book},
-      price_tick_{price_tick},
+      price_tick_ranges_{&price_tick_ranges},
       queue_{queue} {}
 
 auto Cancellation::operator()(const OrderCancel& cancel) -> OrderBookUpdates {
@@ -66,7 +66,7 @@ auto Cancellation::try_cancel(const OrderCancel& cancel, Container& orders)
   emit(order::make_making_order_removed_from_book_notification(order));
   order.cancel();
   emit(ClientNotification(
-      prepare_cancellation_confirmation(order, price_tick_)
+      prepare_cancellation_confirmation(order, *price_tick_ranges_)
           .with_leaving_quantity(LeavesQuantity{0})
           .with_execution_id(order.make_execution_id())
           .with_client_order_id(cancel.client_order_id)

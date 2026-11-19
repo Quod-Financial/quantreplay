@@ -6,8 +6,10 @@
 
 #include "api/inspectors/listing.hpp"
 #include "api/inspectors/listing_random_price_source.hpp"
+#include "api/inspectors/price_tick_range.hpp"
 #include "api/models/listing.hpp"
 #include "api/models/listing_random_price_source.hpp"
+#include "api/models/price_tick_range.hpp"
 #include "ih/pqxx/common/names/database_entries.hpp"
 #include "ih/pqxx/queries/detail/delete_query_builder.hpp"
 #include "ih/pqxx/queries/detail/insert_query_builder.hpp"
@@ -111,6 +113,11 @@ class Update {
     constexpr auto column = Listing::Attribute::ListingId;
     builder_.with_returning(column);
     return *this;
+  }
+
+  [[nodiscard]]
+  auto has_column_updates() const noexcept -> bool {
+    return builder_.has_column_updates();
   }
 
   [[nodiscard]]
@@ -219,6 +226,97 @@ class Delete {
 };
 
 }  // namespace listing_random_price_source_query
+
+namespace price_tick_range_query {
+
+class Insert {
+ public:
+  template <typename Sanitizer>
+  static auto prepare(std::uint64_t listing_id,
+                      const PriceTickRange& range,
+                      std::uint64_t row_position,
+                      Sanitizer& sanitizer) -> Insert {
+    Insert query;
+    query.build(listing_id, range, row_position, sanitizer);
+    return query;
+  }
+
+  [[nodiscard]]
+  auto compose() const -> std::string {
+    return builder_.compose();
+  }
+
+ private:
+  Insert() : builder_{std::string{table::PriceTickRange}} {}
+
+  template <typename Sanitizer>
+  auto build(std::uint64_t listing_id,
+             const PriceTickRange& range,
+             std::uint64_t row_position,
+             Sanitizer& sanitizer) -> void {
+    auto data_extractor = builder_.make_data_extractor(sanitizer);
+    data_extractor(PriceTickRange::Attribute::ListingId, listing_id);
+
+    using Reader = PriceTickRangeReader<decltype(data_extractor)>;
+    Reader reader{data_extractor};
+    reader.read(range);
+
+    data_extractor(PriceTickRange::Attribute::RowPosition, row_position);
+    builder_.build(data_extractor);
+  }
+
+  detail::InsertQueryBuilder builder_;
+};
+
+class Select {
+ public:
+  static auto prepare() -> Select { return Select{}; }
+
+  template <typename Sanitizer>
+  auto by_listing_id(std::uint64_t listing_id, Sanitizer& sanitizer)
+      -> Select& {
+    constexpr auto column = PriceTickRange::Attribute::ListingId;
+    builder_.with_eq_predicate(column, listing_id, sanitizer);
+    return *this;
+  }
+
+  [[nodiscard]]
+  auto compose() const -> std::string {
+    return builder_.compose();
+  }
+
+ private:
+  Select() : builder_{std::string{table::PriceTickRange}} {
+    builder_.with_ascending_order_by(PriceTickRange::Attribute::RowPosition);
+  }
+
+  detail::SelectQueryBuilder builder_;
+};
+
+class Delete {
+ public:
+  static auto prepare() -> Delete { return Delete{}; }
+
+  template <typename Sanitizer>
+  auto by_listing_id(std::uint64_t listing_id, Sanitizer& sanitizer)
+      -> Delete& {
+    constexpr auto column = PriceTickRange::Attribute::ListingId;
+    builder_.with_eq_predicate(column, listing_id, sanitizer);
+    return *this;
+  }
+
+  [[nodiscard]]
+  auto compose() const -> std::string {
+    return builder_.compose();
+  }
+
+ private:
+  Delete() : builder_{std::string{table::PriceTickRange}} {}
+
+  detail::DeleteQueryBuilder builder_;
+};
+
+}  // namespace price_tick_range_query
 }  // namespace simulator::data_layer::internal_pqxx
 
 #endif  // SIMULATOR_DATA_LAYER_IH_PQXX_QUERIES_LISTING_QUERIES_HPP_

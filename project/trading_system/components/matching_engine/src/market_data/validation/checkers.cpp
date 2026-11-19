@@ -7,25 +7,26 @@
 namespace simulator::trading_system::matching_engine::mdata {
 
 LowPriceRespectsTick::LowPriceRespectsTick(
-    std::optional<PriceTick> tick) noexcept
-    : tick_{tick} {}
+    const core::PriceTickRanges& tick_ranges) noexcept
+    : tick_ranges_{&tick_ranges} {}
 
 auto LowPriceRespectsTick::operator()(
     const market_state::InstrumentInfo& instrument_info) const
     -> std::optional<ValidationError> {
-  return field_respects_tick(
-      instrument_info.low_price, tick_, ValidationError::LowPriceTickViolated);
+  return price_respects_tick(instrument_info.low_price,
+                             *tick_ranges_,
+                             ValidationError::LowPriceTickViolated);
 }
 
 HighPriceRespectsTick::HighPriceRespectsTick(
-    std::optional<PriceTick> tick) noexcept
-    : tick_{tick} {}
+    const core::PriceTickRanges& tick_ranges) noexcept
+    : tick_ranges_{&tick_ranges} {}
 
 auto HighPriceRespectsTick::operator()(
     const market_state::InstrumentInfo& instrument_info) const
     -> std::optional<ValidationError> {
-  return field_respects_tick(instrument_info.high_price,
-                             tick_,
+  return price_respects_tick(instrument_info.high_price,
+                             *tick_ranges_,
                              ValidationError::HighPriceTickViolated);
 }
 
@@ -44,13 +45,14 @@ auto LowPriceIsLessThanOrEqualToHighPrice::operator()(
 };
 
 TradePriceRespectsTick::TradePriceRespectsTick(
-    std::optional<PriceTick> tick) noexcept
-    : tick_{tick} {}
+    const core::PriceTickRanges& tick_ranges) noexcept
+    : tick_ranges_{&tick_ranges} {}
 
 auto TradePriceRespectsTick::operator()(const Trade& trade) const
     -> std::optional<ValidationError> {
-  return field_respects_tick(
-      trade.trade_price, tick_, ValidationError::TradePriceTickViolated);
+  return price_respects_tick(trade.trade_price,
+                             *tick_ranges_,
+                             ValidationError::TradePriceTickViolated);
 }
 
 TradedQuantityRespectsTick::TradedQuantityRespectsTick(

@@ -2,6 +2,7 @@
 
 #include <optional>
 
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/orders/actions/elimination.hpp"
 #include "tests/mocks/event_listener_mock.hpp"
 #include "tests/tools/matchers.hpp"
@@ -49,7 +50,8 @@ struct MatchingEngineTradeAtLastElimination : public Test {
 
   NiceMock<EventListenerMock> event_listener;
   OrderBook order_book;
-  TradeAtLastElimination elimination{event_listener, std::nullopt};
+  const core::PriceTickRanges no_price_tick_ranges;
+  TradeAtLastElimination elimination{event_listener, no_price_tick_ranges};
 };
 
 TEST_F(MatchingEngineTradeAtLastElimination, ExpiresAllBuyOrders) {

@@ -1,0 +1,162 @@
+databaseChangeLog:
+  - changeSet:
+      author: vskotarenko
+      id: market_simulator_schema_v14_table_price_tick_range_1
+      labels: schema,v14
+      comment: Create price_tick_range table
+      preConditions:
+        - not:
+            - tableExists:
+                tableName: price_tick_range
+      changes:
+        - createTable:
+            tableName: price_tick_range
+            columns:
+              - column:
+                  name: listing_id
+                  type: int
+              - column:
+                  name: tick_size
+                  type: double
+              - column:
+                  name: upper_limit
+                  type: double
+              - column:
+                  name: row_position
+                  type: int
+
+  - changeSet:
+      author: vskotarenko
+      id: market_simulator_schema_v14_table_price_tick_range_2
+      labels: schema,v14
+      comment: Copy listing.price_tick_size to the first price_tick_range row of the listing, without an upper limit
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: price_tick_range
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: price_tick_size
+      changes:
+        # The cast through text keeps the decimal value of the single precision column: a direct cast turns 0.01 into 0.00999999977648258.
+        - sql:
+            sql: INSERT INTO price_tick_range (listing_id, tick_size, row_position) SELECT listing_id, CAST(CAST(price_tick_size AS text) AS double precision), 0 FROM listing WHERE price_tick_size IS NOT NULL
+
+  - changeSet:
+      author: vskotarenko
+      id: market_simulator_schema_v14_table_price_tick_range_3
+      labels: schema,v14
+      comment: Add price_tick_range_pkey (listing_id, row_position) for price_tick_range table
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: price_tick_range
+        - columnExists:
+            tableName: price_tick_range
+            columnName: listing_id
+        - columnExists:
+            tableName: price_tick_range
+            columnName: row_position
+        - not:
+            - primaryKeyExists:
+                tableName: price_tick_range
+                primaryKeyName: price_tick_range_pkey
+      changes:
+        - addPrimaryKey:
+            constraintName: price_tick_range_pkey
+            tableName: price_tick_range
+            columnNames: listing_id, row_position
+            validate: true
+
+  - changeSet:
+      author: vskotarenko
+      id: market_simulator_schema_v14_table_price_tick_range_4
+      labels: schema,v14
+      comment: Add price_tick_range_listing_fkey (price_tick_range.listing_id) to (listing.listing_id)
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: price_tick_range
+        - columnExists:
+            tableName: price_tick_range
+            columnName: listing_id
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: listing_id
+        - primaryKeyExists:
+            tableName: listing
+            primaryKeyName: listing_pkey
+        - not:
+            - foreignKeyConstraintExists:
+                foreignKeyName: price_tick_range_listing_fkey
+      changes:
+        - addForeignKeyConstraint:
+            constraintName: price_tick_range_listing_fkey
+            baseTableName: price_tick_range
+            baseColumnNames: listing_id
+            referencedTableName: listing
+            referencedColumnNames: listing_id
+            onUpdate: CASCADE
+            onDelete: CASCADE
+            validate: true
+
+  - changeSet:
+      author: vskotarenko
+      id: market_simulator_schema_v14_table_price_tick_range_5
+      labels: schema,v14
+      comment: Add NOT NULL constraint price_tick_range_listing_id_not_null on price_tick_range.listing_id
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: price_tick_range
+        - columnExists:
+            tableName: price_tick_range
+            columnName: listing_id
+      changes:
+        - addNotNullConstraint:
+            constraintName: price_tick_range_listing_id_not_null
+            tableName: price_tick_range
+            columnName: listing_id
+            validate: true
+
+  - changeSet:
+      author: vskotarenko
+      id: market_simulator_schema_v14_table_price_tick_range_6
+      labels: schema,v14
+      comment: Add NOT NULL constraint price_tick_range_tick_size_not_null on price_tick_range.tick_size
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: price_tick_range
+        - columnExists:
+            tableName: price_tick_range
+            columnName: tick_size
+      changes:
+        - addNotNullConstraint:
+            constraintName: price_tick_range_tick_size_not_null
+            tableName: price_tick_range
+            columnName: tick_size
+            validate: true
+
+  - changeSet:
+      author: vskotarenko
+      id: market_simulator_schema_v14_table_price_tick_range_7
+      labels: schema,v14
+      comment: Add NOT NULL constraint price_tick_range_row_position_not_null on price_tick_range.row_position
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: price_tick_range
+        - columnExists:
+            tableName: price_tick_range
+            columnName: row_position
+      changes:
+        - addNotNullConstraint:
+            constraintName: price_tick_range_row_position_not_null
+            tableName: price_tick_range
+            columnName: row_position
+            validate: true

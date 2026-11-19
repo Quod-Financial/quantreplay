@@ -205,10 +205,6 @@ TEST_F(DataLayerListingResolver, ResolvesQtyMultiple) {
   EXPECT_EQ(resolver(Column::QtyMultiple), "qty_multiple");
 }
 
-TEST_F(DataLayerListingResolver, ResolvesPriceTickSize) {
-  EXPECT_EQ(resolver(Column::PriceTickSize), "price_tick_size");
-}
-
 TEST_F(DataLayerListingResolver, ResolvesEnabled) {
   EXPECT_EQ(resolver(Column::Enabled), "enabled");
 }

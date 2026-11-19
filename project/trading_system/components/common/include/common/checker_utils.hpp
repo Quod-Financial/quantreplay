@@ -6,6 +6,7 @@
 #include "common/attributes.hpp"
 #include "core/common/meta.hpp"
 #include "core/tools/numeric.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 
 namespace simulator::trading_system {
 
@@ -76,6 +77,24 @@ auto field_respects_tick(T field, std::optional<U> tick, E error)
     return std::nullopt;
   }
   return field_respects_tick(*field, tick, error);
+}
+
+template <core::attribute::RepresentsAttribute T, typename E>
+auto price_respects_tick(T price,
+                         const core::PriceTickRanges& tick_ranges,
+                         E error) -> std::optional<E> {
+  const auto tick = tick_ranges.tick_of(static_cast<double>(price));
+  return field_respects_tick(price, tick, error);
+}
+
+template <core::Optional T, typename E>
+auto price_respects_tick(T price,
+                         const core::PriceTickRanges& tick_ranges,
+                         E error) -> std::optional<E> {
+  if (!price.has_value()) {
+    return std::nullopt;
+  }
+  return price_respects_tick(*price, tick_ranges, error);
 }
 
 template <core::attribute::RepresentsAttribute T,

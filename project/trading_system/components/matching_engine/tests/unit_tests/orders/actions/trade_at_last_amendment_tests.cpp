@@ -4,6 +4,7 @@
 #include <optional>
 #include <utility>
 
+#include "core/tools/price_tick_ranges.hpp"
 #include "core/tools/time.hpp"
 #include "ih/orders/actions/regular_amendment.hpp"
 #include "ih/orders/actions/trade_at_last_actions.hpp"
@@ -83,10 +84,11 @@ struct MatchingEngineTradeAtLastAmendment : public Test {
   NiceMock<EventListenerMock> event_listener;
   OrderBook order_book;
   NoCrossMatcher matcher;
+  const core::PriceTickRanges no_price_tick_ranges;
   RegularAmendment regular_amendment{event_listener,
                                      order_book,
                                      matcher,
-                                     std::nullopt,
+                                     no_price_tick_ranges,
                                      LimitOrderQueue::TradeAtLast};
 };
 

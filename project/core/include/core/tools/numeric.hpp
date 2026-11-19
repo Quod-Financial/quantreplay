@@ -12,6 +12,7 @@
 namespace simulator::core {
 
 constexpr double FpPrecision = std::numeric_limits<double>::epsilon();
+constexpr double AbsoluteTolerance = 1e-10;
 
 template <typename T, typename U>
   requires std::floating_point<T> && std::floating_point<U>
@@ -37,10 +38,8 @@ constexpr auto is_fully_divisible(T value, U divisor) -> bool {
     return false;
   }
 
-  constexpr double tolerance = 1e-10;
-
   const double remainder = std::abs(std::remainder(value, divisor));
-  return remainder < tolerance;
+  return remainder < AbsoluteTolerance;
 }
 
 template <typename T, typename U>

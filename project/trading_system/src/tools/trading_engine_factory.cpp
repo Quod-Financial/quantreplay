@@ -69,7 +69,7 @@ class EngineTypeFactory final : public TradingEngineFactory {
       -> matching_engine::Configuration {
     return matching_engine::Configuration{
         .clock = config_->timezone_clock(),
-        .order_price_tick = instrument.price_tick,
+        .order_price_tick_ranges = instrument.price_tick_ranges,
         .order_quantity_tick = instrument.quantity_tick,
         .order_min_quantity = instrument.min_quantity,
         .order_max_quantity = instrument.max_quantity,

@@ -33,7 +33,8 @@ struct MatchingEngineMarketDataFacade : Test {
   }
 
   static auto make_configuration() -> Configuration {
-    return {.clock = core::TzClock{"Europe/Kyiv"}};
+    return {.clock = core::TzClock{"Europe/Kyiv"},
+            .order_price_tick_ranges = {}};
   }
 
   auto subscribe(MarketDataUpdateType update_type,

@@ -6,6 +6,7 @@
 #include "common/attributes.hpp"
 #include "common/instrument_state.hpp"
 #include "common/validation.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 #include "core/tools/time.hpp"
 #include "ih/orders/validation/errors.hpp"
 #include "ih/orders/validation/validator.hpp"
@@ -25,7 +26,7 @@ class ClientRequestValidator : public Validator {
     std::optional<MinQuantity> min_quantity = std::nullopt;
     std::optional<MaxQuantity> max_quantity = std::nullopt;
     std::optional<QuantityTick> quantity_tick = std::nullopt;
-    std::optional<PriceTick> price_tick = std::nullopt;
+    core::PriceTickRanges price_tick_ranges;
   };
 
   auto configure(Config config) -> void;

@@ -119,3 +119,22 @@ databaseChangeLog:
             columnName: engine_type
             columnDataType: text
             validate: true
+
+  - changeSet:
+      author: vskotarenko
+      id: market_simulator_schema_v14_table_listing_7
+      labels: schema,v14
+      comment: Drop listing.price_tick_size column, moved to the price_tick_range table
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - tableExists:
+            tableName: price_tick_range
+        - columnExists:
+            tableName: listing
+            columnName: price_tick_size
+      changes:
+        - dropColumn:
+            tableName: listing
+            columnName: price_tick_size

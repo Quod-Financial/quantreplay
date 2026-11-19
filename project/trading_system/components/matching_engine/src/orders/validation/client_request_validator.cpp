@@ -113,7 +113,7 @@ auto ClientRequestValidator::run(
 
   if (request.order_type == OrderType::Option::Limit) {
     validation.expect(OrderPriceSpecified())
-        .expect(OrderPriceRespectsTick(config_.price_tick));
+        .expect(OrderPriceRespectsTick(config_.price_tick_ranges));
   } else if (request.order_type == OrderType::Option::Market) {
     validation.expect(OrderPriceAbsent());
   }
@@ -139,7 +139,7 @@ auto ClientRequestValidator::run(
 
   if (request.order_type == OrderType::Option::Limit) {
     validation.expect(OrderPriceSpecified())
-        .expect(OrderPriceRespectsTick(config_.price_tick));
+        .expect(OrderPriceRespectsTick(config_.price_tick_ranges));
   } else if (request.order_type == OrderType::Option::Market) {
     validation.expect(OrderPriceAbsent());
   }
@@ -165,7 +165,7 @@ auto ClientRequestValidator::run(
       .expect(CumExecutedQuantityRespectsNonNegativity{})
       .expect(CumExecutedQuantityRespectsTick{config_.quantity_tick})
       .expect(CumExecutedQuantityIsLessThanTotalQuantity{})
-      .expect(OrderPriceRespectsTick{config_.price_tick})
+      .expect(OrderPriceRespectsTick{config_.price_tick_ranges})
       .expect(OrderStatusSupported{})
       .expect(TimeInForceSupported{});
 

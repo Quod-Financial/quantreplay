@@ -148,16 +148,6 @@ TEST_F(DataLayerInspectorsListingReader, ReadsQtyMultiple) {
   make_reader().read(listing);
 }
 
-TEST_F(DataLayerInspectorsListingReader, ReadsPriceTickSize) {
-  const auto patch = make_default_patch().with_price_tick_size(42.42);
-  const auto listing = Listing::create(patch, 42);
-
-  EXPECT_CALL(marshaller(), real(Eq(Attribute::PriceTickSize), DoubleEq(42.42)))
-      .Times(1);
-
-  make_reader().read(listing);
-}
-
 TEST_F(DataLayerInspectorsListingReader, ReadsEnabled) {
   const auto patch = make_default_patch().with_enabled_flag(true);
   const auto listing = Listing::create(patch, 42);
@@ -529,17 +519,6 @@ TEST_F(DataLayerInspectorsListingPatchReader, ReadsQtyMultiple) {
   EXPECT_CALL(
       marshaller(),
       optional_real(Eq(Attribute::QtyMultiple), Optional(DoubleEq(42.42))))
-      .Times(1);
-
-  make_reader().read(patch);
-}
-
-TEST_F(DataLayerInspectorsListingPatchReader, ReadsPriceTickSize) {
-  patch.with_price_tick_size(42.42);
-
-  EXPECT_CALL(
-      marshaller(),
-      optional_real(Eq(Attribute::PriceTickSize), Optional(DoubleEq(42.42))))
       .Times(1);
 
   make_reader().read(patch);
@@ -1026,23 +1005,6 @@ TEST_F(DataLayerInspectorsListingPatchWriter, WritesQtyMultiple) {
 
   make_writer().write(patch);
   EXPECT_THAT(patch.qty_multiple(),
-              IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
-}
-
-TEST_F(DataLayerInspectorsListingPatchWriter, WritesPriceTickSizeNull) {
-  EXPECT_CALL(unmarshaller(), optional_real(Eq(Attribute::PriceTickSize), _))
-      .WillOnce(DoAll(SetArgReferee<1>(std::nullopt), Return(true)));
-
-  make_writer().write(patch);
-  EXPECT_THAT(patch.price_tick_size(), IsPatchFieldWithValue(std::nullopt));
-}
-
-TEST_F(DataLayerInspectorsListingPatchWriter, WritesPriceTickSize) {
-  EXPECT_CALL(unmarshaller(), optional_real(Eq(Attribute::PriceTickSize), _))
-      .WillOnce(DoAll(SetArgReferee<1>(42.42), Return(true)));
-
-  make_writer().write(patch);
-  EXPECT_THAT(patch.price_tick_size(),
               IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
 }
 

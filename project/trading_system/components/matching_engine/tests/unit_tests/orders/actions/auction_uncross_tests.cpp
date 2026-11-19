@@ -6,6 +6,7 @@
 
 #include "core/domain/market_phase.hpp"
 #include "core/domain/party.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/orders/actions/auction_uncross.hpp"
 #include "ih/orders/book/order_book.hpp"
 #include "ih/orders/matchers/auction_price_calculator.hpp"
@@ -87,13 +88,14 @@ struct MatchingEngineAuctionUncross : public Test {
   auto uncross() -> std::optional<AuctionResult> {
     const auto result =
         AuctionPriceCalculator{order_book, std::nullopt}.auction_result();
-    AuctionUncross{event_listener, auction_phase(), std::nullopt}(order_book,
-                                                                  result);
+    AuctionUncross{event_listener, auction_phase(), no_price_tick_ranges}(
+        order_book, result);
     return result;
   }
 
   NiceMock<EventListenerMock> event_listener;
   OrderBook order_book;
+  const core::PriceTickRanges no_price_tick_ranges;
 
  private:
   auto make_limit(Side side,
@@ -333,8 +335,8 @@ TEST_F(MatchingEngineAuctionUncross, StampsTradeWithConfiguredAuctionPhase) {
 
   const auto result =
       AuctionPriceCalculator{order_book, std::nullopt}.auction_result();
-  AuctionUncross{event_listener, closing_auction, std::nullopt}(order_book,
-                                                                result);
+  AuctionUncross{event_listener, closing_auction, no_price_tick_ranges}(
+      order_book, result);
 }
 
 // NOLINTEND(*magic-numbers*,*non-private-member*)

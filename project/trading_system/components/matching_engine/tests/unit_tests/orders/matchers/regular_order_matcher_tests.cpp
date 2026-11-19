@@ -1,5 +1,6 @@
 #include <gmock/gmock.h>
 
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/orders/book/order_book.hpp"
 #include "ih/orders/matchers/regular_order_matcher.hpp"
 #include "mocks/event_listener_mock.hpp"
@@ -172,9 +173,10 @@ struct BuyLimitOrderMatching : public Test {
 
  public:
   NiceMock<EventListenerMock> listener;
+  const core::PriceTickRanges no_price_tick_ranges;
   RegularOrderMatcher matcher{listener,
                               book_,
-                              std::nullopt,
+                              no_price_tick_ranges,
                               MarketPhase::open(),
                               LimitOrderQueue::Regular};
 };
@@ -999,9 +1001,10 @@ struct SellLimitOrderMatching : public Test {
 
  public:
   NiceMock<EventListenerMock> listener;
+  const core::PriceTickRanges no_price_tick_ranges;
   RegularOrderMatcher matcher{listener,
                               book_,
-                              std::nullopt,
+                              no_price_tick_ranges,
                               MarketPhase::open(),
                               LimitOrderQueue::Regular};
 };
@@ -1795,9 +1798,10 @@ struct BuyMarketOrderMatching : public Test {
 
  public:
   NiceMock<EventListenerMock> listener;
+  const core::PriceTickRanges no_price_tick_ranges;
   RegularOrderMatcher matcher{listener,
                               book_,
-                              std::nullopt,
+                              no_price_tick_ranges,
                               MarketPhase::open(),
                               LimitOrderQueue::Regular};
 };
@@ -2152,9 +2156,10 @@ struct SellMarketOrderMatching : public Test {
 
  public:
   NiceMock<EventListenerMock> listener;
+  const core::PriceTickRanges no_price_tick_ranges;
   RegularOrderMatcher matcher{listener,
                               book_,
-                              std::nullopt,
+                              no_price_tick_ranges,
                               MarketPhase::open(),
                               LimitOrderQueue::Regular};
 };

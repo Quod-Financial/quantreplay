@@ -1,10 +1,11 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_ORDER_TYPE_CONVERSION_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_ORDER_TYPE_CONVERSION_HPP_
 
+#include <gsl/pointers>
 #include <optional>
 #include <string_view>
 
-#include "common/attributes.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/common/abstractions/event_listener.hpp"
 #include "ih/common/events/event_reporter.hpp"
 #include "ih/orders/book/limit_order.hpp"
@@ -31,7 +32,7 @@ struct ConvertedOrder {
 class OrderTypeConversion : private EventReporter {
  public:
   OrderTypeConversion(EventListener& event_listener,
-                      std::optional<PriceTick> price_tick);
+                      const core::PriceTickRanges& price_tick_ranges);
 
   OrderTypeConversion(const OrderTypeConversion&) = default;
   OrderTypeConversion(OrderTypeConversion&&) = default;
@@ -53,7 +54,7 @@ class OrderTypeConversion : private EventReporter {
   auto convert(UpdateType update, ContainerType& orders)
       -> std::optional<ConvertedOrder<ConvertedType>>;
 
-  std::optional<PriceTick> price_tick_;
+  gsl::not_null<const core::PriceTickRanges*> price_tick_ranges_;
 };
 
 }  // namespace simulator::trading_system::matching_engine

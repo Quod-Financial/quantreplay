@@ -16,7 +16,7 @@ namespace simulator::trading_system::matching_engine {
 
 auto place_limit_order(EventListener& event_listener,
                        OrderBook& order_book,
-                       std::optional<PriceTick> price_tick,
+                       const core::PriceTickRanges& price_tick_ranges,
                        LimitOrder order,
                        const OrderActionContext& context) -> OrderBookUpdates {
   if (context.mode == OrderActionMode::AuctionCall) {
@@ -28,7 +28,7 @@ auto place_limit_order(EventListener& event_listener,
   if (context.mode == OrderActionMode::TradeAtLast) {
     RegularOrderMatcher matcher{event_listener,
                                 order_book,
-                                price_tick,
+                                price_tick_ranges,
                                 context.market_phase,
                                 LimitOrderQueue::TradeAtLast};
     TradeAtLastPlacement operation{
@@ -39,17 +39,18 @@ auto place_limit_order(EventListener& event_listener,
 
   RegularOrderMatcher matcher{event_listener,
                               order_book,
-                              price_tick,
+                              price_tick_ranges,
                               context.market_phase,
                               LimitOrderQueue::Regular};
-  RegularPlacement operation{event_listener, order_book, matcher};
+  RegularPlacement operation{
+      event_listener, order_book, matcher, price_tick_ranges};
   log::debug("executing limit order placement operation");
   return operation(std::move(order));
 }
 
 auto place_market_order(EventListener& event_listener,
                         OrderBook& order_book,
-                        std::optional<PriceTick> price_tick,
+                        const core::PriceTickRanges& price_tick_ranges,
                         MarketOrder order,
                         const OrderActionContext& context) -> OrderBookUpdates {
   if (context.mode == OrderActionMode::AuctionCall) {
@@ -66,21 +67,22 @@ auto place_market_order(EventListener& event_listener,
 
   RegularOrderMatcher matcher{event_listener,
                               order_book,
-                              price_tick,
+                              price_tick_ranges,
                               context.market_phase,
                               LimitOrderQueue::Regular};
-  RegularPlacement operation{event_listener, order_book, matcher};
+  RegularPlacement operation{
+      event_listener, order_book, matcher, price_tick_ranges};
   log::debug("executing market order placement operation");
   return operation(std::move(order));
 }
 
 auto amend_limit_order(EventListener& event_listener,
                        OrderBook& order_book,
-                       std::optional<PriceTick> price_tick,
+                       const core::PriceTickRanges& price_tick_ranges,
                        LimitUpdate update,
                        const OrderActionContext& context) -> OrderBookUpdates {
   if (context.mode == OrderActionMode::AuctionCall) {
-    AuctionAmendment operation{event_listener, order_book, price_tick};
+    AuctionAmendment operation{event_listener, order_book, price_tick_ranges};
     log::debug("executing auction limit order amendment action");
     return operation(std::move(update));
   }
@@ -92,7 +94,7 @@ auto amend_limit_order(EventListener& event_listener,
     RegularAmendment amendment{event_listener,
                                order_book,
                                matcher,
-                               price_tick,
+                               price_tick_ranges,
                                LimitOrderQueue::TradeAtLast};
     TradeAtLastAmendment operation{
         event_listener, amendment, context.closing_price};
@@ -102,13 +104,13 @@ auto amend_limit_order(EventListener& event_listener,
 
   RegularOrderMatcher matcher{event_listener,
                               order_book,
-                              price_tick,
+                              price_tick_ranges,
                               context.market_phase,
                               LimitOrderQueue::Regular};
   RegularAmendment operation{event_listener,
                              order_book,
                              matcher,
-                             price_tick,
+                             price_tick_ranges,
                              LimitOrderQueue::Regular};
   log::debug("executing limit order amendment action");
   return operation(std::move(update));
@@ -116,11 +118,11 @@ auto amend_limit_order(EventListener& event_listener,
 
 auto amend_market_order(EventListener& event_listener,
                         OrderBook& order_book,
-                        std::optional<PriceTick> price_tick,
+                        const core::PriceTickRanges& price_tick_ranges,
                         MarketUpdate update,
                         const OrderActionContext& context) -> OrderBookUpdates {
   if (context.mode == OrderActionMode::AuctionCall) {
-    AuctionAmendment operation{event_listener, order_book, price_tick};
+    AuctionAmendment operation{event_listener, order_book, price_tick_ranges};
     log::debug("executing auction market order amendment action");
     return operation(std::move(update));
   }
@@ -133,24 +135,24 @@ auto amend_market_order(EventListener& event_listener,
 
   RegularOrderMatcher matcher{event_listener,
                               order_book,
-                              price_tick,
+                              price_tick_ranges,
                               context.market_phase,
                               LimitOrderQueue::Regular};
   LimitToMarketAmendment operation{
-      event_listener, order_book, matcher, price_tick};
+      event_listener, order_book, matcher, price_tick_ranges};
   log::debug("executing limit to market order amendment action");
   return operation(std::move(update));
 }
 
 auto cancel_order(EventListener& event_listener,
                   OrderBook& order_book,
-                  std::optional<PriceTick> price_tick,
+                  const core::PriceTickRanges& price_tick_ranges,
                   const OrderCancel& cancel,
                   const OrderActionContext& context) -> OrderBookUpdates {
   const auto queue = context.mode == OrderActionMode::TradeAtLast
                          ? LimitOrderQueue::TradeAtLast
                          : LimitOrderQueue::Regular;
-  Cancellation operation{event_listener, order_book, price_tick, queue};
+  Cancellation operation{event_listener, order_book, price_tick_ranges, queue};
   log::debug("executing order cancellation action");
   return operation(cancel);
 }

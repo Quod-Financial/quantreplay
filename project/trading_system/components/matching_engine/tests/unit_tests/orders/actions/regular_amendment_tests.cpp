@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/orders/actions/regular_amendment.hpp"
 #include "ih/orders/book/order_book.hpp"
 #include "ih/orders/book/order_book_update.hpp"
@@ -45,10 +46,11 @@ struct MatchingEngineRegularAmendment : public Test {
   NiceMock<EventListenerMock> event_listener;
   OrderBook order_book;
   NiceMock<RegularMatcherMock> matcher;
+  const core::PriceTickRanges no_price_tick_ranges;
   RegularAmendment amendment{event_listener,
                              order_book,
                              matcher,
-                             std::nullopt,
+                             no_price_tick_ranges,
                              LimitOrderQueue::Regular};
 
   auto rest_limit_order(OrderId order_id,
@@ -338,10 +340,11 @@ TEST_F(MatchingEngineRegularAmendment,
   order.execute(ExecutedQuantity{4}, ExecutionPrice{10.2});
   order_book.take_page(Side::Option::Buy).limit_orders().emplace(order);
 
+  const core::PriceTickRanges price_tick_ranges{{.tick_size = 0.5}};
   RegularAmendment amendment_with_tick{event_listener,
                                        order_book,
                                        matcher,
-                                       PriceTick{0.5},
+                                       price_tick_ranges,
                                        LimitOrderQueue::Regular};
 
   EXPECT_CALL(event_listener,
@@ -371,7 +374,7 @@ struct MatchingEngineRegularAmendmentOnTradeAtLastQueue
   RegularAmendment trade_at_last_amendment{event_listener,
                                            order_book,
                                            matcher,
-                                           std::nullopt,
+                                           no_price_tick_ranges,
                                            LimitOrderQueue::TradeAtLast};
 };
 

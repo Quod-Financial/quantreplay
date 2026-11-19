@@ -1,9 +1,9 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_MARKET_AMENDMENT_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_MARKET_AMENDMENT_HPP_
 
-#include <optional>
+#include <gsl/pointers>
 
-#include "common/attributes.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/common/abstractions/event_listener.hpp"
 #include "ih/common/events/event_reporter.hpp"
 #include "ih/orders/book/order_book.hpp"
@@ -16,7 +16,7 @@ class MarketAmendment : private EventReporter {
  public:
   MarketAmendment(EventListener& event_listener,
                   OrderBook& order_book,
-                  std::optional<PriceTick> price_tick);
+                  const core::PriceTickRanges& price_tick_ranges);
 
   MarketAmendment(const MarketAmendment&) = default;
   MarketAmendment(MarketAmendment&&) = default;
@@ -31,7 +31,7 @@ class MarketAmendment : private EventReporter {
   auto amend_order(MarketUpdate update, OrderPage& page) -> OrderBookUpdates;
 
   OrderBook& order_book_;
-  std::optional<PriceTick> price_tick_;
+  gsl::not_null<const core::PriceTickRanges*> price_tick_ranges_;
 };
 
 }  // namespace simulator::trading_system::matching_engine

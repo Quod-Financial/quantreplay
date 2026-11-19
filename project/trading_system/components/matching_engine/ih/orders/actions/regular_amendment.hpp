@@ -1,9 +1,9 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_REGULAR_AMENDMENT_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_REGULAR_AMENDMENT_HPP_
 
-#include <optional>
+#include <gsl/pointers>
 
-#include "common/attributes.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/common/abstractions/event_listener.hpp"
 #include "ih/common/events/event_reporter.hpp"
 #include "ih/orders/book/order_book.hpp"
@@ -18,7 +18,7 @@ class RegularAmendment : private EventReporter {
   RegularAmendment(EventListener& event_listener,
                    OrderBook& order_book,
                    RegularMatcher& matcher,
-                   std::optional<PriceTick> price_tick,
+                   const core::PriceTickRanges& price_tick_ranges,
                    LimitOrderQueue queue);
 
   RegularAmendment(const RegularAmendment&) = default;
@@ -36,7 +36,7 @@ class RegularAmendment : private EventReporter {
 
   OrderBook& order_book_;
   RegularMatcher& matcher_;
-  std::optional<PriceTick> price_tick_;
+  gsl::not_null<const core::PriceTickRanges*> price_tick_ranges_;
   LimitOrderQueue queue_;
 };
 

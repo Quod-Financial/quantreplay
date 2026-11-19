@@ -3,6 +3,7 @@
 #include <optional>
 #include <utility>
 
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/orders/actions/limit_to_market_amendment.hpp"
 #include "ih/orders/book/order_book.hpp"
 #include "ih/orders/book/order_updates.hpp"
@@ -36,8 +37,9 @@ struct MatchingEngineLimitToMarketAmendment : public Test {
   NiceMock<EventListenerMock> event_listener;
   OrderBook order_book;
   NiceMock<RegularMatcherMock> matcher;
+  const core::PriceTickRanges no_price_tick_ranges;
   LimitToMarketAmendment amendment{
-      event_listener, order_book, matcher, std::nullopt};
+      event_listener, order_book, matcher, no_price_tick_ranges};
 
   auto rest_limit_order(OrderQuantity quantity) -> void {
     order_book.take_page(Side::Option::Buy)

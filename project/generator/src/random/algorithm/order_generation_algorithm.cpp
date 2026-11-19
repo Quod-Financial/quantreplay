@@ -11,7 +11,6 @@
 #include "ih/context/order_generation_context.hpp"
 #include "ih/random/algorithm/utils/attributes_setter.hpp"
 #include "ih/random/algorithm/utils/max_mktdepth_selector.hpp"
-#include "ih/random/algorithm/utils/price_params_selector.hpp"
 #include "ih/random/generators/counterparty_generator.hpp"
 #include "ih/random/generators/event_generator.hpp"
 #include "ih/random/generators/price_generator.hpp"
@@ -34,7 +33,7 @@ OrderGenerationAlgorithm::OrderGenerationAlgorithm(
     std::unique_ptr<CounterpartyGenerator> counterparty_generator,
     std::unique_ptr<RestingOrderActionGenerator> resting_action_generator,
     std::unique_ptr<PriceGenerator> price_generator,
-    std::unique_ptr<QuantityGenerator> qty_generator) noexcept
+    std::unique_ptr<QuantityGenerator> qty_generator)
     : context_{std::move(algorithm_context)},
       value_generator_{std::move(value_generator)},
       event_generator_{std::move(event_generator)},
@@ -42,7 +41,8 @@ OrderGenerationAlgorithm::OrderGenerationAlgorithm(
       resting_action_generator_{std::move(resting_action_generator)},
       price_generator_{std::move(price_generator)},
       qty_generator_{std::move(qty_generator)},
-      quantity_params_selector_{take_context().get_instrument()} {
+      quantity_params_selector_{take_context().get_instrument()},
+      price_params_selector_{take_context().get_instrument()} {
   assert(context_);
   assert(value_generator_);
   assert(event_generator_);
@@ -288,13 +288,14 @@ auto OrderGenerationAlgorithm::generate_price(GeneratedMessage& message,
                                               const Event& event,
                                               GenerationTracer& tracer)
     -> void {
-  auto& context = take_context();
-  const auto params =
-      PriceParamsSelector::select(context.get_instrument(), tracer);
+  const auto& params = price_params_selector_.select(tracer);
 
-  message.order_price =
-      std::make_optional<OrderPrice>(take_price_generator().generate_price(
-          params, market_state, context.get_price_seed(), event, tracer));
+  message.order_price = std::make_optional<OrderPrice>(
+      take_price_generator().generate_price(params,
+                                            market_state,
+                                            take_context().get_price_seed(),
+                                            event,
+                                            tracer));
 }
 
 template <typename GenerationTracer>

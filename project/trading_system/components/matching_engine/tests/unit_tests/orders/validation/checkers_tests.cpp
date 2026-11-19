@@ -1,7 +1,10 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <utility>
+
 #include "common/instrument_state.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 #include "core/tools/time.hpp"
 #include "ih/orders/validation/checkers.hpp"
 #include "ih/orders/validation/order_book_side.hpp"
@@ -797,13 +800,19 @@ TYPED_TEST(OrderPriceAbsentChecker, ReportsNotAllowedPricePresent) {
 using OrderPriceRespectsTickCheckerInputs =
     Types<protocol::OrderPlacementRequest, protocol::OrderModificationRequest>;
 
+[[nodiscard]]
+auto tick_ranges_split_at_ten() -> core::PriceTickRanges {
+  return {{.tick_size = 0.25, .upper_limit = 10.0}, {.tick_size = 0.3}};
+}
+
 template <typename InputType>
 struct OrderPriceRespectsTickChecker : public Test {
-  OrderPriceRespectsTick checker{std::nullopt};
+  core::PriceTickRanges tick_ranges;
+  OrderPriceRespectsTick checker{tick_ranges};
   InputType input = make_message<InputType>();
 
-  auto configure_checker(std::optional<PriceTick> tick) -> void {
-    checker = OrderPriceRespectsTick{tick};
+  auto configure_checker(core::PriceTickRanges ranges) -> void {
+    tick_ranges = std::move(ranges);
   }
 };
 
@@ -811,36 +820,78 @@ TYPED_TEST_SUITE(OrderPriceRespectsTickChecker,
                  OrderPriceRespectsTickCheckerInputs);
 
 TYPED_TEST(OrderPriceRespectsTickChecker, SuccessWhenPriceIsNotSpecified) {
-  this->configure_checker(PriceTick{1});
+  this->configure_checker({{.tick_size = 1}});
   this->input.order_price = std::nullopt;
 
   ASSERT_THAT(this->checker(this->input), Eq(std::nullopt));
 }
 
 TYPED_TEST(OrderPriceRespectsTickChecker, SuccessWhenTickIsNotSpecified) {
-  this->configure_checker(std::nullopt);
+  this->configure_checker({});
   this->input.order_price = OrderPrice{1};
 
   ASSERT_THAT(this->checker(this->input), Eq(std::nullopt));
 }
 
 TYPED_TEST(OrderPriceRespectsTickChecker, SuccessWhenPriceIsMultipleOfTick) {
-  this->configure_checker(PriceTick{0.2});
+  this->configure_checker({{.tick_size = 0.2}});
   this->input.order_price = OrderPrice{16.4};
 
   ASSERT_THAT(this->checker(this->input), Eq(std::nullopt));
 }
 
 TYPED_TEST(OrderPriceRespectsTickChecker, FailsWhenPriceIsNotMultipleOfTick) {
-  this->configure_checker(PriceTick{0.4});
+  this->configure_checker({{.tick_size = 0.4}});
   this->input.order_price = OrderPrice{16.5};
 
   ASSERT_THAT(this->checker(this->input),
               Optional(Eq(ValidationError::OrderPriceTickViolated)));
 }
 
+TYPED_TEST(OrderPriceRespectsTickChecker,
+           FailsWhenPriceBelowUpperLimitIsMultipleOnlyOfTickAboveIt) {
+  this->configure_checker(tick_ranges_split_at_ten());
+  this->input.order_price = OrderPrice{9.6};
+
+  ASSERT_THAT(this->checker(this->input),
+              Optional(Eq(ValidationError::OrderPriceTickViolated)));
+}
+
+TYPED_TEST(OrderPriceRespectsTickChecker,
+           FailsWhenPriceAboveUpperLimitIsMultipleOnlyOfTickBelowIt) {
+  this->configure_checker(tick_ranges_split_at_ten());
+  this->input.order_price = OrderPrice{10.25};
+
+  ASSERT_THAT(this->checker(this->input),
+              Optional(Eq(ValidationError::OrderPriceTickViolated)));
+}
+
+TYPED_TEST(OrderPriceRespectsTickChecker,
+           SuccessWhenPriceBelowUpperLimitIsMultipleOfTickOfItsRange) {
+  this->configure_checker(tick_ranges_split_at_ten());
+  this->input.order_price = OrderPrice{9.75};
+
+  ASSERT_THAT(this->checker(this->input), Eq(std::nullopt));
+}
+
+TYPED_TEST(OrderPriceRespectsTickChecker,
+           SuccessWhenPriceAtUpperLimitIsMultipleOfTickBelowIt) {
+  this->configure_checker(tick_ranges_split_at_ten());
+  this->input.order_price = OrderPrice{10};
+
+  ASSERT_THAT(this->checker(this->input), Eq(std::nullopt));
+}
+
+TYPED_TEST(OrderPriceRespectsTickChecker,
+           SuccessWhenPriceAboveUpperLimitIsMultipleOfTickOfItsRange) {
+  this->configure_checker(tick_ranges_split_at_ten());
+  this->input.order_price = OrderPrice{10.2};
+
+  ASSERT_THAT(this->checker(this->input), Eq(std::nullopt));
+}
+
 TYPED_TEST(OrderPriceRespectsTickChecker, FailsWhenTickIsZero) {
-  this->configure_checker(PriceTick{0});
+  this->configure_checker({{.tick_size = 0}});
   this->input.order_price = OrderPrice{10};
 
   ASSERT_THAT(this->checker(this->input),
@@ -848,7 +899,7 @@ TYPED_TEST(OrderPriceRespectsTickChecker, FailsWhenTickIsZero) {
 }
 
 TYPED_TEST(OrderPriceRespectsTickChecker, FailsWhenTickIsNegative) {
-  this->configure_checker(PriceTick{-1});
+  this->configure_checker({{.tick_size = -1}});
   this->input.order_price = OrderPrice{10};
 
   ASSERT_THAT(this->checker(this->input),
@@ -862,39 +913,57 @@ struct LimitOrderOrderPriceRespectsTickChecker : public Test {
 TEST_F(LimitOrderOrderPriceRespectsTickChecker, SuccessWhenTickIsNotSpecified) {
   order.order_price = OrderPrice{1};
 
-  ASSERT_THAT(OrderPriceRespectsTick{std::nullopt}(order), Eq(std::nullopt));
+  ASSERT_THAT(OrderPriceRespectsTick{core::PriceTickRanges{}}(order),
+              Eq(std::nullopt));
 }
 
 TEST_F(LimitOrderOrderPriceRespectsTickChecker,
        SuccessWhenPriceIsMultipleOfTick) {
-  const auto tick = PriceTick{0.2};
+  const core::PriceTickRanges tick_ranges{{.tick_size = 0.2}};
   order.order_price = OrderPrice{16.4};
 
-  ASSERT_THAT(OrderPriceRespectsTick{tick}(order), Eq(std::nullopt));
+  ASSERT_THAT(OrderPriceRespectsTick{tick_ranges}(order), Eq(std::nullopt));
 }
 
 TEST_F(LimitOrderOrderPriceRespectsTickChecker,
        FailsWhenPriceIsNotMultipleOfTick) {
-  const auto tick = PriceTick{0.4};
+  const core::PriceTickRanges tick_ranges{{.tick_size = 0.4}};
   order.order_price = OrderPrice{16.5};
 
-  ASSERT_THAT(OrderPriceRespectsTick{tick}(order),
+  ASSERT_THAT(OrderPriceRespectsTick{tick_ranges}(order),
               Optional(Eq(ValidationError::OrderPriceTickViolated)));
 }
 
+TEST_F(LimitOrderOrderPriceRespectsTickChecker,
+       FailsWhenPriceIsMultipleOnlyOfTickOfAnotherRange) {
+  const auto tick_ranges = tick_ranges_split_at_ten();
+  order.order_price = OrderPrice{9.6};
+
+  ASSERT_THAT(OrderPriceRespectsTick{tick_ranges}(order),
+              Optional(Eq(ValidationError::OrderPriceTickViolated)));
+}
+
+TEST_F(LimitOrderOrderPriceRespectsTickChecker,
+       SuccessWhenPriceIsMultipleOfTickOfItsRange) {
+  const auto tick_ranges = tick_ranges_split_at_ten();
+  order.order_price = OrderPrice{10.2};
+
+  ASSERT_THAT(OrderPriceRespectsTick{tick_ranges}(order), Eq(std::nullopt));
+}
+
 TEST_F(LimitOrderOrderPriceRespectsTickChecker, FailsWhenTickIsZero) {
-  const auto tick = PriceTick{0};
+  const core::PriceTickRanges tick_ranges{{.tick_size = 0}};
   order.order_price = OrderPrice{10};
 
-  ASSERT_THAT(OrderPriceRespectsTick{tick}(order),
+  ASSERT_THAT(OrderPriceRespectsTick{tick_ranges}(order),
               Optional(Eq(ValidationError::OrderPriceTickViolated)));
 }
 
 TEST_F(LimitOrderOrderPriceRespectsTickChecker, FailsWhenTickIsNegative) {
-  const auto tick = PriceTick{-1};
+  const core::PriceTickRanges tick_ranges{{.tick_size = -1}};
   order.order_price = OrderPrice{10};
 
-  ASSERT_THAT(OrderPriceRespectsTick{tick}(order),
+  ASSERT_THAT(OrderPriceRespectsTick{tick_ranges}(order),
               Optional(Eq(ValidationError::OrderPriceTickViolated)));
 }
 

@@ -1,5 +1,6 @@
 #include <gmock/gmock.h>
 
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/orders/actions/elimination.hpp"
 #include "tests/mocks/event_listener_mock.hpp"
 #include "tests/tools/matchers.hpp"
@@ -23,12 +24,13 @@ struct MatchingEngineClosedPhaseElimination : public Test {
       -> ClosedPhaseElimination {
     return ClosedPhaseElimination{event_listener,
                                   core::as_tz_time(phase_start_date, Timezone),
-                                  std::nullopt};
+                                  no_price_tick_ranges};
   }
 
   NiceMock<EventListenerMock> event_listener;
   OrderBuilder builder;
   OrderBook order_book;
+  const core::PriceTickRanges no_price_tick_ranges;
 };
 
 struct MatchingEngineClosedPhaseEliminationDay

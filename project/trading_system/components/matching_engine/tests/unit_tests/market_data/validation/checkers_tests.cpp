@@ -3,11 +3,19 @@
 #include "common/attributes.hpp"
 #include "common/instrument_state.hpp"
 #include "core/domain/attributes.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/market_data/validation/checkers.hpp"
 #include "tests/tools/order_book_notification_builder.hpp"
 
 namespace simulator::trading_system::matching_engine::mdata::test {
 namespace {
+
+// NOLINTBEGIN(*magic-numbers*)
+
+[[nodiscard]]
+auto tick_ranges_split_at_ten() -> core::PriceTickRanges {
+  return {{.tick_size = 0.25, .upper_limit = 10.0}, {.tick_size = 0.3}};
+}
 
 struct LowPriceRespectsTickChecker : public ::testing::Test {
   market_state::InstrumentInfo instrument_info;
@@ -15,42 +23,58 @@ struct LowPriceRespectsTickChecker : public ::testing::Test {
 
 TEST_F(LowPriceRespectsTickChecker, ReturnsNulloptWhenTickIsNotSpecified) {
   instrument_info.low_price = Price{10};
-  ASSERT_EQ(LowPriceRespectsTick{std::nullopt}(instrument_info), std::nullopt);
+  ASSERT_EQ(LowPriceRespectsTick{core::PriceTickRanges{}}(instrument_info),
+            std::nullopt);
 }
 
 TEST_F(LowPriceRespectsTickChecker,
        ReturnsLowPriceTickViolatedWhenPriceIsNotMultipleOfTick) {
   instrument_info.low_price = Price{10};
-  constexpr auto tick = std::make_optional(PriceTick{3});
-  ASSERT_EQ(LowPriceRespectsTick{tick}(instrument_info),
+  const core::PriceTickRanges tick_ranges{{.tick_size = 3}};
+  ASSERT_EQ(LowPriceRespectsTick{tick_ranges}(instrument_info),
             ValidationError::LowPriceTickViolated);
 }
 
 TEST_F(LowPriceRespectsTickChecker,
        ReturnsLowPriceTickViolatedWhenTickIsLessThanZero) {
   instrument_info.low_price = Price{10};
-  constexpr auto tick = std::make_optional(PriceTick{-1});
-  ASSERT_EQ(LowPriceRespectsTick{tick}(instrument_info),
+  const core::PriceTickRanges tick_ranges{{.tick_size = -1}};
+  ASSERT_EQ(LowPriceRespectsTick{tick_ranges}(instrument_info),
             ValidationError::LowPriceTickViolated);
 }
 
 TEST_F(LowPriceRespectsTickChecker, ReturnsLowPriceTickViolatedWhenTickIsZero) {
   instrument_info.low_price = Price{10};
-  constexpr auto tick = std::make_optional(PriceTick{0});
-  ASSERT_EQ(LowPriceRespectsTick{tick}(instrument_info),
+  const core::PriceTickRanges tick_ranges{{.tick_size = 0}};
+  ASSERT_EQ(LowPriceRespectsTick{tick_ranges}(instrument_info),
             ValidationError::LowPriceTickViolated);
 }
 
 TEST_F(LowPriceRespectsTickChecker,
        ReturnsNulloptWhenPriceIsFullyDivisibleByTick) {
   instrument_info.low_price = Price{10};
-  constexpr auto tick = std::make_optional(PriceTick{2});
-  ASSERT_EQ(LowPriceRespectsTick{tick}(instrument_info), std::nullopt);
+  const core::PriceTickRanges tick_ranges{{.tick_size = 2}};
+  ASSERT_EQ(LowPriceRespectsTick{tick_ranges}(instrument_info), std::nullopt);
+}
+
+TEST_F(LowPriceRespectsTickChecker,
+       ReturnsLowPriceTickViolatedWhenPriceIsMultipleOnlyOfTickOfAnotherRange) {
+  instrument_info.low_price = Price{9.6};
+  const auto tick_ranges = tick_ranges_split_at_ten();
+  ASSERT_EQ(LowPriceRespectsTick{tick_ranges}(instrument_info),
+            ValidationError::LowPriceTickViolated);
+}
+
+TEST_F(LowPriceRespectsTickChecker,
+       ReturnsNulloptWhenPriceIsMultipleOfTickOfItsRange) {
+  instrument_info.low_price = Price{10.2};
+  const auto tick_ranges = tick_ranges_split_at_ten();
+  ASSERT_EQ(LowPriceRespectsTick{tick_ranges}(instrument_info), std::nullopt);
 }
 
 TEST_F(LowPriceRespectsTickChecker, ReturnsNulloptWhenLowPriceIsNotSet) {
-  constexpr auto tick = std::make_optional(PriceTick{3});
-  ASSERT_EQ(LowPriceRespectsTick{tick}(instrument_info), std::nullopt);
+  const core::PriceTickRanges tick_ranges{{.tick_size = 3}};
+  ASSERT_EQ(LowPriceRespectsTick{tick_ranges}(instrument_info), std::nullopt);
 }
 
 struct HighPriceRespectsTickChecker : public ::testing::Test {
@@ -59,43 +83,60 @@ struct HighPriceRespectsTickChecker : public ::testing::Test {
 
 TEST_F(HighPriceRespectsTickChecker, ReturnsNulloptWhenTickIsNotSpecified) {
   instrument_info.high_price = Price{10};
-  ASSERT_EQ(HighPriceRespectsTick{std::nullopt}(instrument_info), std::nullopt);
+  ASSERT_EQ(HighPriceRespectsTick{core::PriceTickRanges{}}(instrument_info),
+            std::nullopt);
 }
 
 TEST_F(HighPriceRespectsTickChecker,
        ReturnsHighPriceTickViolatedWhenPriceIsNotMultipleOfTick) {
   instrument_info.high_price = Price{10};
-  constexpr auto tick = std::make_optional(PriceTick{3});
-  ASSERT_EQ(HighPriceRespectsTick{tick}(instrument_info),
+  const core::PriceTickRanges tick_ranges{{.tick_size = 3}};
+  ASSERT_EQ(HighPriceRespectsTick{tick_ranges}(instrument_info),
             ValidationError::HighPriceTickViolated);
 }
 
 TEST_F(HighPriceRespectsTickChecker,
        ReturnsHighPriceTickViolatedWhenTickIsLessThanZero) {
   instrument_info.high_price = Price{10};
-  constexpr auto tick = std::make_optional(PriceTick{-1});
-  ASSERT_EQ(HighPriceRespectsTick{tick}(instrument_info),
+  const core::PriceTickRanges tick_ranges{{.tick_size = -1}};
+  ASSERT_EQ(HighPriceRespectsTick{tick_ranges}(instrument_info),
             ValidationError::HighPriceTickViolated);
 }
 
 TEST_F(HighPriceRespectsTickChecker,
        ReturnsHighPriceTickViolatedWhenTickIsZero) {
   instrument_info.high_price = Price{10};
-  constexpr auto tick = std::make_optional(PriceTick{0});
-  ASSERT_EQ(HighPriceRespectsTick{tick}(instrument_info),
+  const core::PriceTickRanges tick_ranges{{.tick_size = 0}};
+  ASSERT_EQ(HighPriceRespectsTick{tick_ranges}(instrument_info),
             ValidationError::HighPriceTickViolated);
 }
 
 TEST_F(HighPriceRespectsTickChecker,
        ReturnsNulloptWhenPriceIsFullyDivisibleByTick) {
   instrument_info.high_price = Price{10};
-  constexpr auto tick = std::make_optional(PriceTick{2});
-  ASSERT_EQ(HighPriceRespectsTick{tick}(instrument_info), std::nullopt);
+  const core::PriceTickRanges tick_ranges{{.tick_size = 2}};
+  ASSERT_EQ(HighPriceRespectsTick{tick_ranges}(instrument_info), std::nullopt);
+}
+
+TEST_F(
+    HighPriceRespectsTickChecker,
+    ReturnsHighPriceTickViolatedWhenPriceIsMultipleOnlyOfTickOfAnotherRange) {
+  instrument_info.high_price = Price{9.6};
+  const auto tick_ranges = tick_ranges_split_at_ten();
+  ASSERT_EQ(HighPriceRespectsTick{tick_ranges}(instrument_info),
+            ValidationError::HighPriceTickViolated);
+}
+
+TEST_F(HighPriceRespectsTickChecker,
+       ReturnsNulloptWhenPriceIsMultipleOfTickOfItsRange) {
+  instrument_info.high_price = Price{10.2};
+  const auto tick_ranges = tick_ranges_split_at_ten();
+  ASSERT_EQ(HighPriceRespectsTick{tick_ranges}(instrument_info), std::nullopt);
 }
 
 TEST_F(HighPriceRespectsTickChecker, ReturnsNulloptWhenHighPriceIsNotSet) {
-  constexpr auto tick = std::make_optional(PriceTick{3});
-  ASSERT_EQ(HighPriceRespectsTick{tick}(instrument_info), std::nullopt);
+  const core::PriceTickRanges tick_ranges{{.tick_size = 3}};
+  ASSERT_EQ(HighPriceRespectsTick{tick_ranges}(instrument_info), std::nullopt);
 }
 
 struct LowPriceIsLessThanOrEqualToHighPriceChecker : public ::testing::Test {
@@ -153,38 +194,55 @@ struct TradePriceRespectsTickChecker : public ::testing::Test {
 
 TEST_F(TradePriceRespectsTickChecker, ReturnsNulloptWhenTickIsNotSpecified) {
   trade.trade_price = Price{10};
-  ASSERT_EQ(TradePriceRespectsTick{std::nullopt}(trade), std::nullopt);
+  ASSERT_EQ(TradePriceRespectsTick{core::PriceTickRanges{}}(trade),
+            std::nullopt);
 }
 
 TEST_F(TradePriceRespectsTickChecker,
        ReturnsTradePriceTickViolatedWhenPriceIsNotMultipleOfTick) {
   trade.trade_price = Price{10};
-  constexpr auto tick = std::make_optional(PriceTick{3});
-  ASSERT_EQ(TradePriceRespectsTick{tick}(trade),
+  const core::PriceTickRanges tick_ranges{{.tick_size = 3}};
+  ASSERT_EQ(TradePriceRespectsTick{tick_ranges}(trade),
             ValidationError::TradePriceTickViolated);
 }
 
 TEST_F(TradePriceRespectsTickChecker,
        ReturnsTradePriceTickViolatedWhenTickIsLessThanZero) {
   trade.trade_price = Price{10};
-  constexpr auto tick = std::make_optional(PriceTick{-1});
-  ASSERT_EQ(TradePriceRespectsTick{tick}(trade),
+  const core::PriceTickRanges tick_ranges{{.tick_size = -1}};
+  ASSERT_EQ(TradePriceRespectsTick{tick_ranges}(trade),
             ValidationError::TradePriceTickViolated);
 }
 
 TEST_F(TradePriceRespectsTickChecker,
        ReturnsTradePriceTickViolatedWhenTickIsZero) {
   trade.trade_price = Price{10};
-  constexpr auto tick = std::make_optional(PriceTick{0});
-  ASSERT_EQ(TradePriceRespectsTick{tick}(trade),
+  const core::PriceTickRanges tick_ranges{{.tick_size = 0}};
+  ASSERT_EQ(TradePriceRespectsTick{tick_ranges}(trade),
             ValidationError::TradePriceTickViolated);
 }
 
 TEST_F(TradePriceRespectsTickChecker,
        ReturnsNulloptWhenPriceIsFullyDivisibleByTick) {
   trade.trade_price = Price{10};
-  constexpr auto tick = std::make_optional(PriceTick{2});
-  ASSERT_EQ(TradePriceRespectsTick{tick}(trade), std::nullopt);
+  const core::PriceTickRanges tick_ranges{{.tick_size = 2}};
+  ASSERT_EQ(TradePriceRespectsTick{tick_ranges}(trade), std::nullopt);
+}
+
+TEST_F(
+    TradePriceRespectsTickChecker,
+    ReturnsTradePriceTickViolatedWhenPriceIsMultipleOnlyOfTickOfAnotherRange) {
+  trade.trade_price = Price{9.6};
+  const auto tick_ranges = tick_ranges_split_at_ten();
+  ASSERT_EQ(TradePriceRespectsTick{tick_ranges}(trade),
+            ValidationError::TradePriceTickViolated);
+}
+
+TEST_F(TradePriceRespectsTickChecker,
+       ReturnsNulloptWhenPriceIsMultipleOfTickOfItsRange) {
+  trade.trade_price = Price{10.2};
+  const auto tick_ranges = tick_ranges_split_at_ten();
+  ASSERT_EQ(TradePriceRespectsTick{tick_ranges}(trade), std::nullopt);
 }
 
 struct TradedQuantityRespectsTickChecker : public ::testing::Test {
@@ -297,6 +355,8 @@ TEST_F(TradedQuantityRespectsMaximumChecker,
   ASSERT_EQ(TradedQuantityRespectsMaximum{max}(trade),
             ValidationError::TradedQuantityMaxViolated);
 }
+
+// NOLINTEND(*magic-numbers*)
 
 }  // namespace
 }  // namespace simulator::trading_system::matching_engine::mdata::test

@@ -2,6 +2,7 @@
 
 #include <fmt/format.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -13,6 +14,7 @@
 #include "core/tools/numeric.hpp"
 #include "data_layer/api/models/datasource.hpp"
 #include "data_layer/api/models/listing.hpp"
+#include "data_layer/api/models/price_tick_range.hpp"
 #include "ih/marshalling/json/detail/keys.hpp"
 #include "ih/marshalling/json/listing.hpp"
 #include "ih/utils/response_formatters.hpp"
@@ -179,6 +181,11 @@ auto ListingController::insert_listing(const std::string& body) const
     return std::move(validation.error());
   }
 
+  if (auto validation = validate_price_tick_ranges(listing_snapshot);
+      !validation.has_value()) {
+    return std::move(validation.error());
+  }
+
   auto result = data_accessor_->add(listing_snapshot);
   if (result) {
     log::info("successfully added a new listing");
@@ -235,6 +242,11 @@ auto ListingController::update_listing(const std::string& key,
         !validation.has_value()) {
       return std::move(validation.error());
     }
+  }
+
+  if (auto validation = validate_price_tick_ranges(patch);
+      !validation.has_value()) {
+    return std::move(validation.error());
   }
 
   auto result = [&] {
@@ -437,6 +449,59 @@ auto ListingController::validate_datasource_venue(
                  json::listing_random_price_source_key::DatasourceId,
                  datasource.datasource_id(),
                  *venue_id))});
+}
+
+auto ListingController::validate_price_tick_ranges(
+    const data_layer::Listing::Patch& patch) -> Validation {
+  const auto& price_tick_ranges = patch.price_tick_ranges();
+  if (!price_tick_ranges.has_value()) {
+    return {};
+  }
+
+  if (auto validation =
+          every_price_tick_range_has_tick_size(*price_tick_ranges);
+      !validation.has_value()) {
+    return validation;
+  }
+
+  return at_most_one_price_tick_range_has_no_upper_limit(*price_tick_ranges);
+}
+
+auto ListingController::every_price_tick_range_has_tick_size(
+    const std::vector<data_layer::PriceTickRange::Patch>& price_tick_ranges)
+    -> Validation {
+  const bool every_range_has_tick_size = std::ranges::all_of(
+      price_tick_ranges, [](const data_layer::PriceTickRange::Patch& range) {
+        return range.tick_size().has_value();
+      });
+  if (every_range_has_tick_size) {
+    return {};
+  }
+
+  return tl::make_unexpected(Result{
+      Pistache::Http::Code::Bad_Request,
+      format_result_response(fmt::format("{} is required for an entry of {}",
+                                         json::price_tick_range_key::TickSize,
+                                         json::listing_key::PriceTickRanges))});
+}
+
+auto ListingController::at_most_one_price_tick_range_has_no_upper_limit(
+    const std::vector<data_layer::PriceTickRange::Patch>& price_tick_ranges)
+    -> Validation {
+  const auto ranges_without_upper_limit = std::ranges::count_if(
+      price_tick_ranges, [](const data_layer::PriceTickRange::Patch& range) {
+        return !range.upper_limit().has_value();
+      });
+  if (ranges_without_upper_limit <= 1) {
+    return {};
+  }
+
+  return tl::make_unexpected(
+      Result{Pistache::Http::Code::Bad_Request,
+             format_result_response(fmt::format(
+                 "{} must not contain more than one entry without {}",
+                 json::listing_key::PriceTickRanges,
+                 json::price_tick_range_key::UpperLimit))});
 }
 
 auto ListingController::format_error_response(data_bridge::Failure failure)

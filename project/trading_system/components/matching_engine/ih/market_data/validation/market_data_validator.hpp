@@ -6,6 +6,7 @@
 #include "common/attributes.hpp"
 #include "common/instrument_state.hpp"
 #include "common/validation.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/market_data/validation/errors.hpp"
 #include "ih/market_data/validation/validator.hpp"
 
@@ -20,7 +21,7 @@ class MarketDataValidation : public Validator {
     std::optional<MinQuantity> min_quantity;
     std::optional<MaxQuantity> max_quantity;
     std::optional<QuantityTick> quantity_tick;
-    std::optional<PriceTick> price_tick;
+    core::PriceTickRanges price_tick_ranges;
   };
 
   auto configure(Config config) -> void;

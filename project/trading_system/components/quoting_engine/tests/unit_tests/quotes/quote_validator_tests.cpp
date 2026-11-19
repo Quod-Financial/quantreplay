@@ -7,6 +7,7 @@
 #include "common/attributes.hpp"
 #include "common/instrument.hpp"
 #include "core/domain/attributes.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/quotes/quote_validator.hpp"
 #include "protocol/admin/quote.hpp"
 
@@ -38,7 +39,7 @@ struct QuotingEngineQuoteValidator : public Test {
   [[nodiscard]]
   static auto make_constrained_instrument() -> Instrument {
     Instrument instrument;
-    instrument.price_tick = PriceTick{0.25};
+    instrument.price_tick_ranges = core::PriceTickRanges{{.tick_size = 0.25}};
     instrument.quantity_tick = QuantityTick{10};
     instrument.min_quantity = MinQuantity{20};
     instrument.max_quantity = MaxQuantity{1000};
@@ -128,6 +129,43 @@ TEST_F(QuotingEngineQuoteValidator, AcceptsLockedQuote) {
       make_request({make_entry(1.5, 100)}, {make_entry(1.5, 100)});
 
   ASSERT_EQ(validator.find_violation(request), std::nullopt);
+}
+
+struct QuotingEngineQuoteValidatorWithTickRanges
+    : public QuotingEngineQuoteValidator {
+  [[nodiscard]]
+  static auto make_instrument_with_tick_ranges() -> Instrument {
+    Instrument instrument;
+    instrument.price_tick_ranges = core::PriceTickRanges{
+        {.tick_size = 0.25, .upper_limit = 10.0}, {.tick_size = 0.3}};
+    return instrument;
+  }
+
+  QuoteValidator ranges_validator{make_instrument_with_tick_ranges()};
+};
+
+TEST_F(QuotingEngineQuoteValidatorWithTickRanges,
+       RefusesBidPriceMultipleOnlyOfTickOfAnotherRange) {
+  const auto request = make_request({make_entry(9.6, 100)}, {});
+
+  ASSERT_THAT(ranges_validator.find_violation(request),
+              Optional(Eq("bid price tick constraint violated")));
+}
+
+TEST_F(QuotingEngineQuoteValidatorWithTickRanges,
+       RefusesAskPriceMultipleOnlyOfTickOfAnotherRange) {
+  const auto request = make_request({}, {make_entry(10.25, 100)});
+
+  ASSERT_THAT(ranges_validator.find_violation(request),
+              Optional(Eq("ask price tick constraint violated")));
+}
+
+TEST_F(QuotingEngineQuoteValidatorWithTickRanges,
+       AcceptsEachPriceMultipleOfTickOfItsRange) {
+  const auto request =
+      make_request({make_entry(9.75, 100)}, {make_entry(10.2, 100)});
+
+  ASSERT_EQ(ranges_validator.find_violation(request), std::nullopt);
 }
 
 // NOLINTEND(*magic-numbers*)

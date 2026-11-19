@@ -58,6 +58,9 @@ class UpdateQueryBuilder {
       -> void;
 
   [[nodiscard]]
+  auto has_column_updates() const noexcept -> bool;
+
+  [[nodiscard]]
   auto compose() const -> std::string;
 
  private:
@@ -117,10 +120,14 @@ inline auto UpdateQueryBuilder::with_eq_predicate(Column column,
                            sanitizer(std::forward<Value>(value)));
 }
 
+inline auto UpdateQueryBuilder::has_column_updates() const noexcept -> bool {
+  return !column_value_updates_.empty();
+}
+
 inline auto UpdateQueryBuilder::compose() const -> std::string {
   assert(!table_name_.empty());  // Must be validated in c-tor
 
-  if (column_value_updates_.empty()) {
+  if (!has_column_updates()) {
     throw MalformedPatch(
         "a patch with no fields is passed into UPDATE query builder");
   }

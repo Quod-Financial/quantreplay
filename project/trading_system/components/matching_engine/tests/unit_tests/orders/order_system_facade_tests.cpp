@@ -45,7 +45,8 @@ struct MatchingEngineOrderSystemFacade : public Test {
   }
 
   static auto make_configuration() -> Configuration {
-    return {.clock = core::TzClock{"Europe/Kyiv"}};
+    return {.clock = core::TzClock{"Europe/Kyiv"},
+            .order_price_tick_ranges = {}};
   }
 
   static auto transition(TradingPhase::Option phase,

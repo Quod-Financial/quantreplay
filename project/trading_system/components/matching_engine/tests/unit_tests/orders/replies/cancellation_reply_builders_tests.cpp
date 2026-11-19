@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/orders/replies/cancellation_reply_builders.hpp"
 #include "protocol/app/order_cancellation_request.hpp"
 #include "protocol/types/session.hpp"
@@ -17,9 +18,14 @@ using namespace ::testing;  // NOLINT
 
 struct CancellationConfirmationBuilder : public Test {
   const protocol::Session test_session{protocol::generator::Session{}};
+  const core::PriceTickRanges no_price_tick_ranges;
+  const core::PriceTickRanges price_tick_ranges{
+      {.tick_size = 0.1, .upper_limit = 10.0},
+      {.tick_size = 0.5, .upper_limit = 20.0},
+      {.tick_size = 2.0}};
   OrderBuilder order_builder;
-  matching_engine::CancellationConfirmationBuilder builder{test_session,
-                                                           std::nullopt};
+  matching_engine::CancellationConfirmationBuilder builder{
+      test_session, no_price_tick_ranges};
 };
 
 TEST_F(CancellationConfirmationBuilder, BuildsConfirmationForSession) {
@@ -97,8 +103,8 @@ TEST_F(CancellationConfirmationBuilder,
   limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
 
   const auto confirmation =
-      matching_engine::CancellationConfirmationBuilder{test_session,
-                                                       PriceTick{0.1}}
+      matching_engine::CancellationConfirmationBuilder{
+          test_session, core::PriceTickRanges{{.tick_size = 0.1}}}
           .for_order(limit_order)
           .build();
 
@@ -106,7 +112,24 @@ TEST_F(CancellationConfirmationBuilder,
 }
 
 TEST_F(CancellationConfirmationBuilder,
-       DoesNotRoundLimitOrderAveragePriceWhenPriceTickIsNullopt) {
+       RoundsLimitOrderAveragePriceToTickOfItsRange) {
+  auto limit_order = order_builder.with_order_price(OrderPrice{22.0})
+                         .with_order_quantity(OrderQuantity{10})
+                         .build_limit_order();
+  limit_order.execute(ExecutedQuantity{4}, ExecutionPrice{10.5});
+  limit_order.execute(ExecutedQuantity{6}, ExecutionPrice{11.0});
+
+  const auto confirmation =
+      matching_engine::CancellationConfirmationBuilder{test_session,
+                                                       price_tick_ranges}
+          .for_order(limit_order)
+          .build();
+
+  ASSERT_THAT(confirmation.average_price, Optional(Eq(AveragePrice{11.0})));
+}
+
+TEST_F(CancellationConfirmationBuilder,
+       DoesNotRoundLimitOrderAveragePriceWithoutPriceTickRanges) {
   auto limit_order =
       order_builder.with_order_quantity(OrderQuantity{10}).build_limit_order();
   limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
@@ -118,14 +141,16 @@ TEST_F(CancellationConfirmationBuilder,
 }
 
 TEST_F(CancellationConfirmationBuilder,
-       PrepareFactoryLimitOrderForwardsPriceTick) {
+       PrepareFactoryLimitOrderForwardsPriceTickRanges) {
   auto limit_order =
       order_builder.with_order_quantity(OrderQuantity{10}).build_limit_order();
   limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
   limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
 
   const auto confirmation =
-      prepare_cancellation_confirmation(limit_order, PriceTick{0.1}).build();
+      prepare_cancellation_confirmation(
+          limit_order, core::PriceTickRanges{{.tick_size = 0.1}})
+          .build();
 
   ASSERT_THAT(confirmation.average_price, Optional(Eq(AveragePrice{10.1})));
 }
@@ -278,8 +303,8 @@ TEST_F(CancellationConfirmationBuilder,
   market_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
 
   const auto confirmation =
-      matching_engine::CancellationConfirmationBuilder{test_session,
-                                                       PriceTick{0.1}}
+      matching_engine::CancellationConfirmationBuilder{
+          test_session, core::PriceTickRanges{{.tick_size = 0.1}}}
           .for_order(market_order)
           .build();
 
@@ -287,7 +312,23 @@ TEST_F(CancellationConfirmationBuilder,
 }
 
 TEST_F(CancellationConfirmationBuilder,
-       DoesNotRoundMarketOrderAveragePriceWhenPriceTickIsNullopt) {
+       RoundsMarketOrderAveragePriceToTickOfItsRange) {
+  auto market_order =
+      order_builder.with_order_quantity(OrderQuantity{10}).build_market_order();
+  market_order.execute(ExecutedQuantity{4}, ExecutionPrice{10.5});
+  market_order.execute(ExecutedQuantity{6}, ExecutionPrice{11.0});
+
+  const auto confirmation =
+      matching_engine::CancellationConfirmationBuilder{test_session,
+                                                       price_tick_ranges}
+          .for_order(market_order)
+          .build();
+
+  ASSERT_THAT(confirmation.average_price, Optional(Eq(AveragePrice{11.0})));
+}
+
+TEST_F(CancellationConfirmationBuilder,
+       DoesNotRoundMarketOrderAveragePriceWithoutPriceTickRanges) {
   auto market_order =
       order_builder.with_order_quantity(OrderQuantity{10}).build_market_order();
   market_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
@@ -299,14 +340,16 @@ TEST_F(CancellationConfirmationBuilder,
 }
 
 TEST_F(CancellationConfirmationBuilder,
-       PrepareFactoryMarketOrderForwardsPriceTick) {
+       PrepareFactoryMarketOrderForwardsPriceTickRanges) {
   auto market_order =
       order_builder.with_order_quantity(OrderQuantity{10}).build_market_order();
   market_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
   market_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
 
   const auto confirmation =
-      prepare_cancellation_confirmation(market_order, PriceTick{0.1}).build();
+      prepare_cancellation_confirmation(
+          market_order, core::PriceTickRanges{{.tick_size = 0.1}})
+          .build();
 
   ASSERT_THAT(confirmation.average_price, Optional(Eq(AveragePrice{10.1})));
 }
@@ -432,7 +475,7 @@ TEST_F(CancellationConfirmationBuilder, PrepareFactoryBuildsForMarketOrder) {
   const auto order = order_builder.build_market_order();
 
   const auto confirmation =
-      prepare_cancellation_confirmation(order, std::nullopt).build();
+      prepare_cancellation_confirmation(order, no_price_tick_ranges).build();
 
   ASSERT_THAT(confirmation.order_type, Optional(Eq(OrderType::Option::Market)));
 }

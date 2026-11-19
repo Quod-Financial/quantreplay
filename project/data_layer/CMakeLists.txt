@@ -59,6 +59,7 @@ add_static_library(
     ih/pqxx/result/venue_parser.hpp
     ih/pqxx/context.hpp
     include/data_layer/api/converters/column_mapping.hpp
+    include/data_layer/api/converters/price_tick_ranges.hpp
     include/data_layer/api/database/context.hpp
     include/data_layer/api/exceptions/exceptions.hpp
     include/data_layer/api/inspectors/column_mapping.hpp
@@ -69,6 +70,7 @@ add_static_library(
     include/data_layer/api/inspectors/listing_random_price_source.hpp
     include/data_layer/api/inspectors/market_phase.hpp
     include/data_layer/api/inspectors/price_seed.hpp
+    include/data_layer/api/inspectors/price_tick_range.hpp
     include/data_layer/api/inspectors/setting.hpp
     include/data_layer/api/inspectors/venue.hpp
     include/data_layer/api/models/column_mapping.hpp
@@ -80,6 +82,7 @@ add_static_library(
     include/data_layer/api/models/market_phase.hpp
     include/data_layer/api/models/patch_field.hpp
     include/data_layer/api/models/price_seed.hpp
+    include/data_layer/api/models/price_tick_range.hpp
     include/data_layer/api/models/setting.hpp
     include/data_layer/api/models/venue.hpp
     include/data_layer/api/predicate/expression.hpp
@@ -92,6 +95,7 @@ add_static_library(
     include/data_layer/api/data_access_layer.hpp
   SOURCES
     src/api/converters/column_mapping.cpp
+    src/api/converters/price_tick_ranges.cpp
     src/api/database/context.cpp
     src/api/exceptions/exceptions.cpp
     src/api/models/column_mapping.cpp
@@ -102,6 +106,7 @@ add_static_library(
     src/api/models/listing_random_price_source.cpp
     src/api/models/market_phase.cpp
     src/api/models/price_seed.cpp
+    src/api/models/price_tick_range.cpp
     src/api/models/setting.cpp
     src/api/models/venue.cpp
     src/api/validations/column_mapping.cpp

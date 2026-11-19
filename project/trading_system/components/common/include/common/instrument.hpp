@@ -7,6 +7,7 @@
 #include <optional>
 
 #include "common/attributes.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 
 namespace simulator::trading_system {
 
@@ -26,7 +27,7 @@ struct Instrument {
   std::optional<BloombergId> bloomberg_id;
 
   std::optional<DatabaseId> database_id;
-  std::optional<PriceTick> price_tick;
+  core::PriceTickRanges price_tick_ranges;
   std::optional<QuantityTick> quantity_tick;
   std::optional<MinQuantity> min_quantity;
   std::optional<MaxQuantity> max_quantity;

@@ -4,6 +4,7 @@
 
 #include "common/checker_utils.hpp"
 #include "core/domain/attributes.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 
 namespace simulator::trading_system::test {
 namespace {
@@ -162,6 +163,65 @@ TEST(TradingSystemCheckerUtilsFieldRespectsTick,
   ASSERT_EQ(field_respects_tick(value, tick, Error::CheckFailed),
             Error::CheckFailed);
 }
+
+// NOLINTBEGIN(*magic-numbers*)
+
+[[nodiscard]]
+auto tick_ranges_split_at_ten() -> core::PriceTickRanges {
+  return {{.tick_size = 0.25, .upper_limit = 10.0}, {.tick_size = 0.3}};
+}
+
+TEST(TradingSystemCheckerUtilsPriceRespectsTick,
+     ReturnsNulloptWhenPriceIsNotSpecified) {
+  const std::optional<OrderPrice> price;
+  ASSERT_EQ(price_respects_tick(
+                price, tick_ranges_split_at_ten(), Error::CheckFailed),
+            std::nullopt);
+}
+
+TEST(TradingSystemCheckerUtilsPriceRespectsTick,
+     ReturnsNulloptWithoutTickRanges) {
+  const auto price = std::make_optional(OrderPrice{9.6});
+  ASSERT_EQ(
+      price_respects_tick(price, core::PriceTickRanges{}, Error::CheckFailed),
+      std::nullopt);
+}
+
+TEST(TradingSystemCheckerUtilsPriceRespectsTick,
+     ReturnsErrorWhenTickOfPriceRangeIsZero) {
+  const core::PriceTickRanges tick_ranges{
+      {.tick_size = 0.0, .upper_limit = 10.0}, {.tick_size = 0.3}};
+  const auto price = std::make_optional(OrderPrice{9.6});
+  ASSERT_EQ(price_respects_tick(price, tick_ranges, Error::CheckFailed),
+            Error::CheckFailed);
+}
+
+TEST(TradingSystemCheckerUtilsPriceRespectsTick,
+     ReturnsErrorWhenTickOfPriceRangeIsLessThanZero) {
+  const core::PriceTickRanges tick_ranges{
+      {.tick_size = -0.3, .upper_limit = 10.0}, {.tick_size = 0.3}};
+  const auto price = std::make_optional(OrderPrice{9.6});
+  ASSERT_EQ(price_respects_tick(price, tick_ranges, Error::CheckFailed),
+            Error::CheckFailed);
+}
+
+TEST(TradingSystemCheckerUtilsPriceRespectsTick,
+     ReturnsErrorWhenPriceIsMultipleOnlyOfTickOfAnotherRange) {
+  const auto price = std::make_optional(OrderPrice{9.6});
+  ASSERT_EQ(price_respects_tick(
+                price, tick_ranges_split_at_ten(), Error::CheckFailed),
+            Error::CheckFailed);
+}
+
+TEST(TradingSystemCheckerUtilsPriceRespectsTick,
+     ReturnsNulloptWhenPriceIsMultipleOfTickOfItsRange) {
+  const auto price = std::make_optional(OrderPrice{10.2});
+  ASSERT_EQ(price_respects_tick(
+                price, tick_ranges_split_at_ten(), Error::CheckFailed),
+            std::nullopt);
+}
+
+// NOLINTEND(*magic-numbers*)
 
 TEST(TradingSystemCheckerUtilsFieldsRespectOrderAttributes,
      ReturnsNulloptWhenPredicateReturnsTrue) {

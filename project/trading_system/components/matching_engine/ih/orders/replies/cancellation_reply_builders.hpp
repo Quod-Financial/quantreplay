@@ -1,9 +1,11 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_REPLIES_CANCELLATION_REPLY_BUILDERS_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_REPLIES_CANCELLATION_REPLY_BUILDERS_HPP_
 
+#include <gsl/pointers>
 #include <optional>
 
 #include "common/attributes.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/orders/book/limit_order.hpp"
 #include "ih/orders/book/market_order.hpp"
 #include "ih/orders/book/order_updates.hpp"
@@ -16,8 +18,9 @@ namespace simulator::trading_system::matching_engine {
 
 class CancellationConfirmationBuilder {
  public:
-  CancellationConfirmationBuilder(protocol::Session session,
-                                  std::optional<PriceTick> price_tick);
+  CancellationConfirmationBuilder(
+      protocol::Session session,
+      const core::PriceTickRanges& price_tick_ranges);
 
   [[nodiscard]]
   auto build() const -> protocol::OrderCancellationConfirmation;
@@ -43,17 +46,17 @@ class CancellationConfirmationBuilder {
 
  private:
   protocol::OrderCancellationConfirmation message_;
-  std::optional<PriceTick> price_tick_;
+  gsl::not_null<const core::PriceTickRanges*> price_tick_ranges_;
 };
 
 [[nodiscard]]
-auto prepare_cancellation_confirmation(const LimitOrder& order,
-                                       std::optional<PriceTick> price_tick)
+auto prepare_cancellation_confirmation(
+    const LimitOrder& order, const core::PriceTickRanges& price_tick_ranges)
     -> CancellationConfirmationBuilder;
 
 [[nodiscard]]
-auto prepare_cancellation_confirmation(const MarketOrder& order,
-                                       std::optional<PriceTick> price_tick)
+auto prepare_cancellation_confirmation(
+    const MarketOrder& order, const core::PriceTickRanges& price_tick_ranges)
     -> CancellationConfirmationBuilder;
 
 class CancellationRejectBuilder {

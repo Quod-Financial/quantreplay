@@ -1,10 +1,12 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <optional>
 #include <string>
 
 #include "api/models/listing.hpp"
 #include "api/models/listing_random_price_source.hpp"
+#include "api/models/price_tick_range.hpp"
 #include "ih/common/exceptions.hpp"
 #include "tests/test_utils/matchers.hpp"
 
@@ -16,6 +18,13 @@ using namespace ::testing;  // NOLINT
 // NOLINTBEGIN(*magic-numbers*)
 
 using EngineType = Listing::EngineType;
+
+[[nodiscard]]
+auto make_price_tick_range(double tick_size, std::optional<double> upper_limit)
+    -> PriceTickRange::Patch {
+  return PriceTickRange::Patch{}.with_tick_size(tick_size).with_upper_limit(
+      upper_limit);
+}
 
 struct DataLayerListingPatch : public Test {
   Listing::Patch patch;
@@ -136,21 +145,6 @@ TEST_F(DataLayerListingPatch, SetsQtyMultiple) {
 
   patch.with_qty_multiple(42.42);
   EXPECT_THAT(patch.qty_multiple(),
-              IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
-}
-
-TEST_F(DataLayerListingPatch, SetsPriceTickSizeNull) {
-  ASSERT_FALSE(patch.price_tick_size().has_value());
-
-  patch.with_price_tick_size(std::nullopt);
-  EXPECT_THAT(patch.price_tick_size(), IsPatchFieldWithValue(std::nullopt));
-}
-
-TEST_F(DataLayerListingPatch, SetsPriceTickSize) {
-  ASSERT_FALSE(patch.price_tick_size().has_value());
-
-  patch.with_price_tick_size(42.42);
-  EXPECT_THAT(patch.price_tick_size(),
               IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
 }
 
@@ -553,6 +547,29 @@ TEST_F(DataLayerListingPatch, SetsWithoutRandomPriceSources) {
   EXPECT_THAT(patch.random_price_sources(), Optional(IsEmpty()));
 }
 
+TEST_F(DataLayerListingPatch, CarriesNoPriceTickRangesIfNotGiven) {
+  EXPECT_EQ(patch.price_tick_ranges(), std::nullopt);
+}
+
+TEST_F(DataLayerListingPatch, CarriesEmptyPriceTickRangesIfGivenEmpty) {
+  patch.without_price_tick_ranges();
+
+  EXPECT_THAT(patch.price_tick_ranges(), Optional(IsEmpty()));
+}
+
+TEST_F(DataLayerListingPatch, KeepsPriceTickRangesInGivenOrder) {
+  const auto first = make_price_tick_range(0.000001, std::nullopt);
+  const auto second = make_price_tick_range(0.01, 10.0);
+  const auto third = make_price_tick_range(0.001, 1.0);
+
+  patch.with_price_tick_range(first)
+      .with_price_tick_range(second)
+      .with_price_tick_range(third);
+
+  EXPECT_THAT(patch.price_tick_ranges(),
+              Optional(ElementsAre(Eq(first), Eq(second), Eq(third))));
+}
+
 struct DataLayerListing : public Test {
   Listing::Patch patch;
 
@@ -715,21 +732,6 @@ TEST_F(DataLayerListing, GetsQtyMultipleSpecified) {
 
   Listing listing = Listing::create(patch, 42);
   EXPECT_THAT(listing.qty_multiple(), Optional(DoubleEq(42.42)));
-}
-
-TEST_F(DataLayerListing, GetsQtyPriceTickSizeMissing) {
-  patch.with_venue_id("NASDAQ");
-
-  Listing listing = Listing::create(patch, 42);
-  EXPECT_EQ(listing.price_tick_size(), std::nullopt);
-}
-
-TEST_F(DataLayerListing, GetsPriceTickSizeSpecified) {
-  patch.with_venue_id("NASDAQ");
-  patch.with_price_tick_size(42.42);
-
-  Listing listing = Listing::create(patch, 42);
-  EXPECT_THAT(listing.price_tick_size(), Optional(DoubleEq(42.42)));
 }
 
 TEST_F(DataLayerListing, GetsEnabledMissing) {
@@ -1133,6 +1135,30 @@ TEST_F(DataLayerListing, StoresRandomPriceSources) {
   EXPECT_THAT(listing.random_price_sources(),
               ElementsAre(Eq(ListingRandomPriceSource::create(first, 42)),
                           Eq(ListingRandomPriceSource::create(second, 42))));
+}
+
+TEST_F(DataLayerListing, HasNoPriceTickRangesIfNotGiven) {
+  patch.with_venue_id("NASDAQ");
+
+  Listing listing = Listing::create(patch, 42);
+  EXPECT_THAT(listing.price_tick_ranges(), IsEmpty());
+}
+
+TEST_F(DataLayerListing, KeepsPriceTickRangesInGivenOrder) {
+  patch.with_venue_id("NASDAQ");
+
+  const auto first = make_price_tick_range(0.000001, std::nullopt);
+  const auto second = make_price_tick_range(0.01, 10.0);
+  const auto third = make_price_tick_range(0.001, 1.0);
+  patch.with_price_tick_range(first)
+      .with_price_tick_range(second)
+      .with_price_tick_range(third);
+
+  Listing listing = Listing::create(patch, 42);
+  EXPECT_THAT(listing.price_tick_ranges(),
+              ElementsAre(Eq(PriceTickRange::create(first)),
+                          Eq(PriceTickRange::create(second)),
+                          Eq(PriceTickRange::create(third))));
 }
 
 // NOLINTEND(*magic-numbers*)

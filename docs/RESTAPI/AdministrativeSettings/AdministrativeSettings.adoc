@@ -533,7 +533,7 @@ A change takes effect on the next startup or <<admincmds-simstate-reset,reset>> 
 | qtyMinimum	| Decimal	| The minimum allowed order quantity (0 by default, though all orders require >0 quantity)
 | qtyMaximum	| Decimal	| The maximum allowed order quantity (no limit by default)
 | qtyMultiple	| Decimal	| Required even multiple of order quantity (any multiple by default)
-| priceTickSize	| Decimal	| Required even multiple of order price (any multiple by default)
+| priceTickRanges	| Array	| Tick sizes that an order price must be a multiple of, each for a range of prices (any price is accepted by default), see <<adminsets-listings-pricetickranges,Price Tick Ranges Sub-List>>
 | randomQtyMinimum	| Decimal	| The minimum quantity that can be created by the Random Order Generator (uses qtyMinimum by default or if qtyMinimum has a higher value)
 
 Used only for passive orders if randomAggQtyMinimum and/or randomAggAmtMinimum have a value.
@@ -551,7 +551,7 @@ Used only for passive orders if randomAggQtyMaximum and/or randomAggAmtMaximum h
 | randomAggAmtMinimum	| Decimal	| The amount used to derive the minimum quantity that can be created by the Random Order Generator for aggressive orders (uses randomAggQtyMinimum by default or if randomAggQtyMinimum has a higher value than the quantity derived from this value)
 | randomAggAmtMaximum	| Decimal	| The amount used to derive the maximum quantity that can be created by the Random Order Generator for aggressive orders (uses randomAggQtyMaximum by default or if randomAggQtyMaximum has a lower value than the quantity derived from this value)
 | randomDepthLevels	| Integer	| Maximum count of depth levels that can be created by Random Order Generator (no limit by default)
-| randomPriceSpread	| Decimal	| The smallest top of book bid/ask price difference for prices created by the Random Order Generator (uses priceTickSize by default)
+| randomPriceSpread	| Decimal	| The smallest top of book bid/ask price difference for prices created by the Random Order Generator (uses the tick size from priceTickRanges by default or if that tick size has a higher value, see <<general-randomorder-distrprice,Distribution of Price>>)
 | randomUpdateRate	| Integer	| The number of order actions (new order/modification/cancel/wait) per second during Random Order Generation
 | randomTickRange	| Integer	| Range of price ticks used to calculate prices created by the Random Order Generator (10 by default)
 | randomActionsEnabled	| Boolean	| Indicates if the Random Order Generator has to generate random orders on a listing (no random actions are generated on a Quoting listing, see <<general-quoting,Quoting Listings>>)
@@ -560,6 +560,44 @@ Used only for passive orders if randomAggQtyMaximum and/or randomAggAmtMaximum h
 | enabled	| Boolean	| Indicates if the listing is enabled and should be used by the Market Simulator
 
 |=== 
+
+[[adminsets-listings-pricetickranges]]
+==== Price Tick Ranges Sub-List
+The tick size of a listing can differ from one range of prices to another.
+Each entry of this sub-list sets the tick size of one price range, and a price must be a multiple of the tick size of the range it falls in.
+
+An entry applies to the prices up to and including its `upperLimit` and above the next lower `upperLimit` of the sub-list; the entry with the lowest `upperLimit` applies to all prices below it as well.
+The entry without `upperLimit` applies to all prices above the highest `upperLimit`, or to all prices when it is the only entry.
+When every entry has an `upperLimit`, the entry with the highest one also applies to all prices above it.
+The entries are stored and returned in the order of the request. That order has no effect on the ranges, except that of several entries with the same `upperLimit` only the first one applies.
+A listing without entries has no tick size: any price is accepted.
+
+The tick size of the range of a price is applied to the prices of orders and amends, of <<admincmds-quotes-publish,published quotes>> and of a <<general-persiststate-dataverification,recovered market state>>.
+It is also used to round the average price reported for an order and to derive the prices created by the Random Order Generator (see <<general-randomorder-distrprice,this section>>).
+
+[cols="15,15,70"]
+|===
+| Path | Type |Description
+
+| tickSize	| Decimal	| Required. The tick size of the price range.
+| upperLimit	| Decimal or null	| The highest price of the range. A `null` value, or omitting the key, sets no upper limit, which only one entry of the sub-list can do. Such an entry is returned without the key.
+
+|===
+
+In a request to add or update a listing, `priceTickRanges` replaces all entries of the listing, and an empty array removes them. An update that omits the key leaves the entries unchanged.
+A listing without entries is returned with an empty array.
+
+The request is rejected with a 400 Bad Request reply, and nothing is stored, in the following cases, checked in this order:
+
+[cols="50,50"]
+|===
+| Condition | `result` of the reply
+
+| An entry has no `tickSize`, or a `null` one | `tickSize is required for an entry of priceTickRanges`
+| More than one entry has no `upperLimit` | `priceTickRanges must not contain more than one entry without upperLimit`
+|===
+
+Any decimal value is accepted for `tickSize` and `upperLimit`. A `tickSize` that is not greater than zero makes every price of its range fail the tick size check.
 
 [[adminsets-listings-randpricesrc]]
 ==== Random Price Sources Sub-List
@@ -641,7 +679,6 @@ Content-Length: XXX
     "qtyMinimum" : 1.0,
     "qtyMaximum" : 100000.0,
     "qtyMultiple" : 1.0,
-    "priceTickSize" : 0.001,
     "enabled" : true,
     "randomQtyMinimum" : 1.0,
     "randomQtyMaximum" : 700.0,
@@ -666,6 +703,15 @@ Content-Length: XXX
         {
             "listingId" : 1,
             "symbol" : "SIE"
+        }
+    ],
+    "priceTickRanges" : [
+        {
+            "tickSize" : 0.001,
+            "upperLimit" : 10.0
+        },
+        {
+            "tickSize" : 0.005
         }
     ]
 }
@@ -737,7 +783,6 @@ Content-Length: XXX
             "qtyMinimum" : 1,
             "qtyMaximum" : 1000000,
             "qtyMultiple" : 1,
-            "priceTickSize" : 0.001,
             "randomQtyMinimum" : 1,
             "randomQtyMaximum" : 1000,
             "randomAmtMinimum" : 0,
@@ -756,6 +801,11 @@ Content-Length: XXX
                     "listingId" : 1,
                     "datasourceId" : 3,
                     "symbol" : "SAP"
+                }
+            ],
+            "priceTickRanges" : [
+                {
+                    "tickSize" : 0.001
                 }
             ]
         },
@@ -780,7 +830,6 @@ Content-Length: XXX
             "qtyMinimum" : 1,
             "qtyMaximum" : 1.0E8,
             "qtyMultiple" : 1,
-            "priceTickSize" : 0.001,
             "randomQtyMinimum" : 1,
             "randomQtyMaximum" : 1.0E7,
             "randomAmtMinimum" : 0,
@@ -794,7 +843,12 @@ Content-Length: XXX
             "randomAggAmtMinimum" : 1000.0,
             "randomAggAmtMaximum" : 3000.0,
             "randomPriceExcludeCurrentListing" : false,
-            "randomPriceSources" : []
+            "randomPriceSources" : [],
+            "priceTickRanges" : [
+                {
+                    "tickSize" : 0.001
+                }
+            ]
         }
     ]
 }
@@ -953,7 +1007,19 @@ Accept: application/json;charset=UTF-8
 Host: localhost
 
 {
-    "priceTickSize" : 0.001,
+    "priceTickRanges" : [
+        {
+            "tickSize" : 0.001,
+            "upperLimit" : 1
+        },
+        {
+            "tickSize" : 0.01,
+            "upperLimit" : 10
+        },
+        {
+            "tickSize" : 0.05
+        }
+    ],
     "qtyMultiple" : 2
 }
 ----

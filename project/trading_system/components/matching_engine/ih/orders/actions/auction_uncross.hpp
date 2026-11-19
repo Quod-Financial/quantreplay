@@ -1,11 +1,12 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_AUCTION_UNCROSS_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_ACTIONS_AUCTION_UNCROSS_HPP_
 
+#include <gsl/pointers>
 #include <optional>
 
-#include "common/attributes.hpp"
 #include "core/domain/attributes.hpp"
 #include "core/domain/market_phase.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/common/abstractions/event_listener.hpp"
 #include "ih/common/events/event_reporter.hpp"
 #include "ih/orders/book/order_book.hpp"
@@ -17,7 +18,7 @@ class AuctionUncross : EventReporter {
  public:
   AuctionUncross(EventListener& event_listener,
                  MarketPhase auction_phase,
-                 std::optional<PriceTick> price_tick);
+                 const core::PriceTickRanges& price_tick_ranges);
 
   auto operator()(OrderBook& book,
                   const std::optional<AuctionResult>& auction_result) const
@@ -43,7 +44,7 @@ class AuctionUncross : EventReporter {
   static auto remove_filled_limit_orders(OrderBook& book) -> void;
 
   MarketPhase auction_phase_;
-  std::optional<PriceTick> price_tick_;
+  gsl::not_null<const core::PriceTickRanges*> price_tick_ranges_;
 };
 
 }  // namespace simulator::trading_system::matching_engine::order

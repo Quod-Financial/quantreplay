@@ -12,18 +12,18 @@ LimitToMarketAmendment::LimitToMarketAmendment(
     EventListener& event_listener,
     OrderBook& order_book,
     RegularMatcher& matcher,
-    std::optional<PriceTick> price_tick)
+    const core::PriceTickRanges& price_tick_ranges)
     : EventReporter{event_listener},
       order_book_{&order_book},
       matcher_{&matcher},
-      price_tick_{price_tick} {}
+      price_tick_ranges_{&price_tick_ranges} {}
 
 auto LimitToMarketAmendment::operator()(MarketUpdate update)
     -> OrderBookUpdates {
   log::debug("running limit to market order amendment operation");
 
   auto& orders = order_book_->take_page(update.order_side).limit_orders();
-  OrderTypeConversion conversion{listener(), price_tick_};
+  OrderTypeConversion conversion{listener(), *price_tick_ranges_};
   auto converted = conversion.to_market_order(std::move(update), orders);
   if (!converted.has_value()) {
     return {};
@@ -35,7 +35,7 @@ auto LimitToMarketAmendment::operator()(MarketUpdate update)
 
 auto LimitToMarketAmendment::execute(MarketOrder& order) -> void {
   if (!matcher_->has_facing_orders(order)) {
-    cancel_without_facing_orders(listener(), order, price_tick_);
+    cancel_without_facing_orders(listener(), order, *price_tick_ranges_);
     return;
   }
   matcher_->match(order);

@@ -26,11 +26,12 @@ namespace {
 auto setup_client_request_validator(const Configuration& configuration)
     -> std::unique_ptr<order::Validator> {
   auto validator = std::make_unique<order::ClientRequestValidator>();
-  validator->configure({.clock = configuration.clock,
-                        .min_quantity = configuration.order_min_quantity,
-                        .max_quantity = configuration.order_max_quantity,
-                        .quantity_tick = configuration.order_quantity_tick,
-                        .price_tick = configuration.order_price_tick});
+  validator->configure(
+      {.clock = configuration.clock,
+       .min_quantity = configuration.order_min_quantity,
+       .max_quantity = configuration.order_max_quantity,
+       .quantity_tick = configuration.order_quantity_tick,
+       .price_tick_ranges = configuration.order_price_tick_ranges});
   return validator;
 }
 
@@ -102,14 +103,14 @@ auto OrderSystemFacade::process(const protocol::OrderPlacementRequest& request)
       [&](LimitOrder order) -> OrderBookUpdates {
         return place_limit_order(*event_listener_,
                                  *depr_order_book_,
-                                 configuration_.order_price_tick,
+                                 configuration_.order_price_tick_ranges,
                                  std::move(order),
                                  context);
       },
       [&](MarketOrder order) -> OrderBookUpdates {
         return place_market_order(*event_listener_,
                                   *depr_order_book_,
-                                  configuration_.order_price_tick,
+                                  configuration_.order_price_tick_ranges,
                                   std::move(order),
                                   context);
       },
@@ -133,14 +134,14 @@ auto OrderSystemFacade::process(
       [&](LimitUpdate update) -> OrderBookUpdates {
         return amend_limit_order(*event_listener_,
                                  *depr_order_book_,
-                                 configuration_.order_price_tick,
+                                 configuration_.order_price_tick_ranges,
                                  std::move(update),
                                  context);
       },
       [&](MarketUpdate update) -> OrderBookUpdates {
         return amend_market_order(*event_listener_,
                                   *depr_order_book_,
-                                  configuration_.order_price_tick,
+                                  configuration_.order_price_tick_ranges,
                                   std::move(update),
                                   context);
       },
@@ -164,7 +165,7 @@ auto OrderSystemFacade::process(
       [&](const OrderCancel& cancel) -> OrderBookUpdates {
         return cancel_order(*event_listener_,
                             *depr_order_book_,
-                            configuration_.order_price_tick,
+                            configuration_.order_price_tick_ranges,
                             cancel,
                             context);
       },
@@ -302,7 +303,7 @@ auto OrderSystemFacade::refresh_auction_indicative(
 
 auto OrderSystemFacade::handle(const event::Tick& tick) -> void {
   order::SystemElimination eliminator(
-      *event_listener_, tick, configuration_.order_price_tick);
+      *event_listener_, tick, configuration_.order_price_tick_ranges);
   eliminator(*depr_order_book_);
 
   early_price_reporter_(tick, auction_price_calculator_.auction_result());
@@ -318,15 +319,16 @@ auto OrderSystemFacade::handle(const event::PhaseTransition& phase_transition)
       Phase::Settings{.allow_cancels = false});
 
   if (was_trade_at_last && !phase_handler_.in_trade_at_last()) {
-    order::TradeAtLastElimination eliminator(*event_listener_,
-                                             configuration_.order_price_tick);
+    order::TradeAtLastElimination eliminator(
+        *event_listener_, configuration_.order_price_tick_ranges);
     eliminator(*depr_order_book_);
   }
 
   if (phase_handler_.in_closed_phase()) {
-    order::ClosedPhaseElimination eliminator(*event_listener_,
-                                             phase_transition.tz_time_point,
-                                             configuration_.order_price_tick);
+    order::ClosedPhaseElimination eliminator(
+        *event_listener_,
+        phase_transition.tz_time_point,
+        configuration_.order_price_tick_ranges);
     eliminator(*depr_order_book_);
   } else if (phase_changed && phase_handler_.in_auction_call()) {
     auction_price_calculator_ = AuctionPriceCalculator{
@@ -344,7 +346,7 @@ auto OrderSystemFacade::handle(const event::PhaseTransition& phase_transition)
 
     order::AuctionUncross uncross(*event_listener_,
                                   phase_handler_.current_phase(),
-                                  configuration_.order_price_tick);
+                                  configuration_.order_price_tick_ranges);
     uncross(*depr_order_book_, result);
 
     // Emit after the uncross: the cache applies notifications in arrival order,
@@ -367,7 +369,7 @@ auto OrderSystemFacade::handle_disconnection(const protocol::Session& session)
     -> void {
   if (configuration_.enable_cancel_on_disconnect) {
     order::OnDisconnectElimination eliminator(
-        *event_listener_, session, configuration_.order_price_tick);
+        *event_listener_, session, configuration_.order_price_tick_ranges);
     eliminator(*depr_order_book_);
     log::debug("eliminated orders due to user disconnect: {}", session);
     return;

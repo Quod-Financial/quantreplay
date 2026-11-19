@@ -4,10 +4,10 @@
 #include <cstdint>
 #include <optional>
 
-#include "common/attributes.hpp"
 #include "common/instrument_state.hpp"
 #include "core/domain/attributes.hpp"
 #include "core/domain/market_phase.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/common/abstractions/event_listener.hpp"
 #include "ih/orders/book/limit_order.hpp"
 #include "ih/orders/book/market_order.hpp"
@@ -27,31 +27,31 @@ struct OrderActionContext {
 
 auto place_limit_order(EventListener& event_listener,
                        OrderBook& order_book,
-                       std::optional<PriceTick> price_tick,
+                       const core::PriceTickRanges& price_tick_ranges,
                        LimitOrder order,
                        const OrderActionContext& context) -> OrderBookUpdates;
 
 auto place_market_order(EventListener& event_listener,
                         OrderBook& order_book,
-                        std::optional<PriceTick> price_tick,
+                        const core::PriceTickRanges& price_tick_ranges,
                         MarketOrder order,
                         const OrderActionContext& context) -> OrderBookUpdates;
 
 auto amend_limit_order(EventListener& event_listener,
                        OrderBook& order_book,
-                       std::optional<PriceTick> price_tick,
+                       const core::PriceTickRanges& price_tick_ranges,
                        LimitUpdate update,
                        const OrderActionContext& context) -> OrderBookUpdates;
 
 auto amend_market_order(EventListener& event_listener,
                         OrderBook& order_book,
-                        std::optional<PriceTick> price_tick,
+                        const core::PriceTickRanges& price_tick_ranges,
                         MarketUpdate update,
                         const OrderActionContext& context) -> OrderBookUpdates;
 
 auto cancel_order(EventListener& event_listener,
                   OrderBook& order_book,
-                  std::optional<PriceTick> price_tick,
+                  const core::PriceTickRanges& price_tick_ranges,
                   const OrderCancel& cancel,
                   const OrderActionContext& context) -> OrderBookUpdates;
 

@@ -1,7 +1,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "core/tools/price_tick_ranges.hpp"
 #include "data_layer/api/models/listing.hpp"
+#include "data_layer/api/models/price_tick_range.hpp"
 #include "instruments/sources.hpp"
 
 namespace simulator::trading_system::instrument::test {
@@ -271,21 +273,30 @@ TEST_F(InstrumentsCreateInstrument, WithoutBloombergId) {
   EXPECT_EQ(instrument.bloomberg_id, std::nullopt);
 }
 
-TEST_F(InstrumentsCreateInstrument, WithPriceTick) {
-  const Listing listing =
-      Listing::create(make_listing_patch().with_price_tick_size(42.42), 43);
+TEST_F(InstrumentsCreateInstrument, WithPriceTickRangesInSavedRowOrder) {
+  using PriceTickRange = data_layer::PriceTickRange;
+  const Listing listing = Listing::create(
+      make_listing_patch()
+          .with_price_tick_range(PriceTickRange::Patch{}.with_tick_size(0.5))
+          .with_price_tick_range(PriceTickRange::Patch{}.with_tick_size(0.25))
+          .with_price_tick_range(
+              PriceTickRange::Patch{}.with_tick_size(0.01).with_upper_limit(
+                  10.0)),
+      43);
 
   const Instrument instrument = detail::create_instrument(listing);
 
-  EXPECT_THAT(instrument.price_tick, Optional(Eq(PriceTick{42.42})));
+  EXPECT_EQ(instrument.price_tick_ranges,
+            (core::PriceTickRanges{{.tick_size = 0.5},
+                                   {.tick_size = 0.01, .upper_limit = 10.0}}));
 }
 
-TEST_F(InstrumentsCreateInstrument, WithoutPriceTick) {
+TEST_F(InstrumentsCreateInstrument, WithoutPriceTickRanges) {
   const Listing listing = Listing::create(make_listing_patch(), 43);
 
   const Instrument instrument = detail::create_instrument(listing);
 
-  EXPECT_EQ(instrument.price_tick, std::nullopt);
+  EXPECT_EQ(instrument.price_tick_ranges, core::PriceTickRanges{});
 }
 
 TEST_F(InstrumentsCreateInstrument, WithQuantityTick) {

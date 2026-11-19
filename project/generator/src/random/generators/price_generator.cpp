@@ -1,12 +1,17 @@
 #include "ih/random/generators/price_generator.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 #include <optional>
 #include <utility>
 
+#include "core/domain/attributes.hpp"
 #include "core/tools/numeric.hpp"
 #include "ih/constants.hpp"
+#include "ih/market_data/market_state.hpp"
+#include "ih/random/generators/price_walk.hpp"
 #include "ih/random/generators/value_generator.hpp"
 #include "ih/random/utils.hpp"
 #include "ih/random/values/event.hpp"
@@ -22,6 +27,26 @@ auto divide_logs(double base, double val) -> double {
 auto geometric_series_sum(std::uint32_t count, double koef, double first_value)
     -> double {
   return (first_value * (1 - std::pow(koef, count))) / (1 - koef);
+}
+
+[[nodiscard]]
+auto best_price(const MarketState& actual_prices, Side side)
+    -> std::optional<double> {
+  const auto price = Utils::select_price(actual_prices, side);
+  return core::equal(price.value_or(0.), 0.) ? std::nullopt : price;
+}
+
+[[nodiscard]]
+auto minimal_spread(std::optional<double> configured_spread, double tick_size)
+    -> double {
+  return std::max(configured_spread.value_or(tick_size), tick_size);
+}
+
+[[nodiscard]]
+auto walk_direction(Event event) -> PriceDirection {
+  return event.is_buy_event() != event.is_resting_order_event()
+             ? PriceDirection::Up
+             : PriceDirection::Down;
 }
 
 }  // namespace
@@ -48,41 +73,55 @@ auto PriceGeneratorImpl::generate_px(
   assert(event.is_resting_order_event() || event.is_aggressive_order_event());
 
   GenerationDetails details{};
+  const auto& tick_ranges = params.get_price_tick_ranges();
+  const auto price_side = event.target_side();
 
-  const auto opt_base_price = resolve_base_price(actual_prices, params, event);
-  if (!opt_base_price.has_value()) {
-    const double configured_px =
-        resolve_configured_price(configured_prices, event);
+  const auto opposite_px =
+      best_price(actual_prices, Utils::opposite(price_side));
+  const auto market_px = opposite_px.has_value()
+                             ? opposite_px
+                             : best_price(actual_prices, price_side);
+  const double reference_px =
+      market_px.has_value()
+          ? *market_px
+          : resolve_configured_price(configured_prices, event);
+
+  details.price_tick_size = tick_size_at(reference_px, tick_ranges);
+  details.price_spread =
+      minimal_spread(params.get_price_spread(), details.price_tick_size);
+
+  if (!market_px.has_value()) {
     details.was_configured_px_used = true;
-    return std::make_pair(configured_px, details);
+    return std::make_pair(reference_px, details);
   }
 
-  const auto base_px = *opt_base_price;
+  const auto direction = walk_direction(event);
+  details.was_base_px_increment_added = direction == PriceDirection::Up;
+
+  const bool keeps_spread =
+      opposite_px.has_value() && event.is_resting_order_event();
+  const double base_px =
+      keeps_spread
+          ? shift_price(
+                reference_px, details.price_spread, direction, tick_ranges)
+          : reference_px;
   details.base_px = base_px;
 
-  // Add a random price increment to a base price for
-  // aggressive-buy and resting-sell orders
-  //
-  // Subtract a random price increment from a base price for
-  // aggressive-sell and resting-buy orders
-  const bool increment_px =
-      event.is_buy_event() ^ event.is_resting_order_event();
-  details.was_base_px_increment_added = increment_px;
+  const auto tick_count = generate_tick_count(params, details);
+  const auto walk = walk_price(base_px, direction, tick_count, tick_ranges);
+  details.random_tick = walk.distance;
+  details.base_px_increment = walk.distance;
 
-  const double tick = generate_tick(params, details);
-  details.base_px_increment = tick;
-
-  if (tick >= base_px) {
-    return std::make_pair(tick, details);
-  }
-
-  const double price = increment_px ? base_px + tick : base_px - tick;
-
-  return std::make_pair(price, details);
+  const double generated_px =
+      walk.distance >= base_px
+          ? distance_price(walk.distance, direction, tick_ranges)
+          : walk.price;
+  return std::make_pair(generated_px, details);
 }
 
-auto PriceGeneratorImpl::generate_tick(const PriceGenerationParams& params,
-                                       GenerationDetails& details) -> double {
+auto PriceGeneratorImpl::generate_tick_count(
+    const PriceGenerationParams& params, GenerationDetails& details)
+    -> std::uint32_t {
   constexpr int random_min = 0;
   const auto tick_range = params.get_price_tick_range();
 
@@ -100,43 +139,9 @@ auto PriceGeneratorImpl::generate_tick(const PriceGenerationParams& params,
   const auto log_num = (rand_value * (log_base - 1)) / log_base + 1;
   const double px_deviation = std::ceil(divide_logs(log_base, log_num));
 
-  const double random_tick = tick_range - px_deviation;
-  const double scaled_random_tick = random_tick * params.get_price_tick_size();
-
-  details.random_tick = scaled_random_tick;
-  return scaled_random_tick;
-}
-
-auto PriceGeneratorImpl::resolve_base_price(
-    const MarketState& actual_prices,
-    const PriceGenerationParams& generation_params,
-    random::Event event) -> std::optional<double> {
-  assert(event.is_aggressive_order_event() || event.is_resting_order_event());
-  assert(event.is_buy_event() || event.is_sell_event());
-  const auto price_side = event.target_side();
-
-  // Try resolve a base price as the best price for an opposite side
-  auto resolved_price =
-      Utils::select_price(actual_prices, Utils::opposite(price_side));
-  if (!resolved_price || core::equal(*resolved_price, 0.)) {
-    // In case an opposite side is empty (does not have the best price)
-    // try to resolve base price as the best price for a current side
-    // and return it immediately.
-    resolved_price = Utils::select_price(actual_prices, price_side);
-    return core::equal(resolved_price.value_or(0.), 0.) ? std::nullopt
-                                                        : resolved_price;
-  }
-
-  if (event.is_resting_order_event()) {
-    // Subtract spread from the resolved price if generating a buy price OR
-    // add spread to the resolved price if generating a sell price
-    resolved_price =
-        event.is_buy_event()
-            ? *resolved_price - generation_params.get_price_spread()
-            : *resolved_price + generation_params.get_price_spread();
-  }
-
-  return resolved_price;
+  const auto tick_count = static_cast<std::uint32_t>(tick_range - px_deviation);
+  details.random_tick_count = tick_count;
+  return tick_count;
 }
 
 auto PriceGeneratorImpl::resolve_configured_price(

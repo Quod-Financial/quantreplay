@@ -2,8 +2,8 @@
 #define SIMULATOR_GENERATOR_IH_RANDOM_GENERATORS_PRICE_GENERATOR_HPP_
 
 #include <cassert>
+#include <cstdint>
 #include <memory>
-#include <optional>
 #include <utility>
 
 #include "data_layer/api/models/price_seed.hpp"
@@ -18,12 +18,16 @@ namespace simulator::generator::random {
 class PriceGenerator {
  protected:
   struct GenerationDetails {
+    double price_tick_size{0.};
+    double price_spread{0.};
+
     double base_px{0.};
     double base_px_increment{0.};
     double random_tick{0.};
 
     int geometric_sum{0};
     int random_number{0};
+    std::uint32_t random_tick_count{0};
 
     bool was_base_px_increment_added{false};
     bool was_configured_px_used{false};
@@ -60,10 +64,13 @@ auto PriceGenerator::generate_price(
   assert(event.is_resting_order_event() || event.is_aggressive_order_event());
 
   auto step = make_step(tracer, "generating order price");
+  const auto [generated_px, details] =
+      generate_px(params, actual_prices, configured_prices, event);
+
   trace_input(step,
               make_value("priceTickRange", params.get_price_tick_range()));
-  trace_input(step, make_value("priceTickSize", params.get_price_tick_size()));
-  trace_input(step, make_value("priceSpread", params.get_price_spread()));
+  trace_input(step, make_value("priceTickSize", details.price_tick_size));
+  trace_input(step, make_value("priceSpread", details.price_spread));
   trace_input(
       step,
       make_value("bestBuyPrice", actual_prices.best_bid_price.value_or(0)));
@@ -82,9 +89,6 @@ auto PriceGenerator::generate_price(
   trace_input(
       step, make_value("currentSide", fmt::format("{}", event.target_side())));
 
-  const auto [generated_px, details] =
-      generate_px(params, actual_prices, configured_prices, event);
-
   if (details.was_configured_px_used) {
     trace_output(
         step,
@@ -94,6 +98,8 @@ auto PriceGenerator::generate_price(
   } else {
     trace_output(step, make_value("randomValue", details.random_number));
     trace_output(step, make_value("geometricSum", details.geometric_sum));
+    trace_output(step,
+                 make_value("randomTickCount", details.random_tick_count));
     trace_output(step, make_value("randomTick", details.random_tick));
 
     trace_output(step,
@@ -144,12 +150,8 @@ class PriceGeneratorImpl final : public random::PriceGenerator {
                    random::Event event)
       -> std::pair<double, GenerationDetails> override;
 
-  auto generate_tick(const PriceGenerationParams& params,
-                     GenerationDetails& details) -> double;
-
-  static auto resolve_base_price(const MarketState& actual_prices,
-                                 const PriceGenerationParams& generation_params,
-                                 random::Event event) -> std::optional<double>;
+  auto generate_tick_count(const PriceGenerationParams& params,
+                           GenerationDetails& details) -> std::uint32_t;
 
   static auto resolve_configured_price(
       const data_layer::PriceSeed& configured_prices, random::Event event)

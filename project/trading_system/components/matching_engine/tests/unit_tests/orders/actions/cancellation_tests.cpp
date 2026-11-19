@@ -1,5 +1,6 @@
 #include <gmock/gmock.h>
 
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/orders/actions/cancellation.hpp"
 #include "ih/orders/book/order_book.hpp"
 #include "ih/orders/book/order_book_update.hpp"
@@ -25,8 +26,11 @@ struct MatchingEngineCancellation : public Test {
   NiceMock<EventListenerMock> event_listener;
   OrderBuilder builder;
   OrderBook order_book;
-  Cancellation cancellation{
-      event_listener, order_book, std::nullopt, LimitOrderQueue::Regular};
+  const core::PriceTickRanges no_price_tick_ranges;
+  Cancellation cancellation{event_listener,
+                            order_book,
+                            no_price_tick_ranges,
+                            LimitOrderQueue::Regular};
 
   const protocol::Session client_session{protocol::generator::Session{}};
 
@@ -384,8 +388,11 @@ struct MatchingEngineTradeAtLastCancellation : public Test {
 
   NiceMock<EventListenerMock> event_listener;
   OrderBook order_book;
-  Cancellation cancellation{
-      event_listener, order_book, std::nullopt, LimitOrderQueue::TradeAtLast};
+  const core::PriceTickRanges no_price_tick_ranges;
+  Cancellation cancellation{event_listener,
+                            order_book,
+                            no_price_tick_ranges,
+                            LimitOrderQueue::TradeAtLast};
 
   const protocol::Session client_session{protocol::generator::Session{}};
 };

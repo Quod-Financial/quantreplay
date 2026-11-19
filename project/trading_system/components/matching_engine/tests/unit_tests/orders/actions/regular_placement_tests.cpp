@@ -1,5 +1,6 @@
 #include <gmock/gmock.h>
 
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/orders/actions/regular_placement.hpp"
 #include "ih/orders/book/order_book_update.hpp"
 #include "tests/mocks/event_listener_mock.hpp"
@@ -34,7 +35,9 @@ struct MatchingEngineRegularPlacement : public Test {
   NiceMock<EventListenerMock> event_listener;
   OrderBook order_book;
   NiceMock<RegularMatcherMock> matcher;
-  RegularPlacement regular_placement{event_listener, order_book, matcher};
+  const core::PriceTickRanges no_price_tick_ranges;
+  RegularPlacement regular_placement{
+      event_listener, order_book, matcher, no_price_tick_ranges};
 };
 
 struct MatchingEngineRegularPlacementLimitOrderImmediateOrCancel

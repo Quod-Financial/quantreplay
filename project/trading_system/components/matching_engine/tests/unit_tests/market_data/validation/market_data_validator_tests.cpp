@@ -1,6 +1,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <utility>
+
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/market_data/validation/market_data_validator.hpp"
 #include "tests/tools/order_book_notification_builder.hpp"
 
@@ -8,6 +11,8 @@ namespace simulator::trading_system::matching_engine::mdata::test {
 namespace {
 
 using namespace ::testing;
+
+// NOLINTBEGIN(*magic-numbers*)
 
 struct ValidationFixture {
   template <typename RequestType>
@@ -30,8 +35,8 @@ struct ValidationFixture {
     validator.configure(config);
   }
 
-  auto set_price_tick(PriceTick tick) -> void {
-    config.price_tick = tick;
+  auto set_price_tick_ranges(core::PriceTickRanges ranges) -> void {
+    config.price_tick_ranges = std::move(ranges);
     validator.configure(config);
   }
 
@@ -55,7 +60,7 @@ struct MarketStateInstrumentInfoValidation : public Test,
 TEST_F(MarketStateInstrumentInfoValidation,
        FailsWhenLowPriceIsNotMultipleOfTick) {
   instrument_info.low_price = Price{10};
-  set_price_tick(PriceTick{3});
+  set_price_tick_ranges({{.tick_size = 3}});
 
   const auto conclusion = validate(instrument_info);
 
@@ -65,7 +70,7 @@ TEST_F(MarketStateInstrumentInfoValidation,
 TEST_F(MarketStateInstrumentInfoValidation,
        FailsWhenHighPriceIsNotMultipleOfTick) {
   instrument_info.high_price = Price{10};
-  set_price_tick(PriceTick{3});
+  set_price_tick_ranges({{.tick_size = 3}});
 
   const auto conclusion = validate(instrument_info);
 
@@ -88,7 +93,7 @@ TEST_F(MarketStateInstrumentInfoValidation,
 TEST_F(MarketStateInstrumentInfoValidation, SucceedsWhenAllConstraintsAreMet) {
   instrument_info.low_price = Price{4};
   instrument_info.high_price = Price{10};
-  set_price_tick(PriceTick{2});
+  set_price_tick_ranges({{.tick_size = 2}});
 
   const auto conclusion = validate(instrument_info);
 
@@ -101,7 +106,7 @@ struct TradeValidation : public Test, public ValidationFixture {
 
 TEST_F(TradeValidation, FailsWhenPriceIsNotMultipleOfTick) {
   trade.trade_price = Price{10};
-  set_price_tick(PriceTick{3});
+  set_price_tick_ranges({{.tick_size = 3}});
 
   const auto conclusion = validate(trade);
 
@@ -140,7 +145,7 @@ TEST_F(TradeValidation, FailsWhenQuantityIsGreaterThanMaximum) {
 
 TEST_F(TradeValidation, SucceedsWhenAllConstraintsAreMet) {
   trade.trade_price = Price{15};
-  set_price_tick(PriceTick{5});
+  set_price_tick_ranges({{.tick_size = 5}});
 
   trade.traded_quantity = Quantity{8};
   set_quantity_tick(QuantityTick{2});
@@ -151,6 +156,8 @@ TEST_F(TradeValidation, SucceedsWhenAllConstraintsAreMet) {
 
   ASSERT_FALSE(conclusion.failed());
 }
+
+// NOLINTEND(*magic-numbers*)
 
 }  // namespace
 }  // namespace simulator::trading_system::matching_engine::mdata::test

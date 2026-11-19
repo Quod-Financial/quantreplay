@@ -33,12 +33,16 @@ class SelectQueryBuilder {
   auto with_eq_predicate(Column column, Value&& value, Sanitizer& sanitizer)
       -> void;
 
+  template <typename Column>
+  auto with_ascending_order_by(Column column) -> void;
+
   [[nodiscard]]
   auto compose() const -> std::string;
 
  private:
   std::string table_name_;
   std::string predicate_;
+  std::string order_by_;
 
   internal_pqxx::ColumnResolver column_resolver_;
   internal_pqxx::EnumerationResolver enum_resolver_;
@@ -74,13 +78,20 @@ inline auto SelectQueryBuilder::with_eq_predicate(Column column,
                            sanitizer(std::forward<Value>(value)));
 }
 
+template <typename Column>
+inline auto SelectQueryBuilder::with_ascending_order_by(Column column) -> void {
+  order_by_ = column_resolver_(column);
+}
+
 inline auto SelectQueryBuilder::compose() const -> std::string {
   assert(!table_name_.empty());  // Must be validated in c-tor
 
   const std::string predicate =
       predicate_.empty() ? "" : fmt::format(" WHERE {}", predicate_);
+  const std::string order =
+      order_by_.empty() ? "" : fmt::format(" ORDER BY {}", order_by_);
 
-  return fmt::format("SELECT * FROM {}{}", table_name_, predicate);
+  return fmt::format("SELECT * FROM {}{}{}", table_name_, predicate, order);
 }
 
 }  // namespace simulator::data_layer::internal_pqxx::detail

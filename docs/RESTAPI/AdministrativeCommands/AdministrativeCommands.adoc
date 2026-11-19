@@ -1281,7 +1281,7 @@ The request is processed by the instance of the venue named by venueId. When ven
 
 The listing is resolved from the identification properties of the request with the Instrument Resolution rules of the Market Simulator FIX Rules of Engagement, each property standing for the FIX field named in the table below. Only a listing whose engineType is Quoting accepts a quote.
 
-Each bid and ask entry needs a price and a quantity, and is checked against the qtyMinimum, qtyMaximum, qtyMultiple and priceTickSize of the listing, as the price and quantity of an order are; the quantity must be greater than zero. A quote may hold entries of one side only, but not of neither side. A crossed or locked quote, whose best bid price is greater than or equal to its best ask price, is accepted. The entries of each side are published in the order of the request, which is not checked to be by price.
+Each bid and ask entry needs a price and a quantity, and is checked against the qtyMinimum, qtyMaximum, qtyMultiple and <<adminsets-listings-pricetickranges,priceTickRanges>> of the listing, as the price and quantity of an order are; each entry price is checked against the tick size of its own price range, and the quantity must be greater than zero. A quote may hold entries of one side only, but not of neither side. A crossed or locked quote, whose best bid price is greater than or equal to its best ask price, is accepted. The entries of each side are published in the order of the request, which is not checked to be by price.
 
 Unknown properties are ignored. A property set to null is treated as absent, except bids and asks, which must be arrays when given.
 
@@ -1419,7 +1419,7 @@ The other reasons for a 400 Bad Request reply with the result `Failed to publish
 | An entry quantity is not greater than zero or is less than qtyMinimum | `minimal bid quantity constraint violated` / `minimal ask quantity constraint violated`
 | An entry quantity is greater than qtyMaximum | `maximal bid quantity constraint violated` / `maximal ask quantity constraint violated`
 | An entry quantity is not a multiple of qtyMultiple | `bid quantity multiple constraint violated` / `ask quantity multiple constraint violated`
-| An entry price is not a multiple of priceTickSize | `bid price tick constraint violated` / `ask price tick constraint violated`
+| An entry price is not a multiple of the tick size that priceTickRanges sets for its price range | `bid price tick constraint violated` / `ask price tick constraint violated`
 |===
 
 The bids are checked before the asks, and only the first violation found is reported.

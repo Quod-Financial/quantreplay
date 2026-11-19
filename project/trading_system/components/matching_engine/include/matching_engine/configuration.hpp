@@ -4,6 +4,7 @@
 #include <optional>
 
 #include "common/attributes.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 #include "core/tools/time.hpp"
 
 namespace simulator::trading_system::matching_engine {
@@ -11,7 +12,7 @@ namespace simulator::trading_system::matching_engine {
 struct Configuration {
   core::TzClock clock;
 
-  std::optional<PriceTick> order_price_tick = std::nullopt;
+  core::PriceTickRanges order_price_tick_ranges;
   std::optional<QuantityTick> order_quantity_tick = std::nullopt;
   std::optional<MinQuantity> order_min_quantity = std::nullopt;
   std::optional<MaxQuantity> order_max_quantity = std::nullopt;

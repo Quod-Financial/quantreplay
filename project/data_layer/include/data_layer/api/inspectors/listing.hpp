@@ -123,11 +123,6 @@ inline auto ListingReader<Marshaller>::read(const Listing& listing) -> void {
     marshaller_(Attribute::QtyMultiple, *value);
   }
 
-  if (const auto& value = listing.price_tick_size()) {
-    static_assert(can_marshall_v<decltype(*value)>);
-    marshaller_(Attribute::PriceTickSize, *value);
-  }
-
   if (const auto& value = listing.enabled_flag()) {
     static_assert(can_marshall_v<decltype(*value)>);
     marshaller_(Attribute::Enabled, *value);
@@ -299,11 +294,6 @@ inline auto ListingPatchReader<Marshaller>::read(const Listing::Patch& patch)
   if (const auto& value = patch.qty_multiple()) {
     static_assert(can_marshall_v<decltype(*value)>);
     marshaller_(Attribute::QtyMultiple, *value);
-  }
-
-  if (const auto& value = patch.price_tick_size()) {
-    static_assert(can_marshall_v<decltype(*value)>);
-    marshaller_(Attribute::PriceTickSize, *value);
   }
 
   if (const auto& value = patch.enabled_flag()) {
@@ -494,12 +484,6 @@ inline auto ListingPatchWriter<Unmarshaller>::write(Listing::Patch& patch)
   static_assert(can_unmarshall_v<decltype(qty_multiple)>);
   if (unmarshaller_(Attribute::QtyMultiple, qty_multiple)) {
     patch.with_qty_multiple(qty_multiple);
-  }
-
-  std::optional<double> price_tick_size;
-  static_assert(can_unmarshall_v<decltype(price_tick_size)>);
-  if (unmarshaller_(Attribute::PriceTickSize, price_tick_size)) {
-    patch.with_price_tick_size(price_tick_size);
   }
 
   std::optional<bool> enabled;

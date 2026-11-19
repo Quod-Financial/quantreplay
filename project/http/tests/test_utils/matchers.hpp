@@ -3,6 +3,10 @@
 
 #include <gmock/gmock.h>
 
+#include <optional>
+
+#include "data_layer/api/models/price_tick_range.hpp"
+
 namespace simulator::http::json::test {
 
 using namespace ::testing;
@@ -53,6 +57,16 @@ MATCHER_P(IsPatchFieldWithValue, matcher, "") {
     return false;
   }
   return ExplainMatchResult(matcher, arg.value(), result_listener);
+}
+
+[[nodiscard]]
+inline auto is_price_tick_range_patch(
+    double tick_size, const Matcher<std::optional<double>>& upper_limit)
+    -> Matcher<const data_layer::PriceTickRange::Patch&> {
+  using Patch = data_layer::PriceTickRange::Patch;
+  return AllOf(
+      Property("tick_size", &Patch::tick_size, Optional(DoubleEq(tick_size))),
+      Property("upper_limit", &Patch::upper_limit, upper_limit));
 }
 
 }  // namespace simulator::http::json::test

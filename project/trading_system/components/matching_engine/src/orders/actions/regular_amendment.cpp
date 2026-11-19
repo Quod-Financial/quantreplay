@@ -8,15 +8,16 @@
 
 namespace simulator::trading_system::matching_engine {
 
-RegularAmendment::RegularAmendment(EventListener& event_listener,
-                                   OrderBook& order_book,
-                                   RegularMatcher& matcher,
-                                   std::optional<PriceTick> price_tick,
-                                   LimitOrderQueue queue)
+RegularAmendment::RegularAmendment(
+    EventListener& event_listener,
+    OrderBook& order_book,
+    RegularMatcher& matcher,
+    const core::PriceTickRanges& price_tick_ranges,
+    LimitOrderQueue queue)
     : EventReporter{event_listener},
       order_book_{order_book},
       matcher_{matcher},
-      price_tick_{price_tick},
+      price_tick_ranges_{&price_tick_ranges},
       queue_{queue} {}
 
 auto RegularAmendment::operator()(LimitUpdate update) -> OrderBookUpdates {
@@ -68,7 +69,7 @@ auto RegularAmendment::amend_order(LimitUpdate update,
 
   order.amend(std::move(update.order_diff));
   emit(ClientNotification(
-      prepare_modification_confirmation(order, price_tick_)
+      prepare_modification_confirmation(order, *price_tick_ranges_)
           .with_execution_id(order.make_execution_id())
           .with_orig_client_order_id(update.orig_client_order_id)
           .build()));

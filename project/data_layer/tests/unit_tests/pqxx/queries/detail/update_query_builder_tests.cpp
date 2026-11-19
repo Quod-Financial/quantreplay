@@ -101,5 +101,19 @@ TEST_F(DataLayerPqxxUpdateQueryBuilder, Compose_WithReturning) {
             "RETURNING venue_id");
 }
 
+TEST_F(DataLayerPqxxUpdateQueryBuilder, HasNoColumnUpdatesWithoutColumnValue) {
+  builder.build(builder.make_data_extractor(sanitizer));
+
+  EXPECT_FALSE(builder.has_column_updates());
+}
+
+TEST_F(DataLayerPqxxUpdateQueryBuilder, HasColumnUpdatesWithColumnValue) {
+  auto data_extractor = builder.make_data_extractor(sanitizer);
+  data_extractor(Venue::Attribute::VenueId, "XETRA");
+  builder.build(data_extractor);
+
+  EXPECT_TRUE(builder.has_column_updates());
+}
+
 }  // namespace
 }  // namespace simulator::data_layer::internal_pqxx::detail::test

@@ -28,12 +28,13 @@ auto holds_target(MarketOrdersContainer& orders, const MarketUpdate& update)
 
 }  // namespace
 
-AuctionAmendment::AuctionAmendment(EventListener& event_listener,
-                                   OrderBook& order_book,
-                                   std::optional<PriceTick> price_tick)
+AuctionAmendment::AuctionAmendment(
+    EventListener& event_listener,
+    OrderBook& order_book,
+    const core::PriceTickRanges& price_tick_ranges)
     : EventReporter{event_listener},
       order_book_{&order_book},
-      price_tick_{price_tick} {}
+      price_tick_ranges_{&price_tick_ranges} {}
 
 auto AuctionAmendment::operator()(LimitUpdate update) -> OrderBookUpdates {
   OrderPage& page = order_book_->take_page(update.order_side);
@@ -46,7 +47,7 @@ auto AuctionAmendment::operator()(LimitUpdate update) -> OrderBookUpdates {
   RegularAmendment amendment{listener(),
                              *order_book_,
                              matcher,
-                             price_tick_,
+                             *price_tick_ranges_,
                              LimitOrderQueue::Regular};
   return amendment(std::move(update));
 }
@@ -58,7 +59,7 @@ auto AuctionAmendment::operator()(MarketUpdate update) -> OrderBookUpdates {
   }
 
   log::debug("running auction market order amendment operation");
-  MarketAmendment amendment{listener(), *order_book_, price_tick_};
+  MarketAmendment amendment{listener(), *order_book_, *price_tick_ranges_};
   return amendment(std::move(update));
 }
 
@@ -66,7 +67,7 @@ auto AuctionAmendment::rest_as_limit_order(LimitUpdate update, OrderPage& page)
     -> OrderBookUpdates {
   log::debug("running auction market to limit order amendment operation");
 
-  OrderTypeConversion conversion{listener(), price_tick_};
+  OrderTypeConversion conversion{listener(), *price_tick_ranges_};
   auto converted = conversion.to_auction_limit_order(std::move(update),
                                                      page.market_orders());
   if (!converted.has_value()) {
@@ -83,7 +84,7 @@ auto AuctionAmendment::rest_as_market_order(MarketUpdate update,
     -> OrderBookUpdates {
   log::debug("running auction limit to market order amendment operation");
 
-  OrderTypeConversion conversion{listener(), price_tick_};
+  OrderTypeConversion conversion{listener(), *price_tick_ranges_};
   auto converted =
       conversion.to_market_order(std::move(update), page.limit_orders());
   if (!converted.has_value()) {

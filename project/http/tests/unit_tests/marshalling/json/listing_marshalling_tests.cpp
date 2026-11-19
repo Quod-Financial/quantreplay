@@ -9,6 +9,7 @@
 
 #include "data_layer/api/models/listing.hpp"
 #include "data_layer/api/models/listing_random_price_source.hpp"
+#include "data_layer/api/models/price_tick_range.hpp"
 #include "ih/marshalling/json/listing.hpp"
 #include "tests/test_utils/matchers.hpp"
 
@@ -46,7 +47,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsListingID) {
     R"("id":42,)"
     R"("venueId":"dummy",)"
     R"("engineType":"Matching",)"
-    R"("randomPriceSources":[])"
+    R"("randomPriceSources":[],)"
+    R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -63,7 +65,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsSymbol) {
       R"("venueId":"dummy",)"
       R"("symbol":"AAPL",)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -79,7 +82,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsVenueID) {
       R"("id":42,)"
       R"("venueId":"NASDAQ",)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -96,7 +100,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsSecurityType) {
       R"("venueId":"dummy",)"
      R"("securityType":"Equity",)"
      R"("engineType":"Matching",)"
-     R"("randomPriceSources":[])"
+     R"("randomPriceSources":[],)"
+     R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -113,7 +118,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsPriceCurrency) {
       R"("venueId":"dummy",)"
       R"("priceCurrency":"USD",)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -130,7 +136,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsFxBaseCurrency) {
       R"("venueId":"dummy",)"
       R"("fxBaseCurrency":"USD",)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -147,7 +154,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsInstrSymbol) {
       R"("venueId":"dummy",)"
       R"("instrSymbol":"AAPL",)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -164,7 +172,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsQtyMinimum) {
       R"("venueId":"dummy",)"
       R"("qtyMinimum":42.42,)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -181,7 +190,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsQtyMaximum) {
       R"("venueId":"dummy",)"
       R"("qtyMaximum":42.42,)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -198,24 +208,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsQtyMultiple) {
       R"("venueId":"dummy",)"
       R"("qtyMultiple":42.42,)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
-  "}"};
-  // clang-format on
-
-  ASSERT_EQ(marshall(listing), expected_json);
-}
-
-TEST_F(HttpJsonListingMarshaller, MarshallsPriceTickSize) {
-  const auto patch = make_default_patch().with_price_tick_size(42.42);
-  const auto listing = Listing::create(patch, 42);
-
-  // clang-format off
-  const std::string expected_json{"{"
-      R"("id":42,)"
-      R"("venueId":"dummy",)"
-      R"("priceTickSize":42.42,)"
-      R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -232,7 +226,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsEnabled) {
       R"("venueId":"dummy",)"
       R"("enabled":false,)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -249,7 +244,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomQtyMaximum) {
       R"("venueId":"dummy",)"
       R"("randomQtyMaximum":42.42,)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -266,7 +262,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomDepthLevels) {
       R"("venueId":"dummy",)"
       R"("randomDepthLevels":42,)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -283,7 +280,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomPriceSpread) {
       R"("venueId":"dummy",)"
       R"("randomPriceSpread":42.42,)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -300,7 +298,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomUpdateRate) {
       R"("venueId":"dummy",)"
       R"("randomUpdateRate":42,)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -317,7 +316,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomTickRange) {
       R"("venueId":"dummy",)"
       R"("randomTickRange":42,)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -334,7 +334,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsSecurityExchange) {
       R"("venueId":"dummy",)"
       R"("securityExchange":"NASDAQ",)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -351,7 +352,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsPartyID) {
       R"("venueId":"dummy",)"
       R"("partyId":"Party",)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -368,7 +370,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsPartyRole) {
       R"("venueId":"dummy",)"
       R"("partyRole":"PartyRole",)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -385,7 +388,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsCusipID) {
       R"("venueId":"dummy",)"
       R"("cusipId":"Cusip",)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -402,7 +406,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsSedolID) {
       R"("venueId":"dummy",)"
       R"("sedolId":"Sedol",)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -419,7 +424,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsIsinID) {
       R"("venueId":"dummy",)"
       R"("isinId":"Isin",)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -436,7 +442,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRicID) {
       R"("venueId":"dummy",)"
       R"("ricId":"Ric",)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -453,7 +460,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsExchangeSymbolID) {
       R"("venueId":"dummy",)"
       R"("exchangeSymbolId":"EXC",)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -470,7 +478,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsBloombergSymbolID) {
       R"("venueId":"dummy",)"
       R"("bloombergSymbolId":"BBG",)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -487,7 +496,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomQtyMinimum) {
       R"("venueId":"dummy",)"
       R"("randomQtyMinimum":42.42,)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -504,7 +514,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomAmtMinimum) {
       R"("venueId":"dummy",)"
       R"("randomAmtMinimum":42.42,)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -521,7 +532,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomAmtMaximum) {
       R"("venueId":"dummy",)"
       R"("randomAmtMaximum":42.42,)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -539,7 +551,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomActionsEnabled) {
       R"("venueId":"dummy",)"
       R"("randomActionsEnabled":true,)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -558,7 +571,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomPriceExcludeCurrentListing) {
       R"("venueId":"dummy",)"
       R"("randomPriceExcludeCurrentListing":true,)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -575,7 +589,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsEngineType) {
       R"("id":42,)"
       R"("venueId":"dummy",)"
       R"("engineType":"Quoting",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -593,7 +608,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomAggressiveQtyMinimum) {
       R"("venueId":"dummy",)"
       R"("randomAggQtyMinimum":42.42,)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -611,7 +627,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomAggressiveQtyMaximum) {
       R"("venueId":"dummy",)"
       R"("randomAggQtyMaximum":42.42,)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -629,7 +646,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomAggressiveAmtMinimum) {
       R"("venueId":"dummy",)"
       R"("randomAggAmtMinimum":42.42,)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -647,7 +665,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomAggressiveAmtMaximum) {
       R"("venueId":"dummy",)"
       R"("randomAggAmtMaximum":42.42,)"
       R"("engineType":"Matching",)"
-      R"("randomPriceSources":[])"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -680,7 +699,8 @@ TEST_F(HttpJsonListingMarshaller, MarshallsRandomPriceSources) {
               R"("datasourceId":8,)"
               R"("symbol":"AAPL.N")"
             "}"
-        "]"
+        "],"
+      R"("priceTickRanges":[])"
   "}"};
   // clang-format on
 
@@ -706,6 +726,69 @@ TEST_F(HttpJsonListingMarshaller,
               R"("listingId":42,)"
               R"("symbol":"MSFT")"
             "}"
+        "],"
+      R"("priceTickRanges":[])"
+  "}"};
+  // clang-format on
+
+  ASSERT_EQ(marshall(listing), expected_json);
+}
+
+TEST_F(HttpJsonListingMarshaller, MarshallsPriceTickRangesInSavedOrder) {
+  using Range = data_layer::PriceTickRange::Patch;
+
+  auto patch = make_default_patch();
+  patch
+      .with_price_tick_range(
+          Range{}.with_tick_size(0.01).with_upper_limit(10.5))
+      .with_price_tick_range(
+          Range{}.with_tick_size(0.1).with_upper_limit(100.5))
+      .with_price_tick_range(
+          Range{}.with_tick_size(0.001).with_upper_limit(1.5));
+  const auto listing = Listing::create(patch, 42);
+
+  // clang-format off
+  const std::string expected_json{"{"
+      R"("id":42,)"
+      R"("venueId":"dummy",)"
+      R"("engineType":"Matching",)"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[)"
+            "{"
+              R"("tickSize":0.01,)"
+              R"("upperLimit":10.5)"
+            "},"
+            "{"
+              R"("tickSize":0.1,)"
+              R"("upperLimit":100.5)"
+            "},"
+            "{"
+              R"("tickSize":0.001,)"
+              R"("upperLimit":1.5)"
+            "}"
+        "]"
+  "}"};
+  // clang-format on
+
+  ASSERT_EQ(marshall(listing), expected_json);
+}
+
+TEST_F(HttpJsonListingMarshaller, OmitsUpperLimitOfPriceTickRangeWithoutOne) {
+  auto patch = make_default_patch();
+  patch.with_price_tick_range(
+      data_layer::PriceTickRange::Patch{}.with_tick_size(0.01));
+  const auto listing = Listing::create(patch, 42);
+
+  // clang-format off
+  const std::string expected_json{"{"
+      R"("id":42,)"
+      R"("venueId":"dummy",)"
+      R"("engineType":"Matching",)"
+      R"("randomPriceSources":[],)"
+      R"("priceTickRanges":[)"
+            "{"
+              R"("tickSize":0.01)"
+            "}"
         "]"
   "}"};
   // clang-format on
@@ -724,13 +807,15 @@ TEST_F(HttpJsonListingMarshaller, MarshallsListingsList) {
               R"("id":1,)"
               R"("venueId":"dummy",)"
               R"("engineType":"Matching",)"
-              R"("randomPriceSources":[])"
+              R"("randomPriceSources":[],)"
+              R"("priceTickRanges":[])"
             "},"
             "{"
               R"("id":2,)"
               R"("venueId":"dummy",)"
               R"("engineType":"Matching",)"
-              R"("randomPriceSources":[])"
+              R"("randomPriceSources":[],)"
+              R"("priceTickRanges":[])"
             "}"
         "]"
   "}"};
@@ -892,23 +977,6 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsQtyMultiple) {
   ListingUnmarshaller::unmarshall(json, patch);
 
   ASSERT_THAT(patch.qty_multiple(),
-              IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
-}
-
-TEST_F(HttpJsonListingUnmarshaller, UnmarshallsPriceTickSizeNull) {
-  constexpr std::string_view json{R"({"priceTickSize":null})"};
-
-  ListingUnmarshaller::unmarshall(json, patch);
-
-  ASSERT_THAT(patch.price_tick_size(), IsPatchFieldWithValue(std::nullopt));
-}
-
-TEST_F(HttpJsonListingUnmarshaller, UnmarshallsPriceTickSize) {
-  constexpr std::string_view json{R"({"priceTickSize":42.42})"};
-
-  ListingUnmarshaller::unmarshall(json, patch);
-
-  ASSERT_THAT(patch.price_tick_size(),
               IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
 }
 
@@ -1433,6 +1501,75 @@ TEST_F(HttpJsonListingUnmarshaller, UnmarshallsAbsentDatasourceId) {
               Optional(ElementsAre(Property(
                   &data_layer::ListingRandomPriceSource::Patch::datasource_id,
                   Eq(std::nullopt)))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller,
+       ThrowsExceptionOnUnmarshallingNotArrayPriceTickRangesValue) {
+  constexpr std::string_view json{R"({"priceTickRanges":{}})"};
+
+  ASSERT_THAT([&] { ListingUnmarshaller::unmarshall(json, patch); },
+              ThrowsMessage<std::runtime_error>(
+                  "can not parse `priceTickRanges' key in Listing JSON, "
+                  "which is not a JSON array"));
+}
+
+TEST_F(HttpJsonListingUnmarshaller,
+       ThrowsExceptionOnUnmarshallingPriceTickRangesInvalidElemType) {
+  constexpr std::string_view json{R"({"priceTickRanges":[5,1,2]})"};
+
+  ASSERT_THAT([&] { ListingUnmarshaller::unmarshall(json, patch); },
+              ThrowsMessage<std::runtime_error>(
+                  "can not parse a JSON object in `priceTickRanges' "
+                  "JSON array"));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsAbsentPriceTickRanges) {
+  constexpr std::string_view json{R"({"symbol":"AAPL"})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_FALSE(patch.price_tick_ranges().has_value());
+}
+
+TEST_F(HttpJsonListingUnmarshaller, IgnoresFormerPriceTickSizeKey) {
+  constexpr std::string_view json{R"({"priceTickSize":42.42})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_FALSE(patch.price_tick_ranges().has_value());
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsPriceTickRangesEmptyArray) {
+  constexpr std::string_view json{R"({"priceTickRanges":[]})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.price_tick_ranges(), Optional(IsEmpty()));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsPriceTickRangesInGivenOrder) {
+  constexpr std::string_view json{
+      R"({"priceTickRanges":[{"tickSize":0.01,"upperLimit":10.5},)"
+      R"({"tickSize":0.1},{"tickSize":0.001,"upperLimit":1.5}]})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(patch.price_tick_ranges(),
+              Optional(ElementsAre(
+                  is_price_tick_range_patch(0.01, Optional(DoubleEq(10.5))),
+                  is_price_tick_range_patch(0.1, Eq(std::nullopt)),
+                  is_price_tick_range_patch(0.001, Optional(DoubleEq(1.5))))));
+}
+
+TEST_F(HttpJsonListingUnmarshaller, UnmarshallsNullUpperLimitAsAbsent) {
+  constexpr std::string_view json{
+      R"({"priceTickRanges":[{"tickSize":0.01,"upperLimit":null}]})"};
+
+  ListingUnmarshaller::unmarshall(json, patch);
+
+  ASSERT_THAT(
+      patch.price_tick_ranges(),
+      Optional(ElementsAre(is_price_tick_range_patch(0.01, Eq(std::nullopt)))));
 }
 
 // NOLINTEND(*magic-numbers*)

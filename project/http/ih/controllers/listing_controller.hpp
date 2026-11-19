@@ -14,6 +14,7 @@
 #include "data_layer/api/models/datasource.hpp"
 #include "data_layer/api/models/listing.hpp"
 #include "data_layer/api/models/listing_random_price_source.hpp"
+#include "data_layer/api/models/price_tick_range.hpp"
 #include "ih/data_bridge/datasource_accessor.hpp"
 #include "ih/data_bridge/listing_accessor.hpp"
 
@@ -85,6 +86,20 @@ class ListingController {
       const data_layer::Datasource& datasource,
       const std::optional<std::string>& venue_id,
       SourcesOrigin origin) -> Validation;
+
+  [[nodiscard]]
+  static auto validate_price_tick_ranges(
+      const data_layer::Listing::Patch& patch) -> Validation;
+
+  [[nodiscard]]
+  static auto every_price_tick_range_has_tick_size(
+      const std::vector<data_layer::PriceTickRange::Patch>& price_tick_ranges)
+      -> Validation;
+
+  [[nodiscard]]
+  static auto at_most_one_price_tick_range_has_no_upper_limit(
+      const std::vector<data_layer::PriceTickRange::Patch>& price_tick_ranges)
+      -> Validation;
 
   static auto format_error_response(data_bridge::Failure failure)
       -> std::string;

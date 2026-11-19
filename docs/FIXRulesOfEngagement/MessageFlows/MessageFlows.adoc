@@ -147,7 +147,7 @@ NewOrderSingle message rejection reasons are listed in the table below:
 
 | OrderQty (38) is missing in NewOrderSingle request | – | ‘order quantity missing’
 
-| Value in Price (44) is not a multiple of the requested listing’s price tick | – | ‘order price tick constraint is violated’
+| Value in Price (44) is not a multiple of the price tick that the requested listing has for the price range containing that value | – | ‘order price tick constraint is violated’
 
 | Value in OrderQty (38) is not a multiple of the requested listing’s quantity multiple | – | ‘order quantity multiple constraint is violated’
 
@@ -297,7 +297,7 @@ Order is terminated (e.g. filled or cancelled)
 
 | OrderQty (38) is missing in NewOrderSingle request | – | ‘order quantity missing’
 
-| Value in Price (44) is not a multiple of the requested listing’s price tick | – | ‘order price tick constraint is violated’
+| Value in Price (44) is not a multiple of the price tick that the requested listing has for the price range containing that value | – | ‘order price tick constraint is violated’
 
 | Value in OrderQty (38) is not a multiple of the requested listing’s quantity multiple | – | ‘order quantity multiple constraint is violated’
 

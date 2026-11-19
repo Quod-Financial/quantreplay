@@ -6,6 +6,7 @@
 #include "ih/adaptation/generated_message.hpp"
 #include "ih/context/order_generation_context.hpp"
 #include "ih/random/algorithm/generation_algorithm.hpp"
+#include "ih/random/algorithm/utils/price_params_selector.hpp"
 #include "ih/random/algorithm/utils/quantity_params_selector.hpp"
 #include "ih/random/generators/counterparty_generator.hpp"
 #include "ih/random/generators/event_generator.hpp"
@@ -28,7 +29,7 @@ class OrderGenerationAlgorithm final : public random::GenerationAlgorithm {
       std::unique_ptr<CounterpartyGenerator> counterparty_generator,
       std::unique_ptr<RestingOrderActionGenerator> resting_action_generator,
       std::unique_ptr<PriceGenerator> price_generator,
-      std::unique_ptr<QuantityGenerator> qty_generator) noexcept;
+      std::unique_ptr<QuantityGenerator> qty_generator);
 
   static auto create(std::shared_ptr<OrderGenerationContext> algorithm_context)
       -> std::unique_ptr<OrderGenerationAlgorithm>;
@@ -124,6 +125,7 @@ class OrderGenerationAlgorithm final : public random::GenerationAlgorithm {
   std::unique_ptr<QuantityGenerator> qty_generator_;
 
   QuantityParamsSelector quantity_params_selector_;
+  PriceParamsSelector price_params_selector_;
 };
 
 }  // namespace simulator::generator::random

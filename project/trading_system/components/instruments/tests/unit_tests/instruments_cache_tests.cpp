@@ -70,7 +70,7 @@ struct InstrumentsInstrumentsCacheFind : InstrumentsInstrumentsCache {
     instrument.exchange_id = ExchangeId{"ExchangeID"};
     instrument.bloomberg_id = BloombergId{"BloombergID"};
     instrument.database_id = DatabaseId{42};
-    instrument.price_tick = PriceTick{42.42};
+    instrument.price_tick_ranges = core::PriceTickRanges{{.tick_size = 42.42}};
     instrument.quantity_tick = QuantityTick{42.42};
     instrument.min_quantity = MinQuantity{42.42};
     instrument.max_quantity = MaxQuantity{42.42};

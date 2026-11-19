@@ -10,10 +10,10 @@ namespace simulator::trading_system::matching_engine {
 
 MarketAmendment::MarketAmendment(EventListener& event_listener,
                                  OrderBook& order_book,
-                                 std::optional<PriceTick> price_tick)
+                                 const core::PriceTickRanges& price_tick_ranges)
     : EventReporter{event_listener},
       order_book_{order_book},
-      price_tick_{price_tick} {}
+      price_tick_ranges_{&price_tick_ranges} {}
 
 auto MarketAmendment::operator()(MarketUpdate update) -> OrderBookUpdates {
   log::debug("running market order amendment operation");
@@ -63,7 +63,7 @@ auto MarketAmendment::amend_order(MarketUpdate update, OrderPage& page)
 
   order.amend(std::move(update.order_diff));
   emit(ClientNotification(
-      prepare_modification_confirmation(order, price_tick_)
+      prepare_modification_confirmation(order, *price_tick_ranges_)
           .with_execution_id(order.make_execution_id())
           .with_orig_client_order_id(update.orig_client_order_id)
           .build()));

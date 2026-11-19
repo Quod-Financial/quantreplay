@@ -8,7 +8,6 @@ SIMULATOR_DEFINE_ATTRIBUTE(simulator::trading_system, InstrumentId, Arithmetic);
 SIMULATOR_DEFINE_ATTRIBUTE(simulator::trading_system, DatabaseId, Arithmetic);
 SIMULATOR_DEFINE_ATTRIBUTE(simulator::trading_system, OrderId, Arithmetic);
 SIMULATOR_DEFINE_ATTRIBUTE(simulator::trading_system, OrderTime, UtcTimestamp);
-SIMULATOR_DEFINE_ATTRIBUTE(simulator::trading_system, PriceTick, Arithmetic);
 SIMULATOR_DEFINE_ATTRIBUTE(simulator::trading_system, QuantityTick, Arithmetic);
 SIMULATOR_DEFINE_ATTRIBUTE(simulator::trading_system, CusipId, Derived);
 SIMULATOR_DEFINE_ATTRIBUTE(simulator::trading_system, SedolId, Derived);

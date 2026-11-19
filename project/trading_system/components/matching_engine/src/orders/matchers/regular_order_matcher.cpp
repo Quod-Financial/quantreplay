@@ -14,14 +14,15 @@
 
 namespace simulator::trading_system::matching_engine {
 
-RegularOrderMatcher::RegularOrderMatcher(EventListener& event_listener,
-                                         OrderBook& order_book,
-                                         std::optional<PriceTick> price_tick,
-                                         MarketPhase market_phase,
-                                         LimitOrderQueue queue)
+RegularOrderMatcher::RegularOrderMatcher(
+    EventListener& event_listener,
+    OrderBook& order_book,
+    const core::PriceTickRanges& price_tick_ranges,
+    MarketPhase market_phase,
+    LimitOrderQueue queue)
     : EventReporter{event_listener},
       order_book_{order_book},
-      price_tick_{price_tick},
+      price_tick_ranges_{&price_tick_ranges},
       market_phase_{market_phase},
       queue_{queue} {}
 
@@ -111,7 +112,7 @@ auto RegularOrderMatcher::trade_taker(LimitOrder& taker,
     maker->execute(trade_qty, trade_px);
 
     emit(ClientNotification(
-        prepare_execution_report(taker, price_tick_)
+        prepare_execution_report(taker, *price_tick_ranges_)
             .with_execution_id(taker.make_execution_id())
             .with_execution_price(trade_px)
             .with_executed_quantity(trade_qty)
@@ -119,7 +120,7 @@ auto RegularOrderMatcher::trade_taker(LimitOrder& taker,
             .build()));
 
     emit(ClientNotification(
-        prepare_execution_report(*maker, price_tick_)
+        prepare_execution_report(*maker, *price_tick_ranges_)
             .with_execution_id(maker->make_execution_id())
             .with_execution_price(trade_px)
             .with_executed_quantity(trade_qty)
@@ -157,7 +158,7 @@ auto RegularOrderMatcher::trade_ioc_taker(
     maker->execute(trade_qty, trade_px);
 
     emit(ClientNotification(
-        prepare_execution_report(taker, price_tick_)
+        prepare_execution_report(taker, *price_tick_ranges_)
             .with_execution_id(taker.make_execution_id())
             .with_execution_price(trade_px)
             .with_executed_quantity(trade_qty)
@@ -165,7 +166,7 @@ auto RegularOrderMatcher::trade_ioc_taker(
             .build()));
 
     emit(ClientNotification(
-        prepare_execution_report(*maker, price_tick_)
+        prepare_execution_report(*maker, *price_tick_ranges_)
             .with_execution_id(maker->make_execution_id())
             .with_execution_price(trade_px)
             .with_executed_quantity(trade_qty)
@@ -179,15 +180,15 @@ auto RegularOrderMatcher::trade_ioc_taker(
 
   if (!taker.executed()) {
     taker.cancel();
-    emit(
-        ClientNotification(prepare_cancellation_confirmation(taker, price_tick_)
-                               .with_leaving_quantity(LeavesQuantity{0})
-                               .with_execution_id(taker.make_execution_id())
-                               .with_client_order_id(taker.client_order_id())
-                               .with_cancellation_text(CancellationText{
-                                   "not enough liquidity to fully fill IoC "
-                                   "order"})
-                               .build()));
+    emit(ClientNotification(
+        prepare_cancellation_confirmation(taker, *price_tick_ranges_)
+            .with_leaving_quantity(LeavesQuantity{0})
+            .with_execution_id(taker.make_execution_id())
+            .with_client_order_id(taker.client_order_id())
+            .with_cancellation_text(
+                CancellationText{"not enough liquidity to fully fill IoC "
+                                 "order"})
+            .build()));
   }
 }
 
@@ -216,7 +217,7 @@ auto RegularOrderMatcher::trade_market_taker(
     maker->execute(trade_qty, trade_px);
 
     emit(ClientNotification(
-        prepare_execution_report(taker, price_tick_)
+        prepare_execution_report(taker, *price_tick_ranges_)
             .with_execution_id(taker.make_execution_id())
             .with_execution_price(trade_px)
             .with_executed_quantity(trade_qty)
@@ -224,7 +225,7 @@ auto RegularOrderMatcher::trade_market_taker(
             .build()));
 
     emit(ClientNotification(
-        prepare_execution_report(*maker, price_tick_)
+        prepare_execution_report(*maker, *price_tick_ranges_)
             .with_execution_id(maker->make_execution_id())
             .with_execution_price(trade_px)
             .with_executed_quantity(trade_qty)
@@ -239,7 +240,7 @@ auto RegularOrderMatcher::trade_market_taker(
   if (!taker.executed()) {
     taker.cancel();
     emit(ClientNotification(
-        prepare_cancellation_confirmation(taker, price_tick_)
+        prepare_cancellation_confirmation(taker, *price_tick_ranges_)
             .with_leaving_quantity(LeavesQuantity{0})
             .with_execution_id(taker.make_execution_id())
             .with_client_order_id(taker.client_order_id())

@@ -9,6 +9,7 @@
 #include "api/models/listing_random_price_source.hpp"
 #include "api/models/market_phase.hpp"
 #include "api/models/price_seed.hpp"
+#include "api/models/price_tick_range.hpp"
 #include "api/models/setting.hpp"
 #include "api/models/venue.hpp"
 
@@ -33,6 +34,8 @@ class ColumnResolver {
 
   auto operator()(PriceSeed::Attribute attribute) const -> std::string;
 
+  auto operator()(PriceTickRange::Attribute attribute) const -> std::string;
+
   auto operator()(Setting::Attribute attribute) const -> std::string;
 
   auto operator()(Venue::Attribute attribute) const -> std::string;
@@ -55,6 +58,9 @@ class ColumnResolver {
   static auto to_column_name(MarketPhase::Attribute attribute) -> std::string;
 
   static auto to_column_name(PriceSeed::Attribute attribute) -> std::string;
+
+  static auto to_column_name(PriceTickRange::Attribute attribute)
+      -> std::string;
 
   static auto to_column_name(Setting::Attribute attribute) -> std::string;
 

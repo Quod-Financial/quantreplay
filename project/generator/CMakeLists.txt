@@ -79,6 +79,7 @@ add_static_library(
     ih/random/generators/counterparty_generator.hpp
     ih/random/generators/event_generator.hpp
     ih/random/generators/price_generator.hpp
+    ih/random/generators/price_walk.hpp
     ih/random/generators/quantity_generator.hpp
     ih/random/generators/resting_order_action_generator.hpp
     ih/random/generators/value_generator.hpp
@@ -146,10 +147,12 @@ add_static_library(
     src/market_data/subscription/subscription_manager.cpp
     src/market_data/utils.cpp
     src/random/algorithm/order_generation_algorithm.cpp
+    src/random/algorithm/utils/price_params_selector.cpp
     src/random/algorithm/utils/quantity_params_selector.cpp
     src/random/generators/counterparty_generator.cpp
     src/random/generators/event_generator.cpp
     src/random/generators/price_generator.cpp
+    src/random/generators/price_walk.cpp
     src/random/generators/quantity_generator.cpp
     src/random/generators/resting_order_action_generator.cpp
     src/random/generators/value_generator_impl.cpp

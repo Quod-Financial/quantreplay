@@ -2,10 +2,11 @@
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_MATCHERS_REGULAR_ORDER_MATCHER_HPP_
 
 #include <functional>
-#include <optional>
+#include <gsl/pointers>
 
-#include "common/attributes.hpp"
+#include "core/domain/attributes.hpp"
 #include "core/domain/market_phase.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/common/abstractions/event_listener.hpp"
 #include "ih/common/events/event_reporter.hpp"
 #include "ih/orders/book/order_book.hpp"
@@ -17,7 +18,7 @@ class RegularOrderMatcher : public RegularMatcher, private EventReporter {
  public:
   RegularOrderMatcher(EventListener& event_listener,
                       OrderBook& order_book,
-                      std::optional<PriceTick> price_tick,
+                      const core::PriceTickRanges& price_tick_ranges,
                       MarketPhase market_phase,
                       LimitOrderQueue queue);
 
@@ -71,7 +72,7 @@ class RegularOrderMatcher : public RegularMatcher, private EventReporter {
       -> std::pair<ExecutionPrice, ExecutedQuantity>;
 
   OrderBook& order_book_;
-  std::optional<PriceTick> price_tick_;
+  gsl::not_null<const core::PriceTickRanges*> price_tick_ranges_;
   MarketPhase market_phase_;
   LimitOrderQueue queue_;
 };

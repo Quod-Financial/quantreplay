@@ -1,11 +1,12 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_REPLIES_EXECUTION_REPLY_BUILDERS_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_REPLIES_EXECUTION_REPLY_BUILDERS_HPP_
 
+#include <gsl/pointers>
 #include <optional>
 
-#include "common/attributes.hpp"
 #include "core/domain/attributes.hpp"
 #include "core/domain/party.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/orders/book/limit_order.hpp"
 #include "ih/orders/book/market_order.hpp"
 #include "protocol/app/execution_report.hpp"
@@ -16,7 +17,7 @@ namespace simulator::trading_system::matching_engine {
 class ExecutionReportBuilder {
  public:
   ExecutionReportBuilder(protocol::Session session,
-                         std::optional<PriceTick> price_tick);
+                         const core::PriceTickRanges& price_tick_ranges);
 
   [[nodiscard]]
   auto build() const -> protocol::ExecutionReport;
@@ -37,17 +38,17 @@ class ExecutionReportBuilder {
 
  private:
   protocol::ExecutionReport message_;
-  std::optional<PriceTick> price_tick_;
+  gsl::not_null<const core::PriceTickRanges*> price_tick_ranges_;
 };
 
 [[nodiscard]]
 auto prepare_execution_report(const LimitOrder& order,
-                              std::optional<PriceTick> price_tick)
+                              const core::PriceTickRanges& price_tick_ranges)
     -> ExecutionReportBuilder;
 
 [[nodiscard]]
 auto prepare_execution_report(const MarketOrder& order,
-                              std::optional<PriceTick> price_tick)
+                              const core::PriceTickRanges& price_tick_ranges)
     -> ExecutionReportBuilder;
 
 }  // namespace simulator::trading_system::matching_engine

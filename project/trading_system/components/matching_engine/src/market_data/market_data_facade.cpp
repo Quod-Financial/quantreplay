@@ -16,10 +16,11 @@ namespace {
 auto setup_market_data_validator(const Configuration& configuration)
     -> std::unique_ptr<mdata::Validator> {
   auto validator = std::make_unique<mdata::MarketDataValidation>();
-  validator->configure({.min_quantity = configuration.order_min_quantity,
-                        .max_quantity = configuration.order_max_quantity,
-                        .quantity_tick = configuration.order_quantity_tick,
-                        .price_tick = configuration.order_price_tick});
+  validator->configure(
+      {.min_quantity = configuration.order_min_quantity,
+       .max_quantity = configuration.order_max_quantity,
+       .quantity_tick = configuration.order_quantity_tick,
+       .price_tick_ranges = configuration.order_price_tick_ranges});
   return validator;
 }
 

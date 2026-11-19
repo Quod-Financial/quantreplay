@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/orders/book/order_updates.hpp"
 #include "ih/orders/replies/modification_reply_builders.hpp"
 #include "tools/order_builder.hpp"
@@ -16,9 +17,14 @@ using namespace ::testing;  // NOLINT
 
 struct ModificationConfirmationBuilder : public Test {
   const protocol::Session test_session{protocol::generator::Session{}};
+  const core::PriceTickRanges no_price_tick_ranges;
+  const core::PriceTickRanges price_tick_ranges{
+      {.tick_size = 0.1, .upper_limit = 10.0},
+      {.tick_size = 0.5, .upper_limit = 20.0},
+      {.tick_size = 2.0}};
   OrderBuilder order_builder;
-  matching_engine::ModificationConfirmationBuilder builder{test_session,
-                                                           std::nullopt};
+  matching_engine::ModificationConfirmationBuilder builder{
+      test_session, no_price_tick_ranges};
 };
 
 TEST_F(ModificationConfirmationBuilder, BuildsConfirmationForSession) {
@@ -174,16 +180,32 @@ TEST_F(ModificationConfirmationBuilder, RoundsAveragePriceToPriceTick) {
   limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
 
   const auto confirmation =
-      matching_engine::ModificationConfirmationBuilder{test_session,
-                                                       PriceTick{0.1}}
+      matching_engine::ModificationConfirmationBuilder{
+          test_session, core::PriceTickRanges{{.tick_size = 0.1}}}
           .for_order(limit_order)
           .build();
 
   ASSERT_THAT(confirmation.average_price, Optional(Eq(AveragePrice{10.1})));
 }
 
+TEST_F(ModificationConfirmationBuilder, RoundsAveragePriceToTickOfItsRange) {
+  auto limit_order = order_builder.with_order_price(OrderPrice{22.0})
+                         .with_order_quantity(OrderQuantity{10})
+                         .build_limit_order();
+  limit_order.execute(ExecutedQuantity{4}, ExecutionPrice{10.5});
+  limit_order.execute(ExecutedQuantity{6}, ExecutionPrice{11.0});
+
+  const auto confirmation =
+      matching_engine::ModificationConfirmationBuilder{test_session,
+                                                       price_tick_ranges}
+          .for_order(limit_order)
+          .build();
+
+  ASSERT_THAT(confirmation.average_price, Optional(Eq(AveragePrice{11.0})));
+}
+
 TEST_F(ModificationConfirmationBuilder,
-       DoesNotRoundAveragePriceWhenPriceTickIsNullopt) {
+       DoesNotRoundAveragePriceWithoutPriceTickRanges) {
   auto limit_order =
       order_builder.with_order_quantity(OrderQuantity{10}).build_limit_order();
   limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
@@ -194,14 +216,16 @@ TEST_F(ModificationConfirmationBuilder,
   ASSERT_THAT(confirmation.average_price, Optional(Eq(AveragePrice{10.05})));
 }
 
-TEST_F(ModificationConfirmationBuilder, PrepareFactoryForwardsPriceTick) {
+TEST_F(ModificationConfirmationBuilder, PrepareFactoryForwardsPriceTickRanges) {
   auto limit_order =
       order_builder.with_order_quantity(OrderQuantity{10}).build_limit_order();
   limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
   limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
 
   const auto confirmation =
-      prepare_modification_confirmation(limit_order, PriceTick{0.1}).build();
+      prepare_modification_confirmation(
+          limit_order, core::PriceTickRanges{{.tick_size = 0.1}})
+          .build();
 
   ASSERT_THAT(confirmation.average_price, Optional(Eq(AveragePrice{10.1})));
 }
@@ -260,7 +284,7 @@ TEST_F(ModificationConfirmationBuilder, PrepareFactoryBuildsForMarketOrder) {
   const auto order = order_builder.build_market_order();
 
   const auto confirmation =
-      prepare_modification_confirmation(order, std::nullopt).build();
+      prepare_modification_confirmation(order, no_price_tick_ranges).build();
 
   ASSERT_THAT(confirmation.order_type, Optional(Eq(OrderType::Option::Market)));
 }

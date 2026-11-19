@@ -1,6 +1,7 @@
 #include "ih/quotes/quote_validator.hpp"
 
 #include <cstdint>
+#include <gsl/pointers>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -9,6 +10,7 @@
 #include "common/attributes.hpp"
 #include "common/checker_utils.hpp"
 #include "common/validation.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 #include "protocol/admin/quote.hpp"
 
 namespace simulator::trading_system::quoting_engine {
@@ -99,21 +101,22 @@ class QuantityRespectsTick {
 
 class PriceRespectsTick {
  public:
-  explicit PriceRespectsTick(std::optional<PriceTick> tick) : tick_{tick} {}
+  explicit PriceRespectsTick(const core::PriceTickRanges& tick_ranges)
+      : tick_ranges_{&tick_ranges} {}
 
   auto operator()(const protocol::QuoteEntry& entry) const
       -> std::optional<Rule> {
-    return field_respects_tick(entry.price, tick_, Rule::PriceTick);
+    return price_respects_tick(entry.price, *tick_ranges_, Rule::PriceTick);
   }
 
  private:
-  std::optional<PriceTick> tick_;
+  gsl::not_null<const core::PriceTickRanges*> tick_ranges_;
 };
 
 }  // namespace
 
 QuoteValidator::QuoteValidator(const Instrument& instrument)
-    : price_tick_{instrument.price_tick},
+    : price_tick_ranges_{instrument.price_tick_ranges},
       quantity_tick_{instrument.quantity_tick},
       min_quantity_{instrument.min_quantity},
       max_quantity_{instrument.max_quantity} {}
@@ -142,7 +145,7 @@ auto QuoteValidator::find_violation(
     validation.expect(QuantityRespectsMinimum{min_quantity_})
         .expect(QuantityRespectsMaximum{max_quantity_})
         .expect(QuantityRespectsTick{quantity_tick_})
-        .expect(PriceRespectsTick{price_tick_});
+        .expect(PriceRespectsTick{price_tick_ranges_});
 
     if (!validation.successful()) {
       return std::make_optional<std::string>(validation.error_description());

@@ -33,6 +33,7 @@ add_static_library(
     include/core/tools/format.hpp
     include/core/tools/numeric.hpp
     include/core/tools/overload.hpp
+    include/core/tools/price_tick_ranges.hpp
     include/core/tools/string_checkers.hpp
     include/core/tools/time.hpp
     include/core/version.hpp
@@ -43,6 +44,7 @@ add_static_library(
     src/domain/composites.cpp
     src/domain/enumerators.cpp
     src/tools/fix_session.cpp
+    src/tools/price_tick_ranges.cpp
     src/tools/string_checkers.cpp
     src/tools/time.cpp
     src/version.cpp

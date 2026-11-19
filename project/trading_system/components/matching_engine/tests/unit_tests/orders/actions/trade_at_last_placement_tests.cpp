@@ -6,6 +6,7 @@
 #include <string_view>
 
 #include "core/domain/market_phase.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 #include "core/tools/time.hpp"
 #include "ih/orders/actions/trade_at_last_actions.hpp"
 #include "ih/orders/book/order_book.hpp"
@@ -101,9 +102,10 @@ struct MatchingEngineTradeAtLastPlacement : public Test {
 
   NiceMock<EventListenerMock> event_listener;
   OrderBook order_book;
+  const core::PriceTickRanges no_price_tick_ranges;
   RegularOrderMatcher matcher{event_listener,
                               order_book,
-                              std::nullopt,
+                              no_price_tick_ranges,
                               TradeAtLastPhase,
                               LimitOrderQueue::TradeAtLast};
 };

@@ -92,22 +92,19 @@ auto ListingDao::insert(const Listing::Patch& snapshot,
         inserted_id, *random_price_sources, transaction_handler);
   }
 
+  if (const auto& price_tick_ranges = snapshot.price_tick_ranges()) {
+    insert_price_tick_ranges(
+        inserted_id, *price_tick_ranges, transaction_handler);
+  }
+
   return select_single(inserted_id, transaction_handler);
 }
 
 auto ListingDao::select_single(const Predicate& predicate,
                                Transaction::Handler transaction_handler)
     -> Listing {
-  using Query = listing_query::Select;
-  ValueSanitizer sanitizer{connection_};
-  const std::string query = Query::prepare().by(predicate, sanitizer).compose();
-
-  log::debug("executing `{}'", query);
-  const pqxx::row selected = transaction_handler.exec1(query);
-  log::debug("listing selection query executed");
-
-  Listing selected_listing = decode_listing(selected, transaction_handler);
-  return selected_listing;
+  return decode_listing(select_row(predicate, transaction_handler),
+                        transaction_handler);
 }
 
 auto ListingDao::select_single(std::uint64_t listing_id,
@@ -156,21 +153,19 @@ auto ListingDao::select_all(const std::optional<Predicate>& predicate,
 auto ListingDao::update(const Listing::Patch& patch,
                         const Predicate& predicate,
                         Transaction::Handler transaction_handler) -> Listing {
-  using Query = listing_query::Update;
-
   ValueSanitizer sanitizer{connection_};
-  const std::string query = Query::prepare(patch, sanitizer)
-                                .by(predicate, sanitizer)
-                                .returning_id()
-                                .compose();
+  auto column_update = listing_query::Update::prepare(patch, sanitizer);
 
-  log::debug("executing `{}'", query);
-  const pqxx::row result = transaction_handler.exec1(query);
-  log::debug("listing update query was executed");
-
-  log::debug("decoding an updated listing record identifier");
-  const std::uint64_t updated_id = ListingParser::parse_identifier(result);
-  log::debug("updated listing identifier was decoded - `{}'", updated_id);
+  // A patch with price tick ranges and no column only looks the listing up.
+  const bool lookup_only = patch.price_tick_ranges().has_value() &&
+                           !column_update.has_column_updates();
+  const std::uint64_t updated_id =
+      lookup_only
+          ? ListingParser::parse_identifier(
+                select_row(predicate, transaction_handler))
+          : update_columns(
+                column_update.by(predicate, sanitizer).returning_id().compose(),
+                transaction_handler);
 
   if (const auto& patched_sources = patch.random_price_sources()) {
     drop_random_price_sources(updated_id, transaction_handler);
@@ -178,7 +173,39 @@ auto ListingDao::update(const Listing::Patch& patch,
         updated_id, *patched_sources, transaction_handler);
   }
 
+  if (const auto& patched_ranges = patch.price_tick_ranges()) {
+    drop_price_tick_ranges(updated_id, transaction_handler);
+    insert_price_tick_ranges(updated_id, *patched_ranges, transaction_handler);
+  }
+
   return select_single(updated_id, transaction_handler);
+}
+
+auto ListingDao::update_columns(const std::string& query,
+                                Transaction::Handler transaction_handler)
+    -> std::uint64_t {
+  log::debug("executing `{}'", query);
+  const pqxx::row result = transaction_handler.exec1(query);
+  log::debug("listing update query was executed");
+
+  log::debug("decoding an updated listing record identifier");
+  const std::uint64_t updated_id = ListingParser::parse_identifier(result);
+  log::debug("updated listing identifier was decoded - `{}'", updated_id);
+  return updated_id;
+}
+
+auto ListingDao::select_row(const Predicate& predicate,
+                            Transaction::Handler transaction_handler) const
+    -> pqxx::row {
+  using Query = listing_query::Select;
+
+  ValueSanitizer sanitizer{connection_};
+  const std::string query = Query::prepare().by(predicate, sanitizer).compose();
+
+  log::debug("executing `{}'", query);
+  pqxx::row selected = transaction_handler.exec1(query);
+  log::debug("listing selection query executed");
+  return selected;
 }
 
 auto ListingDao::decode_listing(const pqxx::row& row,
@@ -194,6 +221,11 @@ auto ListingDao::decode_listing(const pqxx::row& row,
                 [&](ListingRandomPriceSource::Patch&& entry) {
                   parsed.with_random_price_source(std::move(entry));
                 });
+
+  for (const PriceTickRange::Patch& range_patch :
+       select_price_tick_ranges(parsed_id, transaction_handler)) {
+    parsed.with_price_tick_range(range_patch);
+  }
 
   return Listing::create(std::move(parsed), parsed_id);
 }
@@ -290,6 +322,69 @@ auto ListingDao::drop_random_price_sources(
       "identifier",
       result.affected_rows(),
       listing_id);
+}
+
+auto ListingDao::insert_price_tick_ranges(
+    std::uint64_t listing_id,
+    const std::vector<PriceTickRange::Patch>& patches,
+    Transaction::Handler transaction_handler) const -> void {
+  using Query = price_tick_range_query::Insert;
+
+  ValueSanitizer sanitizer{connection_};
+  log::debug("inserting {} price tick range records", patches.size());
+
+  // Unlike a random price source, a failed row fails the whole command.
+  for (std::size_t row_position = 0; row_position < patches.size();
+       ++row_position) {
+    const PriceTickRange range = PriceTickRange::create(patches[row_position]);
+    const std::string query =
+        Query::prepare(listing_id, range, row_position, sanitizer).compose();
+
+    log::debug("executing `{}'", query);
+    transaction_handler.exec0(query);
+    log::debug("price tick range insertion query executed");
+  }
+}
+
+auto ListingDao::select_price_tick_ranges(
+    std::uint64_t listing_id, Transaction::Handler transaction_handler) const
+    -> std::vector<PriceTickRange::Patch> {
+  using Query = price_tick_range_query::Select;
+
+  ValueSanitizer sanitizer{connection_};
+  const std::string query =
+      Query::prepare().by_listing_id(listing_id, sanitizer).compose();
+
+  log::debug("executing `{}'", query);
+  const pqxx::result selected = transaction_handler.exec(query);
+  log::debug(
+      "{} price tick range records selected with `{}' listing identifier",
+      selected.size(),
+      listing_id);
+
+  std::vector<PriceTickRange::Patch> patches;
+  patches.reserve(static_cast<std::size_t>(selected.size()));
+  for (const pqxx::row& row : selected) {
+    patches.emplace_back(PriceTickRangeParser::parse(row));
+  }
+
+  return patches;
+}
+
+auto ListingDao::drop_price_tick_ranges(
+    std::uint64_t listing_id, Transaction::Handler transaction_handler) const
+    -> void {
+  using Query = price_tick_range_query::Delete;
+
+  ValueSanitizer sanitizer{connection_};
+  const std::string query =
+      Query::prepare().by_listing_id(listing_id, sanitizer).compose();
+
+  log::debug("executing `{}'", query);
+  const pqxx::result result = transaction_handler.exec0(query);
+  log::debug("{} price tick range records deleted with `{}' listing identifier",
+             result.affected_rows(),
+             listing_id);
 }
 
 }  // namespace simulator::data_layer::internal_pqxx

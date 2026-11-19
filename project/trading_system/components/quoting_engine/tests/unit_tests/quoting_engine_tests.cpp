@@ -12,6 +12,7 @@
 #include "core/domain/attributes.hpp"
 #include "core/domain/instrument_descriptor.hpp"
 #include "core/domain/market_data_entry.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 #include "middleware/channels/trading_reply_channel.hpp"
 #include "middleware/routing/trading_reply_channel.hpp"
 #include "mocks/trading_reply_receiver_mock.hpp"
@@ -167,7 +168,7 @@ struct QuotingEngineQuotePublication : public Test {
   [[nodiscard]]
   static auto make_tick_constrained_instrument() -> Instrument {
     Instrument instrument;
-    instrument.price_tick = PriceTick{0.25};
+    instrument.price_tick_ranges = core::PriceTickRanges{{.tick_size = 0.25}};
     instrument.engine_type = EngineType::Quoting;
     return instrument;
   }

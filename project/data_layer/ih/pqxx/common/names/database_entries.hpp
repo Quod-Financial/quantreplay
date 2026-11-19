@@ -15,6 +15,7 @@ constexpr std::string_view ListingRandomPriceSource{
     "listing_random_price_source"};
 constexpr std::string_view MarketPhase{"market_phase"};
 constexpr std::string_view PriceSeed{"price_seed"};
+constexpr std::string_view PriceTickRange{"price_tick_range"};
 constexpr std::string_view Setting{"setting"};
 constexpr std::string_view Venue{"venue"};
 
@@ -76,7 +77,6 @@ constexpr std::string_view InstrSymbol{"instr_symbol"};
 constexpr std::string_view QtyMinimum{"qty_minimum"};
 constexpr std::string_view QtyMaximum{"qty_maximum"};
 constexpr std::string_view QtyMultiple{"qty_multiple"};
-constexpr std::string_view PriceTickSize{"price_tick_size"};
 constexpr std::string_view Enabled{"enabled"};
 constexpr std::string_view RandomQtyMaximum{"random_qty_maximum"};
 constexpr std::string_view RandomDepthLevels{"random_depth_levels"};
@@ -144,6 +144,15 @@ constexpr std::string_view OfferPrice{"offer_price"};
 constexpr std::string_view LastUpdate{"last_update"};
 
 }  // namespace price_seed_column
+
+namespace price_tick_range_column {
+
+constexpr std::string_view ListingId{"listing_id"};
+constexpr std::string_view TickSize{"tick_size"};
+constexpr std::string_view UpperLimit{"upper_limit"};
+constexpr std::string_view RowPosition{"row_position"};
+
+}  // namespace price_tick_range_column
 
 namespace setting_column {
 

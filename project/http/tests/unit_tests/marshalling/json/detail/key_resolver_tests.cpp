@@ -9,6 +9,7 @@
 #include "data_layer/api/models/listing_random_price_source.hpp"
 #include "data_layer/api/models/market_phase.hpp"
 #include "data_layer/api/models/price_seed.hpp"
+#include "data_layer/api/models/price_tick_range.hpp"
 #include "data_layer/api/models/setting.hpp"
 #include "data_layer/api/models/venue.hpp"
 #include "ih/marshalling/json/detail/key_resolver.hpp"
@@ -225,11 +226,6 @@ TEST_F(HttpJsonKeyResolverListing, ResolvesQtyMultiple) {
   EXPECT_EQ(KeyResolver::resolve_key(Attribute::QtyMultiple), "qtyMultiple");
 }
 
-TEST_F(HttpJsonKeyResolverListing, ResolvesPriceTickSize) {
-  EXPECT_EQ(KeyResolver::resolve_key(Attribute::PriceTickSize),
-            "priceTickSize");
-}
-
 TEST_F(HttpJsonKeyResolverListing, ResolvesRandomQtyMinimum) {
   EXPECT_EQ(KeyResolver::resolve_key(Attribute::RandomQtyMinimum),
             "randomQtyMinimum");
@@ -421,6 +417,18 @@ TEST_F(HttpJsonKeyResolverPriceSeed, ResolvesOfferPrice) {
 
 TEST_F(HttpJsonKeyResolverPriceSeed, ResolvesLastUpdate) {
   EXPECT_EQ(KeyResolver::resolve_key(Attribute::LastUpdate), "lastUpdate");
+}
+
+struct HttpJsonKeyResolverPriceTickRange : public ::testing::Test {
+  using Attribute = data_layer::PriceTickRange::Attribute;
+};
+
+TEST_F(HttpJsonKeyResolverPriceTickRange, ResolvesTickSize) {
+  EXPECT_EQ(KeyResolver::resolve_key(Attribute::TickSize), "tickSize");
+}
+
+TEST_F(HttpJsonKeyResolverPriceTickRange, ResolvesUpperLimit) {
+  EXPECT_EQ(KeyResolver::resolve_key(Attribute::UpperLimit), "upperLimit");
 }
 
 struct HttpJsonKeyResolverSetting : public ::testing::Test {

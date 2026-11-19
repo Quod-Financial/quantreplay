@@ -8,6 +8,7 @@
 
 #include "data_layer/api/models/listing_random_price_source.hpp"
 #include "data_layer/api/models/patch_field.hpp"
+#include "data_layer/api/models/price_tick_range.hpp"
 #include "data_layer/api/predicate/definitions.hpp"
 
 namespace simulator::data_layer {
@@ -29,7 +30,6 @@ class Listing {
     QtyMinimum,
     QtyMaximum,
     QtyMultiple,
-    PriceTickSize,
     Enabled,
     RandomQtyMaximum,
     RandomDepthLevels,
@@ -95,9 +95,6 @@ class Listing {
 
   [[nodiscard]]
   auto qty_multiple() const noexcept -> std::optional<double>;
-
-  [[nodiscard]]
-  auto price_tick_size() const noexcept -> std::optional<double>;
 
   [[nodiscard]]
   auto enabled_flag() const noexcept -> std::optional<bool>;
@@ -180,6 +177,9 @@ class Listing {
   auto random_price_sources() const noexcept
       -> const std::vector<ListingRandomPriceSource>&;
 
+  [[nodiscard]]
+  auto price_tick_ranges() const noexcept -> const std::vector<PriceTickRange>&;
+
  private:
   explicit Listing(EngineType engine_type) : engine_type_{engine_type} {}
 
@@ -201,11 +201,11 @@ class Listing {
   std::string venue_id_;
 
   std::vector<ListingRandomPriceSource> random_price_sources_;
+  std::vector<PriceTickRange> price_tick_ranges_;
 
   std::optional<double> qty_minimum_;
   std::optional<double> qty_maximum_;
   std::optional<double> qty_multiple_;
-  std::optional<double> price_tick_size_;
   std::optional<double> random_qty_maximum_;
   std::optional<double> random_price_spread_;
   std::optional<double> random_qty_minimum_;
@@ -272,10 +272,6 @@ class Listing::Patch {
   [[nodiscard]]
   auto qty_multiple() const noexcept -> PatchField<double>;
   auto with_qty_multiple(std::optional<double> multiple) noexcept -> Patch&;
-
-  [[nodiscard]]
-  auto price_tick_size() const noexcept -> PatchField<double>;
-  auto with_price_tick_size(std::optional<double> size) noexcept -> Patch&;
 
   [[nodiscard]]
   auto enabled_flag() const noexcept -> PatchField<bool>;
@@ -397,6 +393,12 @@ class Listing::Patch {
       -> Patch&;
   auto without_random_price_sources() noexcept -> Patch&;
 
+  [[nodiscard]]
+  auto price_tick_ranges() const noexcept
+      -> const std::optional<std::vector<PriceTickRange::Patch>>&;
+  auto with_price_tick_range(PriceTickRange::Patch patch_snapshot) -> Patch&;
+  auto without_price_tick_ranges() noexcept -> Patch&;
+
  private:
   std::optional<std::string> symbol_;
   std::optional<std::string> venue_id_;
@@ -416,11 +418,11 @@ class Listing::Patch {
 
   std::optional<std::vector<ListingRandomPriceSource::Patch>>
       random_price_sources_;
+  std::optional<std::vector<PriceTickRange::Patch>> price_tick_ranges_;
 
   PatchField<double> qty_minimum_;
   PatchField<double> qty_maximum_;
   PatchField<double> qty_multiple_;
-  PatchField<double> price_tick_size_;
   PatchField<double> random_qty_maximum_;
   PatchField<double> random_price_spread_;
   PatchField<double> random_qty_minimum_;

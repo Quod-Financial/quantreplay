@@ -2,12 +2,14 @@
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_VALIDATION_CHECKERS_HPP_
 
 #include <functional>
+#include <gsl/pointers>
 #include <optional>
 
 #include "common/attributes.hpp"
 #include "common/checker_utils.hpp"
 #include "common/instrument_state.hpp"
 #include "core/domain/attributes.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 #include "core/tools/time.hpp"
 #include "ih/orders/validation/errors.hpp"
 #include "ih/orders/validation/order_book_side.hpp"
@@ -223,20 +225,21 @@ struct OrderPriceAbsent {
 };
 
 struct OrderPriceRespectsTick {
-  explicit OrderPriceRespectsTick(std::optional<PriceTick> tick)
-      : tick_(tick) {}
+  explicit OrderPriceRespectsTick(const core::PriceTickRanges& tick_ranges)
+      : tick_ranges_{&tick_ranges} {}
 
   auto operator()(const auto& request) -> ValidationResult {
     static_assert(
         requires { request.order_price; },
         "given type does not contain price field required by a matcher");
 
-    return field_respects_tick(
-        request.order_price, tick_, ValidationError::OrderPriceTickViolated);
+    return price_respects_tick(request.order_price,
+                               *tick_ranges_,
+                               ValidationError::OrderPriceTickViolated);
   }
 
  private:
-  std::optional<PriceTick> tick_;
+  gsl::not_null<const core::PriceTickRanges*> tick_ranges_;
 };
 
 struct TimeInForceSupported {

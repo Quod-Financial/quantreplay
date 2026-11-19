@@ -47,7 +47,6 @@ auto Listing::create(Listing::Patch snapshot, std::uint64_t id) -> Listing {
   SIM_ASSIGN_FIELD(qty_minimum_, qty_minimum_);
   SIM_ASSIGN_FIELD(qty_maximum_, qty_maximum_);
   SIM_ASSIGN_FIELD(qty_multiple_, qty_multiple_);
-  SIM_ASSIGN_FIELD(price_tick_size_, price_tick_size_);
   SIM_ASSIGN_FIELD(random_qty_maximum_, random_qty_maximum_);
   SIM_ASSIGN_FIELD(random_price_spread_, random_price_spread_);
   SIM_ASSIGN_FIELD(random_qty_minimum_, random_qty_minimum_);
@@ -83,6 +82,13 @@ auto Listing::create(Listing::Patch snapshot, std::uint64_t id) -> Listing {
                      return ListingRandomPriceSource::create(std::move(patch),
                                                              id);
                    });
+  }
+
+  if (const auto& price_tick_ranges = snapshot.price_tick_ranges_) {
+    listing.price_tick_ranges_.reserve(price_tick_ranges->size());
+    std::ranges::transform(*price_tick_ranges,
+                           std::back_inserter(listing.price_tick_ranges_),
+                           PriceTickRange::create);
   }
 
   return listing;
@@ -130,10 +136,6 @@ auto Listing::qty_maximum() const noexcept -> std::optional<double> {
 
 auto Listing::qty_multiple() const noexcept -> std::optional<double> {
   return qty_multiple_;
-}
-
-auto Listing::price_tick_size() const noexcept -> std::optional<double> {
-  return price_tick_size_;
 }
 
 auto Listing::enabled_flag() const noexcept -> std::optional<bool> {
@@ -253,6 +255,11 @@ auto Listing::random_price_sources() const noexcept
   return random_price_sources_;
 }
 
+auto Listing::price_tick_ranges() const noexcept
+    -> const std::vector<PriceTickRange>& {
+  return price_tick_ranges_;
+}
+
 auto Listing::Patch::symbol() const noexcept
     -> const std::optional<std::string>& {
   return symbol_;
@@ -344,16 +351,6 @@ auto Listing::Patch::qty_multiple() const noexcept -> PatchField<double> {
 auto Listing::Patch::with_qty_multiple(std::optional<double> multiple) noexcept
     -> Patch& {
   qty_multiple_ = std::move(multiple);
-  return *this;
-}
-
-auto Listing::Patch::price_tick_size() const noexcept -> PatchField<double> {
-  return price_tick_size_;
-}
-
-auto Listing::Patch::with_price_tick_size(std::optional<double> size) noexcept
-    -> Patch& {
-  price_tick_size_ = std::move(size);
   return *this;
 }
 
@@ -641,6 +638,25 @@ auto Listing::Patch::with_random_price_source(
 
 auto Listing::Patch::without_random_price_sources() noexcept -> Patch& {
   random_price_sources_ = decltype(random_price_sources_)::value_type{};
+  return *this;
+}
+
+auto Listing::Patch::price_tick_ranges() const noexcept
+    -> const std::optional<std::vector<PriceTickRange::Patch>>& {
+  return price_tick_ranges_;
+}
+
+auto Listing::Patch::with_price_tick_range(PriceTickRange::Patch patch_snapshot)
+    -> Patch& {
+  if (!price_tick_ranges_.has_value()) {
+    price_tick_ranges_.emplace();
+  }
+  price_tick_ranges_->emplace_back(patch_snapshot);
+  return *this;
+}
+
+auto Listing::Patch::without_price_tick_ranges() noexcept -> Patch& {
+  price_tick_ranges_.emplace();
   return *this;
 }
 

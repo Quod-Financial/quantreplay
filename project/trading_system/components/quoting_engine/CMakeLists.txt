@@ -33,6 +33,7 @@ add_static_library(
     simulator::protocol
   PRIVATE_DEPENDENCIES
     fmt::fmt
+    Microsoft.GSL::GSL
     simulator::core
     simulator::middleware
     simulator::log)

@@ -72,7 +72,7 @@ constexpr std::string_view BloombergSymbolId{"bloombergSymbolId"};
 constexpr std::string_view QtyMinimum{"qtyMinimum"};
 constexpr std::string_view QtyMaximum{"qtyMaximum"};
 constexpr std::string_view QtyMultiple{"qtyMultiple"};
-constexpr std::string_view PriceTickSize{"priceTickSize"};
+constexpr std::string_view PriceTickRanges{"priceTickRanges"};
 constexpr std::string_view RandomQtyMinimum{"randomQtyMinimum"};
 constexpr std::string_view RandomQtyMaximum{"randomQtyMaximum"};
 constexpr std::string_view RandomDepthLevels{"randomDepthLevels"};
@@ -122,6 +122,13 @@ constexpr std::string_view LastUpdate{"lastUpdate"};
 constexpr std::string_view PriceSeeds{"priceSeeds"};
 
 }  // namespace price_seed_key
+
+namespace price_tick_range_key {
+
+constexpr std::string_view TickSize{"tickSize"};
+constexpr std::string_view UpperLimit{"upperLimit"};
+
+}  // namespace price_tick_range_key
 
 namespace quote_key {
 

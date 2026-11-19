@@ -1,11 +1,16 @@
-#include <gtest/gtest.h>
+#include <gmock/gmock.h>
 
+#include <optional>
+
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/random/values/price_generation_params.hpp"
 
 namespace simulator::generator::random::test {
 namespace {
 
-TEST(Generator_Random_PriceGenerationParams, SpecifyPriceTickRange) {
+using namespace ::testing;  // NOLINT
+
+TEST(GeneratorRandomPriceGenerationParams, SpecifyPriceTickRange) {
   constexpr int expected_px_tick_range = 23;
 
   PriceGenerationParams::Builder px_params_builder{};
@@ -14,51 +19,55 @@ TEST(Generator_Random_PriceGenerationParams, SpecifyPriceTickRange) {
 
   EXPECT_EQ(px_params.get_price_tick_range(), expected_px_tick_range);
 
-  EXPECT_DOUBLE_EQ(px_params.get_price_tick_size(), 0.);
-  EXPECT_DOUBLE_EQ(px_params.get_price_spread(), 0.);
+  EXPECT_EQ(px_params.get_price_tick_ranges(), core::PriceTickRanges{});
+  EXPECT_EQ(px_params.get_price_spread(), std::nullopt);
 }
 
-TEST(Generator_Random_PriceGenerationParams, SpecifyPriceTickSize) {
-  constexpr double expected_px_tick_size = 32.235346642;
+TEST(GeneratorRandomPriceGenerationParams, SpecifyPriceTickRanges) {
+  const core::PriceTickRanges expected_px_tick_ranges{
+      {.tick_size = 32.235346642}};
 
   PriceGenerationParams::Builder px_params_builder{};
-  px_params_builder.set_price_tick_size(expected_px_tick_size);
+  px_params_builder.set_price_tick_ranges(expected_px_tick_ranges);
   const PriceGenerationParams px_params{px_params_builder};
 
-  EXPECT_DOUBLE_EQ(px_params.get_price_tick_size(), expected_px_tick_size);
+  EXPECT_EQ(px_params.get_price_tick_ranges(), expected_px_tick_ranges);
 
   EXPECT_EQ(px_params.get_price_tick_range(), 0);
-  EXPECT_DOUBLE_EQ(px_params.get_price_spread(), 0.);
+  EXPECT_EQ(px_params.get_price_spread(), std::nullopt);
 }
 
-TEST(Generator_Random_PriceGenerationParams, SpecifyPriceSpread) {
+TEST(GeneratorRandomPriceGenerationParams, SpecifyPriceSpread) {
   constexpr double expected_px_spread = 1.00000005;
 
   PriceGenerationParams::Builder px_params_builder{};
   px_params_builder.set_price_spread(expected_px_spread);
   const PriceGenerationParams px_params{px_params_builder};
 
-  EXPECT_DOUBLE_EQ(px_params.get_price_spread(), expected_px_spread);
+  EXPECT_THAT(px_params.get_price_spread(),
+              Optional(DoubleEq(expected_px_spread)));
 
   EXPECT_EQ(px_params.get_price_tick_range(), 0);
-  EXPECT_DOUBLE_EQ(px_params.get_price_tick_size(), 0.);
+  EXPECT_EQ(px_params.get_price_tick_ranges(), core::PriceTickRanges{});
 }
 
-TEST(Generator_Random_PriceGenerationParams, SpecifyAll) {
+TEST(GeneratorRandomPriceGenerationParams, SpecifyAll) {
   constexpr int expected_px_tick_range = 2;
-  constexpr double expected_px_tick_size = 2.000000001;
+  const core::PriceTickRanges expected_px_tick_ranges{
+      {.tick_size = 2.000000001}};
   constexpr double expected_px_spread = 1.00000005;
 
   PriceGenerationParams::Builder px_params_builder{};
-  px_params_builder.set_price_tick_size(expected_px_tick_size);
+  px_params_builder.set_price_tick_ranges(expected_px_tick_ranges);
   px_params_builder.set_price_spread(expected_px_spread);
   px_params_builder.set_price_tick_range(expected_px_tick_range);
 
   const PriceGenerationParams px_params{px_params_builder};
 
   EXPECT_EQ(px_params.get_price_tick_range(), expected_px_tick_range);
-  EXPECT_DOUBLE_EQ(px_params.get_price_tick_size(), expected_px_tick_size);
-  EXPECT_DOUBLE_EQ(px_params.get_price_spread(), expected_px_spread);
+  EXPECT_EQ(px_params.get_price_tick_ranges(), expected_px_tick_ranges);
+  EXPECT_THAT(px_params.get_price_spread(),
+              Optional(DoubleEq(expected_px_spread)));
 }
 
 }  // namespace

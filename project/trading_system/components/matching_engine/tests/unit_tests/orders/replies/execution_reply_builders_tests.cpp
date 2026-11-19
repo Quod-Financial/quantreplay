@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/orders/replies/execution_reply_builders.hpp"
 #include "tools/order_builder.hpp"
 
@@ -15,8 +16,14 @@ using namespace ::testing;  // NOLINT
 
 struct ExecutionReportBuilder : public Test {
   const protocol::Session test_session{protocol::generator::Session{}};
+  const core::PriceTickRanges no_price_tick_ranges;
+  const core::PriceTickRanges price_tick_ranges{
+      {.tick_size = 0.1, .upper_limit = 10.0},
+      {.tick_size = 0.5, .upper_limit = 20.0},
+      {.tick_size = 2.0}};
   OrderBuilder order_builder;
-  matching_engine::ExecutionReportBuilder builder{test_session, std::nullopt};
+  matching_engine::ExecutionReportBuilder builder{test_session,
+                                                  no_price_tick_ranges};
 };
 
 TEST_F(ExecutionReportBuilder, BuildsReportForSession) {
@@ -194,15 +201,31 @@ TEST_F(ExecutionReportBuilder, RoundsLimitOrderAveragePriceToPriceTick) {
   limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
 
   const auto report =
-      matching_engine::ExecutionReportBuilder{test_session, PriceTick{0.1}}
+      matching_engine::ExecutionReportBuilder{
+          test_session, core::PriceTickRanges{{.tick_size = 0.1}}}
           .for_order(limit_order)
           .build();
 
   ASSERT_THAT(report.average_price, Optional(Eq(AveragePrice{10.1})));
 }
 
+TEST_F(ExecutionReportBuilder, RoundsLimitOrderAveragePriceToTickOfItsRange) {
+  auto limit_order = order_builder.with_order_price(OrderPrice{22.0})
+                         .with_order_quantity(OrderQuantity{10})
+                         .build_limit_order();
+  limit_order.execute(ExecutedQuantity{4}, ExecutionPrice{10.5});
+  limit_order.execute(ExecutedQuantity{6}, ExecutionPrice{11.0});
+
+  const auto report =
+      matching_engine::ExecutionReportBuilder{test_session, price_tick_ranges}
+          .for_order(limit_order)
+          .build();
+
+  ASSERT_THAT(report.average_price, Optional(Eq(AveragePrice{11.0})));
+}
+
 TEST_F(ExecutionReportBuilder,
-       DoesNotRoundLimitOrderAveragePriceWhenPriceTickIsNullopt) {
+       DoesNotRoundLimitOrderAveragePriceWithoutPriceTickRanges) {
   auto limit_order =
       order_builder.with_order_quantity(OrderQuantity{10}).build_limit_order();
   limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
@@ -213,14 +236,17 @@ TEST_F(ExecutionReportBuilder,
   ASSERT_THAT(report.average_price, Optional(Eq(AveragePrice{10.05})));
 }
 
-TEST_F(ExecutionReportBuilder, PrepareFactoryForwardsPriceTickForLimitOrder) {
+TEST_F(ExecutionReportBuilder,
+       PrepareFactoryForwardsPriceTickRangesForLimitOrder) {
   auto limit_order =
       order_builder.with_order_quantity(OrderQuantity{10}).build_limit_order();
   limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
   limit_order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
 
   const auto report =
-      prepare_execution_report(limit_order, PriceTick{0.1}).build();
+      prepare_execution_report(limit_order,
+                               core::PriceTickRanges{{.tick_size = 0.1}})
+          .build();
 
   ASSERT_THAT(report.average_price, Optional(Eq(AveragePrice{10.1})));
 }
@@ -385,15 +411,30 @@ TEST_F(ExecutionReportBuilder, RoundsMarketOrderAveragePriceToPriceTick) {
   order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
 
   const auto report =
-      matching_engine::ExecutionReportBuilder{test_session, PriceTick{0.1}}
+      matching_engine::ExecutionReportBuilder{
+          test_session, core::PriceTickRanges{{.tick_size = 0.1}}}
           .for_order(order)
           .build();
 
   ASSERT_THAT(report.average_price, Optional(Eq(AveragePrice{10.1})));
 }
 
+TEST_F(ExecutionReportBuilder, RoundsMarketOrderAveragePriceToTickOfItsRange) {
+  auto order =
+      order_builder.with_order_quantity(OrderQuantity{10}).build_market_order();
+  order.execute(ExecutedQuantity{4}, ExecutionPrice{10.5});
+  order.execute(ExecutedQuantity{6}, ExecutionPrice{11.0});
+
+  const auto report =
+      matching_engine::ExecutionReportBuilder{test_session, price_tick_ranges}
+          .for_order(order)
+          .build();
+
+  ASSERT_THAT(report.average_price, Optional(Eq(AveragePrice{11.0})));
+}
+
 TEST_F(ExecutionReportBuilder,
-       DoesNotRoundMarketOrderAveragePriceWhenPriceTickIsNullopt) {
+       DoesNotRoundMarketOrderAveragePriceWithoutPriceTickRanges) {
   auto order =
       order_builder.with_order_quantity(OrderQuantity{10}).build_market_order();
   order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
@@ -404,13 +445,16 @@ TEST_F(ExecutionReportBuilder,
   ASSERT_THAT(report.average_price, Optional(Eq(AveragePrice{10.05})));
 }
 
-TEST_F(ExecutionReportBuilder, PrepareFactoryForwardsPriceTickForMarketOrder) {
+TEST_F(ExecutionReportBuilder,
+       PrepareFactoryForwardsPriceTickRangesForMarketOrder) {
   auto order =
       order_builder.with_order_quantity(OrderQuantity{10}).build_market_order();
   order.execute(ExecutedQuantity{5}, ExecutionPrice{10.0});
   order.execute(ExecutedQuantity{5}, ExecutionPrice{10.1});
 
-  const auto report = prepare_execution_report(order, PriceTick{0.1}).build();
+  const auto report =
+      prepare_execution_report(order, core::PriceTickRanges{{.tick_size = 0.1}})
+          .build();
 
   ASSERT_THAT(report.average_price, Optional(Eq(AveragePrice{10.1})));
 }

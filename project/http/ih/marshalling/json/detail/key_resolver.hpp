@@ -8,6 +8,7 @@
 #include "data_layer/api/models/listing_random_price_source.hpp"
 #include "data_layer/api/models/market_phase.hpp"
 #include "data_layer/api/models/price_seed.hpp"
+#include "data_layer/api/models/price_tick_range.hpp"
 #include "data_layer/api/models/setting.hpp"
 #include "data_layer/api/models/venue.hpp"
 
@@ -42,6 +43,10 @@ class KeyResolver {
 
   [[nodiscard]]
   static auto resolve_key(data_layer::PriceSeed::Attribute attribute)
+      -> std::string_view;
+
+  [[nodiscard]]
+  static auto resolve_key(data_layer::PriceTickRange::Attribute attribute)
       -> std::string_view;
 
   [[nodiscard]]

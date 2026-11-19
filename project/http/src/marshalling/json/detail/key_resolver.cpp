@@ -115,8 +115,6 @@ auto KeyResolver::resolve_key(data_layer::Listing::Attribute attribute)
       return listing_key::QtyMaximum;
     case data_layer::Listing::Attribute::QtyMultiple:
       return listing_key::QtyMultiple;
-    case data_layer::Listing::Attribute::PriceTickSize:
-      return listing_key::PriceTickSize;
     case data_layer::Listing::Attribute::Enabled:
       return listing_key::Enabled;
     case data_layer::Listing::Attribute::RandomQtyMaximum:
@@ -235,6 +233,22 @@ auto KeyResolver::resolve_key(data_layer::PriceSeed::Attribute attribute)
   }
 
   raise_bad_attribute_error("PriceSeed", attribute);
+}
+
+auto KeyResolver::resolve_key(data_layer::PriceTickRange::Attribute attribute)
+    -> std::string_view {
+  switch (attribute) {
+    case data_layer::PriceTickRange::Attribute::TickSize:
+      return price_tick_range_key::TickSize;
+    case data_layer::PriceTickRange::Attribute::UpperLimit:
+      return price_tick_range_key::UpperLimit;
+    // The listing id and the row position are stored only, without a JSON key.
+    case data_layer::PriceTickRange::Attribute::ListingId:
+    case data_layer::PriceTickRange::Attribute::RowPosition:
+      break;
+  }
+
+  raise_bad_attribute_error("PriceTickRange", attribute);
 }
 
 auto KeyResolver::resolve_key(data_layer::Setting::Attribute attribute)

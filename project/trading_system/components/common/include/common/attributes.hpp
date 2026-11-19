@@ -34,12 +34,6 @@ struct OrderTime {
                                    .plural = "OrderTimes"};
 };
 
-struct PriceTick {
-  using value_type = double;
-  constexpr static core::Name name{.singular = "PriceTick",
-                                   .plural = "PriceTicks"};
-};
-
 struct QuantityTick {
   using value_type = double;
   constexpr static core::Name name{.singular = "QuantityTick",
@@ -98,7 +92,6 @@ SIMULATOR_DECLARE_ATTRIBUTE(simulator::trading_system, DatabaseId, Arithmetic);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator::trading_system, OrderId, Arithmetic);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator::trading_system, SubscriptionId, Arithmetic);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator::trading_system, OrderTime, UtcTimestamp);
-SIMULATOR_DECLARE_ATTRIBUTE(simulator::trading_system, PriceTick, Arithmetic);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator::trading_system, QuantityTick, Arithmetic);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator::trading_system, CusipId, Derived);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator::trading_system, SedolId, Derived);

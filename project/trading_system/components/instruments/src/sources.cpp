@@ -1,8 +1,10 @@
 #include "instruments/sources.hpp"
 
 #include <utility>
+#include <vector>
 
 #include "cfg/api/cfg.hpp"
+#include "data_layer/api/converters/price_tick_ranges.hpp"
 #include "data_layer/api/data_access_layer.hpp"
 #include "data_layer/api/models/listing.hpp"
 #include "data_layer/api/predicate/predicate.hpp"
@@ -83,7 +85,8 @@ auto create_instrument(const data_layer::Listing& listing) noexcept
   convert(listing.ric_id(), instrument.ric);
   convert(listing.exchange_symbol_id(), instrument.exchange_id);
   convert(listing.bloomberg_symbol_id(), instrument.bloomberg_id);
-  convert(listing.price_tick_size(), instrument.price_tick);
+  instrument.price_tick_ranges =
+      data_layer::converter::to_price_tick_ranges(listing.price_tick_ranges());
   convert(listing.qty_multiple(), instrument.quantity_tick);
   convert(listing.qty_minimum(), instrument.min_quantity);
   convert(listing.qty_maximum(), instrument.max_quantity);

@@ -67,9 +67,10 @@ auto book_price(const MarketOrder& /*order*/) -> std::optional<OrderPrice> {
 
 }  // namespace
 
-OrderTypeConversion::OrderTypeConversion(EventListener& event_listener,
-                                         std::optional<PriceTick> price_tick)
-    : EventReporter{event_listener}, price_tick_{price_tick} {}
+OrderTypeConversion::OrderTypeConversion(
+    EventListener& event_listener,
+    const core::PriceTickRanges& price_tick_ranges)
+    : EventReporter{event_listener}, price_tick_ranges_{&price_tick_ranges} {}
 
 template <typename ConvertedType, typename UpdateType, typename ContainerType>
 auto OrderTypeConversion::convert(UpdateType update, ContainerType& orders)
@@ -101,7 +102,7 @@ auto OrderTypeConversion::convert(UpdateType update, ContainerType& orders)
 
   ConvertedType order{std::move(resting_order), std::move(update.order_diff)};
   emit(ClientNotification(
-      prepare_modification_confirmation(order, price_tick_)
+      prepare_modification_confirmation(order, *price_tick_ranges_)
           .with_execution_id(order.make_execution_id())
           .with_orig_client_order_id(update.orig_client_order_id)
           .build()));

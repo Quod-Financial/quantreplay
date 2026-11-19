@@ -367,8 +367,8 @@ blocking an action due to a limit in the number of depth levels in the book.
 The price used on randomly generated orders is largely determined by the configuration of Listings → randomPriceSpread to determine the minimum bid/ask spread to maintain, 
 and Listings → randomTickRange to determine the range which prices are distributed across multiple depth levels of the order book.
 
-The setting Listings → randomPriceSpread is expressed as an absolute decimal price value, with an enforced minimum of the value of Listings → priceTickSize configured 
-for the same listing. 
+The setting Listings → randomPriceSpread is expressed as an absolute decimal price value, with an enforced minimum of the tick size that Listings → priceTickRanges sets
+for the best price the spread is applied to (see <<adminsets-listings-pricetickranges,this section>>).
 This effectively becomes the smallest spread allowed in the order book determined by generation of random orders. 
 If the spread becomes less than this value (or crossed) it is likely due to other actions, such as historical data playback or manually entered orders.
 
@@ -382,6 +382,8 @@ from the table of starting prices (or Mid price if there is no Bid).
 Respectively, prices for new resting Ask orders and aggressive Buy orders use an initial starting value of the best Bid price in the order book 
 adding the configured spread, or the best Ask price directly if there are no resting Bid orders, or failing that the configured Bid price directly 
 from the table of starting prices (or Mid price if there is no Ask).
+When the spread moves the initial value into a price range with a different tick size, the initial value is rounded to a multiple of that tick size:
+down when the spread is subtracted, and up when it is added.
 
 In order to support coordination of randomly generated prices across multiple listings of a common instrument, each listing can also base these initial
 Bid and Ask values on an aggregation of market data from one or more configured datasources in addition to its own order book
@@ -403,8 +405,20 @@ The following diagram represents this distribution:
 
 image::17pricebook.png[width = 500]
 
-The final price of a new random order is chosen as a number of ticks away from the initial price value, weighted by the frequency distribution as described above. 
-In this way, the final price is a multiple of the configured ticks on the listing (Listings → PriceTickSize).
+The final price of a new random order is chosen as a number of ticks away from the initial price value, weighted by the frequency distribution as described above.
+Each tick moves the price by the tick size that Listings → priceTickRanges sets for the price range the price is in.
+When a tick takes the price into a range with a different tick size, the price is then rounded to a multiple of that tick size,
+down when moving below the initial value and up when moving above it.
+For example, with a tick size of 0.3 for prices up to 10 and of 0.5 for higher prices, the price 5 ticks above an initial value of 9 is 11:
+the ticks lead to 9.3, 9.6, 9.9, 10.5 (10.2 rounded up) and 11.
+If a rounding itself takes the price into a range with yet another tick size, the price is rounded again, to that tick size; the same applies to the rounding of the initial value.
+
+When the price has moved away from the initial value by the initial value or more (it has reached zero or below, or has at least doubled),
+the distance moved is used as the final price instead.
+Across several price ranges this distance is rounded to a multiple of the tick size of its range, up when the price moves up and down when it moves down; when rounding down turns the distance into zero, the tick size of the price range that contains zero is used, rounded up if it lies in a range with a different tick size.
+As in the walk, if one of these roundings takes the price into a range with yet another tick size, the price is rounded again, to that tick size.
+
+On a listing without priceTickRanges the Random Order Generator uses a tick size of zero: the price is not varied from the initial value, and the smallest spread is the value of randomPriceSpread alone.
 
 [[general-randomorder-distrqty]]
 ==== Distribution of Quantity
@@ -1407,7 +1421,7 @@ Move on to the following order.
 
 Move on to the following order.
 
-| 17 | The order’s `order_price` is a multiple of priceTickSize. | Output log error message:
+| 17 | The order’s `order_price` is a multiple of the tick size that priceTickRanges sets for its price range. | Output log error message:
 
 “validation failed with 'order price tick constraint violated' error, order was not recovered: {}”, where “{}” is a placeholder for the order.
 
@@ -1448,7 +1462,7 @@ Move on to the following order.
 ”last trade is empty, nothing to validate” Remove the information about the last trade from the instrument.
 Then move on to low and high trade prices.
 
-| 24 | The `last_trade` ’s `trade_price` is a multiple of priceTickSize.| Output log error message:
+| 24 | The `last_trade` ’s `trade_price` is a multiple of the tick size that priceTickRanges sets for its price range.| Output log error message:
 
 “validation failed with 'trade price tick constraint violated' error, last trade was not recovered: {}”, where “{}” is a placeholder for the `last_trade` .
 
@@ -1477,13 +1491,13 @@ Move on to low and high trade prices.
 Remove the information about the low and high prices from the instrument.
 Move on to the following instrument.
 
-| 29 | The `info` ’s `low_price` is a multiple of priceTickSize. | Output log error message:
+| 29 | The `info` ’s `low_price` is a multiple of the tick size that priceTickRanges sets for its price range. | Output log error message:
 
 “validation failed with 'low price tick constraint violated' error, instrument info was not recovered: {}”, where “{}” is a placeholder for the `info` .
 
 Move on to the following instrument.
 
-| 30 | The `info` ’s `high_price` is a multiple of priceTickSize. | Output log error message:
+| 30 | The `info` ’s `high_price` is a multiple of the tick size that priceTickRanges sets for its price range. | Output log error message:
 
 “validation failed with 'high price tick constraint violated' error, instrument info was not recovered: {}”, where “{}” is a placeholder for the `info` .
 

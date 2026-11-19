@@ -2,7 +2,9 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "data_layer/api/models/datasource.hpp"
@@ -11,11 +13,13 @@
 #include "ih/controllers/listing_controller.hpp"
 #include "tests/mocks/datasource_accessor.hpp"
 #include "tests/mocks/listing_accessor.hpp"
+#include "tests/test_utils/matchers.hpp"
 
 namespace simulator::http::test {
 namespace {
 
 using namespace ::testing;  // NOLINT
+using json::test::is_price_tick_range_patch;
 
 // NOLINTBEGIN(*magic-numbers*)
 
@@ -649,6 +653,182 @@ TEST_F(HttpListingControllerEngineType, InsertsListingWithEngineType) {
       R"({"venueId":"LSE","engineType":"Quoting","symbol":"AAPL"})");
 
   EXPECT_EQ(code, Code::Created);
+}
+
+struct HttpListingControllerPriceTickRanges : public Test {
+  using Code = Pistache::Http::Code;
+  using Listing = data_layer::Listing;
+
+  HttpListingControllerPriceTickRanges() {
+    auto accessor = std::make_unique<NiceMock<mock::ListingAccessor>>();
+    listings = accessor.get();
+    controller = std::make_unique<ListingController>(
+        std::move(accessor),
+        std::make_unique<NiceMock<mock::DatasourceAccessor>>());
+  }
+
+  static auto insert_body(std::string_view price_tick_ranges) -> std::string {
+    return std::string{R"({"venueId":"LSE","engineType":"Matching",)"}
+        .append(R"("priceTickRanges":)")
+        .append(price_tick_ranges)
+        .append("}");
+  }
+
+  static auto update_body(std::string_view price_tick_ranges) -> std::string {
+    return std::string{R"({"priceTickRanges":)"}
+        .append(price_tick_ranges)
+        .append("}");
+  }
+
+  template <typename RangesMatcher>
+  static auto has_price_tick_ranges(const RangesMatcher& ranges) {
+    return Property("price_tick_ranges",
+                    &Listing::Patch::price_tick_ranges,
+                    Optional(ranges));
+  }
+
+  constexpr static std::string_view TickSizeRequired{
+      R"({"result":"tickSize is required for an entry of priceTickRanges"})"};
+  constexpr static std::string_view SeveralRangesWithoutUpperLimit{
+      R"({"result":"priceTickRanges must not contain more than one entry )"
+      R"(without upperLimit"})"};
+
+  NiceMock<mock::ListingAccessor>* listings = nullptr;
+  std::unique_ptr<ListingController> controller;
+};
+
+TEST_F(HttpListingControllerPriceTickRanges,
+       RejectsInsertWithPriceTickRangeWithoutTickSize) {
+  EXPECT_CALL(*listings, add).Times(0);
+
+  const auto [code, content] = controller->insert_listing(
+      insert_body(R"([{"tickSize":0.01,"upperLimit":10},{"upperLimit":20}])"));
+
+  EXPECT_EQ(code, Code::Bad_Request);
+  EXPECT_EQ(content, TickSizeRequired);
+}
+
+TEST_F(HttpListingControllerPriceTickRanges,
+       RejectsInsertWithPriceTickRangeWithNullTickSize) {
+  EXPECT_CALL(*listings, add).Times(0);
+
+  const auto [code, content] = controller->insert_listing(
+      insert_body(R"([{"tickSize":null,"upperLimit":10}])"));
+
+  EXPECT_EQ(code, Code::Bad_Request);
+  EXPECT_EQ(content, TickSizeRequired);
+}
+
+TEST_F(HttpListingControllerPriceTickRanges,
+       ReportsMissingTickSizeBeforeSeveralRangesWithoutUpperLimitOnInsert) {
+  EXPECT_CALL(*listings, add).Times(0);
+
+  const auto [code, content] =
+      controller->insert_listing(insert_body(R"([{"tickSize":0.01},{}])"));
+
+  EXPECT_EQ(code, Code::Bad_Request);
+  EXPECT_EQ(content, TickSizeRequired);
+}
+
+TEST_F(HttpListingControllerPriceTickRanges,
+       RejectsInsertWithSeveralPriceTickRangesWithoutUpperLimit) {
+  EXPECT_CALL(*listings, add).Times(0);
+
+  const auto [code, content] = controller->insert_listing(
+      insert_body(R"([{"tickSize":0.01},{"tickSize":0.1}])"));
+
+  EXPECT_EQ(code, Code::Bad_Request);
+  EXPECT_EQ(content, SeveralRangesWithoutUpperLimit);
+}
+
+TEST_F(HttpListingControllerPriceTickRanges,
+       RejectsInsertWithNullUpperLimitNextToRangeWithoutUpperLimit) {
+  EXPECT_CALL(*listings, add).Times(0);
+
+  const auto [code, content] = controller->insert_listing(
+      insert_body(R"([{"tickSize":0.01,"upperLimit":null},{"tickSize":0.1}])"));
+
+  EXPECT_EQ(code, Code::Bad_Request);
+  EXPECT_EQ(content, SeveralRangesWithoutUpperLimit);
+}
+
+TEST_F(HttpListingControllerPriceTickRanges,
+       InsertsListingWithSinglePriceTickRangeWithoutUpperLimit) {
+  EXPECT_CALL(*listings,
+              add(has_price_tick_ranges(ElementsAre(
+                  is_price_tick_range_patch(0.01, Optional(DoubleEq(10.0))),
+                  is_price_tick_range_patch(0.1, Eq(std::nullopt))))))
+      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+
+  const auto [code, content] = controller->insert_listing(
+      insert_body(R"([{"tickSize":0.01,"upperLimit":10},{"tickSize":0.1}])"));
+
+  EXPECT_EQ(code, Code::Created);
+}
+
+TEST_F(HttpListingControllerPriceTickRanges,
+       ReportsAbsentListingBeforeMissingTickSizeOnUpdateOfSymbol) {
+  EXPECT_CALL(*listings, select_single(Matcher<const std::string&>(Eq("AAPL"))))
+      .WillOnce(Return(
+          tl::unexpected{data_bridge::Failure::ResponseCardinalityError}));
+  EXPECT_CALL(*listings, update(_, Matcher<const std::string&>(_))).Times(0);
+
+  const auto [code, content] = controller->update_listing(
+      "AAPL", R"({"symbol":"MSFT","priceTickRanges":[{"upperLimit":10}]})");
+
+  EXPECT_EQ(code, Code::Not_Found);
+}
+
+TEST_F(HttpListingControllerPriceTickRanges,
+       RejectsUpdateWithPriceTickRangeWithoutTickSize) {
+  EXPECT_CALL(*listings, update(_, Matcher<const std::string&>(_))).Times(0);
+
+  const auto [code, content] = controller->update_listing(
+      "AAPL",
+      update_body(R"([{"tickSize":0.01,"upperLimit":10},{"upperLimit":20}])"));
+
+  EXPECT_EQ(code, Code::Bad_Request);
+  EXPECT_EQ(content, TickSizeRequired);
+}
+
+TEST_F(HttpListingControllerPriceTickRanges,
+       ReportsMissingTickSizeBeforeSeveralRangesWithoutUpperLimitOnUpdate) {
+  EXPECT_CALL(*listings, update(_, Matcher<const std::string&>(_))).Times(0);
+
+  const auto [code, content] = controller->update_listing(
+      "AAPL", update_body(R"([{"tickSize":0.01},{}])"));
+
+  EXPECT_EQ(code, Code::Bad_Request);
+  EXPECT_EQ(content, TickSizeRequired);
+}
+
+TEST_F(HttpListingControllerPriceTickRanges,
+       RejectsUpdateWithSeveralPriceTickRangesWithoutUpperLimit) {
+  EXPECT_CALL(*listings, update(_, Matcher<const std::string&>(_))).Times(0);
+
+  const auto [code, content] = controller->update_listing(
+      "AAPL", update_body(R"([{"tickSize":0.01},{"tickSize":0.1}])"));
+
+  EXPECT_EQ(code, Code::Bad_Request);
+  EXPECT_EQ(content, SeveralRangesWithoutUpperLimit);
+}
+
+TEST_F(HttpListingControllerPriceTickRanges,
+       UpdatesListingWithOnlyPriceTickRanges) {
+  EXPECT_CALL(
+      *listings,
+      update(has_price_tick_ranges(ElementsAre(
+                 is_price_tick_range_patch(0.01, Optional(DoubleEq(10.0))),
+                 is_price_tick_range_patch(0.1, Eq(std::nullopt)))),
+             Matcher<const std::string&>(Eq("AAPL"))))
+      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+
+  const auto [code, content] = controller->update_listing(
+      "AAPL",
+      update_body(R"([{"tickSize":0.01,"upperLimit":10},{"tickSize":0.1}])"));
+
+  EXPECT_EQ(code, Code::Ok);
+  EXPECT_EQ(content, R"({"result":"Successfully updated the AAPL listing"})");
 }
 
 // NOLINTEND(*magic-numbers*)

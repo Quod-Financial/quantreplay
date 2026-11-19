@@ -8,6 +8,7 @@
 
 #include "common/attributes.hpp"
 #include "common/instrument.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 #include "protocol/admin/quote.hpp"
 
 namespace simulator::trading_system::quoting_engine {
@@ -28,7 +29,7 @@ class QuoteValidator {
   auto find_violation(const std::vector<protocol::QuoteEntry>& entries,
                       QuoteSide side) const -> std::optional<std::string>;
 
-  std::optional<PriceTick> price_tick_;
+  core::PriceTickRanges price_tick_ranges_;
   std::optional<QuantityTick> quantity_tick_;
   std::optional<MinQuantity> min_quantity_;
   std::optional<MaxQuantity> max_quantity_;

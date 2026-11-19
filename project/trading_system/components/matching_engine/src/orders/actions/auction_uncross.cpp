@@ -27,10 +27,10 @@ auto eligible_limit_end(LimitOrdersContainer& limits,
 
 AuctionUncross::AuctionUncross(EventListener& event_listener,
                                MarketPhase auction_phase,
-                               std::optional<PriceTick> price_tick)
+                               const core::PriceTickRanges& price_tick_ranges)
     : EventReporter{event_listener},
       auction_phase_{auction_phase},
-      price_tick_{price_tick} {}
+      price_tick_ranges_{&price_tick_ranges} {}
 
 auto AuctionUncross::operator()(
     OrderBook& book, const std::optional<AuctionResult>& auction_result) const
@@ -121,14 +121,14 @@ auto AuctionUncross::cross(BuyOrder& buy_order,
              sell_order);
 
   emit(ClientNotification(
-      prepare_execution_report(buy_order, price_tick_)
+      prepare_execution_report(buy_order, *price_tick_ranges_)
           .with_execution_id(buy_order.make_execution_id())
           .with_execution_price(price)
           .with_executed_quantity(quantity)
           .with_counterparty(make_counterparty(sell_order.owner()))
           .build()));
   emit(ClientNotification(
-      prepare_execution_report(sell_order, price_tick_)
+      prepare_execution_report(sell_order, *price_tick_ranges_)
           .with_execution_id(sell_order.make_execution_id())
           .with_execution_price(price)
           .with_executed_quantity(quantity)
@@ -160,7 +160,7 @@ auto AuctionUncross::clear_market_orders(MarketOrdersContainer& orders) const
     emit(make_making_order_removed_from_book_notification(order));
     if (cancelled) {
       emit(ClientNotification(
-          prepare_cancellation_confirmation(order, price_tick_)
+          prepare_cancellation_confirmation(order, *price_tick_ranges_)
               .with_leaving_quantity(LeavesQuantity{0})
               .with_execution_id(order.make_execution_id())
               .with_client_order_id(order.client_order_id())

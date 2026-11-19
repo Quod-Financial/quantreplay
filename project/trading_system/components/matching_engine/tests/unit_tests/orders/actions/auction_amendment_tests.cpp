@@ -4,6 +4,7 @@
 #include <optional>
 #include <utility>
 
+#include "core/tools/price_tick_ranges.hpp"
 #include "core/tools/time.hpp"
 #include "ih/common/data/market_data_updates.hpp"
 #include "ih/orders/actions/auction_amendment.hpp"
@@ -28,7 +29,8 @@ struct MatchingEngineAuctionAmendment : public Test {
 
   NiceMock<EventListenerMock> event_listener;
   OrderBook order_book;
-  AuctionAmendment amendment{event_listener, order_book, std::nullopt};
+  const core::PriceTickRanges no_price_tick_ranges;
+  AuctionAmendment amendment{event_listener, order_book, no_price_tick_ranges};
 
   static auto arrival(int seconds_since_epoch) -> OrderTime {
     return OrderTime{core::sys_us{std::chrono::seconds{seconds_since_epoch}}};

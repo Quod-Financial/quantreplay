@@ -11,6 +11,7 @@ add_target_tests(
     unit_tests/common/database/ping_agent_tests.cpp
     unit_tests/common/queries/data_extractor_tests.cpp
     unit_tests/converters/column_mapping_tests.cpp
+    unit_tests/converters/price_tick_ranges_tests.cpp
     unit_tests/inspectors/column_mapping_inspectors_tests.cpp
     unit_tests/inspectors/datasource_inspectors_tests.cpp
     unit_tests/inspectors/datasource_listing_inspectors_tests.cpp
@@ -19,6 +20,7 @@ add_target_tests(
     unit_tests/inspectors/listing_random_price_source_inspectors_tests.cpp
     unit_tests/inspectors/market_phase_inspectors_tests.cpp
     unit_tests/inspectors/price_seed_inspectors_tests.cpp
+    unit_tests/inspectors/price_tick_range_inspectors_tests.cpp
     unit_tests/inspectors/setting_inspectors_tests.cpp
     unit_tests/inspectors/venue_inspectors_tests.cpp
     unit_tests/models/column_mapping_tests.cpp
@@ -30,6 +32,7 @@ add_target_tests(
     unit_tests/models/market_phase_tests.cpp
     unit_tests/models/patch_field_tests.cpp
     unit_tests/models/price_seed_tests.cpp
+    unit_tests/models/price_tick_range_tests.cpp
     unit_tests/models/setting_tests.cpp
     unit_tests/models/venue_tests.cpp
     unit_tests/pqxx/common/column_resolver_tests.cpp

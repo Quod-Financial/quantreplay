@@ -4,6 +4,7 @@
 #include <string>
 
 #include "core/domain/market_phase.hpp"
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/orders/actions/order_actions.hpp"
 #include "ih/orders/actions/trade_at_last_actions.hpp"
 #include "ih/orders/book/order_book.hpp"
@@ -30,6 +31,7 @@ struct MatchingEngineOrderActions : public Test {
 
   NiceMock<EventListenerMock> event_listener;
   OrderBook order_book;
+  const core::PriceTickRanges no_price_tick_ranges;
 
   constexpr static Price ClosingPrice{40};
 
@@ -42,7 +44,7 @@ struct MatchingEngineOrderActions : public Test {
   auto place_limit(LimitOrder order, OrderActionMode mode) -> void {
     place_limit_order(event_listener,
                       order_book,
-                      std::nullopt,
+                      no_price_tick_ranges,
                       std::move(order),
                       context(mode));
   }
@@ -50,7 +52,7 @@ struct MatchingEngineOrderActions : public Test {
   auto place_market(MarketOrder order, OrderActionMode mode) -> void {
     place_market_order(event_listener,
                        order_book,
-                       std::nullopt,
+                       no_price_tick_ranges,
                        std::move(order),
                        context(mode));
   }
@@ -58,7 +60,7 @@ struct MatchingEngineOrderActions : public Test {
   auto amend_limit(LimitUpdate update, OrderActionMode mode) -> void {
     amend_limit_order(event_listener,
                       order_book,
-                      std::nullopt,
+                      no_price_tick_ranges,
                       std::move(update),
                       context(mode));
   }
@@ -66,7 +68,7 @@ struct MatchingEngineOrderActions : public Test {
   auto amend_market(MarketUpdate update, OrderActionMode mode) -> void {
     amend_market_order(event_listener,
                        order_book,
-                       std::nullopt,
+                       no_price_tick_ranges,
                        std::move(update),
                        context(mode));
   }
@@ -75,8 +77,11 @@ struct MatchingEngineOrderActions : public Test {
     OrderCancel request{protocol::Session{protocol::generator::Session{}},
                         side};
     request.order_id = order_id;
-    cancel_order(
-        event_listener, order_book, std::nullopt, request, context(mode));
+    cancel_order(event_listener,
+                 order_book,
+                 no_price_tick_ranges,
+                 request,
+                 context(mode));
   }
 
   auto rest_limit(Side side,

@@ -1,5 +1,6 @@
 #include <gmock/gmock.h>
 
+#include "core/tools/price_tick_ranges.hpp"
 #include "ih/orders/actions/market_amendment.hpp"
 #include "ih/orders/book/order_book.hpp"
 #include "ih/orders/book/order_book_update.hpp"
@@ -23,7 +24,8 @@ struct MatchingEngineMarketAmendment : public Test {
 
   NiceMock<EventListenerMock> event_listener;
   OrderBook order_book;
-  MarketAmendment amendment{event_listener, order_book, std::nullopt};
+  const core::PriceTickRanges no_price_tick_ranges;
+  MarketAmendment amendment{event_listener, order_book, no_price_tick_ranges};
 
   auto rest_market_order(OrderId order_id,
                          OrderQuantity quantity,
