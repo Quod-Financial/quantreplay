@@ -3,6 +3,7 @@
 
 #include "middleware/routing/errors.hpp"
 #include "protocol/admin/market_state.hpp"
+#include "protocol/admin/quote.hpp"
 #include "protocol/admin/trading_phase.hpp"
 
 namespace simulator::middleware {
@@ -18,6 +19,9 @@ auto send_admin_request(const protocol::StoreMarketStateRequest& request,
 
 auto send_admin_request(const protocol::RecoverMarketStateRequest& request,
                         protocol::RecoverMarketStateReply& reply) -> void;
+
+auto send_admin_request(const protocol::QuotePublicationRequest& request,
+                        protocol::QuotePublicationReply& reply) -> void;
 
 }  // namespace simulator::middleware
 

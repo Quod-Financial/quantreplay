@@ -457,6 +457,12 @@ auto send_admin_request(const protocol::RecoverMarketStateRequest& request,
   send_via_trading_admin_channel(request, reply);
 }
 
+auto send_admin_request(const protocol::QuotePublicationRequest& request,
+                        protocol::QuotePublicationReply& reply) -> void {
+  log::debug("trading admin channel is transferring QuotePublicationRequest");
+  send_via_trading_admin_channel(request, reply);
+}
+
 // Trading reply channel implementation
 
 auto bind_trading_reply_channel(std::shared_ptr<TradingReplyReceiver> receiver)

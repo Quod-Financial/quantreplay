@@ -47,14 +47,13 @@ TEST_F(DataLayerPqxxVenueQuerySelect, Compose_WithPredicateExpression) {
   using Column = Venue::Attribute;
   using Query = venue_query::Select;
 
-  const auto predicate =
-      VenueCmp::eq(Column::EngineType, Venue::EngineType::Quoting) &&
-      VenueCmp::eq(Column::SupportTifDay, false);
+  const auto predicate = VenueCmp::eq(Column::SupportTifIoc, true) &&
+                         VenueCmp::eq(Column::SupportTifDay, false);
 
   const auto query = Query::prepare().by(predicate, sanitizer);
   EXPECT_EQ(query.compose(),
             "SELECT * FROM venue "
-            "WHERE engine_type = `Quoting` AND support_tif_day = `false`");
+            "WHERE support_tif_ioc = `true` AND support_tif_day = `false`");
 }
 
 TEST_F(DataLayerPqxxVenueQuerySelect, Compose_WithByVenueIdPredicate) {

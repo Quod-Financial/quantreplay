@@ -69,23 +69,6 @@ TEST_F(HttpJsonVenueMarshaller, MarshallsName) {
   ASSERT_EQ(marshall(venue), expected_json);
 }
 
-TEST_F(HttpJsonVenueMarshaller, MarshallsEngineType) {
-  using EngineType = data_layer::Venue::EngineType;
-  const auto patch =
-      make_default_patch().with_engine_type(EngineType::Matching);
-  const auto venue = make_venue(patch);
-
-  // clang-format off
-  const std::string expected_json{"{"
-    R"("id":"dummy",)"
-    R"("engineType":"Matching",)"
-    R"("phases":[])"
-  "}"};
-  // clang-format on
-
-  ASSERT_EQ(marshall(venue), expected_json);
-}
-
 TEST_F(HttpJsonVenueMarshaller, MarshallsSupportTifIoc) {
   const auto patch = make_default_patch().with_support_tif_ioc_flag(true);
   const auto venue = make_venue(patch);
@@ -161,14 +144,15 @@ TEST_F(HttpJsonVenueMarshaller, MarshallsRestPort) {
   ASSERT_EQ(marshall(venue), expected_json);
 }
 
-TEST_F(HttpJsonVenueMarshaller, MarshallsOrderOnStartup) {
-  const auto patch = make_default_patch().with_orders_on_startup_flag(false);
+TEST_F(HttpJsonVenueMarshaller, MarshallsGenerateActionsOnStartup) {
+  const auto patch =
+      make_default_patch().with_generate_actions_on_startup_flag(false);
   const auto venue = make_venue(patch);
 
   // clang-format off
   const std::string expected_json{"{"
     R"("id":"dummy",)"
-    R"("orderOnStartup":false,)"
+    R"("generateActionsOnStartup":false,)"
     R"("phases":[])"
   "}"};
   // clang-format on
@@ -399,22 +383,6 @@ TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsName) {
   EXPECT_THAT(patch.name(), IsPatchFieldWithValue(Optional(Eq("VenueName"))));
 }
 
-TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsEngineTypeNull) {
-  constexpr std::string_view json{R"({"engineType":null})"};
-
-  VenueUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.engine_type(), IsPatchFieldWithValue(std::nullopt));
-}
-
-TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsEngineType) {
-  using EngineType = data_layer::Venue::EngineType;
-  constexpr std::string_view json{R"({"engineType":"Quoting"})"};
-
-  VenueUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.engine_type(),
-              IsPatchFieldWithValue(Optional(Eq(EngineType::Quoting))));
-}
-
 TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsSupportTifIocNull) {
   constexpr std::string_view json{R"({"supportTifIoc":null})"};
 
@@ -493,19 +461,26 @@ TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsRestPort) {
   EXPECT_THAT(patch.rest_port(), IsPatchFieldWithValue(Optional(Eq(42))));
 }
 
-TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsOrdersOnStartupNull) {
-  constexpr std::string_view json{R"({"orderOnStartup":null})"};
-
-  VenueUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.orders_on_startup_flag(),
-              IsPatchFieldWithValue(std::nullopt));
-}
-
-TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsOrdersOnStartup) {
+TEST_F(HttpJsonVenueUnmarshaller, IgnoresFormerOrderOnStartupKey) {
   constexpr std::string_view json{R"({"orderOnStartup":true})"};
 
   VenueUnmarshaller::unmarshall(json, patch);
-  EXPECT_THAT(patch.orders_on_startup_flag(),
+  EXPECT_FALSE(patch.generate_actions_on_startup_flag().has_value());
+}
+
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsGenerateActionsOnStartupNull) {
+  constexpr std::string_view json{R"({"generateActionsOnStartup":null})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.generate_actions_on_startup_flag(),
+              IsPatchFieldWithValue(std::nullopt));
+}
+
+TEST_F(HttpJsonVenueUnmarshaller, UnmarshallsGenerateActionsOnStartup) {
+  constexpr std::string_view json{R"({"generateActionsOnStartup":true})"};
+
+  VenueUnmarshaller::unmarshall(json, patch);
+  EXPECT_THAT(patch.generate_actions_on_startup_flag(),
               IsPatchFieldWithValue(Optional(Eq(true))));
 }
 

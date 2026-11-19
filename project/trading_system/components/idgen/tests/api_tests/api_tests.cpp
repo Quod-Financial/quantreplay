@@ -8,6 +8,7 @@
 #include "idgen/instrument_id.hpp"
 #include "idgen/market_entry_id.hpp"
 #include "idgen/order_id.hpp"
+#include "idgen/order_reject_ids.hpp"
 #include "ih/contexts/execution_id_context.hpp"
 #include "ih/contexts/instrument_id_context.hpp"
 #include "ih/contexts/market_entry_id_context.hpp"
@@ -119,6 +120,16 @@ TEST(Idgen, GenerateSeveralExecutionIdentifiers) {
   ASSERT_THAT(first_identifier.has_value(), IsTrue());
   ASSERT_THAT(second_identifier.has_value(), IsTrue());
   ASSERT_THAT(first_identifier->value(), Ne(second_identifier->value()));
+}
+
+TEST(Idgen, GenerateOrderRejectIdentifiersOfOneOrder) {
+  auto context = make_order_id_generation_ctx();
+
+  const auto identifiers = generate_order_reject_ids(context);
+
+  ASSERT_THAT(identifiers.venue_order_id.value(), MatchesRegex("[0-9]{18}"));
+  ASSERT_EQ(identifiers.execution_id.value(),
+            identifiers.venue_order_id.value() + "-1");
 }
 
 TEST(Idgen, RetrieveBadMarketEntryIdGenerationContextImplementation) {

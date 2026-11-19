@@ -222,6 +222,16 @@ struct ToFixConverter<FIX::TradeCondition> {
 };
 
 template <>
+struct ToFixConverter<FIX::QuoteCondition> {
+  static auto convert(core::enumerators::QuoteCondition) -> std::string;
+};
+
+template <>
+struct ToFixConverter<FIX::MDQuoteType> {
+  static auto convert(core::enumerators::MdQuoteType) -> int;
+};
+
+template <>
 struct ToFixConverter<FIX::SecurityTradingStatus> {
   static auto convert(core::enumerators::TradingStatus) -> int;
 };

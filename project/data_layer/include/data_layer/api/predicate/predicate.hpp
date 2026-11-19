@@ -25,7 +25,7 @@ struct ModelTraits<data_layer::Datasource> {
 template <>
 struct ModelTraits<data_layer::Listing> {
   using AttributeType = Listing::Attribute;
-  using CustomFieldTypes = std::tuple<>;
+  using CustomFieldTypes = std::tuple<Listing::EngineType>;
 };
 
 template <>
@@ -49,7 +49,7 @@ struct ModelTraits<data_layer::Setting> {
 template <>
 struct ModelTraits<data_layer::Venue> {
   using AttributeType = Venue::Attribute;
-  using CustomFieldTypes = std::tuple<Venue::EngineType>;
+  using CustomFieldTypes = std::tuple<>;
 };
 
 }  // namespace predicate

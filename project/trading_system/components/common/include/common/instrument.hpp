@@ -3,11 +3,14 @@
 
 #include <fmt/base.h>
 
+#include <cstdint>
 #include <optional>
 
 #include "common/attributes.hpp"
 
 namespace simulator::trading_system {
+
+enum class EngineType : std::uint8_t { Matching, Quoting };
 
 struct Instrument {
   std::optional<Symbol> symbol;
@@ -32,6 +35,8 @@ struct Instrument {
 
   std::optional<PartyRole> party_role;
   std::optional<SecurityType> security_type;
+
+  EngineType engine_type{};
 
   [[nodiscard]]
   auto operator==(const Instrument&) const -> bool = default;

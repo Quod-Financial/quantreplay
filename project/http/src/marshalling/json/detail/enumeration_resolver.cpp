@@ -33,12 +33,12 @@ constexpr std::string_view TradeAtLast{"TradeAtLast"};
 
 }  // namespace market_phase_type
 
-namespace venue_engine_type {
+namespace listing_engine_type {
 
 constexpr std::string_view Matching{"Matching"};
 constexpr std::string_view Quoting{"Quoting"};
 
-}  // namespace venue_engine_type
+}  // namespace listing_engine_type
 
 namespace {
 
@@ -160,28 +160,61 @@ auto EnumerationResolver::resolve(const std::string& value,
   }
 }
 
-auto EnumerationResolver::resolve(data_layer::Venue::EngineType value)
+auto EnumerationResolver::resolve(data_layer::Listing::EngineType value)
     -> std::string_view {
   switch (value) {
-    case data_layer::Venue::EngineType::Matching:
-      return venue_engine_type::Matching;
-    case data_layer::Venue::EngineType::Quoting:
-      return venue_engine_type::Quoting;
+    case data_layer::Listing::EngineType::Matching:
+      return listing_engine_type::Matching;
+    case data_layer::Listing::EngineType::Quoting:
+      return listing_engine_type::Quoting;
   }
 
-  raise_bad_enumeration_error("Venue::EngineType", value);
+  raise_bad_enumeration_error("Listing::EngineType", value);
 }
 
 auto EnumerationResolver::resolve(const std::string& value,
-                                  data_layer::Venue::EngineType& result)
+                                  data_layer::Listing::EngineType& result)
     -> void {
-  if (value == venue_engine_type::Matching) {
-    result = data_layer::Venue::EngineType::Matching;
-  } else if (value == venue_engine_type::Quoting) {
-    result = data_layer::Venue::EngineType::Quoting;
+  if (value == listing_engine_type::Matching) {
+    result = data_layer::Listing::EngineType::Matching;
+  } else if (value == listing_engine_type::Quoting) {
+    result = data_layer::Listing::EngineType::Quoting;
   } else {
-    raise_bad_value_error("Venue::EngineType", value);
+    raise_bad_value_error("Listing::EngineType", value);
   }
+}
+
+auto EnumerationResolver::resolve(const std::string& value,
+                                  core::enumerators::SecurityType& result)
+    -> void {
+  const auto security_type =
+      core::enumerators::convert_security_type_from_string(value);
+  if (!security_type.has_value()) {
+    raise_bad_value_error("SecurityType", value);
+  }
+  result = *security_type;
+}
+
+auto EnumerationResolver::resolve(const std::string& value,
+                                  core::enumerators::SecurityIdSource& result)
+    -> void {
+  const auto security_id_source =
+      core::enumerators::convert_security_id_source_from_string(value);
+  if (!security_id_source.has_value()) {
+    raise_bad_value_error("SecurityIdSource", value);
+  }
+  result = *security_id_source;
+}
+
+auto EnumerationResolver::resolve(const std::string& value,
+                                  core::enumerators::PartyRole& result)
+    -> void {
+  const auto party_role =
+      core::enumerators::convert_party_role_from_string(value);
+  if (!party_role.has_value()) {
+    raise_bad_value_error("PartyRole", value);
+  }
+  result = *party_role;
 }
 
 }  // namespace simulator::http::json

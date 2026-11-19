@@ -202,11 +202,11 @@ auto ColumnResolver::to_column_name(Listing::Attribute attribute)
     case Listing::Attribute::RandomDepthLevels:
       column_name = listing_column::RandomDepthLevels;
       break;
-    case Listing::Attribute::RandomOrdersSpread:
-      column_name = listing_column::RandomOrdersSpread;
+    case Listing::Attribute::RandomPriceSpread:
+      column_name = listing_column::RandomPriceSpread;
       break;
-    case Listing::Attribute::RandomOrdersRate:
-      column_name = listing_column::RandomOrdersRate;
+    case Listing::Attribute::RandomUpdateRate:
+      column_name = listing_column::RandomUpdateRate;
       break;
     case Listing::Attribute::RandomTickRange:
       column_name = listing_column::RandomTickRange;
@@ -247,8 +247,8 @@ auto ColumnResolver::to_column_name(Listing::Attribute attribute)
     case Listing::Attribute::RandomAmtMaximum:
       column_name = listing_column::RandomAmtMaximum;
       break;
-    case Listing::Attribute::RandomOrdersEnabled:
-      column_name = listing_column::RandomOrdersEnabled;
+    case Listing::Attribute::RandomActionsEnabled:
+      column_name = listing_column::RandomActionsEnabled;
       break;
     case Listing::Attribute::RandomAggressiveQtyMinimum:
       column_name = listing_column::RandomAggressiveQtyMinimum;
@@ -264,6 +264,9 @@ auto ColumnResolver::to_column_name(Listing::Attribute attribute)
       break;
     case Listing::Attribute::RandomPriceExcludeCurrentListing:
       column_name = listing_column::RandomPriceExcludeCurrentListing;
+      break;
+    case Listing::Attribute::EngineType:
+      column_name = listing_column::EngineType;
       break;
   }
 
@@ -417,9 +420,6 @@ auto ColumnResolver::to_column_name(Venue::Attribute attribute) -> std::string {
     case Venue::Attribute::Name:
       column_name = venue_column::Name;
       break;
-    case Venue::Attribute::EngineType:
-      column_name = venue_column::EngineType;
-      break;
     case Venue::Attribute::SupportTifIoc:
       column_name = venue_column::SupportTifIoc;
       break;
@@ -435,8 +435,8 @@ auto ColumnResolver::to_column_name(Venue::Attribute attribute) -> std::string {
     case Venue::Attribute::RestPort:
       column_name = venue_column::RestPort;
       break;
-    case Venue::Attribute::OrderOnStartup:
-      column_name = venue_column::OrderOnStartup;
+    case Venue::Attribute::GenerateActionsOnStartup:
+      column_name = venue_column::GenerateActionsOnStartup;
       break;
     case Venue::Attribute::RandomPartiesCount:
       column_name = venue_column::RandomPartyCount;

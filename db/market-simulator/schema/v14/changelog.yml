@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - include:
+      file: tables/listing.yml
+      relativeToChangelogFile: true
+  - include:
+      file: tables/venue.yml
+      relativeToChangelogFile: true

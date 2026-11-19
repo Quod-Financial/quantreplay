@@ -59,7 +59,7 @@ TEST_F(TradingSystemRejectNotifier, RejectsOrderModificationRequest) {
   EXPECT_CALL(middleware_receiver,
               process(A<protocol::OrderModificationReject>()))
       .WillOnce(SaveArg<0>(&reject));
-  notifier.reject(request, "reason");
+  RejectNotifier::reject(request, "reason");
 
   EXPECT_THAT(reject.reject_text, Optional(Eq(RejectText{"reason"})));
   EXPECT_THAT(reject.order_status, Optional(Eq(OrderStatus::Option::Rejected)));
@@ -72,7 +72,7 @@ TEST_F(TradingSystemRejectNotifier, RejectsOrderCancellationRequest) {
   EXPECT_CALL(middleware_receiver,
               process(A<protocol::OrderCancellationReject>()))
       .WillOnce(SaveArg<0>(&reject));
-  notifier.reject(request, "reason");
+  RejectNotifier::reject(request, "reason");
 
   EXPECT_THAT(reject.reject_text, Optional(Eq(RejectText{"reason"})));
   EXPECT_THAT(reject.order_status, Optional(Eq(OrderStatus::Option::Rejected)));
@@ -84,7 +84,7 @@ TEST_F(TradingSystemRejectNotifier, RejectsMarketDataRequest) {
 
   EXPECT_CALL(middleware_receiver, process(A<protocol::MarketDataReject>()))
       .WillOnce(SaveArg<0>(&reject));
-  notifier.reject(request, "reason");
+  RejectNotifier::reject(request, "reason");
 
   EXPECT_THAT(reject.reject_text, Optional(Eq(RejectText{"reason"})));
   EXPECT_THAT(reject.reject_reason,
@@ -98,7 +98,7 @@ TEST_F(TradingSystemRejectNotifier,
 
   EXPECT_CALL(middleware_receiver, process(A<protocol::MarketDataReject>()))
       .WillOnce(SaveArg<0>(&reject));
-  notifier.notify_no_instruments_requested(request);
+  RejectNotifier::notify_no_instruments_requested(request);
 
   EXPECT_THAT(reject.reject_reason, Eq(std::nullopt));
   EXPECT_THAT(
@@ -113,7 +113,7 @@ TEST_F(TradingSystemRejectNotifier,
 
   EXPECT_CALL(middleware_receiver, process(A<protocol::MarketDataReject>()))
       .WillOnce(SaveArg<0>(&reject));
-  notifier.notify_multiple_instruments_requested(request);
+  RejectNotifier::notify_multiple_instruments_requested(request);
 
   EXPECT_THAT(reject.reject_reason, Eq(std::nullopt));
   EXPECT_THAT(

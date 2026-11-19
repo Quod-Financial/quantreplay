@@ -8,8 +8,16 @@
 #include "instruments/view.hpp"
 #include "middleware/channels/trading_reply_channel.hpp"
 #include "mocks/instrument_resolver_mock.hpp"
+#include "mocks/order_modifying_engine_mock.hpp"
+#include "mocks/quote_publishing_engine_mock.hpp"
 #include "mocks/repository_accessor_mock.hpp"
+#include "mocks/state_persisting_engine_mock.hpp"
 #include "mocks/trading_reply_receiver_mock.hpp"
+#include "protocol/admin/quote.hpp"
+#include "protocol/app/order_cancellation_reject.hpp"
+#include "protocol/app/order_cancellation_request.hpp"
+#include "protocol/app/order_modification_reject.hpp"
+#include "protocol/app/order_modification_request.hpp"
 #include "protocol/types/session.hpp"
 
 namespace simulator::trading_system::test {
@@ -180,7 +188,8 @@ TEST_F(TradingSystemExecutionSystem, StoresStateForTwoInstruments) {
   instrument.identifier = InstrumentId{2};
   instruments.push_back(instrument);
 
-  EXPECT_CALL(repository_accessor, unicast_impl(_, _)).Times(2);
+  EXPECT_CALL(repository_accessor, unicast_state_persisting_impl(_, _))
+      .Times(2);
 
   execution_system.store_state_request(make_store_vector(instruments, states));
 }
@@ -226,8 +235,10 @@ TEST_F(TradingSystemExecutionSystem,
   ON_CALL(instrument_resolver, resolve_instrument(data2.specification))
       .WillByDefault(Return(instrument::View{instrument2}));
 
-  EXPECT_CALL(repository_accessor, unicast_impl(instrument1.identifier, _));
-  EXPECT_CALL(repository_accessor, unicast_impl(instrument2.identifier, _));
+  EXPECT_CALL(repository_accessor,
+              unicast_state_persisting_impl(instrument1.identifier, _));
+  EXPECT_CALL(repository_accessor,
+              unicast_state_persisting_impl(instrument2.identifier, _));
 
   execution_system.recover_state_request(data);
 }
@@ -235,6 +246,227 @@ TEST_F(TradingSystemExecutionSystem,
 TEST_F(TradingSystemExecutionSystem, BroadcastSessionTerminatedEvent) {
   EXPECT_CALL(repository_accessor, broadcast_impl(_));
   execution_system.handle(protocol::SessionTerminatedEvent{make_session()});
+}
+
+struct TradingSystemExecutionSystemOrderModification
+    : public TradingSystemExecutionSystem {
+  auto bind_order_modifying_engine() -> void {
+    ON_CALL(repository_accessor, unicast_order_modifying_impl)
+        .WillByDefault([this](auto /*identifier*/, auto action) {
+          action(engine);
+          return true;
+        });
+  }
+
+  auto bind_no_order_modifying_engine() -> void {
+    ON_CALL(repository_accessor, unicast_order_modifying_impl)
+        .WillByDefault(Return(false));
+  }
+
+  template <typename RequestType>
+  static auto make_request() -> RequestType {
+    auto request = make_external_request<RequestType>();
+    request.venue_order_id = VenueOrderId{"venue-order-id"};
+    return request;
+  }
+
+  template <typename RejectType>
+  static auto IsOrdersNotSupportedReject() {
+    return AllOf(Field(&RejectType::reject_text,
+                       Optional(Eq(RejectText{
+                           "orders are not supported on a quoting listing"}))),
+                 Field(&RejectType::order_status,
+                       Optional(Eq(OrderStatus::Option::Rejected))),
+                 Field(&RejectType::venue_order_id,
+                       Optional(Eq(VenueOrderId{"venue-order-id"}))));
+  }
+
+  NiceMock<OrderModifyingEngineMock> engine;
+};
+
+TEST_F(TradingSystemExecutionSystemOrderModification,
+       RejectsOrderModificationOnListingThatCannotModifyOrders) {
+  bind_no_order_modifying_engine();
+
+  EXPECT_CALL(
+      trading_reply_receiver,
+      process(Matcher<protocol::OrderModificationReject>(
+          IsOrdersNotSupportedReject<protocol::OrderModificationReject>())));
+
+  execution_system.execute_request(
+      make_request<protocol::OrderModificationRequest>());
+}
+
+TEST_F(TradingSystemExecutionSystemOrderModification,
+       DispatchesOrderModificationToEngineOfResolvedListing) {
+  bind_order_modifying_engine();
+
+  EXPECT_CALL(repository_accessor,
+              unicast_order_modifying_impl(Eq(instrument.identifier), _));
+  EXPECT_CALL(engine, execute(A<protocol::OrderModificationRequest>()));
+
+  execution_system.execute_request(
+      make_request<protocol::OrderModificationRequest>());
+}
+
+TEST_F(TradingSystemExecutionSystemOrderModification,
+       RejectsOrderCancellationOnListingThatCannotModifyOrders) {
+  bind_no_order_modifying_engine();
+
+  EXPECT_CALL(
+      trading_reply_receiver,
+      process(Matcher<protocol::OrderCancellationReject>(
+          IsOrdersNotSupportedReject<protocol::OrderCancellationReject>())));
+
+  execution_system.execute_request(
+      make_request<protocol::OrderCancellationRequest>());
+}
+
+TEST_F(TradingSystemExecutionSystemOrderModification,
+       DispatchesOrderCancellationToEngineOfResolvedListing) {
+  bind_order_modifying_engine();
+
+  EXPECT_CALL(repository_accessor,
+              unicast_order_modifying_impl(Eq(instrument.identifier), _));
+  EXPECT_CALL(engine, execute(A<protocol::OrderCancellationRequest>()));
+
+  execution_system.execute_request(
+      make_request<protocol::OrderCancellationRequest>());
+}
+
+struct TradingSystemExecutionSystemStatePersistence
+    : public TradingSystemExecutionSystem {
+  TradingSystemExecutionSystemStatePersistence() {
+    ON_CALL(repository_accessor, unicast_state_persisting_impl)
+        .WillByDefault([this](InstrumentId identifier, auto action) {
+          if (identifier == persisting_instrument_id) {
+            action(engine);
+            return true;
+          }
+          return false;
+        });
+  }
+
+  static auto make_recover_data() -> std::vector<market_state::InstrumentData> {
+    market_state::InstrumentData quoting_data;
+    quoting_data.specification.symbol = Symbol{"EUR/USD"};
+    market_state::InstrumentData matching_data;
+    matching_data.specification.symbol = Symbol{"AAPL"};
+    return {quoting_data, matching_data};
+  }
+
+  InstrumentId persisting_instrument_id{2};
+  NiceMock<StatePersistingEngineMock> engine;
+};
+
+TEST_F(TradingSystemExecutionSystemStatePersistence,
+       StoresStateOfInstrumentFollowingInstrumentWhoseEngineKeepsNoState) {
+  std::vector<market_state::InstrumentState> states(2);
+  std::vector<Instrument> instruments(2);
+  instruments[0].identifier = InstrumentId{1};
+  instruments[1].identifier = persisting_instrument_id;
+
+  EXPECT_CALL(engine, store_state(Ref(states[1])));
+
+  execution_system.store_state_request(make_store_vector(instruments, states));
+}
+
+TEST_F(TradingSystemExecutionSystemStatePersistence,
+       RecoversStateOfInstrumentFollowingInstrumentWhoseEngineKeepsNoState) {
+  const auto data = make_recover_data();
+  Instrument quoting_instrument;
+  quoting_instrument.identifier = InstrumentId{1};
+  Instrument matching_instrument;
+  matching_instrument.identifier = persisting_instrument_id;
+  ON_CALL(instrument_resolver, resolve_instrument(data[0].specification))
+      .WillByDefault(Return(instrument::View{quoting_instrument}));
+  ON_CALL(instrument_resolver, resolve_instrument(data[1].specification))
+      .WillByDefault(Return(instrument::View{matching_instrument}));
+
+  EXPECT_CALL(engine, recover_state(_));
+
+  execution_system.recover_state_request(data);
+}
+
+struct TradingSystemExecutionSystemQuotePublication
+    : public TradingSystemExecutionSystem {
+  auto fail_resolution(instrument::LookupError error) -> void {
+    ON_CALL(instrument_resolver,
+            resolve_instrument(A<const InstrumentDescriptor&>()))
+        .WillByDefault(Return(tl::make_unexpected(error)));
+  }
+
+  TradingSystemExecutionSystemQuotePublication() {
+    ON_CALL(repository_accessor, unicast_quote_publishing_impl)
+        .WillByDefault([this](auto /*identifier*/, auto action) {
+          action(engine);
+          return true;
+        });
+  }
+
+  NiceMock<QuotePublishingEngineMock> engine;
+  protocol::QuotePublicationRequest request;
+  protocol::QuotePublicationReply reply;
+};
+
+TEST_F(TradingSystemExecutionSystemQuotePublication,
+       RepliesListingNotFoundWhenNoListingMatches) {
+  fail_resolution(instrument::LookupError::InstrumentNotFound);
+
+  execution_system.execute_request(request, reply);
+
+  ASSERT_THAT(
+      reply.result,
+      Optional(protocol::QuotePublicationReply::Result::ListingNotFound));
+  ASSERT_EQ(reply.error_message, "listing not found");
+}
+
+TEST_F(TradingSystemExecutionSystemQuotePublication,
+       RepliesAmbiguousListingWhenListingIsAmbiguous) {
+  fail_resolution(instrument::LookupError::AmbiguousInstrumentDescriptor);
+
+  execution_system.execute_request(request, reply);
+
+  ASSERT_THAT(
+      reply.result,
+      Optional(protocol::QuotePublicationReply::Result::AmbiguousListing));
+  ASSERT_EQ(reply.error_message, "cannot resolve listing uniquely");
+}
+
+TEST_F(TradingSystemExecutionSystemQuotePublication,
+       RepliesInvalidRequestWhenListingIdentificationIsMalformed) {
+  fail_resolution(instrument::LookupError::MalformedInstrumentDescriptor);
+
+  execution_system.execute_request(request, reply);
+
+  ASSERT_THAT(
+      reply.result,
+      Optional(protocol::QuotePublicationReply::Result::InvalidRequest));
+  ASSERT_EQ(reply.error_message,
+            "listing identification attributes set is malformed");
+}
+
+TEST_F(TradingSystemExecutionSystemQuotePublication,
+       RepliesInvalidRequestWhenListingCannotPublishQuotes) {
+  ON_CALL(repository_accessor, unicast_quote_publishing_impl)
+      .WillByDefault(Return(false));
+
+  execution_system.execute_request(request, reply);
+
+  ASSERT_THAT(
+      reply.result,
+      Optional(protocol::QuotePublicationReply::Result::InvalidRequest));
+  ASSERT_EQ(reply.error_message,
+            "quotes are supported only on a quoting listing");
+}
+
+TEST_F(TradingSystemExecutionSystemQuotePublication,
+       PublishesQuoteInEngineOfResolvedListing) {
+  EXPECT_CALL(repository_accessor,
+              unicast_quote_publishing_impl(Eq(instrument.identifier), _));
+  EXPECT_CALL(engine, execute(Ref(request), Ref(reply)));
+
+  execution_system.execute_request(request, reply);
 }
 
 // NOLINTEND(*magic-numbers*)

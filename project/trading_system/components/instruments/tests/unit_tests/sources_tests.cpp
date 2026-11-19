@@ -7,7 +7,7 @@
 namespace simulator::trading_system::instrument::test {
 namespace {
 
-using namespace ::testing;
+using namespace ::testing;  // NOLINT
 
 // NOLINTBEGIN(*-magic-numbers)
 
@@ -15,7 +15,8 @@ struct InstrumentsCreateInstrument : public Test {
   using Listing = data_layer::Listing;
 
   [[nodiscard]] static auto make_listing_patch() -> Listing::Patch {
-    return Listing::Patch{}.with_venue_id("VENUE");
+    return Listing::Patch{}.with_venue_id("VENUE").with_engine_type(
+        Listing::EngineType::Matching);
   }
 };
 
@@ -336,6 +337,24 @@ TEST_F(InstrumentsCreateInstrument, WithoutMaximalQuantity) {
   const Instrument instrument = detail::create_instrument(listing);
 
   EXPECT_EQ(instrument.max_quantity, std::nullopt);
+}
+
+TEST_F(InstrumentsCreateInstrument, WithMatchingEngineType) {
+  const Listing listing = Listing::create(
+      make_listing_patch().with_engine_type(Listing::EngineType::Matching), 43);
+
+  const Instrument instrument = detail::create_instrument(listing);
+
+  EXPECT_EQ(instrument.engine_type, EngineType::Matching);
+}
+
+TEST_F(InstrumentsCreateInstrument, WithQuotingEngineType) {
+  const Listing listing = Listing::create(
+      make_listing_patch().with_engine_type(Listing::EngineType::Quoting), 43);
+
+  const Instrument instrument = detail::create_instrument(listing);
+
+  EXPECT_EQ(instrument.engine_type, EngineType::Quoting);
 }
 
 // NOLINTEND(*-magic-numbers)

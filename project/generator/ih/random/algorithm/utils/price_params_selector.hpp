@@ -97,27 +97,27 @@ auto PriceParamsSelector::select_spread(const data_layer::Listing& instrument,
                                         double px_tick_size,
                                         StepTracer& step) -> double {
   double px_spread = 0;
-  if (instrument.random_orders_spread()) {
-    px_spread = *instrument.random_orders_spread();
+  if (instrument.random_price_spread()) {
+    px_spread = *instrument.random_price_spread();
     if (px_spread < px_tick_size) {
       px_spread = px_tick_size;
       trace_output(step,
                    trace::make_commented_value(
-                       "randomOrdersSpread",
+                       "randomPriceSpread",
                        px_spread,
-                       "instrument's randomOrdersSpread is less than "
+                       "instrument's randomPriceSpread is less than "
                        "priceTickSize, set to priceTickSize"));
     } else {
-      trace_output(step, trace::make_value("randomOrdersSpread", px_spread));
+      trace_output(step, trace::make_value("randomPriceSpread", px_spread));
     }
   } else {
     px_spread = px_tick_size;
     trace_output(
         step,
         trace::make_commented_value(
-            "randomOrdersSpread",
+            "randomPriceSpread",
             px_spread,
-            "instrument's randomOrdersSpread is null, set to priceTickSize"));
+            "instrument's randomPriceSpread is null, set to priceTickSize"));
   }
 
   return px_spread;

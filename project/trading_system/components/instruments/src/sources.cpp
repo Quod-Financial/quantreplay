@@ -51,11 +51,23 @@ auto convert(const std::optional<std::string>& original,
   }
 }
 
+auto convert(data_layer::Listing::EngineType original, EngineType& converted)
+    -> void {
+  switch (original) {
+    case data_layer::Listing::EngineType::Matching:
+      converted = EngineType::Matching;
+      return;
+    case data_layer::Listing::EngineType::Quoting:
+      converted = EngineType::Quoting;
+      return;
+  }
+}
+
 }  // namespace
 
 auto create_instrument(const data_layer::Listing& listing) noexcept
     -> Instrument {
-  Instrument instrument{};
+  Instrument instrument;
   instrument.database_id = DatabaseId{listing.listing_id()};
 
   convert(listing.symbol(), instrument.symbol);
@@ -75,17 +87,18 @@ auto create_instrument(const data_layer::Listing& listing) noexcept
   convert(listing.qty_multiple(), instrument.quantity_tick);
   convert(listing.qty_minimum(), instrument.min_quantity);
   convert(listing.qty_maximum(), instrument.max_quantity);
+  convert(listing.engine_type(), instrument.engine_type);
 
   return instrument;
 }
 
 }  // namespace detail
 
-DatabaseSource::DatabaseSource(data_layer::database::Context db) noexcept
-    : db_(std::move(db)) {}
+DatabaseSource::DatabaseSource(data_layer::database::Context database) noexcept
+    : db_{std::move(database)} {}
 
-auto DatabaseSource::load_instruments(LoadingProcedure loading_proc) const
-    -> void {
+auto DatabaseSource::load_instruments(
+    const LoadingProcedure& loading_proc) const -> void {
   using data_layer::Listing;
   using data_layer::select_all_listings;
 
@@ -111,7 +124,7 @@ auto DatabaseSource::predicate() -> data_layer::Listing::Predicate {
 MemorySource::MemorySource(std::vector<Instrument> instruments) noexcept
     : instruments_(std::move(instruments)) {}
 
-auto MemorySource::load_instruments(LoadingProcedure loading_proc) const
+auto MemorySource::load_instruments(const LoadingProcedure& loading_proc) const
     -> void {
   for (const auto& instrument : instruments_) {
     loading_proc(instrument);

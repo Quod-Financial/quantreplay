@@ -41,6 +41,8 @@ class Router : public Pistache::Http::Handler {
 
   auto init_setting_routes() -> void;
 
+  auto init_quote_routes() -> void;
+
   Pistache::Rest::Router router_;
 
   std::shared_ptr<GetProcessor> get_processor_;

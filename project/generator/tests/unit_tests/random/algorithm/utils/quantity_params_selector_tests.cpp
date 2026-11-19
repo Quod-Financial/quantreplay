@@ -18,7 +18,10 @@ struct GeneratorRandomQuantityParamsSelector : public ::testing::Test {
   static inline const Event aggressive_event{
       static_cast<Event::RandomInteger>(Event::Type::AggressiveBuy)};
 
-  GeneratorRandomQuantityParamsSelector() { patch.with_venue_id("Venue"); }
+  GeneratorRandomQuantityParamsSelector() {
+    patch.with_venue_id("Venue").with_engine_type(
+        data_layer::Listing::EngineType::Matching);
+  }
 };
 
 TEST_F(GeneratorRandomQuantityParamsSelector,

@@ -4,6 +4,8 @@
 #include <map>
 #include <memory>
 
+#include "common/market_data_rejects.hpp"
+#include "ih/common/events/client_notification.hpp"
 #include "ih/market_data/subscriptions/subscription.hpp"
 #include "ih/market_data/tools/algorithms.hpp"
 #include "ih/market_data/tools/notification_creators.hpp"
@@ -135,24 +137,8 @@ auto SubscriptionManager::publish_snapshot() -> void {
 
 auto SubscriptionManager::validate(const protocol::MarketDataRequest& request)
     -> bool {
-  if (!request.request_id.has_value()) {
-    emit(make_request_rejected_notification(
-        request, "required market data request id missing"));
-    return false;
-  }
-  if (!request.request_type.has_value()) {
-    emit(make_request_rejected_notification(
-        request, "required market data request type missing"));
-    return false;
-  }
-  if (request.instruments.size() != 1) {
-    emit(make_request_rejected_notification(
-        request, "invalid number of instruments in the request"));
-    return false;
-  }
-  if (request.market_data_types.empty()) {
-    emit(make_request_rejected_notification(
-        request, "no supported market data types specified in the request"));
+  if (const auto violation = find_market_data_request_violation(request)) {
+    emit(make_request_rejected_notification(request, *violation));
     return false;
   }
   if (contains(request.market_data_types, MdEntryType::Option::Trade) &&
@@ -196,8 +182,7 @@ auto SubscriptionManager::unsubscribe(protocol::MarketDataRequest request)
 
   auto subscription = index_->erase(*request.request_id, request.session);
   if (!subscription) {
-    emit(make_request_rejected_notification(
-        request, "no subscription found for the request id"));
+    emit(ClientNotification{make_unknown_subscription_reject(request)});
   }
 }
 

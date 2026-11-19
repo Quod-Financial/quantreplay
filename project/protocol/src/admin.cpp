@@ -2,9 +2,12 @@
 
 #include <string_view>
 
+#include "core/common/name.hpp"
 #include "core/common/std_formatter.hpp"
+#include "core/tools/format.hpp"
 #include "protocol/admin/generator.hpp"
 #include "protocol/admin/market_state.hpp"
+#include "protocol/admin/quote.hpp"
 #include "protocol/admin/trading_phase.hpp"
 
 namespace protocol = simulator::protocol;
@@ -177,4 +180,55 @@ auto fmt::formatter<protocol::RecoverMarketStateReply>::format(
                    "RecoverMarketStateReply={{ Result={}, ErrorMessage={} }}",
                    reply.result,
                    reply.error_message);
+}
+
+auto fmt::formatter<protocol::QuoteEntry>::format(const formattable& entry,
+                                                  format_context& context)
+    -> decltype(context.out()) {
+  using simulator::core::name_of;
+  return format_to(context.out(),
+                   "QuoteEntry={{ {}={}, {}={} }}",
+                   name_of(entry.price),
+                   entry.price,
+                   name_of(entry.quantity),
+                   entry.quantity);
+}
+
+auto fmt::formatter<protocol::QuotePublicationRequest>::format(
+    const formattable& request, format_context& context)
+    -> decltype(context.out()) {
+  using simulator::core::format_collection;
+  return format_to(context.out(),
+                   "QuotePublicationRequest={{ {}, Bids={}, Asks={} }}",
+                   request.instrument,
+                   format_collection(request.bids),
+                   format_collection(request.asks));
+}
+
+auto fmt::formatter<protocol::QuotePublicationReply::Result>::format(
+    formattable result, format_context& context) const
+    -> decltype(context.out()) {
+  using base_formatter = formatter<std::string_view>;
+  switch (result) {
+    case formattable::Published:
+      return base_formatter::format("Published", context);
+    case formattable::ListingNotFound:
+      return base_formatter::format("ListingNotFound", context);
+    case formattable::AmbiguousListing:
+      return base_formatter::format("AmbiguousListing", context);
+    case formattable::InvalidRequest:
+      return base_formatter::format("InvalidRequest", context);
+  }
+  return base_formatter::format("undefined", context);
+}
+
+auto fmt::formatter<protocol::QuotePublicationReply>::format(
+    const formattable& reply, format_context& context)
+    -> decltype(context.out()) {
+  return format_to(
+      context.out(),
+      "QuotePublicationReply={{ Result={}, QuoteId={}, ErrorMessage={} }}",
+      reply.result,
+      reply.quote_id,
+      reply.error_message);
 }

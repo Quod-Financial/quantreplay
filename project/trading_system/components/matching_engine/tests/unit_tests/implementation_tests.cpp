@@ -26,6 +26,7 @@ struct MatchingEngineImplementation : public Test {
   static auto make_instrument() -> Instrument {
     Instrument instrument;
     instrument.symbol = Symbol{"AAPL"};
+    instrument.engine_type = EngineType::Matching;
     return instrument;
   }
 

@@ -15,8 +15,11 @@ auto Listing::create(Listing::Patch snapshot, std::uint64_t id) -> Listing {
   if (!snapshot.venue_id_.has_value()) {
     throw RequiredAttributeMissing("Listing", "VenueID");
   }
+  if (!snapshot.engine_type_.value().has_value()) {
+    throw RequiredAttributeMissing("Listing", "EngineType");
+  }
 
-  Listing listing{};
+  Listing listing{snapshot.engine_type_.inner_value()};
   listing.listing_id_ = id;
 
 #define SIM_ASSIGN_FIELD(LISTING_FIELD, SNAPSHOT_FIELD)            \
@@ -46,7 +49,7 @@ auto Listing::create(Listing::Patch snapshot, std::uint64_t id) -> Listing {
   SIM_ASSIGN_FIELD(qty_multiple_, qty_multiple_);
   SIM_ASSIGN_FIELD(price_tick_size_, price_tick_size_);
   SIM_ASSIGN_FIELD(random_qty_maximum_, random_qty_maximum_);
-  SIM_ASSIGN_FIELD(random_orders_spread_, random_orders_spread_);
+  SIM_ASSIGN_FIELD(random_price_spread_, random_price_spread_);
   SIM_ASSIGN_FIELD(random_qty_minimum_, random_qty_minimum_);
   SIM_ASSIGN_FIELD(random_amt_minimum_, random_amt_minimum_);
   SIM_ASSIGN_FIELD(random_amt_maximum_, random_amt_maximum_);
@@ -60,11 +63,11 @@ auto Listing::create(Listing::Patch snapshot, std::uint64_t id) -> Listing {
                    random_aggressive_amt_maximum_);
 
   SIM_ASSIGN_FIELD(random_depth_levels_, random_depth_levels_);
-  SIM_ASSIGN_FIELD(random_orders_rate_, random_orders_rate_);
+  SIM_ASSIGN_FIELD(random_update_rate_, random_update_rate_);
   SIM_ASSIGN_FIELD(random_tick_range_, random_tick_range_);
 
   SIM_ASSIGN_FIELD(enabled_flag_, enabled_flag_);
-  SIM_ASSIGN_FIELD(random_orders_enabled_flag_, random_orders_enabled_flag_);
+  SIM_ASSIGN_FIELD(random_actions_enabled_flag_, random_actions_enabled_flag_);
   SIM_ASSIGN_FIELD(random_price_exclude_current_listing_flag_,
                    random_price_exclude_current_listing_flag_);
 
@@ -146,13 +149,13 @@ auto Listing::random_depth_levels() const noexcept
   return random_depth_levels_;
 }
 
-auto Listing::random_orders_spread() const noexcept -> std::optional<double> {
-  return random_orders_spread_;
+auto Listing::random_price_spread() const noexcept -> std::optional<double> {
+  return random_price_spread_;
 }
 
-auto Listing::random_orders_rate() const noexcept
+auto Listing::random_update_rate() const noexcept
     -> std::optional<std::uint32_t> {
-  return random_orders_rate_;
+  return random_update_rate_;
 }
 
 auto Listing::random_tick_range() const noexcept
@@ -211,9 +214,9 @@ auto Listing::random_amt_maximum() const noexcept -> std::optional<double> {
   return random_amt_maximum_;
 }
 
-auto Listing::random_orders_enabled_flag() const noexcept
+auto Listing::random_actions_enabled_flag() const noexcept
     -> std::optional<bool> {
-  return random_orders_enabled_flag_;
+  return random_actions_enabled_flag_;
 }
 
 auto Listing::random_price_exclude_current_listing_flag() const noexcept
@@ -239,6 +242,10 @@ auto Listing::random_aggressive_amt_minimum() const noexcept
 auto Listing::random_aggressive_amt_maximum() const noexcept
     -> std::optional<double> {
   return random_aggressive_amt_maximum_;
+}
+
+auto Listing::engine_type() const noexcept -> EngineType {
+  return engine_type_;
 }
 
 auto Listing::random_price_sources() const noexcept
@@ -381,25 +388,25 @@ auto Listing::Patch::with_random_depth_levels(
   return *this;
 }
 
-auto Listing::Patch::random_orders_spread() const noexcept
+auto Listing::Patch::random_price_spread() const noexcept
     -> PatchField<double> {
-  return random_orders_spread_;
+  return random_price_spread_;
 }
 
-auto Listing::Patch::with_random_orders_spread(
+auto Listing::Patch::with_random_price_spread(
     std::optional<double> spread) noexcept -> Patch& {
-  random_orders_spread_ = std::move(spread);
+  random_price_spread_ = std::move(spread);
   return *this;
 }
 
-auto Listing::Patch::random_orders_rate() const noexcept
+auto Listing::Patch::random_update_rate() const noexcept
     -> PatchField<std::uint32_t> {
-  return random_orders_rate_;
+  return random_update_rate_;
 }
 
-auto Listing::Patch::with_random_orders_rate(
+auto Listing::Patch::with_random_update_rate(
     std::optional<uint32_t> rate) noexcept -> Patch& {
-  random_orders_rate_ = std::move(rate);
+  random_update_rate_ = std::move(rate);
   return *this;
 }
 
@@ -542,14 +549,14 @@ auto Listing::Patch::with_random_amt_maximum(
   return *this;
 }
 
-auto Listing::Patch::random_orders_enabled_flag() const noexcept
+auto Listing::Patch::random_actions_enabled_flag() const noexcept
     -> PatchField<bool> {
-  return random_orders_enabled_flag_;
+  return random_actions_enabled_flag_;
 }
 
-auto Listing::Patch::with_random_orders_enabled_flag(
+auto Listing::Patch::with_random_actions_enabled_flag(
     std::optional<bool> flag) noexcept -> Patch& {
-  random_orders_enabled_flag_ = std::move(flag);
+  random_actions_enabled_flag_ = std::move(flag);
   return *this;
 }
 
@@ -561,6 +568,16 @@ auto Listing::Patch::random_price_exclude_current_listing_flag() const noexcept
 auto Listing::Patch::with_random_price_exclude_current_listing_flag(
     std::optional<bool> flag) noexcept -> Patch& {
   random_price_exclude_current_listing_flag_ = std::move(flag);
+  return *this;
+}
+
+auto Listing::Patch::engine_type() const noexcept -> PatchField<EngineType> {
+  return engine_type_;
+}
+
+auto Listing::Patch::with_engine_type(
+    std::optional<EngineType> engine_type) noexcept -> Patch& {
+  engine_type_ = engine_type;
   return *this;
 }
 

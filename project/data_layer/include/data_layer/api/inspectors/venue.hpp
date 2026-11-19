@@ -82,11 +82,6 @@ auto VenueReader<Marshaller>::read(const Venue& venue) -> void {
     marshaller_(Attribute::Name, *value);
   }
 
-  if (const auto& value = venue.engine_type()) {
-    static_assert(can_marshall_v<decltype(*value)>);
-    marshaller_(Attribute::EngineType, *value);
-  }
-
   if (const auto& value = venue.support_tif_ioc_flag()) {
     static_assert(can_marshall_v<decltype(*value)>);
     marshaller_(Attribute::SupportTifIoc, *value);
@@ -112,9 +107,9 @@ auto VenueReader<Marshaller>::read(const Venue& venue) -> void {
     marshaller_(Attribute::RestPort, *value);
   }
 
-  if (const auto& value = venue.order_on_startup_flag()) {
+  if (const auto& value = venue.generate_actions_on_startup_flag()) {
     static_assert(can_marshall_v<decltype(*value)>);
-    marshaller_(Attribute::OrderOnStartup, *value);
+    marshaller_(Attribute::GenerateActionsOnStartup, *value);
   }
 
   if (const auto& value = venue.random_parties_count()) {
@@ -176,11 +171,6 @@ inline auto VenuePatchReader<Marshaller>::read(const Venue::Patch& patch)
     marshaller_(Attribute::Name, *value);
   }
 
-  if (const auto& value = patch.engine_type()) {
-    static_assert(can_marshall_v<decltype(*value)>);
-    marshaller_(Attribute::EngineType, *value);
-  }
-
   if (const auto& value = patch.support_tif_ioc_flag()) {
     static_assert(can_marshall_v<decltype(*value)>);
     marshaller_(Attribute::SupportTifIoc, *value);
@@ -206,11 +196,12 @@ inline auto VenuePatchReader<Marshaller>::read(const Venue::Patch& patch)
     marshaller_(Attribute::RestPort, *value);
   }
 
-  if (const auto& value = patch.orders_on_startup_flag()) {
+  if (const auto& value = patch.generate_actions_on_startup_flag()) {
     static_assert(
         can_marshall_v<std::remove_cvref_t<decltype(value)>::value_type>);
-    marshaller_(Attribute::OrderOnStartup,
-                value.inner_value_or(Venue::DefaultOrderOnStartupFlag));
+    marshaller_(
+        Attribute::GenerateActionsOnStartup,
+        value.inner_value_or(Venue::DefaultGenerateActionsOnStartupFlag));
   }
 
   if (const auto& value = patch.random_parties_count()) {
@@ -275,12 +266,6 @@ inline auto VenuePatchWriter<Unmarshaller>::write(Venue::Patch& patch) -> void {
     patch.with_name(std::move(name));
   }
 
-  std::optional<Venue::EngineType> engine_type;
-  static_assert(can_unmarshall_v<decltype(engine_type)>);
-  if (unmarshaller_(Attribute::EngineType, engine_type)) {
-    patch.with_engine_type(engine_type);
-  }
-
   std::optional<bool> support_tif_ioc;
   static_assert(can_unmarshall_v<decltype(support_tif_ioc)>);
   if (unmarshaller_(Attribute::SupportTifIoc, support_tif_ioc)) {
@@ -311,10 +296,11 @@ inline auto VenuePatchWriter<Unmarshaller>::write(Venue::Patch& patch) -> void {
     patch.with_rest_port(rest_port);
   }
 
-  std::optional<bool> orders_on_startup;
-  static_assert(can_unmarshall_v<decltype(orders_on_startup)>);
-  if (unmarshaller_(Attribute::OrderOnStartup, orders_on_startup)) {
-    patch.with_orders_on_startup_flag(orders_on_startup);
+  std::optional<bool> generate_actions_on_startup;
+  static_assert(can_unmarshall_v<decltype(generate_actions_on_startup)>);
+  if (unmarshaller_(Attribute::GenerateActionsOnStartup,
+                    generate_actions_on_startup)) {
+    patch.with_generate_actions_on_startup_flag(generate_actions_on_startup);
   }
 
   std::optional<std::uint32_t> random_parties_count;

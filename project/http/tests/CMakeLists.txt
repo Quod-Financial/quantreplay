@@ -8,11 +8,13 @@ add_target_tests(
     mocks/fix_session_accessor.hpp
     mocks/fix_session_controller.hpp
     mocks/generator_admin_receiver.hpp
+    mocks/generator_controller.hpp
     mocks/get_processor.hpp
     mocks/head_processor.hpp
     mocks/listing_accessor.hpp
     mocks/post_processor.hpp
     mocks/put_processor.hpp
+    mocks/quote_controller.hpp
     mocks/redirection_processor.hpp
     mocks/redirector.hpp
     mocks/resolver.hpp
@@ -27,7 +29,9 @@ add_target_tests(
     unit_tests/config_provider_tests.cpp
     unit_tests/controllers/app_controller_tests.cpp
     unit_tests/controllers/fix_session_controller_tests.cpp
+    unit_tests/controllers/generator_controller_tests.cpp
     unit_tests/controllers/listing_controller_tests.cpp
+    unit_tests/controllers/quote_controller_tests.cpp
     unit_tests/controllers/trading_controller_tests.cpp
     unit_tests/headers/content_disposition_attachment_tests.cpp
     unit_tests/headers/x_api_version_tests.cpp

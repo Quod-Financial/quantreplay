@@ -4,8 +4,8 @@
 #include <memory>
 
 #include "common/instrument.hpp"
-#include "common/trading_engine.hpp"
 #include "ih/config/config.hpp"
+#include "ih/repository/trading_engines_repository.hpp"
 #include "runtime/service.hpp"
 
 namespace simulator::trading_system {
@@ -24,14 +24,15 @@ class TradingEngineFactory {
       -> TradingEngineFactory& = default;
   // clang-format on
 
-  [[nodiscard]]
-  virtual auto create_trading_engine(const Instrument& instrument) const
-      -> std::unique_ptr<TradingEngine> = 0;
+  virtual auto create_trading_engine(const Instrument& instrument,
+                                     TradingEnginesRepository& repository) const
+      -> void = 0;
 };
 
+// The quoting engines of one factory share a quote id generator.
 [[nodiscard]]
-auto create_matching_engine_factory(const Config& config,
-                                    runtime::Service& executor)
+auto create_trading_engine_factory(const Config& config,
+                                   runtime::Service& executor)
     -> std::unique_ptr<TradingEngineFactory>;
 
 }  // namespace simulator::trading_system

@@ -80,8 +80,8 @@ constexpr std::string_view PriceTickSize{"price_tick_size"};
 constexpr std::string_view Enabled{"enabled"};
 constexpr std::string_view RandomQtyMaximum{"random_qty_maximum"};
 constexpr std::string_view RandomDepthLevels{"random_depth_levels"};
-constexpr std::string_view RandomOrdersSpread{"random_orders_spread"};
-constexpr std::string_view RandomOrdersRate{"random_orders_rate"};
+constexpr std::string_view RandomPriceSpread{"random_price_spread"};
+constexpr std::string_view RandomUpdateRate{"random_update_rate"};
 constexpr std::string_view RandomTickRange{"random_tick_range"};
 constexpr std::string_view SecurityExchange{"security_exchange"};
 constexpr std::string_view PartyId{"party_id"};
@@ -95,7 +95,7 @@ constexpr std::string_view BloombergSymbolId{"bloomberg_symbol_id"};
 constexpr std::string_view RandomQtyMinimum{"random_qty_minimum"};
 constexpr std::string_view RandomAmtMinimum{"random_amt_minimum"};
 constexpr std::string_view RandomAmtMaximum{"random_amt_maximum"};
-constexpr std::string_view RandomOrdersEnabled{"random_orders_enabled"};
+constexpr std::string_view RandomActionsEnabled{"random_actions_enabled"};
 constexpr std::string_view RandomAggressiveQtyMinimum{
     "random_aggressive_qty_minimum"};
 constexpr std::string_view RandomAggressiveQtyMaximum{
@@ -106,6 +106,7 @@ constexpr std::string_view RandomAggressiveAmtMaximum{
     "random_aggressive_amt_maximum"};
 constexpr std::string_view RandomPriceExcludeCurrentListing{
     "random_price_exclude_current_listing"};
+constexpr std::string_view EngineType{"engine_type"};
 
 }  // namespace listing_column
 
@@ -155,13 +156,13 @@ namespace venue_column {
 
 constexpr std::string_view VenueId{"venue_id"};
 constexpr std::string_view Name{"name"};
-constexpr std::string_view EngineType{"engine_type"};
 constexpr std::string_view SupportTifIoc{"support_tif_ioc"};
 constexpr std::string_view SupportTifFok{"support_tif_fok"};
 constexpr std::string_view SupportTifDay{"support_tif_day"};
 constexpr std::string_view IncludeOwnOrders{"include_own_orders"};
 constexpr std::string_view RestPort{"rest_port"};
-constexpr std::string_view OrderOnStartup{"order_on_startup"};
+constexpr std::string_view GenerateActionsOnStartup{
+    "generate_actions_on_startup"};
 constexpr std::string_view RandomPartyCount{"random_party_count"};
 constexpr std::string_view TnsEnabled{"tns_enabled"};
 constexpr std::string_view TnsQtyEnabled{"tns_qty_enabled"};

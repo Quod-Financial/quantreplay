@@ -80,6 +80,12 @@ class PostProcessor : public http::PostProcessor {
               (const Pistache::Rest::Request& request,
                Pistache::Http::ResponseWriter response),
               (override));
+
+  MOCK_METHOD(void,
+              publish_quote,
+              (const Pistache::Rest::Request& request,
+               Pistache::Http::ResponseWriter response),
+              (override));
 };
 
 }  // namespace simulator::http::test::mock

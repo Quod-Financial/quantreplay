@@ -9,9 +9,9 @@
 
 #include "api/models/column_mapping.hpp"
 #include "api/models/datasource.hpp"
+#include "api/models/listing.hpp"
 #include "api/models/market_phase.hpp"
 #include "api/models/price_seed.hpp"
-#include "api/models/venue.hpp"
 #include "core/tools/time.hpp"
 
 namespace simulator::data_layer {
@@ -30,7 +30,7 @@ class Marshaller {
   MOCK_METHOD(void, real, (Attribute, double));
   MOCK_METHOD(void, string, (Attribute, std::string));
   MOCK_METHOD(void, timestamp, (Attribute, core::sys_us));
-  MOCK_METHOD(void, engine_type, (Attribute, Venue::EngineType));
+  MOCK_METHOD(void, engine_type, (Attribute, Listing::EngineType));
   MOCK_METHOD(void, datasource_format, (Attribute, Datasource::Format));
   MOCK_METHOD(void, datasource_type, (Attribute, Datasource::Type));
   MOCK_METHOD(void, market_phase_type, (Attribute, MarketPhase::Phase));
@@ -53,7 +53,7 @@ class Marshaller {
               (Attribute, const std::optional<std::string>&));
   MOCK_METHOD(void,
               optional_engine_type,
-              (Attribute, const std::optional<Venue::EngineType>&));
+              (Attribute, const std::optional<Listing::EngineType>&));
 
 #define DEFINE_MARSHALLING_OPERATOR(TYPE, ACCEPTOR) \
   auto operator()(Attribute field, TYPE value)->void { ACCEPTOR(field, value); }
@@ -67,7 +67,7 @@ class Marshaller {
   DEFINE_MARSHALLING_OPERATOR(double, real)
   DEFINE_MARSHALLING_OPERATOR(const std::string&, string)
   DEFINE_MARSHALLING_OPERATOR(core::sys_us, timestamp)
-  DEFINE_MARSHALLING_OPERATOR(Venue::EngineType, engine_type)
+  DEFINE_MARSHALLING_OPERATOR(Listing::EngineType, engine_type)
   DEFINE_MARSHALLING_OPERATOR(Datasource::Format, datasource_format)
   DEFINE_MARSHALLING_OPERATOR(Datasource::Type, datasource_type)
   DEFINE_MARSHALLING_OPERATOR(MarketPhase::Phase, market_phase_type)
@@ -83,7 +83,7 @@ class Marshaller {
                               optional_uint64)
   DEFINE_MARSHALLING_OPERATOR(const std::optional<std::string>&,
                               optional_string)
-  DEFINE_MARSHALLING_OPERATOR(const std::optional<Venue::EngineType>&,
+  DEFINE_MARSHALLING_OPERATOR(const std::optional<Listing::EngineType>&,
                               optional_engine_type)
 
 #undef DEFINE_MARSHALLING_OPERATOR
@@ -103,7 +103,7 @@ class Unmarshaller {
   MOCK_METHOD(bool, real, (Attribute, double&));
   MOCK_METHOD(bool, string, (Attribute, std::string&));
   MOCK_METHOD(bool, timestamp, (Attribute, core::sys_us&));
-  MOCK_METHOD(bool, engine_type, (Attribute, Venue::EngineType&));
+  MOCK_METHOD(bool, engine_type, (Attribute, Listing::EngineType&));
   MOCK_METHOD(bool, datasource_format, (Attribute, Datasource::Format&));
   MOCK_METHOD(bool, datasource_type, (Attribute, Datasource::Type&));
   MOCK_METHOD(bool, market_phase_type, (Attribute, MarketPhase::Phase&));
@@ -123,7 +123,7 @@ class Unmarshaller {
   MOCK_METHOD(bool, optional_string, (Attribute, std::optional<std::string>&));
   MOCK_METHOD(bool,
               optional_engine_type,
-              (Attribute, std::optional<Venue::EngineType>&));
+              (Attribute, std::optional<Listing::EngineType>&));
 
 #define DEFINE_UNMARSHALLING_OPERATOR(TYPE, ACCEPTOR) \
   auto operator()(Attribute field, TYPE type)->bool { \
@@ -139,7 +139,7 @@ class Unmarshaller {
   DEFINE_UNMARSHALLING_OPERATOR(double&, real)
   DEFINE_UNMARSHALLING_OPERATOR(std::string&, string)
   DEFINE_UNMARSHALLING_OPERATOR(core::sys_us&, timestamp)
-  DEFINE_UNMARSHALLING_OPERATOR(Venue::EngineType&, engine_type)
+  DEFINE_UNMARSHALLING_OPERATOR(Listing::EngineType&, engine_type)
   DEFINE_UNMARSHALLING_OPERATOR(Datasource::Format&, datasource_format)
   DEFINE_UNMARSHALLING_OPERATOR(Datasource::Type&, datasource_type)
   DEFINE_UNMARSHALLING_OPERATOR(MarketPhase::Phase&, market_phase_type)
@@ -151,7 +151,7 @@ class Unmarshaller {
   DEFINE_UNMARSHALLING_OPERATOR(std::optional<std::uint64_t>&, optional_uint64)
   DEFINE_UNMARSHALLING_OPERATOR(std::optional<double>&, optional_real)
   DEFINE_UNMARSHALLING_OPERATOR(std::optional<std::string>&, optional_string)
-  DEFINE_UNMARSHALLING_OPERATOR(std::optional<Venue::EngineType>&,
+  DEFINE_UNMARSHALLING_OPERATOR(std::optional<Listing::EngineType>&,
                                 optional_engine_type)
 
 #undef DEFINE_UNMARSHALLING_OPERATOR

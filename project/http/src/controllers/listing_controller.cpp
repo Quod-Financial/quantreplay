@@ -168,6 +168,11 @@ auto ListingController::insert_listing(const std::string& body) const
     return std::make_pair(code, std::move(content));
   }
 
+  if (auto validation = new_listing_has_engine_type(listing_snapshot);
+      !validation.has_value()) {
+    return std::move(validation.error());
+  }
+
   if (auto validation =
           validate_random_price_source(listing_snapshot, std::nullopt);
       !validation.has_value()) {
@@ -264,6 +269,18 @@ auto ListingController::update_listing(const std::string& key,
   }
 
   return std::make_pair(code, std::move(content));
+}
+
+auto ListingController::new_listing_has_engine_type(
+    const data_layer::Listing::Patch& patch) -> Validation {
+  if (patch.engine_type().value().has_value()) {
+    return {};
+  }
+
+  return tl::make_unexpected(Result{
+      Pistache::Http::Code::Bad_Request,
+      format_result_response(fmt::format("{} is required for a new listing",
+                                         json::listing_key::EngineType))});
 }
 
 auto ListingController::validate_random_price_source(

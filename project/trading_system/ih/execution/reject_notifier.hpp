@@ -27,23 +27,23 @@ class RejectNotifier {
   auto reject(const protocol::OrderPlacementRequest& request,
               std::string_view reason) const -> void;
 
-  auto reject(const protocol::OrderModificationRequest& request,
-              std::string_view reason) const -> void;
+  static auto reject(const protocol::OrderModificationRequest& request,
+                     std::string_view reason) -> void;
 
-  auto reject(const protocol::OrderCancellationRequest& request,
-              std::string_view reason) const -> void;
+  static auto reject(const protocol::OrderCancellationRequest& request,
+                     std::string_view reason) -> void;
 
-  auto reject(const protocol::MarketDataRequest& request,
-              std::string_view reason) const -> void;
+  static auto reject(const protocol::MarketDataRequest& request,
+                     std::string_view reason) -> void;
 
-  auto reject(const protocol::SecurityStatusRequest& request,
-              std::string_view reason) const -> void;
+  static auto reject(const protocol::SecurityStatusRequest& request,
+                     std::string_view reason) -> void;
 
-  auto notify_no_instruments_requested(
-      const protocol::MarketDataRequest& request) const -> void;
+  static auto notify_no_instruments_requested(
+      const protocol::MarketDataRequest& request) -> void;
 
-  auto notify_multiple_instruments_requested(
-      const protocol::MarketDataRequest& request) const -> void;
+  static auto notify_multiple_instruments_requested(
+      const protocol::MarketDataRequest& request) -> void;
 
  private:
   std::unique_ptr<OrderIdentifiersGenerator> id_generator_;

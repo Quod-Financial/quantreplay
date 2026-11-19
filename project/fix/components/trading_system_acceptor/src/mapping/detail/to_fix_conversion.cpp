@@ -321,7 +321,10 @@ auto make_md_reject_reason_association()
   // clang-format off
   return {
     {MdRejectReason::UnknownSymbol, FIX::MDReqRejReason_UNKNOWN_SYMBOL},
-    {MdRejectReason::DuplicateMdReqId, FIX::MDReqRejReason_DUPLICATE_MDREQID}};
+    {MdRejectReason::DuplicateMdReqId, FIX::MDReqRejReason_DUPLICATE_MDREQID},
+    {MdRejectReason::UnsupportedMarketDepth, FIX::MDReqRejReason_UNSUPPORTED_MARKETDEPTH},
+    {MdRejectReason::UnsupportedMdUpdateType, FIX::MDReqRejReason_UNSUPPORTED_MDUPDATETYPE},
+    {MdRejectReason::UnsupportedMdEntryType, FIX::MDReqRejReason_UNSUPPORTED_MDENTRYTYPE}};
   // clang-format on
 }
 
@@ -390,6 +393,22 @@ auto make_trade_condition_association()
       {TradeCondition::ImbalanceMoreBuyers, FIX::TradeCondition_IMBALANCE_MORE_BUYERS},
       {TradeCondition::ImbalanceMoreSellers, FIX::TradeCondition_IMBALANCE_MORE_SELLERS}};
   // clang-format on
+}
+
+[[nodiscard]]
+auto make_quote_condition_association()
+    -> EnumAssociationTable<core::enumerators::QuoteCondition, std::string> {
+  using core::enumerators::QuoteCondition;
+
+  return {{QuoteCondition::Open, FIX::QuoteCondition_OPEN_ACTIVE}};
+}
+
+[[nodiscard]]
+auto make_md_quote_type_association()
+    -> EnumAssociationTable<core::enumerators::MdQuoteType, int> {
+  using core::enumerators::MdQuoteType;
+
+  return {{MdQuoteType::Tradeable, FIX::MDQuoteType_TRADEABLE}};
 }
 
 [[nodiscard]]
@@ -629,6 +648,30 @@ auto ToFixConverter<FIX::TradeCondition>::convert(
 
   throw std::invalid_argument(
       fmt::format("cannot convert given TradeCondition value '{}'",
+                  core::underlying_cast(value)));
+}
+
+auto ToFixConverter<FIX::QuoteCondition>::convert(
+    core::enumerators::QuoteCondition value) -> std::string {
+  static const auto association = make_quote_condition_association();
+  if (const auto iter = association.find(value); iter != association.end()) {
+    return iter->second;
+  }
+
+  throw std::invalid_argument(
+      fmt::format("cannot convert given QuoteCondition value '{}'",
+                  core::underlying_cast(value)));
+}
+
+auto ToFixConverter<FIX::MDQuoteType>::convert(
+    core::enumerators::MdQuoteType value) -> int {
+  static const auto association = make_md_quote_type_association();
+  if (const auto iter = association.find(value); iter != association.end()) {
+    return iter->second;
+  }
+
+  throw std::invalid_argument(
+      fmt::format("cannot convert given MdQuoteType value '{}'",
                   core::underlying_cast(value)));
 }
 

@@ -17,7 +17,6 @@ class DataLayerInspectorsVenueReader : public ::testing::Test {
   using ReaderType = VenueReader<MarshallerType>;
 
   using Attribute = Venue::Attribute;
-  using EngineType = Venue::EngineType;
 
   auto marshaller() -> MarshallerType& { return marshaller_; }
 
@@ -57,17 +56,6 @@ TEST_F(DataLayerInspectorsVenueReader, ReadsName) {
 
   EXPECT_CALL(marshaller(),
               string(Eq(Attribute::Name), Eq("London Stock Exchange")))
-      .Times(1);
-
-  make_reader().read(venue);
-}
-
-TEST_F(DataLayerInspectorsVenueReader, ReadsEngineType) {
-  const auto patch = make_default_patch().with_engine_type(EngineType::Quoting);
-  const auto venue = Venue::create(patch);
-
-  EXPECT_CALL(marshaller(),
-              engine_type(Eq(Attribute::EngineType), Eq(EngineType::Quoting)))
       .Times(1);
 
   make_reader().read(venue);
@@ -122,11 +110,13 @@ TEST_F(DataLayerInspectorsVenueReader, ReadsRestPort) {
   make_reader().read(venue);
 }
 
-TEST_F(DataLayerInspectorsVenueReader, ReadsOrdersOnStartupFlag) {
-  const auto patch = make_default_patch().with_orders_on_startup_flag(false);
+TEST_F(DataLayerInspectorsVenueReader, ReadsGenerateActionsOnStartupFlag) {
+  const auto patch =
+      make_default_patch().with_generate_actions_on_startup_flag(false);
   const auto venue = Venue::create(patch);
 
-  EXPECT_CALL(marshaller(), boolean(Eq(Attribute::OrderOnStartup), Eq(false)))
+  EXPECT_CALL(marshaller(),
+              boolean(Eq(Attribute::GenerateActionsOnStartup), Eq(false)))
       .Times(1);
 
   make_reader().read(venue);
@@ -234,7 +224,6 @@ class DataLayerInspectorsVenuePatchReader : public ::testing::Test {
   using ReaderType = VenuePatchReader<MarshallerType>;
 
   using Attribute = Venue::Attribute;
-  using EngineType = Venue::EngineType;
 
   auto marshaller() -> MarshallerType& { return marshaller_; }
 
@@ -260,17 +249,6 @@ TEST_F(DataLayerInspectorsVenuePatchReader, ReadsName) {
 
   EXPECT_CALL(marshaller(),
               optional_string(Eq(Attribute::Name), Eq("London Stock Exchange")))
-      .Times(1);
-
-  make_reader().read(patch);
-}
-
-TEST_F(DataLayerInspectorsVenuePatchReader, ReadsEngineType) {
-  patch.with_engine_type(EngineType::Quoting);
-
-  EXPECT_CALL(
-      marshaller(),
-      optional_engine_type(Eq(Attribute::EngineType), Eq(EngineType::Quoting)))
       .Times(1);
 
   make_reader().read(patch);
@@ -326,19 +304,21 @@ TEST_F(DataLayerInspectorsVenuePatchReader, ReadsRestPort) {
 }
 
 TEST_F(DataLayerInspectorsVenuePatchReader,
-       SetsOrdersOnStartupFlagToTrueIfItIsNull) {
-  patch.with_orders_on_startup_flag(std::nullopt);
+       SetsGenerateActionsOnStartupFlagToTrueIfItIsNull) {
+  patch.with_generate_actions_on_startup_flag(std::nullopt);
 
-  EXPECT_CALL(marshaller(), boolean(Eq(Attribute::OrderOnStartup), Eq(true)))
+  EXPECT_CALL(marshaller(),
+              boolean(Eq(Attribute::GenerateActionsOnStartup), Eq(true)))
       .Times(1);
 
   make_reader().read(patch);
 }
 
-TEST_F(DataLayerInspectorsVenuePatchReader, ReadsOrdersOnStartupFlag) {
-  patch.with_orders_on_startup_flag(false);
+TEST_F(DataLayerInspectorsVenuePatchReader, ReadsGenerateActionsOnStartupFlag) {
+  patch.with_generate_actions_on_startup_flag(false);
 
-  EXPECT_CALL(marshaller(), boolean(Eq(Attribute::OrderOnStartup), Eq(false)))
+  EXPECT_CALL(marshaller(),
+              boolean(Eq(Attribute::GenerateActionsOnStartup), Eq(false)))
       .Times(1);
 
   make_reader().read(patch);
@@ -452,7 +432,6 @@ class DataLayerInspectorsVenuePatchWriter : public ::testing::Test {
   using WriterType = VenuePatchWriter<UnmarshallerType>;
 
   using Attribute = Venue::Attribute;
-  using EngineType = Venue::EngineType;
 
   auto unmarshaller() -> UnmarshallerType& { return unmarshaller_; }
 
@@ -478,10 +457,6 @@ class DataLayerInspectorsVenuePatchWriter : public ::testing::Test {
         .Times(AnyNumber())
         .WillRepeatedly(Return(false));
 
-    EXPECT_CALL(unmarshaller(), engine_type)
-        .Times(AnyNumber())
-        .WillRepeatedly(Return(false));
-
     EXPECT_CALL(unmarshaller(), optional_boolean)
         .Times(AnyNumber())
         .WillRepeatedly(Return(false));
@@ -495,10 +470,6 @@ class DataLayerInspectorsVenuePatchWriter : public ::testing::Test {
         .WillRepeatedly(Return(false));
 
     EXPECT_CALL(unmarshaller(), optional_string)
-        .Times(AnyNumber())
-        .WillRepeatedly(Return(false));
-
-    EXPECT_CALL(unmarshaller(), optional_engine_type)
         .Times(AnyNumber())
         .WillRepeatedly(Return(false));
   }
@@ -534,27 +505,6 @@ TEST_F(DataLayerInspectorsVenuePatchWriter, WritesName) {
 
   EXPECT_THAT(patch.name(),
               IsPatchFieldWithValue(Optional(Eq("National Stock Exchange"))));
-}
-
-TEST_F(DataLayerInspectorsVenuePatchWriter, WritesEngineTypeNull) {
-  EXPECT_CALL(unmarshaller(),
-              optional_engine_type(Eq(Attribute::EngineType), _))
-      .WillOnce(DoAll(SetArgReferee<1>(std::nullopt), Return(true)));
-
-  make_writer().write(patch);
-
-  EXPECT_THAT(patch.engine_type(), IsPatchFieldWithValue(Eq(std::nullopt)));
-}
-
-TEST_F(DataLayerInspectorsVenuePatchWriter, WritesEngineType) {
-  EXPECT_CALL(unmarshaller(),
-              optional_engine_type(Eq(Attribute::EngineType), _))
-      .WillOnce(DoAll(SetArgReferee<1>(EngineType::Matching), Return(true)));
-
-  make_writer().write(patch);
-
-  EXPECT_THAT(patch.engine_type(),
-              IsPatchFieldWithValue(Optional(Eq(EngineType::Matching))));
 }
 
 TEST_F(DataLayerInspectorsVenuePatchWriter, WritesSupportTifIocFlagNull) {
@@ -637,25 +587,27 @@ TEST_F(DataLayerInspectorsVenuePatchWriter, WritesRestPort) {
   EXPECT_THAT(patch.rest_port(), IsPatchFieldWithValue(Optional(Eq(9001))));
 }
 
-TEST_F(DataLayerInspectorsVenuePatchWriter, WritesOrdersOnStartupFlagNull) {
+TEST_F(DataLayerInspectorsVenuePatchWriter,
+       WritesGenerateActionsOnStartupFlagNull) {
   EXPECT_CALL(unmarshaller(),
-              optional_boolean(Eq(Attribute::OrderOnStartup), _))
+              optional_boolean(Eq(Attribute::GenerateActionsOnStartup), _))
       .WillOnce(DoAll(SetArgReferee<1>(std::nullopt), Return(true)));
 
   make_writer().write(patch);
 
-  EXPECT_THAT(patch.orders_on_startup_flag(),
+  EXPECT_THAT(patch.generate_actions_on_startup_flag(),
               IsPatchFieldWithValue(Eq(std::nullopt)));
 }
 
-TEST_F(DataLayerInspectorsVenuePatchWriter, WritesOrdersOnStartupFlag) {
+TEST_F(DataLayerInspectorsVenuePatchWriter,
+       WritesGenerateActionsOnStartupFlag) {
   EXPECT_CALL(unmarshaller(),
-              optional_boolean(Eq(Attribute::OrderOnStartup), _))
+              optional_boolean(Eq(Attribute::GenerateActionsOnStartup), _))
       .WillOnce(DoAll(SetArgReferee<1>(false), Return(true)));
 
   make_writer().write(patch);
 
-  EXPECT_THAT(patch.orders_on_startup_flag(),
+  EXPECT_THAT(patch.generate_actions_on_startup_flag(),
               IsPatchFieldWithValue(Optional(Eq(false))));
 }
 

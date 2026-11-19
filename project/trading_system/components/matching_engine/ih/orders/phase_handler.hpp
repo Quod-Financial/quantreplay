@@ -1,21 +1,20 @@
 #ifndef SIMULATOR_MATCHING_ENGINE_IH_ORDERS_PHASE_HANDLER_HPP_
 #define SIMULATOR_MATCHING_ENGINE_IH_ORDERS_PHASE_HANDLER_HPP_
 
-#include <memory>
-
 #include "common/events.hpp"
+#include "common/security_status_publisher.hpp"
 #include "core/domain/attributes.hpp"
+#include "core/domain/market_phase.hpp"
 #include "ih/common/events/event_reporter.hpp"
+#include "protocol/app/business_message_reject.hpp"
+#include "protocol/app/security_status.hpp"
 #include "protocol/app/security_status_request.hpp"
 #include "protocol/types/session.hpp"
 
 namespace simulator::trading_system::matching_engine::order {
 
-class PhaseHandler : EventReporter {
+class PhaseHandler : EventReporter, SecurityStatusPublisher::ReplySender {
  public:
-  struct Subscription;
-  struct Index;
-
   explicit PhaseHandler(EventListener& event_listener);
 
   PhaseHandler() = delete;
@@ -29,17 +28,17 @@ class PhaseHandler : EventReporter {
 
   [[nodiscard]]
   auto in_closed_phase() const -> bool {
-    return current_state_.trading_phase() == TradingPhase::Option::Closed;
+    return current_phase().trading_phase() == TradingPhase::Option::Closed;
   }
 
   [[nodiscard]]
   auto in_halt_phase() const -> bool {
-    return current_state_.trading_status() == TradingStatus::Option::Halt;
+    return current_phase().trading_status() == TradingStatus::Option::Halt;
   }
 
   [[nodiscard]]
   auto in_auction_phase() const -> bool {
-    const auto phase = current_state_.trading_phase();
+    const auto phase = current_phase().trading_phase();
     return phase == TradingPhase::Option::OpeningAuction ||
            phase == TradingPhase::Option::IntradayAuction ||
            phase == TradingPhase::Option::ClosingAuction;
@@ -48,23 +47,23 @@ class PhaseHandler : EventReporter {
   [[nodiscard]]
   auto in_auction_call() const -> bool {
     return in_auction_phase() &&
-           current_state_.trading_status() == TradingStatus::Option::Resume;
+           current_phase().trading_status() == TradingStatus::Option::Resume;
   }
 
   [[nodiscard]]
   auto in_auction_uncross() const -> bool {
     return in_auction_phase() &&
-           current_state_.trading_status() == TradingStatus::Option::Halt;
+           current_phase().trading_status() == TradingStatus::Option::Halt;
   }
 
   [[nodiscard]]
   auto in_trade_at_last() const -> bool {
-    return current_state_.trading_phase() == TradingPhase::Option::PostTrading;
+    return current_phase().trading_phase() == TradingPhase::Option::PostTrading;
   }
 
   [[nodiscard]]
   auto current_phase() const -> MarketPhase {
-    return current_state_;
+    return security_status_.market_phase();
   }
 
   auto handle(event::PhaseTransition transition) -> bool;
@@ -74,20 +73,11 @@ class PhaseHandler : EventReporter {
   auto unsubscribe(const protocol::Session& session) -> void;
 
  private:
-  auto subscribe(const protocol::SecurityStatusRequest& request) -> void;
+  auto send(protocol::SecurityStatus status) -> void override;
 
-  auto snapshot(const protocol::SecurityStatusRequest& request) -> void;
+  auto send(protocol::BusinessMessageReject reject) -> void override;
 
-  auto unsubscribe(const protocol::SecurityStatusRequest& request) -> void;
-
-  auto publish(const Subscription& subscription) -> void;
-
-  auto reject(const protocol::SecurityStatusRequest& request,
-              BusinessRejectReason reason,
-              std::string text) const -> void;
-
-  std::unique_ptr<Index> subscriptions_;
-  MarketPhase current_state_ = MarketPhase::open();
+  SecurityStatusPublisher security_status_;
 };
 
 }  // namespace simulator::trading_system::matching_engine::order

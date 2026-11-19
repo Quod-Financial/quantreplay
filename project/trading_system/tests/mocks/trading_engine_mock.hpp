@@ -3,7 +3,6 @@
 
 #include <gmock/gmock.h>
 
-#include "common/events.hpp"
 #include "common/trading_engine.hpp"
 
 namespace simulator::trading_system::test {
@@ -11,14 +10,8 @@ namespace simulator::trading_system::test {
 struct TradingEngineMock : TradingEngine {
   // clang-format off
   MOCK_METHOD(void, execute, (protocol::OrderPlacementRequest request), (override));
-  MOCK_METHOD(void, execute, (protocol::OrderModificationRequest request), (override));
-  MOCK_METHOD(void, execute, (protocol::OrderCancellationRequest request), (override));
   MOCK_METHOD(void, execute, (protocol::MarketDataRequest), (override));
   MOCK_METHOD(void, execute, (protocol::SecurityStatusRequest), (override));
-  MOCK_METHOD(void, store_state, (market_state::InstrumentState& state), (override));
-  MOCK_METHOD(void, recover_state, (market_state::InstrumentState event), (override));
-  MOCK_METHOD(void, handle, (event::Tick event), (override));
-  MOCK_METHOD(void, handle, (event::PhaseTransition event), (override));
   MOCK_METHOD(void, handle, (const protocol::SessionTerminatedEvent& event), (override));
   // clang-format on
 };

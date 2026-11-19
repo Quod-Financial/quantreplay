@@ -33,8 +33,8 @@ class Listing {
     Enabled,
     RandomQtyMaximum,
     RandomDepthLevels,
-    RandomOrdersSpread,
-    RandomOrdersRate,
+    RandomPriceSpread,
+    RandomUpdateRate,
     RandomTickRange,
     SecurityExchange,
     PartyId,
@@ -48,16 +48,19 @@ class Listing {
     RandomQtyMinimum,
     RandomAmtMinimum,
     RandomAmtMaximum,
-    RandomOrdersEnabled,
+    RandomActionsEnabled,
     RandomAggressiveQtyMinimum,
     RandomAggressiveQtyMaximum,
     RandomAggressiveAmtMinimum,
     RandomAggressiveAmtMaximum,
-    RandomPriceExcludeCurrentListing
+    RandomPriceExcludeCurrentListing,
+    EngineType
   };
 
+  enum class EngineType : std::uint8_t { Matching, Quoting };
+
   static constexpr bool DefaultEnabledFlag{true};
-  static constexpr bool DefaultRandomOrdersEnabledFlag{true};
+  static constexpr bool DefaultRandomActionsEnabledFlag{true};
   static constexpr bool DefaultRandomPriceExcludeCurrentListingFlag{false};
 
   [[nodiscard]]
@@ -106,10 +109,10 @@ class Listing {
   auto random_depth_levels() const noexcept -> std::optional<std::uint32_t>;
 
   [[nodiscard]]
-  auto random_orders_spread() const noexcept -> std::optional<double>;
+  auto random_price_spread() const noexcept -> std::optional<double>;
 
   [[nodiscard]]
-  auto random_orders_rate() const noexcept -> std::optional<std::uint32_t>;
+  auto random_update_rate() const noexcept -> std::optional<std::uint32_t>;
 
   [[nodiscard]]
   auto random_tick_range() const noexcept -> std::optional<std::uint32_t>;
@@ -152,7 +155,7 @@ class Listing {
   auto random_amt_maximum() const noexcept -> std::optional<double>;
 
   [[nodiscard]]
-  auto random_orders_enabled_flag() const noexcept -> std::optional<bool>;
+  auto random_actions_enabled_flag() const noexcept -> std::optional<bool>;
 
   [[nodiscard]]
   auto random_price_exclude_current_listing_flag() const noexcept
@@ -171,11 +174,14 @@ class Listing {
   auto random_aggressive_amt_maximum() const noexcept -> std::optional<double>;
 
   [[nodiscard]]
+  auto engine_type() const noexcept -> EngineType;
+
+  [[nodiscard]]
   auto random_price_sources() const noexcept
       -> const std::vector<ListingRandomPriceSource>&;
 
  private:
-  Listing() = default;
+  explicit Listing(EngineType engine_type) : engine_type_{engine_type} {}
 
   std::optional<std::string> symbol_;
   std::optional<std::string> security_type_;
@@ -201,7 +207,7 @@ class Listing {
   std::optional<double> qty_multiple_;
   std::optional<double> price_tick_size_;
   std::optional<double> random_qty_maximum_;
-  std::optional<double> random_orders_spread_;
+  std::optional<double> random_price_spread_;
   std::optional<double> random_qty_minimum_;
   std::optional<double> random_amt_minimum_;
   std::optional<double> random_amt_maximum_;
@@ -211,13 +217,15 @@ class Listing {
   std::optional<double> random_aggressive_amt_maximum_;
 
   std::optional<std::uint32_t> random_depth_levels_;
-  std::optional<std::uint32_t> random_orders_rate_;
+  std::optional<std::uint32_t> random_update_rate_;
   std::optional<std::uint32_t> random_tick_range_;
 
   std::uint64_t listing_id_{0};
 
+  EngineType engine_type_;
+
   std::optional<bool> enabled_flag_;
-  std::optional<bool> random_orders_enabled_flag_;
+  std::optional<bool> random_actions_enabled_flag_;
   std::optional<bool> random_price_exclude_current_listing_flag_;
 };
 
@@ -283,13 +291,13 @@ class Listing::Patch {
       -> Patch&;
 
   [[nodiscard]]
-  auto random_orders_spread() const noexcept -> PatchField<double>;
-  auto with_random_orders_spread(std::optional<double> spread) noexcept
+  auto random_price_spread() const noexcept -> PatchField<double>;
+  auto with_random_price_spread(std::optional<double> spread) noexcept
       -> Patch&;
 
   [[nodiscard]]
-  auto random_orders_rate() const noexcept -> PatchField<std::uint32_t>;
-  auto with_random_orders_rate(std::optional<uint32_t> rate) noexcept -> Patch&;
+  auto random_update_rate() const noexcept -> PatchField<std::uint32_t>;
+  auto with_random_update_rate(std::optional<uint32_t> rate) noexcept -> Patch&;
 
   [[nodiscard]]
   auto random_tick_range() const noexcept -> PatchField<std::uint32_t>;
@@ -347,8 +355,8 @@ class Listing::Patch {
   auto with_random_amt_maximum(std::optional<double> amount) noexcept -> Patch&;
 
   [[nodiscard]]
-  auto random_orders_enabled_flag() const noexcept -> PatchField<bool>;
-  auto with_random_orders_enabled_flag(std::optional<bool> flag) noexcept
+  auto random_actions_enabled_flag() const noexcept -> PatchField<bool>;
+  auto with_random_actions_enabled_flag(std::optional<bool> flag) noexcept
       -> Patch&;
 
   [[nodiscard]]
@@ -375,6 +383,11 @@ class Listing::Patch {
   [[nodiscard]]
   auto random_aggressive_amt_maximum() const noexcept -> PatchField<double>;
   auto with_random_aggressive_amt_maximum(std::optional<double> amount) noexcept
+      -> Patch&;
+
+  [[nodiscard]]
+  auto engine_type() const noexcept -> PatchField<EngineType>;
+  auto with_engine_type(std::optional<EngineType> engine_type) noexcept
       -> Patch&;
 
   [[nodiscard]]
@@ -409,7 +422,7 @@ class Listing::Patch {
   PatchField<double> qty_multiple_;
   PatchField<double> price_tick_size_;
   PatchField<double> random_qty_maximum_;
-  PatchField<double> random_orders_spread_;
+  PatchField<double> random_price_spread_;
   PatchField<double> random_qty_minimum_;
   PatchField<double> random_amt_minimum_;
   PatchField<double> random_amt_maximum_;
@@ -419,11 +432,13 @@ class Listing::Patch {
   PatchField<double> random_aggressive_amt_maximum_;
 
   PatchField<std::uint32_t> random_depth_levels_;
-  PatchField<std::uint32_t> random_orders_rate_;
+  PatchField<std::uint32_t> random_update_rate_;
   PatchField<std::uint32_t> random_tick_range_;
 
+  PatchField<EngineType> engine_type_;
+
   PatchField<bool> enabled_flag_;
-  PatchField<bool> random_orders_enabled_flag_;
+  PatchField<bool> random_actions_enabled_flag_;
   PatchField<bool> random_price_exclude_current_listing_flag_;
 };
 

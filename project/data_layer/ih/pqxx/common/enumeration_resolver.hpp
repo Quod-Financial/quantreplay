@@ -5,8 +5,8 @@
 #include <string_view>
 
 #include "api/models/datasource.hpp"
+#include "api/models/listing.hpp"
 #include "api/models/market_phase.hpp"
-#include "api/models/venue.hpp"
 
 namespace simulator::data_layer::internal_pqxx {
 
@@ -27,9 +27,9 @@ class EnumerationResolver {
       -> void;
 
   [[nodiscard]]
-  auto operator()(Venue::EngineType engine_type) const -> std::string;
-  auto operator()(std::string_view engine_type, Venue::EngineType& value) const
-      -> void;
+  auto operator()(Listing::EngineType engine_type) const -> std::string;
+  auto operator()(std::string_view engine_type,
+                  Listing::EngineType& value) const -> void;
 
  private:
   [[nodiscard]]
@@ -48,9 +48,9 @@ class EnumerationResolver {
       -> void;
 
   [[nodiscard]]
-  static auto to_string(Venue::EngineType value) -> std::string;
+  static auto to_string(Listing::EngineType value) -> std::string;
   static auto from_string(std::string_view engine_type,
-                          Venue::EngineType& value) -> void;
+                          Listing::EngineType& value) -> void;
 };
 
 }  // namespace simulator::data_layer::internal_pqxx

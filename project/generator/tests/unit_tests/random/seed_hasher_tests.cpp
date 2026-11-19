@@ -22,6 +22,7 @@ constexpr std::uint64_t DefaultListingId = 1;
   data_layer::Listing::Patch patch;
   patch.with_symbol("AAPL")
       .with_venue_id("XNAS")
+      .with_engine_type(data_layer::Listing::EngineType::Matching)
       .with_security_type("CS")
       .with_price_currency("USD")
       .with_fx_base_currency("USD")
@@ -44,7 +45,8 @@ class GeneratorListingSeedHasher : public Test {
                                          const std::string& venue_id)
       -> data_layer::Listing {
     data_layer::Listing::Patch patch;
-    patch.with_symbol(symbol).with_venue_id(venue_id);
+    patch.with_symbol(symbol).with_venue_id(venue_id).with_engine_type(
+        data_layer::Listing::EngineType::Matching);
     return data_layer::Listing::create(std::move(patch), DefaultListingId);
   }
 
@@ -91,13 +93,16 @@ TEST_F(GeneratorListingSeedHasher,
 TEST_F(GeneratorListingSeedHasher,
        DistinguishesAbsentFromEmptyStringForListingColumn) {
   data_layer::Listing::Patch absent_patch;
-  absent_patch.with_symbol("SYM").with_venue_id("VEN");
+  absent_patch.with_symbol("SYM").with_venue_id("VEN").with_engine_type(
+      data_layer::Listing::EngineType::Matching);
   const auto listing_absent =
       data_layer::Listing::create(std::move(absent_patch), DefaultListingId);
 
   data_layer::Listing::Patch empty_patch;
-  empty_patch.with_symbol("SYM").with_venue_id("VEN").with_cusip_id(
-      std::string{});
+  empty_patch.with_symbol("SYM")
+      .with_venue_id("VEN")
+      .with_engine_type(data_layer::Listing::EngineType::Matching)
+      .with_cusip_id(std::string{});
   const auto listing_empty =
       data_layer::Listing::create(std::move(empty_patch), DefaultListingId);
 

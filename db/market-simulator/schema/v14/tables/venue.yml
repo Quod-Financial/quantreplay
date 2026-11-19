@@ -1,0 +1,45 @@
+databaseChangeLog:
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_v14_table_venue_1
+      labels: schema,v14
+      comment: Rename venue.order_on_startup column to generate_actions_on_startup
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: order_on_startup
+        - not:
+            - columnExists:
+                tableName: venue
+                columnName: generate_actions_on_startup
+      changes:
+        - renameColumn:
+            tableName: venue
+            oldColumnName: order_on_startup
+            newColumnName: generate_actions_on_startup
+            columnDataType: bool
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_v14_table_venue_2
+      labels: schema,v14
+      comment: Drop venue.engine_type column, moved to listing.engine_type
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: venue
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: venue
+            columnName: engine_type
+        - columnExists:
+            tableName: listing
+            columnName: engine_type
+      changes:
+        - dropColumn:
+            tableName: venue
+            columnName: engine_type

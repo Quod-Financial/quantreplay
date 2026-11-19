@@ -4,28 +4,26 @@
 
 #include <cassert>
 #include <functional>
+#include <iterator>
 #include <stdexcept>
-#include <utility>
 
 namespace simulator::trading_system {
+namespace {
+
+template <typename LookupTableType>
+[[nodiscard]]
+auto find_engine(const LookupTableType& lookup_table, InstrumentId identifier)
+    -> typename LookupTableType::mapped_type::type* {
+  const auto engine_it = lookup_table.find(identifier);
+  return engine_it != std::end(lookup_table) ? &engine_it->second.get()
+                                             : nullptr;
+}
+
+}  // namespace
 
 auto TradingEnginesRepository::InstrumentIdHasher::operator()(
     InstrumentId identifier) const -> std::size_t {
   return std::hash<std::uint64_t>{}(static_cast<std::uint64_t>(identifier));
-}
-
-auto TradingEnginesRepository::add_engine(InstrumentId instrument_id,
-                                          std::unique_ptr<TradingEngine> engine)
-    -> TradingEngine& {
-  if (!engine) [[unlikely]] {
-    throw std::invalid_argument{"can not add null engine to the repository"};
-  }
-
-  EngineReference engine_reference = *engine;
-  associate_instrument_with_engine(instrument_id, engine_reference);
-  engines_.emplace_back(std::move(engine));
-
-  return engine_reference;
 }
 
 auto TradingEnginesRepository::find_instrument_engine(
@@ -37,6 +35,21 @@ auto TradingEnginesRepository::find_instrument_engine(
 
   throw std::out_of_range{fmt::format(
       "trading engine with InstrumentId ({}) does not exist", identifier)};
+}
+
+auto TradingEnginesRepository::find_order_modifying_engine(
+    InstrumentId identifier) const -> OrderModifyingEngine* {
+  return find_engine(order_modifying_engines_, identifier);
+}
+
+auto TradingEnginesRepository::find_state_persisting_engine(
+    InstrumentId identifier) const -> StatePersistingEngine* {
+  return find_engine(state_persisting_engines_, identifier);
+}
+
+auto TradingEnginesRepository::find_quote_publishing_engine(
+    InstrumentId identifier) const -> QuotePublishingEngine* {
+  return find_engine(quote_publishing_engines_, identifier);
 }
 
 auto TradingEnginesRepository::associate_instrument_with_engine(

@@ -126,7 +126,8 @@ struct GeneratorOrderDerivation : public Test {
   [[nodiscard]]
   static auto make_listing() -> data_layer::Listing {
     data_layer::Listing::Patch patch;
-    patch.with_symbol("AAPL").with_venue_id("NYSE");
+    patch.with_symbol("AAPL").with_venue_id("NYSE").with_engine_type(
+        data_layer::Listing::EngineType::Matching);
     return data_layer::Listing::create(std::move(patch), 1);
   }
 

@@ -35,6 +35,15 @@ TEST_F(DataLayerPqxxListingQueryInsert, Compose_FromNonEmptyPatch) {
             "RETURNING listing_id");
 }
 
+TEST_F(DataLayerPqxxListingQueryInsert, Compose_WithEngineType) {
+  patch.with_venue_id("NASDAQ").with_engine_type(Listing::EngineType::Quoting);
+
+  const auto query = Insert::prepare(patch, sanitizer);
+  EXPECT_EQ(query.compose(),
+            "INSERT INTO listing (venue_id, engine_type) "
+            "VALUES (`NASDAQ`, `Quoting`)");
+}
+
 struct DataLayerPqxxListingQuerySelect : public ::testing::Test {
   SanitizerStub sanitizer;
 };
@@ -49,6 +58,17 @@ TEST_F(DataLayerPqxxListingQuerySelect, Compose_WithPredicateExpression) {
   EXPECT_EQ(query.compose(),
             "SELECT * FROM listing "
             "WHERE qty_minimum > `32.32` AND qty_maximum < `42.42`");
+}
+
+TEST_F(DataLayerPqxxListingQuerySelect, Compose_WithEngineTypePredicate) {
+  using Column = Listing::Attribute;
+
+  const auto predicate =
+      ListingCmp::eq(Column::EngineType, Listing::EngineType::Quoting);
+
+  const auto query = Select::prepare().by(predicate, sanitizer);
+  EXPECT_EQ(query.compose(),
+            "SELECT * FROM listing WHERE engine_type = `Quoting`");
 }
 
 TEST_F(DataLayerPqxxListingQuerySelect, Compose_WithByListingIdPredicate) {

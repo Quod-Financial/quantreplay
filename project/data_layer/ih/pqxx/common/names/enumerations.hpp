@@ -30,12 +30,12 @@ constexpr std::string_view TradeAtLast{"TradeAtLast"};
 
 }  // namespace market_phase_type
 
-namespace venue_engine_type {
+namespace listing_engine_type {
 
 constexpr std::string_view Matching{"Matching"};
 constexpr std::string_view Quoting{"Quoting"};
 
-}  // namespace venue_engine_type
+}  // namespace listing_engine_type
 }  // namespace simulator::data_layer::internal_pqxx
 
 #endif  // SIMULATOR_DATA_LAYER_IH_PQXX_COMMON_NAMES_ENUMERATIONS_HPP_

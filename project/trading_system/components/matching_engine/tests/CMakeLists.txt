@@ -21,9 +21,7 @@ add_target_tests(
     unit_tests/commands/phase_transition_command_tests.cpp
     unit_tests/commands/tick_command_tests.cpp
     unit_tests/common/data/market_data_updates_tests.cpp
-    unit_tests/common/validation/checker_utils_tests.cpp
     unit_tests/common/validation/conclusion_tests.cpp
-    unit_tests/common/validation/validation_tests.cpp
     unit_tests/dispatching/event_dispatcher_tests.cpp
     unit_tests/implementation_tests.cpp
     unit_tests/market_data/actions/market_data_recover_tests.cpp

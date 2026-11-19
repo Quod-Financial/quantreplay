@@ -27,13 +27,13 @@ auto Venue::create(Patch snapshot) -> Venue {
   SIM_ASSIGN_FIELD(timezone_, patched_timezone_);
   SIM_ASSIGN_FIELD(persistence_file_path_, patched_persistence_file_path_);
   SIM_ASSIGN_FIELD(random_parties_count_, patched_random_parties_count_);
-  SIM_ASSIGN_FIELD(engine_type_, patched_engine_type_);
   SIM_ASSIGN_FIELD(rest_port_, patched_rest_port_);
   SIM_ASSIGN_FIELD(support_tif_ioc_flag_, patched_support_tif_ioc_flag_);
   SIM_ASSIGN_FIELD(support_tif_fok_flag_, patched_support_tif_fok_flag_);
   SIM_ASSIGN_FIELD(support_tif_day_flag_, patched_support_tif_day_flag_);
   SIM_ASSIGN_FIELD(include_own_orders_flag_, patched_include_own_orders_flag_);
-  SIM_ASSIGN_FIELD(order_on_startup_flag_, patched_order_on_startup_flag_);
+  SIM_ASSIGN_FIELD(generate_actions_on_startup_flag_,
+                   patched_generate_actions_on_startup_flag_);
   SIM_ASSIGN_FIELD(tns_enabled_flag_, patched_tns_enabled_flag_);
   SIM_ASSIGN_FIELD(tns_qty_enabled_flag_, patched_tns_qty_enabled_flag_);
   SIM_ASSIGN_FIELD(tns_side_enabled_flag_, patched_tns_side_enabled_flag_);
@@ -69,10 +69,6 @@ auto Venue::name() const noexcept -> const std::optional<std::string>& {
   return name_;
 }
 
-auto Venue::engine_type() const noexcept -> std::optional<EngineType> {
-  return engine_type_;
-}
-
 auto Venue::support_tif_ioc_flag() const noexcept -> std::optional<bool> {
   return support_tif_ioc_flag_;
 }
@@ -93,8 +89,9 @@ auto Venue::rest_port() const noexcept -> std::optional<std::uint16_t> {
   return rest_port_;
 }
 
-auto Venue::order_on_startup_flag() const noexcept -> std::optional<bool> {
-  return order_on_startup_flag_;
+auto Venue::generate_actions_on_startup_flag() const noexcept
+    -> std::optional<bool> {
+  return generate_actions_on_startup_flag_;
 }
 
 auto Venue::random_parties_count() const noexcept
@@ -159,16 +156,6 @@ auto Venue::Patch::with_name(std::optional<std::string> name) noexcept
   return *this;
 }
 
-auto Venue::Patch::engine_type() const noexcept -> PatchField<EngineType> {
-  return patched_engine_type_;
-}
-
-auto Venue::Patch::with_engine_type(
-    std::optional<EngineType> engine_type) noexcept -> Patch& {
-  patched_engine_type_ = std::move(engine_type);
-  return *this;
-}
-
 auto Venue::Patch::support_tif_ioc_flag() const noexcept -> PatchField<bool> {
   return patched_support_tif_ioc_flag_;
 }
@@ -220,13 +207,14 @@ auto Venue::Patch::with_rest_port(std::optional<std::uint32_t> port) noexcept
   return *this;
 }
 
-auto Venue::Patch::orders_on_startup_flag() const noexcept -> PatchField<bool> {
-  return patched_order_on_startup_flag_;
+auto Venue::Patch::generate_actions_on_startup_flag() const noexcept
+    -> PatchField<bool> {
+  return patched_generate_actions_on_startup_flag_;
 }
 
-auto Venue::Patch::with_orders_on_startup_flag(
+auto Venue::Patch::with_generate_actions_on_startup_flag(
     std::optional<bool> flag) noexcept -> Patch& {
-  patched_order_on_startup_flag_ = std::move(flag);
+  patched_generate_actions_on_startup_flag_ = std::move(flag);
   return *this;
 }
 

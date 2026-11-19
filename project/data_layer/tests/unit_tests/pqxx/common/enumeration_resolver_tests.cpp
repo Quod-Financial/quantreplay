@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
 #include "api/models/datasource.hpp"
+#include "api/models/listing.hpp"
 #include "api/models/market_phase.hpp"
-#include "api/models/venue.hpp"
 #include "ih/common/exceptions.hpp"
 #include "ih/pqxx/common/enumeration_resolver.hpp"
 #include "tests/test_utils/utils.hpp"
@@ -182,44 +182,47 @@ TEST(DataLayer_Pqxx_EnumerationResolver_MarketPhase, Value_Halted) {
   EXPECT_EQ(type, MarketPhase::Phase::Halted);
 }
 
-TEST(DataLayer_Pqxx_EnumerationResolver_VenueEngineType, String_Undefined) {
+TEST(DataLayer_Pqxx_EnumerationResolver_ListingEngineType, String_Undefined) {
   constexpr EnumerationResolver resolver;
-  EXPECT_THROW(
-      (void)resolver(data_layer::test::invalid_enum_value<Venue::EngineType>()),
-      EnumEncodingError);
+  EXPECT_THROW((void)resolver(
+                   data_layer::test::invalid_enum_value<Listing::EngineType>()),
+               EnumEncodingError);
 }
 
-TEST(DataLayer_Pqxx_EnumerationResolver_VenueEngineType, String_Matching) {
+TEST(DataLayer_Pqxx_EnumerationResolver_ListingEngineType, String_Matching) {
   constexpr EnumerationResolver resolver;
-  EXPECT_EQ(resolver(Venue::EngineType::Matching), "Matching");
+  EXPECT_EQ(resolver(Listing::EngineType::Matching), "Matching");
 }
 
-TEST(DataLayer_Pqxx_EnumerationResolver_VenueEngineType, String_Quoting) {
+TEST(DataLayer_Pqxx_EnumerationResolver_ListingEngineType, String_Quoting) {
   constexpr EnumerationResolver resolver;
-  EXPECT_EQ(resolver(Venue::EngineType::Quoting), "Quoting");
+  EXPECT_EQ(resolver(Listing::EngineType::Quoting), "Quoting");
 }
 
-TEST(DataLayer_Pqxx_EnumerationResolver_VenueEngineType, Value_Undefined) {
+TEST(DataLayer_Pqxx_EnumerationResolver_ListingEngineType, Value_Undefined) {
   constexpr EnumerationResolver resolver;
-  auto engine_type = data_layer::test::invalid_enum_value<Venue::EngineType>();
+  auto engine_type =
+      data_layer::test::invalid_enum_value<Listing::EngineType>();
 
   EXPECT_THROW(resolver("bad_string", engine_type), EnumDecodingError);
 }
 
-TEST(DataLayer_Pqxx_EnumerationResolver_VenueEngineType, Value_Matching) {
+TEST(DataLayer_Pqxx_EnumerationResolver_ListingEngineType, Value_Matching) {
   constexpr EnumerationResolver resolver;
-  auto engine_type = data_layer::test::invalid_enum_value<Venue::EngineType>();
+  auto engine_type =
+      data_layer::test::invalid_enum_value<Listing::EngineType>();
 
   EXPECT_NO_THROW(resolver("Matching", engine_type));
-  EXPECT_EQ(engine_type, Venue::EngineType::Matching);
+  EXPECT_EQ(engine_type, Listing::EngineType::Matching);
 }
 
-TEST(DataLayer_Pqxx_EnumerationResolver_VenueEngineType, Value_Quoting) {
+TEST(DataLayer_Pqxx_EnumerationResolver_ListingEngineType, Value_Quoting) {
   constexpr EnumerationResolver resolver;
-  auto engine_type = data_layer::test::invalid_enum_value<Venue::EngineType>();
+  auto engine_type =
+      data_layer::test::invalid_enum_value<Listing::EngineType>();
 
   EXPECT_NO_THROW(resolver("Quoting", engine_type));
-  EXPECT_EQ(engine_type, Venue::EngineType::Quoting);
+  EXPECT_EQ(engine_type, Listing::EngineType::Quoting);
 }
 
 }  // namespace

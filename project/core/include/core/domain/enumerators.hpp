@@ -258,6 +258,10 @@ enum class TradeCondition : std::uint8_t {
   ImbalanceMoreSellers
 };
 
+enum class QuoteCondition : std::uint8_t { Open };
+
+enum class MdQuoteType : std::uint8_t { Tradeable };
+
 enum class MdSubscriptionRequestType : std::uint8_t {
   Subscribe,
   Unsubscribe,
@@ -268,7 +272,13 @@ enum class MarketEntryAction : std::uint8_t { New, Change, Delete };
 
 enum class MarketDataUpdateType : std::uint8_t { Snapshot, Incremental };
 
-enum class MdRejectReason : std::uint8_t { UnknownSymbol, DuplicateMdReqId };
+enum class MdRejectReason : std::uint8_t {
+  UnknownSymbol,
+  DuplicateMdReqId,
+  UnsupportedMarketDepth,
+  UnsupportedMdUpdateType,
+  UnsupportedMdEntryType
+};
 
 enum class TradingPhase : std::uint8_t {
   Open,
@@ -297,6 +307,10 @@ auto convert_security_type_from_string(std::string_view value) noexcept
 auto convert_party_role_from_string(std::string_view value) noexcept
     -> std::optional<PartyRole>;
 
+[[nodiscard]]
+auto convert_security_id_source_from_string(std::string_view value) noexcept
+    -> std::optional<SecurityIdSource>;
+
 auto operator<<(std::ostream& stream, ExecutionType execution_type)
     -> std::ostream&;
 
@@ -323,6 +337,11 @@ auto operator<<(std::ostream& stream, TimeInForce time_in_force)
 
 auto operator<<(std::ostream& stream, MdEntryType md_entry_type)
     -> std::ostream&;
+
+auto operator<<(std::ostream& stream, QuoteCondition quote_condition)
+    -> std::ostream&;
+
+auto operator<<(std::ostream& stream, MdQuoteType quote_type) -> std::ostream&;
 
 auto operator<<(std::ostream& stream,
                 MdSubscriptionRequestType subscription_type) -> std::ostream&;
@@ -447,6 +466,24 @@ struct fmt::formatter<simulator::core::enumerators::TradeCondition>
   using formattable = simulator::core::enumerators::TradeCondition;
 
   auto format(formattable trade_condition, format_context& context) const
+      -> decltype(context.out());
+};
+
+template <>
+struct fmt::formatter<simulator::core::enumerators::QuoteCondition>
+    : formatter<std::string_view> {
+  using formattable = simulator::core::enumerators::QuoteCondition;
+
+  auto format(formattable quote_condition, format_context& context) const
+      -> decltype(context.out());
+};
+
+template <>
+struct fmt::formatter<simulator::core::enumerators::MdQuoteType>
+    : formatter<std::string_view> {
+  using formattable = simulator::core::enumerators::MdQuoteType;
+
+  auto format(formattable quote_type, format_context& context) const
       -> decltype(context.out());
 };
 

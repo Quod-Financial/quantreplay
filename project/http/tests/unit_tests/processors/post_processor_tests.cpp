@@ -1,20 +1,18 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <cstdint>
 #include <optional>
 #include <string>
 
 #include "ih/endpoint.hpp"
 #include "ih/processors/post_processor.hpp"
 #include "ih/router.hpp"
-#include "middleware/channels/generator_admin_channel.hpp"
-#include "middleware/routing/generator_admin_channel.hpp"
 #include "mocks/delete_processor.hpp"
-#include "mocks/generator_admin_receiver.hpp"
+#include "mocks/generator_controller.hpp"
 #include "mocks/get_processor.hpp"
 #include "mocks/head_processor.hpp"
 #include "mocks/put_processor.hpp"
+#include "mocks/quote_controller.hpp"
 #include "mocks/redirection_processor.hpp"
 #include "mocks/trading_controller.hpp"
 #include "test_utils/processors.hpp"
@@ -23,7 +21,6 @@ namespace simulator::http::test {
 namespace {
 
 using ::testing::_;
-using ::testing::A;
 using ::testing::DoAll;
 using ::testing::EndsWith;
 using ::testing::Eq;
@@ -40,12 +37,16 @@ class HttpPostProcessor : public ::testing::Test {
     auto delete_processor = std::make_shared<mock::DeleteProcessor>();
 
     redirector = std::make_shared<mock::RedirectionProcessor>();
+    generator_controller = std::make_shared<mock::GeneratorController>();
     trading_controller = std::make_shared<mock::TradingController>();
+    quote_controller = std::make_shared<mock::QuoteController>();
 
     post_processor = std::make_shared<PostProcessorImpl>(redirector,
                                                          nullptr,
+                                                         generator_controller,
                                                          nullptr,
                                                          nullptr,
+                                                         quote_controller,
                                                          nullptr,
                                                          trading_controller,
                                                          nullptr,
@@ -63,9 +64,14 @@ class HttpPostProcessor : public ::testing::Test {
   static constexpr std::string VenueName{"current_venue"};
   static constexpr std::string OtherVenueName{"other_venue"};
   static inline const std::string HaltRequestBody{R"({"allowCancels": false})"};
+  static inline const std::string GenStartRequestBody{R"({"seed":"7"})"};
+  static inline const http::GeneratorController::Result GenerationResult{
+      Pistache::Http::Code::Ok, R"({"result":"generation result"})"};
 
   std::shared_ptr<mock::RedirectionProcessor> redirector;
+  std::shared_ptr<mock::GeneratorController> generator_controller;
   std::shared_ptr<mock::TradingController> trading_controller;
+  std::shared_ptr<mock::QuoteController> quote_controller;
   std::shared_ptr<PostProcessorImpl> post_processor;
   std::unique_ptr<Router> router;
 };
@@ -169,34 +175,18 @@ TEST_F(HttpPostProcessorHaltPhase,
   EXPECT_THAT(captured_body, Optional(Eq(HaltRequestBody)));
 }
 
-class HttpPostProcessorOrderGen : public HttpPostProcessor {
- protected:
-  auto SetUp() -> void override {
-    HttpPostProcessor::SetUp();
-
-    std::shared_ptr<middleware::GeneratorAdminRequestReceiver> receiver_pointer{
-        std::addressof(receiver), [](auto* /*pointer*/) {}};
-    middleware::bind_generator_admin_channel(receiver_pointer);
-  }
-
-  auto TearDown() -> void override {
-    middleware::release_generator_admin_channel();
-  }
-
-  mock::GeneratorAdminRequestReceiver receiver;
-};
-
-class HttpPostProcessorStartOrderGen : public HttpPostProcessorOrderGen {};
+class HttpPostProcessorStartOrderGen : public HttpPostProcessor {};
 
 TEST_F(HttpPostProcessorStartOrderGen, HandlesRequestForCurrentVenue) {
   EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
-  EXPECT_CALL(receiver,
-              process(A<const protocol::StartGenerationRequest&>(),
-                      A<protocol::StartGenerationReply&>()))
-      .Times(1);
+  EXPECT_CALL(*generator_controller, start_generation(Eq(GenStartRequestBody)))
+      .Times(1)
+      .WillOnce(Return(GenerationResult));
 
-  const auto request =
-      util::make_request(MethodName, endpoint::GenStart + "/" + VenueName);
+  const auto request = util::make_request(MethodName,
+                                          endpoint::GenStart + "/" + VenueName,
+                                          {},
+                                          GenStartRequestBody);
   auto response_writer = util::make_response_writer(*router);
   router->onRequest(request, std::move(response_writer.writer));
 }
@@ -204,17 +194,18 @@ TEST_F(HttpPostProcessorStartOrderGen, HandlesRequestForCurrentVenue) {
 TEST_F(HttpPostProcessorStartOrderGen,
        HandlesRequestForCurrentVenueIfRequestWithoutVenue) {
   EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
-  EXPECT_CALL(receiver,
-              process(A<const protocol::StartGenerationRequest&>(),
-                      A<protocol::StartGenerationReply&>()))
-      .Times(1);
+  EXPECT_CALL(*generator_controller, start_generation(Eq(GenStartRequestBody)))
+      .Times(1)
+      .WillOnce(Return(GenerationResult));
 
-  const auto request = util::make_request(MethodName, endpoint::GenStart);
+  const auto request = util::make_request(
+      MethodName, endpoint::GenStart, {}, GenStartRequestBody);
   auto response_writer = util::make_response_writer(*router);
   router->onRequest(request, std::move(response_writer.writer));
 }
 
 TEST_F(HttpPostProcessorStartOrderGen, RedirectsWhenVenueIsDifferent) {
+  EXPECT_CALL(*generator_controller, start_generation(_)).Times(0);
   EXPECT_CALL(*redirector, redirect_to_venue(Eq(OtherVenueName), _, _, _))
       .Times(1)
       .WillOnce(Return(redirect::Result(Pistache::Http::Code::Ok)));
@@ -225,179 +216,37 @@ TEST_F(HttpPostProcessorStartOrderGen, RedirectsWhenVenueIsDifferent) {
   router->onRequest(request, std::move(response_writer.writer));
 }
 
-// NOLINTBEGIN(*-magic-numbers)
-
-class HttpPostProcessorStartOrderGenSeed : public HttpPostProcessorOrderGen {
- protected:
-  auto send_start_request(const std::string& target,
-                          const std::string& body = "") -> void {
-    const auto request = util::make_request(MethodName, target, {}, body);
-    auto response_writer = util::make_response_writer(*router);
-    router->onRequest(request, std::move(response_writer.writer));
-  }
-};
-
-TEST_F(HttpPostProcessorStartOrderGenSeed, ParsesSeedFromBodyForCurrentVenue) {
-  protocol::StartGenerationRequest captured;
-
-  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
-  EXPECT_CALL(receiver,
-              process(A<const protocol::StartGenerationRequest&>(),
-                      A<protocol::StartGenerationReply&>()))
-      .Times(1)
-      .WillOnce(SaveArg<0>(&captured));
-
-  send_start_request(endpoint::GenStart + "/" + VenueName, R"({"seed":"123"})");
-
-  EXPECT_THAT(captured.seed, Optional(Eq(std::string{"123"})));
-}
-
-TEST_F(HttpPostProcessorStartOrderGenSeed,
-       ParsesSeedFromBodyWhenRequestWithoutVenue) {
-  protocol::StartGenerationRequest captured;
-
-  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
-  EXPECT_CALL(receiver,
-              process(A<const protocol::StartGenerationRequest&>(),
-                      A<protocol::StartGenerationReply&>()))
-      .Times(1)
-      .WillOnce(SaveArg<0>(&captured));
-
-  send_start_request(endpoint::GenStart, R"({"seed":"42"})");
-
-  EXPECT_THAT(captured.seed, Optional(Eq(std::string{"42"})));
-}
-
-TEST_F(HttpPostProcessorStartOrderGenSeed, SeedIsEmptyWhenBodyIsAbsent) {
-  protocol::StartGenerationRequest captured{.seed = std::string{"sentinel"}};
-
-  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
-  EXPECT_CALL(receiver,
-              process(A<const protocol::StartGenerationRequest&>(),
-                      A<protocol::StartGenerationReply&>()))
-      .Times(1)
-      .WillOnce(SaveArg<0>(&captured));
-
-  send_start_request(endpoint::GenStart + "/" + VenueName);
-
-  EXPECT_EQ(captured.seed, std::nullopt);
-}
-
-TEST_F(HttpPostProcessorStartOrderGenSeed, SeedIsEmptyWhenSeedFieldIsAbsent) {
-  protocol::StartGenerationRequest captured{.seed = std::string{"sentinel"}};
-
-  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
-  EXPECT_CALL(receiver,
-              process(A<const protocol::StartGenerationRequest&>(),
-                      A<protocol::StartGenerationReply&>()))
-      .Times(1)
-      .WillOnce(SaveArg<0>(&captured));
-
-  send_start_request(endpoint::GenStart + "/" + VenueName, "{}");
-
-  EXPECT_EQ(captured.seed, std::nullopt);
-}
-
-TEST_F(HttpPostProcessorStartOrderGenSeed, SeedIsEmptyWhenSeedIsJsonNull) {
-  protocol::StartGenerationRequest captured{.seed = std::string{"sentinel"}};
-
-  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
-  EXPECT_CALL(receiver,
-              process(A<const protocol::StartGenerationRequest&>(),
-                      A<protocol::StartGenerationReply&>()))
-      .Times(1)
-      .WillOnce(SaveArg<0>(&captured));
-
-  send_start_request(endpoint::GenStart + "/" + VenueName, R"({"seed":null})");
-
-  EXPECT_EQ(captured.seed, std::nullopt);
-}
-
-TEST_F(HttpPostProcessorStartOrderGenSeed, SeedIsEmptyWhenSeedIsEmptyString) {
-  protocol::StartGenerationRequest captured{.seed = std::string{"sentinel"}};
-
-  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
-  EXPECT_CALL(receiver,
-              process(A<const protocol::StartGenerationRequest&>(),
-                      A<protocol::StartGenerationReply&>()))
-      .Times(1)
-      .WillOnce(SaveArg<0>(&captured));
-
-  send_start_request(endpoint::GenStart + "/" + VenueName, R"({"seed":""})");
-
-  EXPECT_EQ(captured.seed, std::nullopt);
-}
-
-TEST_F(HttpPostProcessorStartOrderGenSeed, ParsesNullLiteralStringAsSeed) {
-  protocol::StartGenerationRequest captured;
-
-  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
-  EXPECT_CALL(receiver,
-              process(A<const protocol::StartGenerationRequest&>(),
-                      A<protocol::StartGenerationReply&>()))
-      .Times(1)
-      .WillOnce(SaveArg<0>(&captured));
-
-  send_start_request(endpoint::GenStart + "/" + VenueName,
-                     R"({"seed":"null"})");
-
-  EXPECT_THAT(captured.seed, Optional(Eq(std::string{"null"})));
-}
-
-TEST_F(HttpPostProcessorStartOrderGenSeed,
-       DoesNotStartGeneratorOnMalformedBody) {
-  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
-  EXPECT_CALL(receiver,
-              process(A<const protocol::StartGenerationRequest&>(),
-                      A<protocol::StartGenerationReply&>()))
-      .Times(0);
-
-  send_start_request(endpoint::GenStart + "/" + VenueName, R"({"seed":)");
-}
-
-TEST_F(HttpPostProcessorStartOrderGenSeed,
-       DoesNotStartGeneratorOnNonStringSeed) {
-  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
-  EXPECT_CALL(receiver,
-              process(A<const protocol::StartGenerationRequest&>(),
-                      A<protocol::StartGenerationReply&>()))
-      .Times(0);
-
-  send_start_request(endpoint::GenStart + "/" + VenueName, R"({"seed":123})");
-}
-
-TEST_F(HttpPostProcessorStartOrderGenSeed,
-       RedirectsWithSeedBodyPreservedWhenVenueIsDifferent) {
+TEST_F(HttpPostProcessorStartOrderGen,
+       RedirectsWithBodyPreservedWhenVenueIsDifferent) {
   std::string captured_url;
   std::optional<std::string> captured_body;
 
-  EXPECT_CALL(receiver,
-              process(A<const protocol::StartGenerationRequest&>(),
-                      A<protocol::StartGenerationReply&>()))
-      .Times(0);
+  EXPECT_CALL(*generator_controller, start_generation(_)).Times(0);
   EXPECT_CALL(*redirector, redirect_to_venue(Eq(OtherVenueName), _, _, _))
       .Times(1)
       .WillOnce(DoAll(SaveArg<2>(&captured_url),
                       SaveArg<3>(&captured_body),
                       Return(redirect::Result(Pistache::Http::Code::Ok))));
 
-  send_start_request(endpoint::GenStart + "/" + OtherVenueName,
-                     R"({"seed":"7"})");
+  const auto request =
+      util::make_request(MethodName,
+                         endpoint::GenStart + "/" + OtherVenueName,
+                         {},
+                         GenStartRequestBody);
+  auto response_writer = util::make_response_writer(*router);
+  router->onRequest(request, std::move(response_writer.writer));
 
   EXPECT_THAT(captured_url, EndsWith("/" + OtherVenueName));
-  EXPECT_THAT(captured_body, Optional(Eq(std::string{R"({"seed":"7"})"})));
+  EXPECT_THAT(captured_body, Optional(Eq(GenStartRequestBody)));
 }
 
-// NOLINTEND(*-magic-numbers)
-
-class HttpPostProcessorStopOrderGen : public HttpPostProcessorOrderGen {};
+class HttpPostProcessorStopOrderGen : public HttpPostProcessor {};
 
 TEST_F(HttpPostProcessorStopOrderGen, HandlesRequestForCurrentVenue) {
   EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
-  EXPECT_CALL(receiver,
-              process(A<const protocol::StopGenerationRequest&>(),
-                      A<protocol::StopGenerationReply&>()))
-      .Times(1);
+  EXPECT_CALL(*generator_controller, stop_generation())
+      .Times(1)
+      .WillOnce(Return(GenerationResult));
 
   const auto request =
       util::make_request(MethodName, endpoint::GenStop + "/" + VenueName);
@@ -408,10 +257,9 @@ TEST_F(HttpPostProcessorStopOrderGen, HandlesRequestForCurrentVenue) {
 TEST_F(HttpPostProcessorStopOrderGen,
        HandlesRequestForCurrentVenueIfRequestWithoutVenue) {
   EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
-  EXPECT_CALL(receiver,
-              process(A<const protocol::StopGenerationRequest&>(),
-                      A<protocol::StopGenerationReply&>()))
-      .Times(1);
+  EXPECT_CALL(*generator_controller, stop_generation())
+      .Times(1)
+      .WillOnce(Return(GenerationResult));
 
   const auto request = util::make_request(MethodName, endpoint::GenStop);
   auto response_writer = util::make_response_writer(*router);
@@ -419,12 +267,28 @@ TEST_F(HttpPostProcessorStopOrderGen,
 }
 
 TEST_F(HttpPostProcessorStopOrderGen, RedirectsWhenVenueIsDifferent) {
+  EXPECT_CALL(*generator_controller, stop_generation()).Times(0);
   EXPECT_CALL(*redirector, redirect_to_venue(Eq(OtherVenueName), _, _, _))
       .Times(1)
       .WillOnce(Return(redirect::Result(Pistache::Http::Code::Ok)));
 
   const auto request =
       util::make_request(MethodName, endpoint::GenStop + "/" + OtherVenueName);
+  auto response_writer = util::make_response_writer(*router);
+  router->onRequest(request, std::move(response_writer.writer));
+}
+
+class HttpPostProcessorPublishQuote : public HttpPostProcessor {};
+
+TEST_F(HttpPostProcessorPublishQuote, PassesRequestBodyToQuoteController) {
+  const std::string body{R"({"venueId":"current_venue"})"};
+  EXPECT_CALL(*quote_controller, publish_quote(Eq(body)))
+      .Times(1)
+      .WillOnce(Return(http::QuoteController::Result{
+          Pistache::Http::Code::Created, R"({"result":"published"})"}));
+
+  const auto request =
+      util::make_request(MethodName, std::string{endpoint::Quotes}, {}, body);
   auto response_writer = util::make_response_writer(*router);
   router->onRequest(request, std::move(response_writer.writer));
 }

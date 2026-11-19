@@ -3,7 +3,7 @@
 #include <string>
 #include <string_view>
 
-#include "api/models/venue.hpp"
+#include "api/models/listing.hpp"
 #include "ih/common/exceptions.hpp"
 #include "ih/pqxx/common/names/enumerations.hpp"
 
@@ -39,14 +39,13 @@ auto EnumerationResolver::operator()(std::string_view phase,
   EnumerationResolver::from_string(phase, value);
 }
 
-auto EnumerationResolver::operator()(Venue::EngineType engine_type) const
+auto EnumerationResolver::operator()(Listing::EngineType engine_type) const
     -> std::string {
   return EnumerationResolver::to_string(engine_type);
 }
 
 auto EnumerationResolver::operator()(std::string_view engine_type,
-                                     data_layer::Venue::EngineType& value) const
-    -> void {
+                                     Listing::EngineType& value) const -> void {
   EnumerationResolver::from_string(engine_type, value);
 }
 
@@ -159,32 +158,31 @@ auto EnumerationResolver::from_string(std::string_view string,
   }
 }
 
-auto EnumerationResolver::to_string(Venue::EngineType value) -> std::string {
+auto EnumerationResolver::to_string(Listing::EngineType value) -> std::string {
   std::string_view string{};
   switch (value) {
-    case Venue::EngineType::Matching:
-      string = internal_pqxx::venue_engine_type::Matching;
+    case Listing::EngineType::Matching:
+      string = internal_pqxx::listing_engine_type::Matching;
       break;
-    case Venue::EngineType::Quoting:
-      string = internal_pqxx::venue_engine_type::Quoting;
+    case Listing::EngineType::Quoting:
+      string = internal_pqxx::listing_engine_type::Quoting;
       break;
   }
 
   if (!string.empty()) {
     return std::string{string};
   }
-  throw EnumEncodingError("Venue::EngineType", value);
+  throw EnumEncodingError("Listing::EngineType", value);
 }
 
 auto EnumerationResolver::from_string(std::string_view string,
-                                      data_layer::Venue::EngineType& value)
-    -> void {
-  if (string == internal_pqxx::venue_engine_type::Matching) {
-    value = Venue::EngineType::Matching;
-  } else if (string == internal_pqxx::venue_engine_type::Quoting) {
-    value = Venue::EngineType::Quoting;
+                                      Listing::EngineType& value) -> void {
+  if (string == internal_pqxx::listing_engine_type::Matching) {
+    value = Listing::EngineType::Matching;
+  } else if (string == internal_pqxx::listing_engine_type::Quoting) {
+    value = Listing::EngineType::Quoting;
   } else {
-    throw EnumDecodingError("Venue::EngineType", string);
+    throw EnumDecodingError("Listing::EngineType", string);
   }
 }
 

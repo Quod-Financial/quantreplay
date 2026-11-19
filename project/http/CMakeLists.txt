@@ -26,8 +26,10 @@ add_static_library(
     ih/controllers/app_controller.hpp
     ih/controllers/datasource_controller.hpp
     ih/controllers/fix_session_controller.hpp
+    ih/controllers/generator_controller.hpp
     ih/controllers/listing_controller.hpp
     ih/controllers/price_seed_controller.hpp
+    ih/controllers/quote_controller.hpp
     ih/controllers/setting_controller.hpp
     ih/controllers/trading_controller.hpp
     ih/controllers/venue_controller.hpp
@@ -56,6 +58,7 @@ add_static_library(
     ih/marshalling/json/halt.hpp
     ih/marshalling/json/listing.hpp
     ih/marshalling/json/price_seed.hpp
+    ih/marshalling/json/quote.hpp
     ih/marshalling/json/setting.hpp
     ih/marshalling/json/venue.hpp
     ih/redirect/destination.hpp
@@ -84,8 +87,10 @@ add_static_library(
     src/controllers/app_controller.cpp
     src/controllers/datasource_controller.cpp
     src/controllers/fix_session_controller.cpp
+    src/controllers/generator_controller.cpp
     src/controllers/listing_controller.cpp
     src/controllers/price_seed_controller.cpp
+    src/controllers/quote_controller.cpp
     src/controllers/setting_controller.cpp
     src/controllers/trading_controller.cpp
     src/controllers/venue_controller.cpp
@@ -103,6 +108,7 @@ add_static_library(
     src/marshalling/json/halt.cpp
     src/marshalling/json/listing.cpp
     src/marshalling/json/price_seed.cpp
+    src/marshalling/json/quote.cpp
     src/marshalling/json/setting.cpp
     src/marshalling/json/venue.cpp
     src/processors/delete_processor.cpp

@@ -1,9 +1,0 @@
-databaseChangeLog:
-  - include:
-      context: "schema"
-      file: common/changelog.yml
-      relativeToChangelogFile: true
-  - include:
-      context: "schema AND demo"
-      file: demo/changelog.yml
-      relativeToChangelogFile: true

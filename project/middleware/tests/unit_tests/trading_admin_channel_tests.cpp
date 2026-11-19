@@ -70,6 +70,18 @@ TEST_F(TradingAdminChannel, SendsSyncRecoverMarketStateRequest) {
   ASSERT_NO_THROW(send_admin_request(request, reply));
 }
 
+TEST_F(TradingAdminChannel, SendsSyncQuotePublicationRequest) {
+  bind_channel();
+  const protocol::QuotePublicationRequest request;
+  protocol::QuotePublicationReply reply;
+
+  EXPECT_CALL(receiver,
+              process(A<const protocol::QuotePublicationRequest&>(),
+                      A<protocol::QuotePublicationReply&>()));
+
+  ASSERT_NO_THROW(send_admin_request(request, reply));
+}
+
 TEST_F(TradingAdminChannel, ReportsChannelNotBoundWhenSendingSyncRequest) {
   constexpr protocol::HaltPhaseRequest request;
   protocol::HaltPhaseReply reply;

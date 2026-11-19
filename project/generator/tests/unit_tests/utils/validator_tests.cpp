@@ -17,7 +17,8 @@ class GeneratorValidator : public testing::Test {
   data_layer::PriceSeed::Patch price_seed_patch;
 
   GeneratorValidator() {
-    listing_patch.with_venue_id("Venue");
+    listing_patch.with_venue_id("Venue").with_engine_type(
+        data_layer::Listing::EngineType::Matching);
     price_seed_patch.with_symbol("AAPL");
   }
 };
@@ -39,6 +40,26 @@ TEST_F(GeneratorValidator, Listing_IsAcceptable_SymbolIsEmpty) {
 
 TEST_F(GeneratorValidator, Listing_IsAcceptable_ListingDisabled) {
   listing_patch.with_enabled_flag(false);
+  const auto listing = data_layer::Listing::create(listing_patch, listing_id);
+
+  EXPECT_FALSE(Validator::is_acceptable(listing));
+}
+
+TEST_F(GeneratorValidator, DoesNotAcceptQuotingListingWithRandomActions) {
+  listing_patch.with_enabled_flag(true)
+      .with_symbol("EUR/USD")
+      .with_engine_type(data_layer::Listing::EngineType::Quoting)
+      .with_random_actions_enabled_flag(true);
+  const auto listing = data_layer::Listing::create(listing_patch, listing_id);
+
+  EXPECT_FALSE(Validator::is_acceptable(listing));
+}
+
+TEST_F(GeneratorValidator, DoesNotAcceptQuotingListingWithoutRandomActions) {
+  listing_patch.with_enabled_flag(true)
+      .with_symbol("EUR/USD")
+      .with_engine_type(data_layer::Listing::EngineType::Quoting)
+      .with_random_actions_enabled_flag(false);
   const auto listing = data_layer::Listing::create(listing_patch, listing_id);
 
   EXPECT_FALSE(Validator::is_acceptable(listing));
@@ -74,21 +95,21 @@ TEST_F(GeneratorValidator, Listing_IsAcceptableForGeneration_ListingDisabled) {
 }
 
 TEST_F(GeneratorValidator,
-       Listing_IsAcceptableForGeneration_RandomOrdersDisabled) {
+       Listing_IsAcceptableForGeneration_RandomActionsDisabled) {
   listing_patch.with_enabled_flag(true)
       .with_symbol("AAPL")
-      .with_random_orders_enabled_flag(false);
+      .with_random_actions_enabled_flag(false);
   const auto listing = data_layer::Listing::create(listing_patch, listing_id);
 
   EXPECT_FALSE(Validator::is_acceptable_for_random_generation(listing));
 }
 
 TEST_F(GeneratorValidator,
-       Listing_IsAcceptableForGeneration_RandomOrdersRate_Zero) {
+       Listing_IsAcceptableForGeneration_RandomUpdateRate_Zero) {
   listing_patch.with_enabled_flag(true)
       .with_symbol("AAPL")
-      .with_random_orders_enabled_flag(true)
-      .with_random_orders_rate(0);
+      .with_random_actions_enabled_flag(true)
+      .with_random_update_rate(0);
   const auto listing = data_layer::Listing::create(listing_patch, listing_id);
 
   EXPECT_FALSE(Validator::is_acceptable_for_random_generation(listing));
@@ -98,8 +119,8 @@ TEST_F(GeneratorValidator,
        Listing_IsAcceptableForGeneration_AcceptableListing) {
   listing_patch.with_enabled_flag(true)
       .with_symbol("AAPL")
-      .with_random_orders_enabled_flag(true)
-      .with_random_orders_rate(1);
+      .with_random_actions_enabled_flag(true)
+      .with_random_update_rate(1);
   const auto listing = data_layer::Listing::create(listing_patch, listing_id);
 
   EXPECT_TRUE(Validator::is_acceptable_for_random_generation(listing));

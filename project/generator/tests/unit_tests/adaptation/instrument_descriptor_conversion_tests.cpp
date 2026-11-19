@@ -15,7 +15,10 @@ struct GeneratorInstrumentDescriptorConversion : public Test {
   data_layer::Listing::Patch patch;
   static constexpr int listing_id = 42;
 
-  GeneratorInstrumentDescriptorConversion() { patch.with_venue_id("Venue"); }
+  GeneratorInstrumentDescriptorConversion() {
+    patch.with_venue_id("Venue").with_engine_type(
+        data_layer::Listing::EngineType::Matching);
+  }
 };
 
 TEST_F(GeneratorInstrumentDescriptorConversion, ConvertsSymbol) {

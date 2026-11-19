@@ -300,6 +300,15 @@ json::EnumConverter<TradeCondition>
           "ImbalanceMoreSellers"}}};
 
 template <>
+json::EnumConverter<QuoteCondition>
+    json::EnumConverter<QuoteCondition>::instance_{
+        {{enumerators::QuoteCondition::Open, "Open"}}};
+
+template <>
+json::EnumConverter<MdQuoteType> json::EnumConverter<MdQuoteType>::instance_{
+    {{enumerators::MdQuoteType::Tradeable, "Tradeable"}}};
+
+template <>
 json::EnumConverter<MdSubscriptionRequestType>
     json::EnumConverter<MdSubscriptionRequestType>::instance_{
         {{enumerators::MdSubscriptionRequestType::Subscribe, "Subscribe"},
@@ -323,7 +332,13 @@ template <>
 json::EnumConverter<MdRejectReason>
     json::EnumConverter<MdRejectReason>::instance_{
         {{enumerators::MdRejectReason::UnknownSymbol, "UnknownSymbol"},
-         {enumerators::MdRejectReason::DuplicateMdReqId, "DuplicateMdReqId"}}};
+         {enumerators::MdRejectReason::DuplicateMdReqId, "DuplicateMdReqId"},
+         {enumerators::MdRejectReason::UnsupportedMarketDepth,
+          "UnsupportedMarketDepth"},
+         {enumerators::MdRejectReason::UnsupportedMdUpdateType,
+          "UnsupportedMdUpdateType"},
+         {enumerators::MdRejectReason::UnsupportedMdEntryType,
+          "UnsupportedMdEntryType"}}};
 
 template <>
 json::EnumConverter<TradingStatus>
@@ -395,6 +410,16 @@ auto convert_party_role_from_string(std::string_view value) noexcept
   }
 }
 
+auto convert_security_id_source_from_string(std::string_view value) noexcept
+    -> std::optional<SecurityIdSource> {
+  try {
+    return std::make_optional(
+        core::json::EnumConverter<SecurityIdSource>::value(value));
+  } catch (const std::runtime_error&) {
+    return std::nullopt;
+  }
+}
+
 auto operator<<(std::ostream& stream, ExecutionType execution_type)
     -> std::ostream& {
   return stream << fmt::to_string(execution_type);
@@ -445,6 +470,15 @@ auto operator<<(std::ostream& stream, MdEntryType md_entry_type)
 auto operator<<(std::ostream& stream, TradeCondition trade_condition)
     -> std::ostream& {
   return stream << fmt::to_string(trade_condition);
+}
+
+auto operator<<(std::ostream& stream, QuoteCondition quote_condition)
+    -> std::ostream& {
+  return stream << fmt::to_string(quote_condition);
+}
+
+auto operator<<(std::ostream& stream, MdQuoteType quote_type) -> std::ostream& {
+  return stream << fmt::to_string(quote_type);
 }
 
 auto operator<<(std::ostream& stream, MdSubscriptionRequestType request_type)
@@ -649,6 +683,37 @@ auto fmt::formatter<simulator::core::enumerators::TradeCondition>::format(
     return base_formatter::format(
         simulator::core::json::EnumConverter<TradeCondition>::str(
             trade_condition),
+        context);
+  } catch (const std::runtime_error& ex) {
+    return base_formatter::format("undefined", context);
+  }
+}
+
+auto fmt::formatter<simulator::core::enumerators::QuoteCondition>::format(
+    formattable quote_condition, fmt::format_context& context) const
+    -> decltype(context.out()) {
+  using base_formatter = formatter<std::string_view>;
+  using QuoteCondition = formattable;
+
+  try {
+    return base_formatter::format(
+        simulator::core::json::EnumConverter<QuoteCondition>::str(
+            quote_condition),
+        context);
+  } catch (const std::runtime_error& ex) {
+    return base_formatter::format("undefined", context);
+  }
+}
+
+auto fmt::formatter<simulator::core::enumerators::MdQuoteType>::format(
+    formattable quote_type, fmt::format_context& context) const
+    -> decltype(context.out()) {
+  using base_formatter = formatter<std::string_view>;
+  using MdQuoteType = formattable;
+
+  try {
+    return base_formatter::format(
+        simulator::core::json::EnumConverter<MdQuoteType>::str(quote_type),
         context);
   } catch (const std::runtime_error& ex) {
     return base_formatter::format("undefined", context);

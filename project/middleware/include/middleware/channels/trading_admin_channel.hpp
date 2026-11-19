@@ -3,6 +3,7 @@
 
 #include "middleware/channels/detail/receiver.hpp"
 #include "protocol/admin/market_state.hpp"
+#include "protocol/admin/quote.hpp"
 #include "protocol/admin/trading_phase.hpp"
 
 namespace simulator::middleware {
@@ -19,6 +20,9 @@ struct TradingAdminRequestReceiver : public detail::Receiver {
 
   virtual auto process(const protocol::RecoverMarketStateRequest& request,
                        protocol::RecoverMarketStateReply& reply) -> void = 0;
+
+  virtual auto process(const protocol::QuotePublicationRequest& request,
+                       protocol::QuotePublicationReply& reply) -> void = 0;
 };
 
 auto bind_trading_admin_channel(

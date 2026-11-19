@@ -46,6 +46,7 @@ Through REST it is possible to:
 * update some listing / venue / price seed / datasources /settings
 * add listing / venue / price seed / datasources / settings
 * send order
+* publish a quote on a Quoting listing
 
 Market Simulator gets data from the Database at its start, as a result, Market Simulator provides only *_current_* data to REST.
 
@@ -98,7 +99,7 @@ Market Simulators use the POST request to add one or more new resources to the s
 
 | 403 FORBIDDEN | User is not allowed to execute requested action, see response body for details.
 
-| 404 NOT FOUND | The requested URI is unknown.
+| 404 NOT FOUND | The requested URI is unknown, or the resource the request refers to does not exist.
 
 | 405 METHOD NOT ALLOWED | POST is not valid for the specified resource.
 
@@ -262,10 +263,31 @@ _Example_
 2015-09-08 15:32:09.119456
 ----
 
+[[general-quoting]]
+=== Quoting Listings
+
+The engineType property of a listing selects the engine that manages it (see <<adminsets-listings,Listings>>).
+A Matching listing keeps an order book in which orders are matched, as described in the rest of this document.
+A Quoting listing manages published quotes instead:
+
+* A quote is published on the listing with the <<admincmds-quotes-publish,quote publication>> request. A quote holds bid entries and ask entries, each with a price and a quantity.
+* Each published quote is sent right away to every active FIX market data subscription of the listing, as a full snapshot holding the entries of that quote only.
+A new subscription first receives the most recently published quote, or an empty snapshot when no quote has been published yet.
+Only bids and offers are published: a Quoting listing has no trades and no other market data values, such as the session high and low prices.
+The FIX messages are described in the Market Simulator FIX Rules of Engagement.
+* A Quoting listing has no market phases and is always open.
+The phase schedule of the venue and the <<admincmds-mktphshalt-haltresume,halt and resume>> requests do not affect it: it keeps accepting and streaming quotes, and its trading status is always reported as Open.
+* The automatic generator skips a Quoting listing: no random actions are generated for it and no datasource is played back into it, although the REST API accepts such a configuration.
+When the venue instance starts or is reset, the simulator logs a warning for each enabled Quoting listing whose randomActionsEnabled is true or unset ("the `<symbol>' listing (id: <id>) has the Quoting engine type, which the generator does not support, no random actions are generated for it and no datasource is played back into it"), and an info message for any other enabled Quoting listing.
+A FIX datasource still subscribes to the symbol of a Quoting listing but derives no orders from it (see <<general-datasource-formatconfig-fix,FIX Market Data Feed>>), and a random price source naming a Quoting listing is ignored (see <<adminsets-listings-randpricesrc,this section>>).
+* Quotes are kept only in memory and are not part of the <<general-persiststate,persisted market state>>.
+A store writes no quote, a recover leaves the active quotes unchanged, and a reset or restart of the venue instance discards all quotes, after which a subscription receives an empty snapshot until a new quote is published.
+
 [[general-randomorder]]
 === Random Order Generation
 
 Some notes on understanding how random order generation works in the market simulator.
+Random orders are generated only on Matching listings, see <<general-quoting,Quoting Listings>>.
 
 [[general-randomorder-distractions]]
 ==== Distribution of Actions
@@ -276,19 +298,19 @@ independent of any underlying threading model for managing the load across all a
 Each of these separate pseudo random number generators is seeded by default with its own genuine random number provided by API calls specific to the platform 
 where the simulator is running, so that the resulting sequence of actions will be different each time the simulator is started.
 
-The frequency of random generation of orders is almost entirely dependent on Listings → randomOrdersRate. 
+The frequency of random generation of orders is almost entirely dependent on Listings → randomUpdateRate. 
 The primary setting controls the number of actions taken by the random order generator per second, including the resulting actions taken on resting orders (placing them, 
 and amending or canceling them), as well as the frequency of matching orders resulting in trades. 
-Some other settings, such as Venues → randomPartyCount and Listings → randomDepthLevels would also have some effect, but not as significant as randomOrdersRate.
+Some other settings, such as Venues → randomPartyCount and Listings → randomDepthLevels would also have some effect, but not as significant as randomUpdateRate.
 
-The value entered for randomOrdersRate determines the frequency with which a timer will trigger in the market simulator to do an action.
+The value entered for randomUpdateRate determines the frequency with which a timer will trigger in the market simulator to do an action.
 The specific action taken is randomly chosen each time by a statistically correct, evenly distributed random number generator.
 
 There is a hard-coded 1/3 probability of the simulator choosing to "do nothing" as an action, therefore the effective applied frequency of choosing a random action 
 (including "do nothing") is:
 [stem]
 ++++
-\text{Actual Effective Random Action Frequency} = \frac{randomOrdersRate \times 3}{2}
+\text{Actual Effective Random Action Frequency} = \frac{randomUpdateRate \times 3}{2}
 ++++
 Of actual actions taken, there is a hard-coded probability distribution of:
 
@@ -327,10 +349,10 @@ So in summary, there is an 80% probability each second of performing an action o
 90% probability of amending, or 10% probability of canceling), and a 20% probability each second of performing an aggressive action 
 (matching orders in the book, resulting in trades).
 
-Coming back to our example of randomOrdersRate = 10, this should result in an average of about 8 resting order actions per second (new if no existing order 
+Coming back to our example of randomUpdateRate = 10, this should result in an average of about 8 resting order actions per second (new if no existing order 
 for the party, otherwise about 7 amends, and about 1 cancel) and an average of about 2 matching order trades per second.
 
-While randomOrdersRate is the primary setting determining frequency of actions taken by the simulator, another setting Listings →  randomDepthLevels is worth noting. 
+While randomUpdateRate is the primary setting determining frequency of actions taken by the simulator, another setting Listings →  randomDepthLevels is worth noting. 
 This determines the number of allowed depth levels in the book, such that if the random chosen action is to place a new resting bid or ask for the current counter party, 
 it will not be done if it would mean exceeding this configured maximum number of levels in the book. 
 Combined with the probability distribution of quantity and price as described in the following sections, this maximum number of depth levels could 
@@ -342,10 +364,10 @@ blocking an action due to a limit in the number of depth levels in the book.
 [[general-randomorder-distrprice]]
 ==== Distribution of Price
 
-The price used on randomly generated orders is largely determined by the configuration of Listings → randomOrdersSpread to determine the minimum bid/ask spread to maintain, 
+The price used on randomly generated orders is largely determined by the configuration of Listings → randomPriceSpread to determine the minimum bid/ask spread to maintain, 
 and Listings → randomTickRange to determine the range which prices are distributed across multiple depth levels of the order book.
 
-The setting Listings → randomOrdersSpread is expressed as an absolute decimal price value, with an enforced minimum of the value of Listings → tickSize configured 
+The setting Listings → randomPriceSpread is expressed as an absolute decimal price value, with an enforced minimum of the value of Listings → priceTickSize configured 
 for the same listing. 
 This effectively becomes the smallest spread allowed in the order book determined by generation of random orders. 
 If the spread becomes less than this value (or crossed) it is likely due to other actions, such as historical data playback or manually entered orders.
@@ -430,6 +452,8 @@ All enabled datasources of a venue are played back simultaneously.
 Each CSV or database datasource is played back on its own timeline (see <<general-datasource-basicsgl,Basic Single Level Order Book>>), while the updates of a FIX datasource are applied as soon as they are received.
 Each datasource manages its own orders: it never reuses, amends or cancels an order derived from another datasource, even one with the same party.
 Several datasources can therefore feed the same listing, whose order book then shows the orders of all of them aggregated together, and orders of different datasources trade with one another when their prices cross.
+
+Datasources are played back only into Matching listings, see <<general-quoting,Quoting Listings>>.
 
 See <<adminsets-data,this section>> for specific details of configuring datasources.
 
@@ -542,7 +566,7 @@ A subscription is requested when order generation starts and again each time its
 
 _Deriving orders_
 
-Unless randomPriceOnly is set, every update received for a symbol that equals the symbol of an enabled listing of the venue is applied to the matching engine of that listing as one bid/ask order book, with the same logic as a row of a CSV or database datasource (see <<general-datasource-basicsgl,Basic Single Level Order Book>> and <<general-datasource-multi,Multiple Level Order Book>>):
+Unless randomPriceOnly is set, every update received for a symbol that equals the symbol of an enabled Matching listing of the venue is applied to the matching engine of that listing as one bid/ask order book, with the same logic as a row of a CSV or database datasource (see <<general-datasource-basicsgl,Basic Single Level Order Book>> and <<general-datasource-multi,Multiple Level Order Book>>):
 
 * the bid entries (269=0) form the bid levels 1, 2, etc in the order they appear in the message, and the offer entries (269=1) the ask levels; 
 entries of any other type and the entries of a side beyond the MarketDepth (264) of the subscription are ignored
@@ -555,7 +579,7 @@ costs one new order rather than one amendment per level
 Datasources sharing a subscription (the same session and symbol) derive orders from it only once: its refreshes are applied as long as one of them has randomPriceOnly unset, and every level without MDEntryBuyer (288) or MDEntrySeller (289) carries the party of one of those datasources with randomPriceOnly unset, and all the derived orders are managed as the orders of that same datasource; which one is not specified.
 Configure a single datasource per session and symbol when the party of the derived orders matters.
 
-A symbol matching no enabled listing of the venue is still subscribed to, so that it can serve as a price source, but derives no orders.
+A symbol matching no enabled Matching listing of the venue, the symbol of a <<general-quoting,Quoting listing>> included, is still subscribed to, so that it can serve as a price source, but derives no orders.
 
 Each update is applied as soon as it is received, with no delay between refreshes; the repeat property has no meaning for a FIX feed. Refreshes received while order generation is stopped are discarded, and the orders already derived stay in the matching engine until the next refresh is applied.
 
@@ -566,8 +590,8 @@ A FIX datasource, with either value of randomPriceOnly, can also provide the top
 For a simple datasource where each row contains only a single level bid/ask order book, the simulator starts reading the single level of depth from 
 the first row of the datasource, and then proceeds to read each subsequent row after that. 
 The trigger for playing back the content of a datasource follows the same logic as the configuration used to indicate whether or not to generate random orders. 
-The orderOnStartup property of a venue determines whether to play back any configured datasources when the simulator starts, and the genstart REST API can be used to start play back on demand.
-If the randomOrdersEnabled property of a listing is true, then both random order generation and playback from the configured datasources will begin and continue to run simultaneously.
+The generateActionsOnStartup property of a venue determines whether to play back any configured datasources when the simulator starts, and the genstart REST API can be used to start play back on demand.
+If the randomActionsEnabled property of a listing is true, then both random order generation and playback from the configured datasources will begin and continue to run simultaneously.
 If the randomPriceOnly property of a datasource is true, no orders are derived from its rows, and the datasource is used only for deriving prices during random order generation (see <<adminsets-listings-randpricesrc,this section>>).
 If the listings property of a CSV or database datasource is not empty, only the rows whose Instrument value is one of the listed symbols are processed; the other rows are skipped as if they were absent from the datasource, including for the playback timing described below (see <<adminsets-data-listings,this section>>).
 
@@ -683,6 +707,7 @@ ReceivedTimeStamp,MessageTimeStamp,Instrument,BidParty1,BidQuantity1,BidPrice1,B
 === Market Phases
 The market simulator can be configured to operate in the context of specific market phases following a configured schedule. 
 Each phase has distinct rules of operation regarding what type of trading is allowed and how orders are matched.
+Market phases apply only to Matching listings: a Quoting listing is always open, see <<general-quoting,Quoting Listings>>.
 
 If any market phases are scheduled according to the startTime and endTime properties of phases configured on a venue, each of the scheduled market phases will become the 
 active market phase between these start and end times during that day, interepreting these times according to the timeZone property configured on the venue. 
@@ -1011,6 +1036,9 @@ The market simulator may store and recover:
 
 * The order book state for actively traded listings
 * Last known L1 market data values (such as last traded price, open / high / low / close prices, etc)
+
+The quotes of a <<general-quoting,Quoting listing>> are neither stored nor recovered: the stored state of a Quoting listing holds no orders, no last trade and no L1 values, and a recover leaves its active quotes unchanged and ignores its stored state.
+When that stored state holds orders, a last trade or L1 values (for instance, stored while the listing was a Matching listing), the log warning message "ignoring the recovered market state of a quoting listing, a quoting engine keeps no orders, trades or instrument information" is output.
 
 Orders that do not rest in the regular price/time queues of the order book are neither stored nor recovered, and are discarded when a state is recovered: the orders accepted during a <<general-mktphs-tal,TradeAtLast phase>> and the market orders resting during an <<general-mktphs-auction,auction call>>.
 

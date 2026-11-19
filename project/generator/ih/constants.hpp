@@ -18,10 +18,10 @@ constexpr auto AggressiveTimeInForce = TimeInForce::Option::ImmediateOrCancel;
 
 constexpr double PriceGenerationCoefficient = 1.05;
 
-constexpr bool DefaultVenueOrderOnStartup = true;
+constexpr bool DefaultVenueGenerateActionsOnStartup = true;
 constexpr std::uint32_t DefaultVenueRandomPartiesCount = 10;
 
-constexpr std::uint32_t DefaultListingRandomOrdersRate = 10;
+constexpr std::uint32_t DefaultListingRandomUpdateRate = 10;
 constexpr double DefaultListingQtyMultiple = 1.;
 constexpr double DefaultListingQtyMinimum = 0.;
 constexpr double DefaultListingQtyMaximum = 0.;

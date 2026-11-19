@@ -1,8 +1,13 @@
 #ifndef SIMULATOR_HTTP_IH_MARSHALLING_JSON_DETAIL_ENUMERATION_RESOLVER_HPP_
 #define SIMULATOR_HTTP_IH_MARSHALLING_JSON_DETAIL_ENUMERATION_RESOLVER_HPP_
 
+#include <string>
+#include <string_view>
+
+#include "core/domain/enumerators.hpp"
 #include "data_layer/api/models/datasource.hpp"
-#include "data_layer/api/models/venue.hpp"
+#include "data_layer/api/models/listing.hpp"
+#include "data_layer/api/models/market_phase.hpp"
 
 namespace simulator::http::json {
 
@@ -27,10 +32,20 @@ class EnumerationResolver {
                       data_layer::MarketPhase::Phase& result) -> void;
 
   [[nodiscard]]
-  static auto resolve(data_layer::Venue::EngineType value) -> std::string_view;
+  static auto resolve(data_layer::Listing::EngineType value)
+      -> std::string_view;
 
   static auto resolve(const std::string& value,
-                      data_layer::Venue::EngineType& result) -> void;
+                      data_layer::Listing::EngineType& result) -> void;
+
+  static auto resolve(const std::string& value,
+                      core::enumerators::SecurityType& result) -> void;
+
+  static auto resolve(const std::string& value,
+                      core::enumerators::SecurityIdSource& result) -> void;
+
+  static auto resolve(const std::string& value,
+                      core::enumerators::PartyRole& result) -> void;
 };
 
 }  // namespace simulator::http::json

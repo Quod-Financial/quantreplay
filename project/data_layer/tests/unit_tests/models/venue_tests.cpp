@@ -13,8 +13,6 @@ namespace {
 
 using namespace ::testing;
 
-using EngineType = Venue::EngineType;
-
 struct DataLayerModelsVenuePatch : public ::testing::Test {
   Venue::Patch patch;
 };
@@ -39,21 +37,6 @@ TEST_F(DataLayerModelsVenuePatch, SetsName) {
   patch.with_name("London Stock Exchange");
   EXPECT_THAT(patch.name(),
               IsPatchFieldWithValue(Optional(Eq("London Stock Exchange"))));
-}
-
-TEST_F(DataLayerModelsVenuePatch, SetsEngineTypeNull) {
-  ASSERT_FALSE(patch.engine_type().has_value());
-
-  patch.with_engine_type(std::nullopt);
-  EXPECT_THAT(patch.engine_type(), IsPatchFieldWithValue(Eq(std::nullopt)));
-}
-
-TEST_F(DataLayerModelsVenuePatch, SetsEngineType) {
-  ASSERT_FALSE(patch.engine_type().has_value());
-
-  patch.with_engine_type(EngineType::Quoting);
-  EXPECT_THAT(patch.engine_type(),
-              IsPatchFieldWithValue(Optional(Eq(EngineType::Quoting))));
 }
 
 TEST_F(DataLayerModelsVenuePatch, SetsSupportTifIocFlagNull) {
@@ -134,19 +117,19 @@ TEST_F(DataLayerModelsVenuePatch, SetsRestPort) {
   EXPECT_THAT(patch.rest_port(), IsPatchFieldWithValue(Optional(Eq(9001))));
 }
 
-TEST_F(DataLayerModelsVenuePatch, SetsOrdersOnStartupFlagNull) {
-  ASSERT_FALSE(patch.orders_on_startup_flag().has_value());
+TEST_F(DataLayerModelsVenuePatch, SetsGenerateActionsOnStartupFlagNull) {
+  ASSERT_FALSE(patch.generate_actions_on_startup_flag().has_value());
 
-  patch.with_orders_on_startup_flag(std::nullopt);
-  EXPECT_THAT(patch.orders_on_startup_flag(),
+  patch.with_generate_actions_on_startup_flag(std::nullopt);
+  EXPECT_THAT(patch.generate_actions_on_startup_flag(),
               IsPatchFieldWithValue(Eq(std::nullopt)));
 }
 
-TEST_F(DataLayerModelsVenuePatch, SetsOrdersOnStartupFlag) {
-  ASSERT_FALSE(patch.orders_on_startup_flag().has_value());
+TEST_F(DataLayerModelsVenuePatch, SetsGenerateActionsOnStartupFlag) {
+  ASSERT_FALSE(patch.generate_actions_on_startup_flag().has_value());
 
-  patch.with_orders_on_startup_flag(true);
-  EXPECT_THAT(patch.orders_on_startup_flag(),
+  patch.with_generate_actions_on_startup_flag(true);
+  EXPECT_THAT(patch.generate_actions_on_startup_flag(),
               IsPatchFieldWithValue(Optional(Eq(true))));
 }
 
@@ -358,21 +341,6 @@ TEST_F(DataLayerModelsVenue, StoresName) {
   EXPECT_THAT(venue.name(), Optional(Eq("London Stock Exchange")));
 }
 
-TEST_F(DataLayerModelsVenue, StoresNullOptionalEngineTypeIfNotSet) {
-  fill_required_fields(patch);
-
-  const Venue venue = Venue::create(patch);
-  EXPECT_EQ(venue.engine_type(), std::nullopt);
-}
-
-TEST_F(DataLayerModelsVenue, StoresEngineType) {
-  fill_required_fields(patch);
-  patch.with_engine_type(EngineType::Matching);
-
-  const Venue venue = Venue::create(patch);
-  EXPECT_THAT(venue.engine_type(), Optional(Eq(EngineType::Matching)));
-}
-
 TEST_F(DataLayerModelsVenue, StoresNullOptionalSupportTifIocFlagIfNotSet) {
   fill_required_fields(patch);
 
@@ -448,19 +416,20 @@ TEST_F(DataLayerModelsVenue, StoresRestPort) {
   EXPECT_THAT(venue.rest_port(), Optional(Eq(9001)));
 }
 
-TEST_F(DataLayerModelsVenue, StoresNullOptionalOrdersOnStartupFlagIfNotSet) {
+TEST_F(DataLayerModelsVenue,
+       StoresNullOptionalGenerateActionsOnStartupFlagIfNotSet) {
   fill_required_fields(patch);
 
   const Venue venue = Venue::create(patch);
-  EXPECT_EQ(venue.order_on_startup_flag(), std::nullopt);
+  EXPECT_EQ(venue.generate_actions_on_startup_flag(), std::nullopt);
 }
 
-TEST_F(DataLayerModelsVenue, StoresOrdersOnStartupFlag) {
+TEST_F(DataLayerModelsVenue, StoresGenerateActionsOnStartupFlag) {
   fill_required_fields(patch);
-  patch.with_orders_on_startup_flag(false);
+  patch.with_generate_actions_on_startup_flag(false);
 
   const Venue venue = Venue::create(patch);
-  EXPECT_THAT(venue.order_on_startup_flag(), Optional(Eq(false)));
+  EXPECT_THAT(venue.generate_actions_on_startup_flag(), Optional(Eq(false)));
 }
 
 TEST_F(DataLayerModelsVenue, StoresNullOptionalRandomPartiesCountIfNotSet) {

@@ -4,8 +4,13 @@ add_target_tests(
   HEADERS
     mocks/executor_mock.hpp
     mocks/instrument_resolver_mock.hpp
+    mocks/order_modifying_engine_mock.hpp
+    mocks/phase_aware_engine_mock.hpp
+    mocks/quote_publishing_engine_mock.hpp
     mocks/repository_accessor_mock.hpp
     mocks/serializer_mock.hpp
+    mocks/service_mock.hpp
+    mocks/state_persisting_engine_mock.hpp
     mocks/trading_engine_mock.hpp
     mocks/trading_reply_receiver_mock.hpp
     test_utils/matchers.hpp
@@ -33,5 +38,6 @@ add_target_tests(
     unit_tests/state_persistence/market_state_persistence_controller_tests.cpp
     unit_tests/state_persistence/serializer_tests.cpp
     unit_tests/tools/instrument_resolver_tests.cpp
+    unit_tests/tools/trading_engine_factory_tests.cpp
   DEPENDENCIES
     simulator::cfg)

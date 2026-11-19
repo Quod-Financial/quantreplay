@@ -93,8 +93,8 @@ auto OrderGenerator::init_execution_rate() -> void {
   constexpr double norm_denominator = 2.0;
 
   const auto& instrument = instrument_context_->get_instrument();
-  const auto update_rate = instrument.random_orders_rate().value_or(
-      constant::DefaultListingRandomOrdersRate);
+  const auto update_rate = instrument.random_update_rate().value_or(
+      constant::DefaultListingRandomUpdateRate);
   assert(update_rate > 0);
 
   const double normalize_coefficient =

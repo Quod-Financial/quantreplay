@@ -97,7 +97,7 @@ auto fmt::formatter<simulator::MarketDataEntry>::format(
   using simulator::core::name_of;
   return format_to(context.out(),
                    "{{ {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, "
-                   "{}={}, {}={}, {}={}, {}={} }}",
+                   "{}={}, {}={}, {}={}, {}={}, {}={}, {}={} }}",
                    name_of(entry.id),
                    entry.id,
                    name_of(entry.type),
@@ -119,7 +119,11 @@ auto fmt::formatter<simulator::MarketDataEntry>::format(
                    name_of(entry.phase),
                    entry.phase,
                    name_of(entry.trade_condition),
-                   entry.trade_condition);
+                   entry.trade_condition,
+                   name_of(entry.quote_condition),
+                   entry.quote_condition,
+                   name_of(entry.quote_type),
+                   entry.quote_type);
 }
 
 auto fmt::formatter<simulator::MarketPhase>::format(

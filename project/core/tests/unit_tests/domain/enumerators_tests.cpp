@@ -195,6 +195,28 @@ INSTANTIATE_TEST_SUITE_P(
            std::make_pair("SecondaryPlaceOfListing", PartyRole::Option::SecondaryPlaceOfListing)));
 // clang-format on
 
+struct CoreSecurityIdSourceConversion
+    : public GivenExpectedFixture<std::string,
+                                  std::optional<SecurityIdSource::Option>> {};
+
+TEST_P(CoreSecurityIdSourceConversion, FromStringConversion) {
+  ASSERT_EQ(enumerators::convert_security_id_source_from_string(given()),
+            expected());
+}
+
+// clang-format off
+INSTANTIATE_TEST_SUITE_P(
+    Conversion,
+    CoreSecurityIdSourceConversion,
+    Values(std::make_pair("bad-value", std::nullopt),
+           std::make_pair("CUSIP", SecurityIdSource::Option::Cusip),
+           std::make_pair("SEDOL", SecurityIdSource::Option::Sedol),
+           std::make_pair("ISIN", SecurityIdSource::Option::Isin),
+           std::make_pair("RIC", SecurityIdSource::Option::Ric),
+           std::make_pair("ExchangeSymbol", SecurityIdSource::Option::ExchangeSymbol),
+           std::make_pair("BloombergSymbol", SecurityIdSource::Option::BloombergSymbol)));
+// clang-format on
+
 struct CoreExecutionTypeFormatting
     : public GivenExpectedFixture<ExecutionType::Option, std::string> {};
 
@@ -733,6 +755,9 @@ INSTANTIATE_TEST_SUITE_P(
     CoreMdRejectReasonFormatting,
     Values(std::make_pair(invalid_enum_value<MdRejectReason::Option>(), "undefined"),
            std::make_pair(MdRejectReason::Option::UnknownSymbol, "UnknownSymbol"),
+           std::make_pair(MdRejectReason::Option::UnsupportedMarketDepth, "UnsupportedMarketDepth"),
+           std::make_pair(MdRejectReason::Option::UnsupportedMdUpdateType, "UnsupportedMdUpdateType"),
+           std::make_pair(MdRejectReason::Option::UnsupportedMdEntryType, "UnsupportedMdEntryType"),
            std::make_pair(MdRejectReason::Option::DuplicateMdReqId, "DuplicateMdReqId")));
 // clang-format on
 

@@ -121,3 +121,15 @@ Symbol (55) is present in a message a| * Symbol (55) a| * SecurityType (167)
 * Party Group
 
 |===
+
+[[general-quoting-listings]]
+=== Quoting Listings
+
+Each listing is managed either by a matching engine (a Matching listing) or by a quoting engine (a Quoting listing), as configured in the simulator.
+A Matching listing keeps an order book and behaves as described throughout this document.
+A Quoting listing streams the quotes published on it through the simulator REST API instead.
+Its listing is resolved as described in <<general-instrument-resolution>>, and:
+
+* A market data subscription receives each published quote as a MarketDataSnapshotFullRefresh (35=W) holding Bid and Offer entries only, see <<pretrade-messages-quoting>> and <<message-flows-mkt-data-quoting>>.
+No other market data is published: no trades, no session high and low prices and no auction prices.
+* There are no market phases: the listing is always open, and a SecurityStatus (35=f) always reports it as open, see <<message-flows-trd-phase>>.

@@ -52,8 +52,9 @@ auto IdentifierGenerator::generate_identifier() noexcept -> std::string {
 
 GenerationManager::GenerationManager(data_layer::Venue target_venue)
     : target_venue_{std::move(target_venue)},
-      generation_state_{target_venue_.order_on_startup_flag().value_or(
-          constant::DefaultVenueOrderOnStartup)} {}
+      generation_state_{
+          target_venue_.generate_actions_on_startup_flag().value_or(
+              constant::DefaultVenueGenerateActionsOnStartup)} {}
 
 auto GenerationManager::create(const data_layer::Venue& target_venue)
     -> std::shared_ptr<GenerationManager> {

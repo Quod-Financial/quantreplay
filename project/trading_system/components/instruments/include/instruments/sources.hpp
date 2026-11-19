@@ -20,9 +20,9 @@ namespace detail {
 struct DatabaseSource {
   using LoadingProcedure = std::function<void(Instrument)>;
 
-  explicit DatabaseSource(data_layer::database::Context db) noexcept;
+  explicit DatabaseSource(data_layer::database::Context database) noexcept;
 
-  auto load_instruments(LoadingProcedure loading_proc) const -> void;
+  auto load_instruments(const LoadingProcedure& loading_proc) const -> void;
 
  private:
   static auto predicate() -> data_layer::Listing::Predicate;
@@ -37,7 +37,7 @@ struct MemorySource {
 
   explicit MemorySource(std::vector<Instrument> instruments) noexcept;
 
-  auto load_instruments(LoadingProcedure loading_proc) const -> void;
+  auto load_instruments(const LoadingProcedure& loading_proc) const -> void;
 
   auto add_instrument(Instrument instrument) -> MemorySource&;
 

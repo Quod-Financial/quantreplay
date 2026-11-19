@@ -20,13 +20,12 @@ class Venue {
   enum class Attribute {
     VenueId,
     Name,
-    EngineType,
     SupportTifIoc,
     SupportTifFok,
     SupportTifDay,
     IncludeOwnOrders,
     RestPort,
-    OrderOnStartup,
+    GenerateActionsOnStartup,
     RandomPartiesCount,
     TnsEnabled,
     TnsQtyEnabled,
@@ -38,9 +37,7 @@ class Venue {
     PersistenceFilePath,
   };
 
-  enum class EngineType { Matching, Quoting };
-
-  static constexpr bool DefaultOrderOnStartupFlag{true};
+  static constexpr bool DefaultGenerateActionsOnStartupFlag{true};
   static constexpr bool DefaultPersistenceEnabledFlag{false};
 
   [[nodiscard]]
@@ -51,9 +48,6 @@ class Venue {
 
   [[nodiscard]]
   auto name() const noexcept -> const std::optional<std::string>&;
-
-  [[nodiscard]]
-  auto engine_type() const noexcept -> std::optional<EngineType>;
 
   [[nodiscard]]
   auto support_tif_ioc_flag() const noexcept -> std::optional<bool>;
@@ -71,7 +65,7 @@ class Venue {
   auto rest_port() const noexcept -> std::optional<std::uint16_t>;
 
   [[nodiscard]]
-  auto order_on_startup_flag() const noexcept -> std::optional<bool>;
+  auto generate_actions_on_startup_flag() const noexcept -> std::optional<bool>;
 
   [[nodiscard]]
   auto random_parties_count() const noexcept -> std::optional<std::uint32_t>;
@@ -117,15 +111,13 @@ class Venue {
 
   std::optional<std::uint32_t> random_parties_count_;
 
-  std::optional<EngineType> engine_type_;
-
   std::optional<std::uint16_t> rest_port_;
 
   std::optional<bool> support_tif_ioc_flag_;
   std::optional<bool> support_tif_fok_flag_;
   std::optional<bool> support_tif_day_flag_;
   std::optional<bool> include_own_orders_flag_;
-  std::optional<bool> order_on_startup_flag_;
+  std::optional<bool> generate_actions_on_startup_flag_;
   std::optional<bool> tns_enabled_flag_;
   std::optional<bool> tns_qty_enabled_flag_;
   std::optional<bool> tns_side_enabled_flag_;
@@ -149,11 +141,6 @@ class Venue::Patch {
   auto with_name(std::optional<std::string> name) noexcept -> Patch&;
 
   [[nodiscard]]
-  auto engine_type() const noexcept -> PatchField<EngineType>;
-  auto with_engine_type(std::optional<EngineType> engine_type) noexcept
-      -> Patch&;
-
-  [[nodiscard]]
   auto support_tif_ioc_flag() const noexcept -> PatchField<bool>;
   auto with_support_tif_ioc_flag(std::optional<bool> flag) noexcept -> Patch&;
 
@@ -175,8 +162,9 @@ class Venue::Patch {
   auto with_rest_port(std::optional<std::uint32_t> port) noexcept -> Patch&;
 
   [[nodiscard]]
-  auto orders_on_startup_flag() const noexcept -> PatchField<bool>;
-  auto with_orders_on_startup_flag(std::optional<bool> flag) noexcept -> Patch&;
+  auto generate_actions_on_startup_flag() const noexcept -> PatchField<bool>;
+  auto with_generate_actions_on_startup_flag(std::optional<bool> flag) noexcept
+      -> Patch&;
 
   [[nodiscard]]
   auto random_parties_count() const noexcept -> PatchField<std::uint32_t>;
@@ -235,15 +223,13 @@ class Venue::Patch {
 
   PatchField<std::uint32_t> patched_random_parties_count_;
 
-  PatchField<EngineType> patched_engine_type_;
-
   PatchField<std::uint16_t> patched_rest_port_;
 
   PatchField<bool> patched_support_tif_ioc_flag_;
   PatchField<bool> patched_support_tif_fok_flag_;
   PatchField<bool> patched_support_tif_day_flag_;
   PatchField<bool> patched_include_own_orders_flag_;
-  PatchField<bool> patched_order_on_startup_flag_;
+  PatchField<bool> patched_generate_actions_on_startup_flag_;
   PatchField<bool> patched_tns_enabled_flag_;
   PatchField<bool> patched_tns_qty_enabled_flag_;
   PatchField<bool> patched_tns_side_enabled_flag_;

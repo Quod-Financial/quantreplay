@@ -47,6 +47,8 @@ Auction phases are reported through the same workflow. When an auction's call su
 
 The TradeAtLast phase is reported in a single step, like the Open and the Closed phases: SecurityTradingStatus (326) = 3 (Resume) together with TradingSessionSubID (625) = 5 (Post-Trading) when the phase begins. A halt of the phase is reported as SecurityTradingStatus (326) = 2 (Trading Halt) with the same TradingSessionSubID.
 
+A <<general-quoting-listings,Quoting listing>> has no market phases: a SecurityStatus for it always reports TradingSessionSubID (625) = 3 (Open) and SecurityTradingStatus (326) = 3 (Resume), and the phase changes and halts of the venue produce no SecurityStatus for it.
+
 [cols="10,25,10,55"]
 |===
 | Tag | Field Name | Req’d | Comments

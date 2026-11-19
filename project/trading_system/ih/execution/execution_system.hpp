@@ -8,6 +8,7 @@
 #include "ih/repository/repository_accessor.hpp"
 #include "ih/state_persistence/snapshot.hpp"
 #include "ih/tools/instrument_resolver.hpp"
+#include "protocol/admin/quote.hpp"
 #include "protocol/app/market_data_request.hpp"
 #include "protocol/app/order_cancellation_request.hpp"
 #include "protocol/app/order_modification_request.hpp"
@@ -32,6 +33,10 @@ struct Executor {
       -> void = 0;
 
   virtual auto execute_request(protocol::SecurityStatusRequest request) const
+      -> void = 0;
+
+  virtual auto execute_request(const protocol::QuotePublicationRequest& request,
+                               protocol::QuotePublicationReply& reply) const
       -> void = 0;
 
   virtual auto store_state_request(
@@ -69,6 +74,10 @@ class ExecutionSystem : public Executor {
       -> void override;
 
   auto execute_request(protocol::SecurityStatusRequest request) const
+      -> void override;
+
+  auto execute_request(const protocol::QuotePublicationRequest& request,
+                       protocol::QuotePublicationReply& reply) const
       -> void override;
 
   auto store_state_request(

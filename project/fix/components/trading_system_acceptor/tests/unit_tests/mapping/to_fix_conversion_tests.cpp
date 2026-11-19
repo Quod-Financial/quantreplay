@@ -616,7 +616,10 @@ TEST_F(ToFixMdRejectReasonConversion, ReportsErrorOnUnknownValueConversion) {
 INSTANTIATE_TEST_SUITE_P(InternalEnum, ToFixMdRejectReasonConversion,
   Values(
     std::make_tuple(MdRejectReason::Option::UnknownSymbol, FIX::MDReqRejReason_UNKNOWN_SYMBOL),
-    std::make_tuple(MdRejectReason::Option::DuplicateMdReqId, FIX::MDReqRejReason_DUPLICATE_MDREQID)
+    std::make_tuple(MdRejectReason::Option::DuplicateMdReqId, FIX::MDReqRejReason_DUPLICATE_MDREQID),
+    std::make_tuple(MdRejectReason::Option::UnsupportedMarketDepth, FIX::MDReqRejReason_UNSUPPORTED_MARKETDEPTH),
+    std::make_tuple(MdRejectReason::Option::UnsupportedMdUpdateType, FIX::MDReqRejReason_UNSUPPORTED_MDUPDATETYPE),
+    std::make_tuple(MdRejectReason::Option::UnsupportedMdEntryType, FIX::MDReqRejReason_UNSUPPORTED_MDENTRYTYPE)
   ));
 // clang-format on
 
@@ -685,6 +688,32 @@ INSTANTIATE_TEST_SUITE_P(InternalEnum, ToFixTradeConditionConversion,
     std::make_tuple(TradeCondition::Option::ImbalanceMoreSellers, FIX::TradeCondition_IMBALANCE_MORE_SELLERS)
   ));
 // clang-format on
+
+/*----------------------------------------------------------------------------*/
+
+TEST(ToFixQuoteConditionConversion, ConvertsOpenToOpenActive) {
+  ASSERT_EQ(convert_to_fix<FIX::QuoteCondition>(QuoteCondition::Option::Open),
+            FIX::QuoteCondition_OPEN_ACTIVE);
+}
+
+TEST(ToFixQuoteConditionConversion, ReportsErrorOnUnknownValueConversion) {
+  ASSERT_THROW(convert_to_fix<FIX::QuoteCondition>(
+                   invalid_enum_value<QuoteCondition::Option>()),
+               std::invalid_argument);
+}
+
+/*----------------------------------------------------------------------------*/
+
+TEST(ToFixMdQuoteTypeConversion, ConvertsTradeable) {
+  ASSERT_EQ(convert_to_fix<FIX::MDQuoteType>(MdQuoteType::Option::Tradeable),
+            FIX::MDQuoteType_TRADEABLE);
+}
+
+TEST(ToFixMdQuoteTypeConversion, ReportsErrorOnUnknownValueConversion) {
+  ASSERT_THROW(convert_to_fix<FIX::MDQuoteType>(
+                   invalid_enum_value<MdQuoteType::Option>()),
+               std::invalid_argument);
+}
 
 /*----------------------------------------------------------------------------*/
 

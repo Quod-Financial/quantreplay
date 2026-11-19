@@ -57,10 +57,12 @@ The application-level reasons for a MarketDataReject message are listed in the t
 |===
 | Reason | Condition | MDReqRejReason (tag 281) value | Text (tag 58) value
 
-| MarketDataRequest contains no securities inside NoRelatedSym (146) group | – | – | 
+| MarketDataRequest contains no securities inside NoRelatedSym (146) group | – | – | ‘no securities requested in the request’
 
-| MarketDataRequest contains more than one security inside NoRelatedSym (146) group | – | –  
-| ‘market data requests on multiple securities are now allowed'
+| MarketDataRequest contains more than one security inside NoRelatedSym (146) group | – | –
+| ‘market data requests on multiple securities are not allowed'
+
+| None of the requested MDEntryType (269) values is supported by the simulator | – | – | ‘no supported market data types specified in the request’
 
 | No security matches listing identification attributes specified in NoRelatedSym (146) group | – |
 Unknown Symbol (0) | ‘listing not found'
@@ -75,6 +77,37 @@ Unknown Symbol (0) | ‘listing identification attributes set is malformed’
 | No active subscription associated with a given MDReqID (262) exists
 | MarketDataRequest has SubscriptionRequestType=Unsubscribe specified
 | – | ‘no subscription found for the request id’
+
+|===
+
+[[message-flows-mkt-data-quoting]]
+==== Quote Streaming on Quoting Listings
+
+On a <<general-quoting-listings,Quoting listing>>, market data is streamed only in the form of full market data snapshots:
+
+* a subscription (SubscriptionRequestType=Subscribe) is answered right away with a *MarketDataSnapshotFullRefresh* holding the most recently published quote, or no entries when no quote has been published on the listing yet;
+each quote published on the listing afterwards is sent to the subscription as a new MarketDataSnapshotFullRefresh, even when the quote holds no entries of the requested entry types;
+* a snapshot request (SubscriptionRequestType=Snapshot) is answered with a single MarketDataSnapshotFullRefresh holding the most recently published quote, or no entries;
+* an unsubscribe request (SubscriptionRequestType=Unsubscribe) cancels the subscription, as on any listing.
+
+The content of these messages is described in <<pretrade-messages-quoting>>.
+
+The rejections of the table above apply to a Quoting listing too.
+In addition, a Quoting listing rejects the following MarketDataRequest messages with a *MarketDataRequestReject*.
+When several conditions apply, the first one listed is reported.
+
+[cols="1,1,1,1"]
+
+|===
+| Reason | Condition | MDReqRejReason (tag 281) value | Text (tag 58) value
+
+| A requested MDEntryType (269) is neither Bid (0) nor Offer (1) | The first such entry type is named in the text, for instance Trade, MidPrice or OpeningPrice | Unsupported MDEntryType (8) | ‘market data entry type <type> is not supported on a quoting listing’
+
+| MarketDepth (264) is not 0 | – | Unsupported MarketDepth (5) | ‘market depth <depth> is not supported on a quoting listing’
+
+| MDUpdateType (265) is missing | MarketDataRequest has SubscriptionRequestType=Subscribe specified | Unsupported MDUpdateType (6) | ‘required market data update type missing’
+
+| MDUpdateType (265) is 1 (Incremental Refresh) | MarketDataRequest has SubscriptionRequestType=Subscribe specified | Unsupported MDUpdateType (6) | ‘market data update type Incremental is not supported on a quoting listing’
 
 |===
 
@@ -105,7 +138,7 @@ NewOrderSingle message rejection reasons are listed in the table below:
 
 | No listing matches listing identification attributes specified in NewOrderSingle | – | ‘listing not found'
 
-| Listing identification attributes cannot be used to identify the listing (see Instrument Resolution section) | – | 
+| Listing identification attributes cannot be used to identify the listing (see Instrument Resolution section) | – |
 ‘listing identification attributes set is malformed’
 
 | Price (44) is missing in NewOrderSingle request | Reported when an order with OrdType=Limit is specified without a price | ‘order price missing'
@@ -365,6 +398,8 @@ image::14MktDataStsReport.png[width = 600, height=300]
 During an auction the phase is reported in two steps: a SecurityStatus carrying SecurityTradingStatus (326) = 3 (Resume) and the auction's TradingSessionSubID (625 = 2 opening, 4 closing, 6 intraday) when the call sub-phase begins, then a SecurityStatus carrying SecurityTradingStatus (326) = 2 (Trading Halt) with the same TradingSessionSubID when the uncrossing sub-phase begins. The phase scheduled to follow the auction is reported afterwards.
 
 The TradeAtLast phase, typically scheduled right after a closing auction, is reported in a single step: a SecurityStatus carrying TradingSessionSubID (625) = 5 (Post-Trading) and SecurityTradingStatus (326) = 3 (Resume) when the phase begins. A halt of the phase is reported as SecurityTradingStatus (326) = 2 (Trading Halt) with the same TradingSessionSubID. The phase accepts only limit orders with a TimeInForce of Day priced at the last Closing Price (269=5), crosses them only against one another and leaves the orders resting from earlier phases untouched; the rejections it produces are listed in the tables of <<message-flows-trd-msg>>.
+
+A <<general-quoting-listings,Quoting listing>> has no market phases. A SecurityStatus for it always carries TradingSessionSubID (625) = 3 (Open) and SecurityTradingStatus (326) = 3 (Resume), and a subscription for it receives no further SecurityStatus messages, since the phase changes and halts of the venue do not apply to it.
 
 A client may also issue a current trading phase/status information only, without the creation of a subscription and further updates streaming.
 In this case, a client shall send a *SecurityStatusRequest* message with *SubscriptionRequestType=Snapshot*. 

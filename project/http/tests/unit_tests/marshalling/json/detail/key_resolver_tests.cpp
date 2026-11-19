@@ -245,14 +245,14 @@ TEST_F(HttpJsonKeyResolverListing, ResolvesRandomDepthLevels) {
             "randomDepthLevels");
 }
 
-TEST_F(HttpJsonKeyResolverListing, ResolvesRandomOrdersSpread) {
-  EXPECT_EQ(KeyResolver::resolve_key(Attribute::RandomOrdersSpread),
-            "randomOrdersSpread");
+TEST_F(HttpJsonKeyResolverListing, ResolvesRandomPriceSpread) {
+  EXPECT_EQ(KeyResolver::resolve_key(Attribute::RandomPriceSpread),
+            "randomPriceSpread");
 }
 
-TEST_F(HttpJsonKeyResolverListing, ResolvesRandomOrdersRate) {
-  EXPECT_EQ(KeyResolver::resolve_key(Attribute::RandomOrdersRate),
-            "randomOrdersRate");
+TEST_F(HttpJsonKeyResolverListing, ResolvesRandomUpdateRate) {
+  EXPECT_EQ(KeyResolver::resolve_key(Attribute::RandomUpdateRate),
+            "randomUpdateRate");
 }
 
 TEST_F(HttpJsonKeyResolverListing, ResolvesRandomTickRange) {
@@ -274,9 +274,9 @@ TEST_F(HttpJsonKeyResolverListing, ResolvesEnabled) {
   EXPECT_EQ(KeyResolver::resolve_key(Attribute::Enabled), "enabled");
 }
 
-TEST_F(HttpJsonKeyResolverListing, ResolvesRandomOrdersEnabled) {
-  EXPECT_EQ(KeyResolver::resolve_key(Attribute::RandomOrdersEnabled),
-            "randomOrdersEnabled");
+TEST_F(HttpJsonKeyResolverListing, ResolvesRandomActionsEnabled) {
+  EXPECT_EQ(KeyResolver::resolve_key(Attribute::RandomActionsEnabled),
+            "randomActionsEnabled");
 }
 
 TEST_F(HttpJsonKeyResolverListing, ResolvesRandomAggressiveQtyMinimum) {
@@ -303,6 +303,10 @@ TEST_F(HttpJsonKeyResolverListing, ResolvesRandomPriceExcludeCurrentListing) {
   EXPECT_EQ(
       KeyResolver::resolve_key(Attribute::RandomPriceExcludeCurrentListing),
       "randomPriceExcludeCurrentListing");
+}
+
+TEST_F(HttpJsonKeyResolverListing, ResolvesEngineType) {
+  EXPECT_EQ(KeyResolver::resolve_key(Attribute::EngineType), "engineType");
 }
 
 struct HttpJsonKeyResolverListingRandomPriceSource : public ::testing::Test {
@@ -455,10 +459,6 @@ TEST_F(HttpJsonKeyResolverVenue, ResolvesName) {
   EXPECT_EQ(KeyResolver::resolve_key(Attribute::Name), "name");
 }
 
-TEST_F(HttpJsonKeyResolverVenue, ResolvesEngineType) {
-  EXPECT_EQ(KeyResolver::resolve_key(Attribute::EngineType), "engineType");
-}
-
 TEST_F(HttpJsonKeyResolverVenue, ResolvesSupportTifIoc) {
   EXPECT_EQ(KeyResolver::resolve_key(Attribute::SupportTifIoc),
             "supportTifIoc");
@@ -483,9 +483,9 @@ TEST_F(HttpJsonKeyResolverVenue, ResolvesRestPort) {
   EXPECT_EQ(KeyResolver::resolve_key(Attribute::RestPort), "restPort");
 }
 
-TEST_F(HttpJsonKeyResolverVenue, ResolvesOrderOnStartup) {
-  EXPECT_EQ(KeyResolver::resolve_key(Attribute::OrderOnStartup),
-            "orderOnStartup");
+TEST_F(HttpJsonKeyResolverVenue, ResolvesGenerateActionsOnStartup) {
+  EXPECT_EQ(KeyResolver::resolve_key(Attribute::GenerateActionsOnStartup),
+            "generateActionsOnStartup");
 }
 
 TEST_F(HttpJsonKeyResolverVenue, ResolvesTnsEnabled) {

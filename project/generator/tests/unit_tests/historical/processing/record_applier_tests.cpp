@@ -80,7 +80,8 @@ class GeneratorHistoricalRecordApplierFixture : public testing::Test {
                              const std::string& venue_id)
       -> data_layer::Listing {
     data_layer::Listing::Patch listing_patch;
-    listing_patch.with_symbol(smbl).with_venue_id(venue_id);
+    listing_patch.with_symbol(smbl).with_venue_id(venue_id).with_engine_type(
+        data_layer::Listing::EngineType::Matching);
     return data_layer::Listing::create(std::move(listing_patch), 1);
   }
 

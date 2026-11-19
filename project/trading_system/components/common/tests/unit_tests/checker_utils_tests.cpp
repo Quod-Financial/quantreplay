@@ -2,28 +2,28 @@
 
 #include <cstdint>
 
+#include "common/checker_utils.hpp"
 #include "core/domain/attributes.hpp"
-#include "ih/common/validation/checker_utils.hpp"
 
-namespace simulator::trading_system::matching_engine::test {
+namespace simulator::trading_system::test {
 namespace {
 
 enum class Error : std::uint8_t { CheckFailed };
 
-TEST(MatchingEngineCheckerUtilsFieldSpecified,
+TEST(TradingSystemCheckerUtilsFieldSpecified,
      ReturnsNulloptWhenFieldIsSpecified) {
   constexpr auto field = std::make_optional(Side::Option::Buy);
   ASSERT_EQ(field_specified(field, Error::CheckFailed), std::nullopt);
 }
 
-TEST(MatchingEngineCheckerUtilsFieldSpecified,
+TEST(TradingSystemCheckerUtilsFieldSpecified,
      ReturnsErrorWhenFieldIsNotSpecified) {
   constexpr std::optional<Side> field;
   ASSERT_EQ(field_specified(field, Error::CheckFailed),
             std::make_optional(Error::CheckFailed));
 }
 
-TEST(MatchingEngineCheckerUtilsFieldRespectsMinimum,
+TEST(TradingSystemCheckerUtilsFieldRespectsMinimum,
      ReturnsNulloptWhenValueIsNotSpecified) {
   constexpr std::optional<OrderQuantity> value;
   constexpr auto min = std::make_optional(MinQuantity{2});
@@ -31,7 +31,7 @@ TEST(MatchingEngineCheckerUtilsFieldRespectsMinimum,
             std::nullopt);
 }
 
-TEST(MatchingEngineCheckerUtilsFieldRespectsMinimum,
+TEST(TradingSystemCheckerUtilsFieldRespectsMinimum,
      ReturnsErrorWhenValueIsLessThanZero) {
   constexpr auto value = std::make_optional(OrderQuantity{-1});
   constexpr std::optional<MinQuantity> min;
@@ -39,7 +39,7 @@ TEST(MatchingEngineCheckerUtilsFieldRespectsMinimum,
             Error::CheckFailed);
 }
 
-TEST(MatchingEngineCheckerUtilsFieldRespectsMinimum,
+TEST(TradingSystemCheckerUtilsFieldRespectsMinimum,
      ReturnsErrorWhenValueIsZero) {
   constexpr auto value = std::make_optional(OrderQuantity{0});
   constexpr std::optional<MinQuantity> min;
@@ -47,7 +47,7 @@ TEST(MatchingEngineCheckerUtilsFieldRespectsMinimum,
             Error::CheckFailed);
 }
 
-TEST(MatchingEngineCheckerUtilsFieldRespectsMinimum,
+TEST(TradingSystemCheckerUtilsFieldRespectsMinimum,
      ReturnsNulloptWhenMinimumIsNotSpecifiedAndValueIsGreaterThanZero) {
   constexpr auto value = std::make_optional(OrderQuantity{2});
   constexpr std::optional<MinQuantity> min;
@@ -55,7 +55,7 @@ TEST(MatchingEngineCheckerUtilsFieldRespectsMinimum,
             std::nullopt);
 }
 
-TEST(MatchingEngineCheckerUtilsFieldRespectsMinimum,
+TEST(TradingSystemCheckerUtilsFieldRespectsMinimum,
      ReturnsNulloptWhenValueIsGreaterThanMinimum) {
   constexpr auto value = OrderQuantity{3};
   constexpr auto min = std::make_optional(MinQuantity{2});
@@ -63,7 +63,7 @@ TEST(MatchingEngineCheckerUtilsFieldRespectsMinimum,
             std::nullopt);
 }
 
-TEST(MatchingEngineCheckerUtilsFieldRespectsMinimum,
+TEST(TradingSystemCheckerUtilsFieldRespectsMinimum,
      ReturnsNulloptWhenValueIsEqualToMinimum) {
   constexpr auto value = OrderQuantity{2};
   constexpr auto min = std::make_optional(MinQuantity{2});
@@ -71,7 +71,7 @@ TEST(MatchingEngineCheckerUtilsFieldRespectsMinimum,
             std::nullopt);
 }
 
-TEST(MatchingEngineCheckerUtilsFieldRespectsMinimum,
+TEST(TradingSystemCheckerUtilsFieldRespectsMinimum,
      ReturnsErrorWhenValueIsLessThanMin) {
   constexpr auto value = OrderQuantity{1};
   constexpr auto min = std::make_optional(MinQuantity{2});
@@ -79,7 +79,7 @@ TEST(MatchingEngineCheckerUtilsFieldRespectsMinimum,
             Error::CheckFailed);
 }
 
-TEST(MatchingEngineCheckerUtilsFieldRespectsMaximum,
+TEST(TradingSystemCheckerUtilsFieldRespectsMaximum,
      ReturnsNulloptWhenValueIsNotSpecified) {
   constexpr std::optional<OrderQuantity> value;
   constexpr auto max = std::make_optional(MaxQuantity{2});
@@ -87,7 +87,7 @@ TEST(MatchingEngineCheckerUtilsFieldRespectsMaximum,
             std::nullopt);
 }
 
-TEST(MatchingEngineCheckerUtilsFieldRespectsMaximum,
+TEST(TradingSystemCheckerUtilsFieldRespectsMaximum,
      ReturnsNulloptWhenMaximumIsNotSpecified) {
   constexpr auto value = std::make_optional(OrderQuantity{3});
   constexpr std::optional<MaxQuantity> max;
@@ -95,7 +95,7 @@ TEST(MatchingEngineCheckerUtilsFieldRespectsMaximum,
             std::nullopt);
 }
 
-TEST(MatchingEngineCheckerUtilsFieldRespectsMaximum,
+TEST(TradingSystemCheckerUtilsFieldRespectsMaximum,
      ReturnsNulloptWhenValueIsLessThanMax) {
   constexpr auto value = OrderQuantity{1};
   constexpr auto max = std::make_optional(MaxQuantity{2});
@@ -103,7 +103,7 @@ TEST(MatchingEngineCheckerUtilsFieldRespectsMaximum,
             std::nullopt);
 }
 
-TEST(MatchingEngineCheckerUtilsFieldRespectsMaximum,
+TEST(TradingSystemCheckerUtilsFieldRespectsMaximum,
      ReturnsNulloptWhenValueIsEqualToMax) {
   constexpr auto value = OrderQuantity{2};
   constexpr auto max = std::make_optional(MaxQuantity{2});
@@ -111,7 +111,7 @@ TEST(MatchingEngineCheckerUtilsFieldRespectsMaximum,
             std::nullopt);
 }
 
-TEST(MatchingEngineCheckerUtilsFieldRespectsMaximum,
+TEST(TradingSystemCheckerUtilsFieldRespectsMaximum,
      ReturnsErrorWhenValueIsGreaterThanMax) {
   constexpr auto value = OrderQuantity{3};
   constexpr auto max = std::make_optional(MaxQuantity{2});
@@ -119,21 +119,21 @@ TEST(MatchingEngineCheckerUtilsFieldRespectsMaximum,
             Error::CheckFailed);
 }
 
-TEST(MatchingEngineCheckerUtilsFieldRespectsTick,
+TEST(TradingSystemCheckerUtilsFieldRespectsTick,
      ReturnsNulloptWhenValueIsNotSpecified) {
   constexpr std::optional<OrderQuantity> value;
   constexpr auto tick = std::make_optional(QuantityTick{2});
   ASSERT_EQ(field_respects_tick(value, tick, Error::CheckFailed), std::nullopt);
 }
 
-TEST(MatchingEngineCheckerUtilsFieldRespectsTick,
+TEST(TradingSystemCheckerUtilsFieldRespectsTick,
      ReturnsNulloptWhenTickIsNotSpecified) {
   constexpr auto value = std::make_optional(OrderQuantity{3});
   constexpr std::optional<QuantityTick> tick;
   ASSERT_EQ(field_respects_tick(value, tick, Error::CheckFailed), std::nullopt);
 }
 
-TEST(MatchingEngineCheckerUtilsFieldRespectsTick,
+TEST(TradingSystemCheckerUtilsFieldRespectsTick,
      ReturnsErrorWhenTickIsLessThanZero) {
   constexpr auto value = std::make_optional(OrderQuantity{3});
   constexpr auto tick = std::make_optional(QuantityTick{-1});
@@ -141,21 +141,21 @@ TEST(MatchingEngineCheckerUtilsFieldRespectsTick,
             Error::CheckFailed);
 }
 
-TEST(MatchingEngineCheckerUtilsFieldRespectsTick, ReturnsErrorWhenTickIsZero) {
+TEST(TradingSystemCheckerUtilsFieldRespectsTick, ReturnsErrorWhenTickIsZero) {
   constexpr auto value = std::make_optional(OrderQuantity{3});
   constexpr auto tick = std::make_optional(QuantityTick{0});
   ASSERT_EQ(field_respects_tick(value, tick, Error::CheckFailed),
             Error::CheckFailed);
 }
 
-TEST(MatchingEngineCheckerUtilsFieldRespectsTick,
+TEST(TradingSystemCheckerUtilsFieldRespectsTick,
      ReturnsNulloptWhenValueIsMultipleOfTick) {
   constexpr auto value = std::make_optional(OrderQuantity{16});
   constexpr auto tick = std::make_optional(QuantityTick{2});
   ASSERT_EQ(field_respects_tick(value, tick, Error::CheckFailed), std::nullopt);
 }
 
-TEST(MatchingEngineCheckerUtilsFieldRespectsTick,
+TEST(TradingSystemCheckerUtilsFieldRespectsTick,
      ReturnsErrorWhenValueIsNotMultipleOfTick) {
   constexpr auto value = std::make_optional(OrderQuantity{16});
   constexpr auto tick = std::make_optional(QuantityTick{3});
@@ -163,7 +163,7 @@ TEST(MatchingEngineCheckerUtilsFieldRespectsTick,
             Error::CheckFailed);
 }
 
-TEST(MatchingEngineCheckerUtilsFieldsRespectOrderAttributes,
+TEST(TradingSystemCheckerUtilsFieldsRespectOrderAttributes,
      ReturnsNulloptWhenPredicateReturnsTrue) {
   constexpr auto value1 = OrderQuantity{3};
   constexpr auto value2 = OrderQuantity{16};
@@ -172,7 +172,7 @@ TEST(MatchingEngineCheckerUtilsFieldsRespectOrderAttributes,
       std::nullopt);
 }
 
-TEST(MatchingEngineCheckerUtilsFieldsRespectOrderAttributes,
+TEST(TradingSystemCheckerUtilsFieldsRespectOrderAttributes,
      ReturnsErrorWhenPredicateReturnsFalse) {
   constexpr auto value1 = OrderQuantity{16};
   constexpr auto value2 = OrderQuantity{3};
@@ -181,7 +181,7 @@ TEST(MatchingEngineCheckerUtilsFieldsRespectOrderAttributes,
       Error::CheckFailed);
 }
 
-TEST(MatchingEngineCheckerUtilsFieldsRespectOrder,
+TEST(TradingSystemCheckerUtilsFieldsRespectOrder,
      ReturnsNulloptWhenPredicateReturnsTrue) {
   constexpr auto value1 = OrderQuantity{3};
   constexpr double value2 = 16;
@@ -190,7 +190,7 @@ TEST(MatchingEngineCheckerUtilsFieldsRespectOrder,
       std::nullopt);
 }
 
-TEST(MatchingEngineCheckerUtilsFieldsRespectOrder,
+TEST(TradingSystemCheckerUtilsFieldsRespectOrder,
      ReturnsErrorWhenPredicateReturnsFalse) {
   constexpr auto value1 = OrderQuantity{16};
   constexpr double value2 = 3;
@@ -200,4 +200,4 @@ TEST(MatchingEngineCheckerUtilsFieldsRespectOrder,
 }
 
 }  // namespace
-}  // namespace simulator::trading_system::matching_engine::test
+}  // namespace simulator::trading_system::test

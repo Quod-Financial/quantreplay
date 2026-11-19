@@ -5,7 +5,7 @@
 
 #include "common/attributes.hpp"
 #include "common/instrument_state.hpp"
-#include "ih/common/validation/validation.hpp"
+#include "common/validation.hpp"
 #include "ih/market_data/validation/errors.hpp"
 #include "ih/market_data/validation/validator.hpp"
 
@@ -13,7 +13,7 @@ namespace simulator::trading_system::matching_engine::mdata {
 
 class MarketDataValidation : public Validator {
   template <typename T>
-  using Validation = matching_engine::Validation<T, ValidationError>;
+  using Validation = trading_system::Validation<T, ValidationError>;
 
  public:
   struct Config {

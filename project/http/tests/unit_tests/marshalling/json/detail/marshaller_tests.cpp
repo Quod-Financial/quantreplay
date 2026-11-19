@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <string>
 
+#include "data_layer/api/models/listing.hpp"
 #include "data_layer/api/models/venue.hpp"
 #include "ih/marshalling/json/detail/marshaller.hpp"
 #include "test_utils/matchers.hpp"
@@ -14,6 +15,7 @@ namespace simulator::http::json::test {
 namespace {
 
 struct HttpJsonMarshaller : public ::testing::Test {
+  using Listing = data_layer::Listing;
   using Venue = data_layer::Venue;
 
   rapidjson::Document document;
@@ -102,7 +104,7 @@ TEST_F(HttpJsonMarshaller, MarshallsUnsignedInteger) {
 TEST_F(HttpJsonMarshaller, MarshallsEnumerationBadValue) {
   constexpr auto attribute = Venue::Attribute::VenueId;
   constexpr auto bad_enum =
-      http::test::util::invalid_enum_value<Venue::EngineType>();
+      http::test::util::invalid_enum_value<Listing::EngineType>();
 
   Marshaller marshaller{document};
 
@@ -113,7 +115,7 @@ TEST_F(HttpJsonMarshaller, MarshallsEnumerationBadValue) {
 TEST_F(HttpJsonMarshaller, MarshallsEnumerationCorrectValue) {
   constexpr auto attribute = Venue::Attribute::VenueId;
   constexpr const char* key = "id";
-  constexpr auto enum_value = Venue::EngineType::Matching;
+  constexpr auto enum_value = Listing::EngineType::Matching;
 
   Marshaller marshaller{document};
 

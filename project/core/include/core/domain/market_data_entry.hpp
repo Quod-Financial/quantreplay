@@ -25,6 +25,8 @@ struct MarketDataEntry {
   std::optional<MarketEntryAction> action;
   std::optional<MdEntryType> type;
   std::optional<TradeCondition> trade_condition;
+  std::optional<QuoteCondition> quote_condition;
+  std::optional<MdQuoteType> quote_type;
 
   [[nodiscard]]
   consteval static auto name() {

@@ -5,6 +5,8 @@
 #include <pistache/http.h>
 #include <pistache/router.h>
 
+#include <string>
+
 #include "cfg/api/cfg.hpp"
 #include "core/version.hpp"
 #include "ih/endpoint.hpp"
@@ -111,6 +113,7 @@ Router::Router(std::shared_ptr<GetProcessor> get_processor,
   init_price_seed_routes();
   init_datasource_routes();
   init_setting_routes();
+  init_quote_routes();
 }
 
 auto Router::onRequest(const Pistache::Http::Request& request,
@@ -387,6 +390,14 @@ auto Router::init_setting_routes() -> void {
       endpoint::Settings,
       Pistache::Rest::Routes::bind(&PutProcessor::update_settings,
                                    put_processor_.get()));
+}
+
+auto Router::init_quote_routes() -> void {
+  Pistache::Rest::Routes::Post(
+      router_,
+      std::string{endpoint::Quotes},
+      Pistache::Rest::Routes::bind(&PostProcessor::publish_quote,
+                                   post_processor_.get()));
 }
 
 }  // namespace simulator::http

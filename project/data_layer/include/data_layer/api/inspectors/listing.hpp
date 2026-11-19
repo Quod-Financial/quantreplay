@@ -143,14 +143,14 @@ inline auto ListingReader<Marshaller>::read(const Listing& listing) -> void {
     marshaller_(Attribute::RandomDepthLevels, *value);
   }
 
-  if (const auto& value = listing.random_orders_spread()) {
+  if (const auto& value = listing.random_price_spread()) {
     static_assert(can_marshall_v<decltype(*value)>);
-    marshaller_(Attribute::RandomOrdersSpread, *value);
+    marshaller_(Attribute::RandomPriceSpread, *value);
   }
 
-  if (const auto& value = listing.random_orders_rate()) {
+  if (const auto& value = listing.random_update_rate()) {
     static_assert(can_marshall_v<decltype(*value)>);
-    marshaller_(Attribute::RandomOrdersRate, *value);
+    marshaller_(Attribute::RandomUpdateRate, *value);
   }
 
   if (const auto& value = listing.random_tick_range()) {
@@ -218,9 +218,9 @@ inline auto ListingReader<Marshaller>::read(const Listing& listing) -> void {
     marshaller_(Attribute::RandomAmtMaximum, *value);
   }
 
-  if (const auto& value = listing.random_orders_enabled_flag()) {
+  if (const auto& value = listing.random_actions_enabled_flag()) {
     static_assert(can_marshall_v<decltype(*value)>);
-    marshaller_(Attribute::RandomOrdersEnabled, *value);
+    marshaller_(Attribute::RandomActionsEnabled, *value);
   }
 
   if (const auto& value = listing.random_aggressive_qty_minimum()) {
@@ -247,6 +247,10 @@ inline auto ListingReader<Marshaller>::read(const Listing& listing) -> void {
     static_assert(can_marshall_v<decltype(*value)>);
     marshaller_(Attribute::RandomPriceExcludeCurrentListing, *value);
   }
+
+  const Listing::EngineType engine_type = listing.engine_type();
+  static_assert(can_marshall_v<decltype(engine_type)>);
+  marshaller_(Attribute::EngineType, engine_type);
 }
 
 template <typename Marshaller>
@@ -319,14 +323,14 @@ inline auto ListingPatchReader<Marshaller>::read(const Listing::Patch& patch)
     marshaller_(Attribute::RandomDepthLevels, *value);
   }
 
-  if (const auto& value = patch.random_orders_spread()) {
+  if (const auto& value = patch.random_price_spread()) {
     static_assert(can_marshall_v<decltype(*value)>);
-    marshaller_(Attribute::RandomOrdersSpread, *value);
+    marshaller_(Attribute::RandomPriceSpread, *value);
   }
 
-  if (const auto& value = patch.random_orders_rate()) {
+  if (const auto& value = patch.random_update_rate()) {
     static_assert(can_marshall_v<decltype(*value)>);
-    marshaller_(Attribute::RandomOrdersRate, *value);
+    marshaller_(Attribute::RandomUpdateRate, *value);
   }
 
   if (const auto& value = patch.random_tick_range()) {
@@ -394,11 +398,11 @@ inline auto ListingPatchReader<Marshaller>::read(const Listing::Patch& patch)
     marshaller_(Attribute::RandomAmtMaximum, *value);
   }
 
-  if (const auto& value = patch.random_orders_enabled_flag()) {
+  if (const auto& value = patch.random_actions_enabled_flag()) {
     static_assert(
         can_marshall_v<std::remove_cvref_t<decltype(value)>::value_type>);
-    marshaller_(Attribute::RandomOrdersEnabled,
-                value.inner_value_or(Listing::DefaultRandomOrdersEnabledFlag));
+    marshaller_(Attribute::RandomActionsEnabled,
+                value.inner_value_or(Listing::DefaultRandomActionsEnabledFlag));
   }
 
   if (const auto& value = patch.random_aggressive_qty_minimum()) {
@@ -427,6 +431,11 @@ inline auto ListingPatchReader<Marshaller>::read(const Listing::Patch& patch)
     marshaller_(Attribute::RandomPriceExcludeCurrentListing,
                 value.inner_value_or(
                     Listing::DefaultRandomPriceExcludeCurrentListingFlag));
+  }
+
+  if (const auto& value = patch.engine_type()) {
+    static_assert(can_marshall_v<decltype(*value)>);
+    marshaller_(Attribute::EngineType, *value);
   }
 }
 
@@ -511,16 +520,16 @@ inline auto ListingPatchWriter<Unmarshaller>::write(Listing::Patch& patch)
     patch.with_random_depth_levels(random_depth_levels);
   }
 
-  std::optional<double> random_orders_spread;
-  static_assert(can_unmarshall_v<decltype(random_orders_spread)>);
-  if (unmarshaller_(Attribute::RandomOrdersSpread, random_orders_spread)) {
-    patch.with_random_orders_spread(random_orders_spread);
+  std::optional<double> random_price_spread;
+  static_assert(can_unmarshall_v<decltype(random_price_spread)>);
+  if (unmarshaller_(Attribute::RandomPriceSpread, random_price_spread)) {
+    patch.with_random_price_spread(random_price_spread);
   }
 
-  std::optional<std::uint32_t> random_orders_rate;
-  static_assert(can_unmarshall_v<decltype(random_orders_rate)>);
-  if (unmarshaller_(Attribute::RandomOrdersRate, random_orders_rate)) {
-    patch.with_random_orders_rate(random_orders_rate);
+  std::optional<std::uint32_t> random_update_rate;
+  static_assert(can_unmarshall_v<decltype(random_update_rate)>);
+  if (unmarshaller_(Attribute::RandomUpdateRate, random_update_rate)) {
+    patch.with_random_update_rate(random_update_rate);
   }
 
   std::optional<std::uint32_t> random_tick_range;
@@ -601,10 +610,10 @@ inline auto ListingPatchWriter<Unmarshaller>::write(Listing::Patch& patch)
     patch.with_random_amt_maximum(random_amt_maximum);
   }
 
-  std::optional<bool> random_orders_enabled;
-  static_assert(can_unmarshall_v<decltype(random_orders_enabled)>);
-  if (unmarshaller_(Attribute::RandomOrdersEnabled, random_orders_enabled)) {
-    patch.with_random_orders_enabled_flag(random_orders_enabled);
+  std::optional<bool> random_actions_enabled;
+  static_assert(can_unmarshall_v<decltype(random_actions_enabled)>);
+  if (unmarshaller_(Attribute::RandomActionsEnabled, random_actions_enabled)) {
+    patch.with_random_actions_enabled_flag(random_actions_enabled);
   }
 
   std::optional<double> random_aggressive_qty_minimum;
@@ -642,6 +651,12 @@ inline auto ListingPatchWriter<Unmarshaller>::write(Listing::Patch& patch)
                     random_price_exclude_current_listing)) {
     patch.with_random_price_exclude_current_listing_flag(
         random_price_exclude_current_listing);
+  }
+
+  std::optional<Listing::EngineType> engine_type;
+  static_assert(can_unmarshall_v<decltype(engine_type)>);
+  if (unmarshaller_(Attribute::EngineType, engine_type)) {
+    patch.with_engine_type(engine_type);
   }
 }
 

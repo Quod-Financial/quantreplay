@@ -5,14 +5,27 @@
 
 #include "common/events.hpp"
 #include "common/instrument.hpp"
+#include "common/instrument_state.hpp"
+#include "common/order_modifying_engine.hpp"
+#include "common/phase_aware_engine.hpp"
+#include "common/state_persisting_engine.hpp"
 #include "common/trading_engine.hpp"
 #include "matching_engine/configuration.hpp"
+#include "protocol/app/market_data_request.hpp"
+#include "protocol/app/order_cancellation_request.hpp"
+#include "protocol/app/order_modification_request.hpp"
+#include "protocol/app/order_placement_request.hpp"
+#include "protocol/app/security_status_request.hpp"
+#include "protocol/app/session_terminated_event.hpp"
 #include "runtime/mux.hpp"
 #include "runtime/service.hpp"
 
 namespace simulator::trading_system::matching_engine {
 
-class MatchingEngine final : public TradingEngine {
+class MatchingEngine final : public TradingEngine,
+                             public OrderModifyingEngine,
+                             public StatePersistingEngine,
+                             public PhaseAwareEngine {
  public:
   class Implementation;
 

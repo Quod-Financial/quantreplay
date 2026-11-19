@@ -16,6 +16,7 @@ add_static_library(
   HEADERS
     include/protocol/admin/generator.hpp
     include/protocol/admin/market_state.hpp
+    include/protocol/admin/quote.hpp
     include/protocol/admin/trading_phase.hpp
     include/protocol/app/business_message_reject.hpp
     include/protocol/app/execution_report.hpp

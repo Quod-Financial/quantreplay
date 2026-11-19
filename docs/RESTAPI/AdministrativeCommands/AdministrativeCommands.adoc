@@ -628,7 +628,7 @@ Content-Length: XXX
 
 [[admincmds-ordergen-startstop]]
 ==== Start/Stop Order Generation
-Start or stop random order generation and historical data playback for a single market simulator venue instance.
+Start or stop the automatic generator, which runs random order generation and historical data playback, for a single market simulator venue instance. The automatic generator skips <<general-quoting,Quoting listings>>.
 
 _Request Properties_
 
@@ -679,7 +679,7 @@ Content-Type: application/json;charset=UTF-8
 Content-Length: XXX
 
 {
-    "result" : "Random orders generator started successfully"
+    "result" : "Automatic generator started successfully"
 }
 ----
 
@@ -705,7 +705,7 @@ Content-Type: application/json;charset=UTF-8
 Content-Length: XXX
 
 {
-    "result" : "Random orders generator started successfully"
+    "result" : "Automatic generator started successfully"
 }
 ----
 
@@ -727,7 +727,7 @@ Content-Type: application/json;charset=UTF-8
 Content-Length: XXX
 
 {
-    "result" : "Random orders generator started successfully"
+    "result" : "Automatic generator started successfully"
 }
 ----
 
@@ -749,7 +749,7 @@ Content-Type: application/json;charset=UTF-8
 Content-Length: XXX
 
 {
-    "result" : "Random orders generator stopped successfully"
+    "result" : "Automatic generator stopped successfully"
 }
 ----
 
@@ -771,9 +771,24 @@ Content-Type: application/json;charset=UTF-8
 Content-Length: XXX
 
 {
-    "result" : "Random orders generator stopped successfully"
+    "result" : "Automatic generator stopped successfully"
 }
 ----
+
+_Example_: Reply in case the automatic generator cannot be started
+
+[,http]
+----
+HTTP/1.1 500 Internal Server Error
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "result" : "Failed to start the automatic generator"
+}
+----
+
+When the automatic generator cannot be stopped, the reply is 500 Internal Server Error with the result "Failed to stop the automatic generator".
 
 [[admincmds-mktphshalt]]
 === Market Phase Halt
@@ -795,6 +810,8 @@ Halt or resume current market phase for a single market simulator venue instance
 Halt and resume requests are rejected while an auction phase is active (see <<general-mktphs-auction,Auction Phase>>); both return a 409 Conflict, as shown in the auction examples below.
 
 A <<general-mktphs-tal,TradeAtLast phase>> is halted and resumed like the Open phase; while it is halted, the cancels allowed by allowCancels still apply only to the orders accepted during that phase.
+
+Halt and resume requests do not affect <<general-quoting,Quoting listings>>, which keep accepting and streaming quotes and always report the Open trading status.
 
 _Request Properties_
 
@@ -1067,7 +1084,7 @@ _Response Properties_
 
 [[admincmds-simstate-storerecover]]
 ==== Store/Recover Market State For Single Venue
-Store or recover current market state of traded listings for a single market simulator venue instance with a persisted state file. This includes only the live market state of each traded listing, not the configured settings from the database. See <<general-persiststate,this section>> for more information about persisted market state.
+Store or recover current market state of traded listings for a single market simulator venue instance with a persisted state file. This includes only the live market state of each traded listing, not the configured settings from the database. The quotes of Quoting listings are neither stored nor recovered. See <<general-persiststate,this section>> for more information about persisted market state.
 
 Store or recover market state for current market simulator venue with configured persisted state file.
 
@@ -1176,7 +1193,7 @@ Content-Length: XXX
 [[admincmds-simstate-reset]]
 ==== Reset Configured State For Single Venue
 
-Reset configured initial state for a single market simulator venue instance from database settings. All simulator settings will be refreshed from the database. If the venue is configured with persistenceEnabled = true, like a normal simulator startup sequence, the listings specified in the configured persistence file path for that venue will have their market state restored, and any other active traded listings will have their market states cleared. Random order generation and historical data playback will also be stopped, and only restarted if the venue is configured with orderOnStartup = true. The REST and FIX engines will also be reset during this time, causing active connections to be disrupted.
+Reset configured initial state for a single market simulator venue instance from database settings. All simulator settings will be refreshed from the database. If the venue is configured with persistenceEnabled = true, like a normal simulator startup sequence, the listings specified in the configured persistence file path for that venue will have their market state restored, and any other active traded listings will have their market states cleared. Random order generation and historical data playback will also be stopped, and only restarted if the venue is configured with generateActionsOnStartup = true. All quotes published on Quoting listings are discarded. The REST and FIX engines will also be reset during this time, causing active connections to be disrupted.
 
 The simulator XML file configuration is not reloaded during a reset; a physical restart of the market simulator process is required to reload it. The FIX engines are recreated from the files on disk, so changes to the QuickFIX configuration file of the instance and to the separate settings files named by FIX datasources (see <<general-datasource-formatconfig-fix,FIX Market Data Feed>>) take effect on a reset.
 
@@ -1239,5 +1256,226 @@ Content-Length: XXX
 
 {
     "result" : "Resetting the venue state starts."
+}
+----
+
+[[admincmds-quotes]]
+=== Quotes
+Publish quotes on the Quoting listings of each market simulator venue instance. See <<general-quoting,this section>> for more information about Quoting listings.
+
+_Response Properties_
+
+[cols="1,1,1"]
+|===
+| Path | Type |Description
+
+| quoteId | Text | The identifier generated for the published quote, returned only when the quote is published
+| result | Text | Explanation of HTTP code received in response to request, returned only when the quote is not published
+|===
+
+[[admincmds-quotes-publish]]
+==== Publish Quote
+Publish a quote on a Quoting listing. The quote is sent right away to every active FIX market data subscription of the listing, as described in the Market Simulator FIX Rules of Engagement.
+
+The request is processed by the instance of the venue named by venueId. When venueId names another venue, the receiving instance checks the request body, forwards the request to the instance of that venue and returns its reply.
+
+The listing is resolved from the identification properties of the request with the Instrument Resolution rules of the Market Simulator FIX Rules of Engagement, each property standing for the FIX field named in the table below. Only a listing whose engineType is Quoting accepts a quote.
+
+Each bid and ask entry needs a price and a quantity, and is checked against the qtyMinimum, qtyMaximum, qtyMultiple and priceTickSize of the listing, as the price and quantity of an order are; the quantity must be greater than zero. A quote may hold entries of one side only, but not of neither side. A crossed or locked quote, whose best bid price is greater than or equal to its best ask price, is accepted. The entries of each side are published in the order of the request, which is not checked to be by price.
+
+Unknown properties are ignored. A property set to null is treated as absent, except bids and asks, which must be arrays when given.
+
+_Request Properties_
+
+[cols="25,15,60"]
+|===
+| Path | Type |Description
+
+| venueId | Text | Required. The venue of the listing; an empty value is treated as absent
+| symbol | Text | Symbol (55)
+| securityType | Text | SecurityType (167), one of the securityType values of a <<adminsets-listings,listing>>, for instance `FXSPOT`
+| securityId | Text | SecurityID (48). Requires securityIdSource
+| securityIdSource | Text a| SecurityIDSource (22), one of:
+
+* `CUSIP`, compared with cusipId
+* `SEDOL`, compared with sedolId
+* `ISIN`, compared with isinId
+* `RIC`, compared with ricId
+* `ExchangeSymbol`, compared with exchangeSymbolId
+* `BloombergSymbol`, compared with bloombergSymbolId
+| priceCurrency | Text | Currency (15): compared with the fxBaseCurrency of an FX listing, and with the priceCurrency of any other listing
+| securityExchange | Text | SecurityExchange (207)
+| partyRole | Text | PartyRole (452) of the Parties group, a party role name as in the partyRole of a listing, for instance `ExecutingFirm`. Must be given together with partyId
+| partyId | Text | PartyID (448) of the Parties group. Must be given together with partyRole
+| bids | Array | The bid entries of the quote
+| bids[].price | Decimal | Required. Price of the bid entry
+| bids[].quantity | Decimal | Required. Quantity of the bid entry
+| asks | Array | The ask entries of the quote
+| asks[].price | Decimal | Required. Price of the ask entry
+| asks[].quantity | Decimal | Required. Quantity of the ask entry
+|===
+
+A positive reply holds only the quoteId generated for the published quote.
+The quoteId is a text identifier generated by the simulator in the same format as the OrderID (37) of an order, unique within the running venue instance. It is not published over FIX.
+
+_Resource URI_
+
+----
+POST /api/quotes
+----
+
+_Example_: Publish a quote
+
+[,http]
+----
+POST /api/quotes HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+
+{
+    "venueId" : "FASTMATCH",
+    "symbol" : "EUR/USD",
+    "securityType" : "FXSPOT",
+    "priceCurrency" : "EUR",
+    "bids" : [
+        {
+            "quantity" : 1000000,
+            "price" : 1.1655
+        },
+        {
+            "quantity" : 5000000,
+            "price" : 1.1654
+        }
+    ],
+    "asks" : [
+        {
+            "quantity" : 1000000,
+            "price" : 1.1657
+        }
+    ]
+}
+----
+
+_Example_: Positive reply
+
+[,http]
+----
+HTTP/1.1 201 Created
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "quoteId" : "251109143015000001"
+}
+----
+
+_Example_: Negative reply, no listing matches the identification properties
+
+[,http]
+----
+HTTP/1.1 404 Not Found
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "result" : "Failed to publish the Quote: listing not found"
+}
+----
+
+_Example_: Negative reply, the identification properties match more than one listing
+
+[,http]
+----
+HTTP/1.1 409 Conflict
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "result" : "Failed to publish the Quote: cannot resolve listing uniquely"
+}
+----
+
+_Example_: Negative reply, the listing is not a Quoting listing
+
+[,http]
+----
+HTTP/1.1 400 Bad Request
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "result" : "Failed to publish the Quote: quotes are supported only on a quoting listing"
+}
+----
+
+The other reasons for a 400 Bad Request reply with the result `Failed to publish the Quote: <reason>` are:
+
+[cols="50,50"]
+|===
+| Condition | Reason
+
+| The identification properties cannot be used to identify the listing, for instance neither symbol nor securityIdSource is given | `listing identification attributes set is malformed`
+| Both bids and asks are absent or empty | `quote has neither bids nor asks`
+| An entry quantity is not greater than zero or is less than qtyMinimum | `minimal bid quantity constraint violated` / `minimal ask quantity constraint violated`
+| An entry quantity is greater than qtyMaximum | `maximal bid quantity constraint violated` / `maximal ask quantity constraint violated`
+| An entry quantity is not a multiple of qtyMultiple | `bid quantity multiple constraint violated` / `ask quantity multiple constraint violated`
+| An entry price is not a multiple of priceTickSize | `bid price tick constraint violated` / `ask price tick constraint violated`
+|===
+
+The bids are checked before the asks, and only the first violation found is reported.
+
+_Example_: Negative reply, the request body is invalid
+
+[,http]
+----
+HTTP/1.1 400 Bad Request
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "result" : "Bad request: missing required field `venueId'"
+}
+----
+
+An invalid request body is rejected by the receiving instance, before the request is forwarded, with a 400 Bad Request reply whose result is `Bad request: <reason>`:
+
+[cols="50,50"]
+|===
+| Condition | Reason
+
+| The body is not a JSON object | `failed to parse Quote JSON object`
+| venueId is absent or empty | `+missing required field `venueId'+`
+| securityId is given without securityIdSource | `+`securityIdSource' is required when `securityId' is given+`
+| Only one of partyId and partyRole is given | `+`partyId' and `partyRole' must be given together+`
+| securityType, securityIdSource or partyRole has an unknown value | `+unable to decode a `<value>' JSON string as a <enumeration> enumeration+`, where <enumeration> is SecurityType, SecurityIdSource or PartyRole
+| A property has a JSON type other than the expected one | `+unexpected data type received for `<property>', <type> or null is expected+`, where <type> is string for a text property and double-precision floating point for a price or quantity
+| bids or asks is not a JSON array | `+can not parse `<property>' key in Quote JSON, which is not a JSON array+`
+| An entry of bids or asks is not a JSON object | `+can not parse a JSON object in `<property>' JSON array+`
+| An entry of bids or asks has no price or no quantity | `+missing required field `price'+` / `+missing required field `quantity'+`; an entry with neither reports price
+|===
+
+_Example_: Reply in case the venue does not exist
+
+[,http]
+----
+HTTP/1.1 502 Bad Gateway
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "result" : "Could not resolve destination instance with AAAAA identifier"
+}
+----
+
+_Example_: Reply in case the request cannot be processed by the venue instance
+
+[,http]
+----
+HTTP/1.1 500 Internal Server Error
+Content-Type: application/json;charset=UTF-8
+Content-Length: XXX
+
+{
+    "result" : "Failed to process the request."
 }
 ----

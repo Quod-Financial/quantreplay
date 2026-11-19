@@ -221,12 +221,12 @@ TEST_F(DataLayerListingResolver, ResolvesRandomDepthLevels) {
   EXPECT_EQ(resolver(Column::RandomDepthLevels), "random_depth_levels");
 }
 
-TEST_F(DataLayerListingResolver, ResolvesRandomOrdersSpread) {
-  EXPECT_EQ(resolver(Column::RandomOrdersSpread), "random_orders_spread");
+TEST_F(DataLayerListingResolver, ResolvesRandomPriceSpread) {
+  EXPECT_EQ(resolver(Column::RandomPriceSpread), "random_price_spread");
 }
 
-TEST_F(DataLayerListingResolver, ResolvesRandomOrdersRate) {
-  EXPECT_EQ(resolver(Column::RandomOrdersRate), "random_orders_rate");
+TEST_F(DataLayerListingResolver, ResolvesRandomUpdateRate) {
+  EXPECT_EQ(resolver(Column::RandomUpdateRate), "random_update_rate");
 }
 
 TEST_F(DataLayerListingResolver, ResolvesRandomTickRange) {
@@ -281,13 +281,17 @@ TEST_F(DataLayerListingResolver, ResolvesRandomAmtMaximum) {
   EXPECT_EQ(resolver(Column::RandomAmtMaximum), "random_amt_maximum");
 }
 
-TEST_F(DataLayerListingResolver, ResolvesRandomOrdersEnabled) {
-  EXPECT_EQ(resolver(Column::RandomOrdersEnabled), "random_orders_enabled");
+TEST_F(DataLayerListingResolver, ResolvesRandomActionsEnabled) {
+  EXPECT_EQ(resolver(Column::RandomActionsEnabled), "random_actions_enabled");
 }
 
 TEST_F(DataLayerListingResolver, ResolvesRandomPriceExcludeCurrentListing) {
   EXPECT_EQ(resolver(Column::RandomPriceExcludeCurrentListing),
             "random_price_exclude_current_listing");
+}
+
+TEST_F(DataLayerListingResolver, ResolvesEngineType) {
+  EXPECT_EQ(resolver(Column::EngineType), "engine_type");
 }
 
 TEST_F(DataLayerListingResolver, ResolvesRandomAggressiveQtyMinimum) {
@@ -461,10 +465,6 @@ TEST_F(DataLayerVenueResolver, ResolvesName) {
   EXPECT_EQ(resolver(Column::Name), "name");
 }
 
-TEST_F(DataLayerVenueResolver, ResolvesEngineType) {
-  EXPECT_EQ(resolver(Column::EngineType), "engine_type");
-}
-
 TEST_F(DataLayerVenueResolver, ResolvesSupportTifIoc) {
   EXPECT_EQ(resolver(Column::SupportTifIoc), "support_tif_ioc");
 }
@@ -485,8 +485,9 @@ TEST_F(DataLayerVenueResolver, ResolvesRestPort) {
   EXPECT_EQ(resolver(Column::RestPort), "rest_port");
 }
 
-TEST_F(DataLayerVenueResolver, ResolvesOrderOnStartup) {
-  EXPECT_EQ(resolver(Column::OrderOnStartup), "order_on_startup");
+TEST_F(DataLayerVenueResolver, ResolvesGenerateActionsOnStartup) {
+  EXPECT_EQ(resolver(Column::GenerateActionsOnStartup),
+            "generate_actions_on_startup");
 }
 
 TEST_F(DataLayerVenueResolver, ResolvesRandomPartiesCount) {

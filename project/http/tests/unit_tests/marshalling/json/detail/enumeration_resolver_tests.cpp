@@ -2,9 +2,10 @@
 
 #include <stdexcept>
 
+#include "core/domain/enumerators.hpp"
 #include "data_layer/api/models/datasource.hpp"
+#include "data_layer/api/models/listing.hpp"
 #include "data_layer/api/models/market_phase.hpp"
-#include "data_layer/api/models/venue.hpp"
 #include "ih/marshalling/json/detail/enumeration_resolver.hpp"
 #include "tests/test_utils/utils.hpp"
 
@@ -160,39 +161,116 @@ TEST_F(HttpJsonEnumerationResolverMarketPhaseType, ResolvesStringHalted) {
   EXPECT_EQ(phase, Phase::Halted);
 }
 
-struct HttpJsonEnumerationResolverVenueEngineType : public ::testing::Test {
-  using EngineType = data_layer::Venue::EngineType;
+struct HttpJsonEnumerationResolverListingEngineType : public ::testing::Test {
+  using EngineType = data_layer::Listing::EngineType;
 };
 
-TEST_F(HttpJsonEnumerationResolverVenueEngineType, ResolvesEnumUndefined) {
+TEST_F(HttpJsonEnumerationResolverListingEngineType, ResolvesEnumUndefined) {
   EXPECT_THROW((void)EnumerationResolver::resolve(
                    http::test::util::invalid_enum_value<EngineType>()),
                std::logic_error);
 }
 
-TEST_F(HttpJsonEnumerationResolverVenueEngineType, ResolvesEnumMatching) {
+TEST_F(HttpJsonEnumerationResolverListingEngineType, ResolvesEnumMatching) {
   EXPECT_EQ(EnumerationResolver::resolve(EngineType::Matching), "Matching");
 }
 
-TEST_F(HttpJsonEnumerationResolverVenueEngineType, ResolvesEnumQuoting) {
+TEST_F(HttpJsonEnumerationResolverListingEngineType, ResolvesEnumQuoting) {
   EXPECT_EQ(EnumerationResolver::resolve(EngineType::Quoting), "Quoting");
 }
 
-TEST_F(HttpJsonEnumerationResolverVenueEngineType, ResolvesStringUndefined) {
+TEST_F(HttpJsonEnumerationResolverListingEngineType, ResolvesStringUndefined) {
   EngineType type{};
   EXPECT_THROW(EnumerationResolver::resolve("bad", type), std::runtime_error);
 }
 
-TEST_F(HttpJsonEnumerationResolverVenueEngineType, ResolvesStringMatching) {
+TEST_F(HttpJsonEnumerationResolverListingEngineType, ResolvesStringMatching) {
   EngineType type{};
   ASSERT_NO_THROW(EnumerationResolver::resolve("Matching", type));
   EXPECT_EQ(type, EngineType::Matching);
 }
 
-TEST_F(HttpJsonEnumerationResolverVenueEngineType, ResolvesStringQuoting) {
+TEST_F(HttpJsonEnumerationResolverListingEngineType, ResolvesStringQuoting) {
   EngineType type{};
   ASSERT_NO_THROW(EnumerationResolver::resolve("Quoting", type));
   EXPECT_EQ(type, EngineType::Quoting);
+}
+
+struct HttpJsonEnumerationResolverSecurityType : public ::testing::Test {
+  using SecurityType = core::enumerators::SecurityType;
+};
+
+TEST_F(HttpJsonEnumerationResolverSecurityType, ResolvesStringUndefined) {
+  SecurityType type{};
+  EXPECT_THROW(EnumerationResolver::resolve("bad", type), std::runtime_error);
+}
+
+TEST_F(HttpJsonEnumerationResolverSecurityType, ResolvesStringFxSpot) {
+  SecurityType type{};
+  ASSERT_NO_THROW(EnumerationResolver::resolve("FXSPOT", type));
+  EXPECT_EQ(type, SecurityType::FxSpot);
+}
+
+struct HttpJsonEnumerationResolverSecurityIdSource : public ::testing::Test {
+  using SecurityIdSource = core::enumerators::SecurityIdSource;
+};
+
+TEST_F(HttpJsonEnumerationResolverSecurityIdSource, ResolvesStringUndefined) {
+  SecurityIdSource source{};
+  EXPECT_THROW(EnumerationResolver::resolve("ISI", source), std::runtime_error);
+}
+
+TEST_F(HttpJsonEnumerationResolverSecurityIdSource, ResolvesStringCusip) {
+  SecurityIdSource source{};
+  ASSERT_NO_THROW(EnumerationResolver::resolve("CUSIP", source));
+  EXPECT_EQ(source, SecurityIdSource::Cusip);
+}
+
+TEST_F(HttpJsonEnumerationResolverSecurityIdSource, ResolvesStringSedol) {
+  SecurityIdSource source{};
+  ASSERT_NO_THROW(EnumerationResolver::resolve("SEDOL", source));
+  EXPECT_EQ(source, SecurityIdSource::Sedol);
+}
+
+TEST_F(HttpJsonEnumerationResolverSecurityIdSource, ResolvesStringIsin) {
+  SecurityIdSource source{};
+  ASSERT_NO_THROW(EnumerationResolver::resolve("ISIN", source));
+  EXPECT_EQ(source, SecurityIdSource::Isin);
+}
+
+TEST_F(HttpJsonEnumerationResolverSecurityIdSource, ResolvesStringRic) {
+  SecurityIdSource source{};
+  ASSERT_NO_THROW(EnumerationResolver::resolve("RIC", source));
+  EXPECT_EQ(source, SecurityIdSource::Ric);
+}
+
+TEST_F(HttpJsonEnumerationResolverSecurityIdSource,
+       ResolvesStringExchangeSymbol) {
+  SecurityIdSource source{};
+  ASSERT_NO_THROW(EnumerationResolver::resolve("ExchangeSymbol", source));
+  EXPECT_EQ(source, SecurityIdSource::ExchangeSymbol);
+}
+
+TEST_F(HttpJsonEnumerationResolverSecurityIdSource,
+       ResolvesStringBloombergSymbol) {
+  SecurityIdSource source{};
+  ASSERT_NO_THROW(EnumerationResolver::resolve("BloombergSymbol", source));
+  EXPECT_EQ(source, SecurityIdSource::BloombergSymbol);
+}
+
+struct HttpJsonEnumerationResolverPartyRole : public ::testing::Test {
+  using PartyRole = core::enumerators::PartyRole;
+};
+
+TEST_F(HttpJsonEnumerationResolverPartyRole, ResolvesStringUndefined) {
+  PartyRole role{};
+  EXPECT_THROW(EnumerationResolver::resolve("bad", role), std::runtime_error);
+}
+
+TEST_F(HttpJsonEnumerationResolverPartyRole, ResolvesStringExecutingFirm) {
+  PartyRole role{};
+  ASSERT_NO_THROW(EnumerationResolver::resolve("ExecutingFirm", role));
+  EXPECT_EQ(role, PartyRole::ExecutingFirm);
 }
 
 }  // namespace

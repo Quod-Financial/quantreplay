@@ -5,10 +5,10 @@
 #include <optional>
 
 #include "common/attributes.hpp"
+#include "common/checker_utils.hpp"
 #include "common/instrument_state.hpp"
 #include "core/domain/attributes.hpp"
 #include "core/tools/time.hpp"
-#include "ih/common/validation/checker_utils.hpp"
 #include "ih/orders/validation/errors.hpp"
 #include "ih/orders/validation/order_book_side.hpp"
 

@@ -191,6 +191,13 @@ auto process(const protocol::RecoverMarketStateRequest& request,
   trading_system.implementation().execute(request, reply);
 }
 
+auto process(const protocol::QuotePublicationRequest& request,
+             protocol::QuotePublicationReply& reply,
+             System& trading_system) -> void {
+  log::debug("called the procedure to process QuotePublicationRequest");
+  trading_system.implementation().execute(request, reply);
+}
+
 auto react_on(const protocol::SessionTerminatedEvent& event,
               System& trading_system) -> void {
   log::debug("called procedure to react on SessionTerminatedEvent");

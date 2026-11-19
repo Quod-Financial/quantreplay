@@ -4,5 +4,13 @@ databaseChangeLog:
       file: schema/changelog.yml
       relativeToChangelogFile: true
   - include:
-      file: sample-data/changelog.yml
+      context: "schema"
+      file: sample-data/common/changelog.yml
+      relativeToChangelogFile: true
+  - include:
+      context: "schema AND demo"
+      file: sample-data/demo/changelog.yml
+      relativeToChangelogFile: true
+  - include:
+      file: schema/v14/changelog.yml
       relativeToChangelogFile: true

@@ -188,6 +188,7 @@ auto Server::Implementation::setup_handler(
   auto setting_controller =
       std::make_shared<SettingController>(setting_accessor);
 
+  auto generator_controller = std::make_shared<GeneratorControllerImpl>();
   auto trading_controller = std::make_shared<TradingControllerImpl>();
 
   auto venue_accessor =
@@ -205,6 +206,9 @@ auto Server::Implementation::setup_handler(
 
   auto app_controller = std::make_unique<AppControllerImpl>(
       venue_accessor, config_provider->venue_id(), std::move(callbacks));
+
+  auto quote_controller = std::make_shared<QuoteControllerImpl>(
+      redirector, config_provider->venue_id());
 
   fix_session_controller_ = std::make_shared<FixSessionControllerImpl>(
       std::make_shared<data_bridge::DataLayerFixSessionAccessor>(database),
@@ -227,8 +231,10 @@ auto Server::Implementation::setup_handler(
   auto post_processor =
       std::make_shared<PostProcessorImpl>(redirector,
                                           datasource_controller,
+                                          std::move(generator_controller),
                                           listing_controller,
                                           price_seed_controller,
+                                          std::move(quote_controller),
                                           setting_controller,
                                           trading_controller,
                                           venue_controller,

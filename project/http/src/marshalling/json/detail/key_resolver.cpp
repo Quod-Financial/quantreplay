@@ -123,10 +123,10 @@ auto KeyResolver::resolve_key(data_layer::Listing::Attribute attribute)
       return listing_key::RandomQtyMaximum;
     case data_layer::Listing::Attribute::RandomDepthLevels:
       return listing_key::RandomDepthLevels;
-    case data_layer::Listing::Attribute::RandomOrdersSpread:
-      return listing_key::RandomOrdersSpread;
-    case data_layer::Listing::Attribute::RandomOrdersRate:
-      return listing_key::RandomOrdersRate;
+    case data_layer::Listing::Attribute::RandomPriceSpread:
+      return listing_key::RandomPriceSpread;
+    case data_layer::Listing::Attribute::RandomUpdateRate:
+      return listing_key::RandomUpdateRate;
     case data_layer::Listing::Attribute::RandomTickRange:
       return listing_key::RandomTickRange;
     case data_layer::Listing::Attribute::SecurityExchange:
@@ -153,8 +153,8 @@ auto KeyResolver::resolve_key(data_layer::Listing::Attribute attribute)
       return listing_key::RandomAmtMinimum;
     case data_layer::Listing::Attribute::RandomAmtMaximum:
       return listing_key::RandomAmtMaximum;
-    case data_layer::Listing::Attribute::RandomOrdersEnabled:
-      return listing_key::RandomOrdersEnabled;
+    case data_layer::Listing::Attribute::RandomActionsEnabled:
+      return listing_key::RandomActionsEnabled;
     case data_layer::Listing::Attribute::RandomAggressiveQtyMinimum:
       return listing_key::RandomAggressiveQtyMinimum;
     case data_layer::Listing::Attribute::RandomAggressiveQtyMaximum:
@@ -165,6 +165,8 @@ auto KeyResolver::resolve_key(data_layer::Listing::Attribute attribute)
       return listing_key::RandomAggressiveAmtMaximum;
     case data_layer::Listing::Attribute::RandomPriceExcludeCurrentListing:
       return listing_key::RandomPriceExcludeCurrentListing;
+    case data_layer::Listing::Attribute::EngineType:
+      return listing_key::EngineType;
   }
 
   raise_bad_attribute_error("Listing", attribute);
@@ -254,8 +256,6 @@ auto KeyResolver::resolve_key(data_layer::Venue::Attribute attribute)
       return venue_key::VenueId;
     case data_layer::Venue::Attribute::Name:
       return venue_key::Name;
-    case data_layer::Venue::Attribute::EngineType:
-      return venue_key::EngineType;
     case data_layer::Venue::Attribute::SupportTifIoc:
       return venue_key::SupportTifIoc;
     case data_layer::Venue::Attribute::SupportTifFok:
@@ -266,8 +266,8 @@ auto KeyResolver::resolve_key(data_layer::Venue::Attribute attribute)
       return venue_key::IncludeOwnOrders;
     case data_layer::Venue::Attribute::RestPort:
       return venue_key::RestPort;
-    case data_layer::Venue::Attribute::OrderOnStartup:
-      return venue_key::OrderOnStartup;
+    case data_layer::Venue::Attribute::GenerateActionsOnStartup:
+      return venue_key::GenerateActionsOnStartup;
     case data_layer::Venue::Attribute::RandomPartiesCount:
       return venue_key::RandomPartiesCount;
     case data_layer::Venue::Attribute::TnsEnabled:

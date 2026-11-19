@@ -1,0 +1,121 @@
+databaseChangeLog:
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_v14_table_listing_1
+      labels: schema,v14
+      comment: Rename listing.random_orders_enabled column to random_actions_enabled
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_orders_enabled
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: random_actions_enabled
+      changes:
+        - renameColumn:
+            tableName: listing
+            oldColumnName: random_orders_enabled
+            newColumnName: random_actions_enabled
+            columnDataType: bool
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_v14_table_listing_2
+      labels: schema,v14
+      comment: Rename listing.random_orders_spread column to random_price_spread
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_orders_spread
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: random_price_spread
+      changes:
+        - renameColumn:
+            tableName: listing
+            oldColumnName: random_orders_spread
+            newColumnName: random_price_spread
+            columnDataType: float(4)
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_v14_table_listing_3
+      labels: schema,v14
+      comment: Rename listing.random_orders_rate column to random_update_rate
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: random_orders_rate
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: random_update_rate
+      changes:
+        - renameColumn:
+            tableName: listing
+            oldColumnName: random_orders_rate
+            newColumnName: random_update_rate
+            columnDataType: int
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_v14_table_listing_4
+      labels: schema,v14
+      comment: Move venue.engine_type to listing.engine_type, defaulting to Matching
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - tableExists:
+            tableName: venue
+        - columnExists:
+            tableName: venue
+            columnName: engine_type
+        - not:
+            - columnExists:
+                tableName: listing
+                columnName: engine_type
+      changes:
+        - addColumn:
+            tableName: listing
+            columns:
+              - column:
+                  name: engine_type
+                  type: text
+        - update:
+            tableName: listing
+            columns:
+              - column:
+                  name: engine_type
+                  valueComputed: COALESCE((SELECT venue.engine_type FROM venue WHERE venue.venue_id = listing.venue_id), 'Matching')
+
+  - changeSet:
+      author: kbahatki
+      id: market_simulator_schema_v14_table_listing_6
+      labels: schema,v14
+      comment: Add NOT NULL constraint listing_engine_type_not_null on listing.engine_type
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: listing
+        - columnExists:
+            tableName: listing
+            columnName: engine_type
+      changes:
+        - addNotNullConstraint:
+            constraintName: listing_engine_type_not_null
+            tableName: listing
+            columnName: engine_type
+            columnDataType: text
+            validate: true

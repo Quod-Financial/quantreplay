@@ -9,8 +9,10 @@
 
 #include "ih/controllers/app_controller.hpp"
 #include "ih/controllers/datasource_controller.hpp"
+#include "ih/controllers/generator_controller.hpp"
 #include "ih/controllers/listing_controller.hpp"
 #include "ih/controllers/price_seed_controller.hpp"
+#include "ih/controllers/quote_controller.hpp"
 #include "ih/controllers/setting_controller.hpp"
 #include "ih/controllers/trading_controller.hpp"
 #include "ih/controllers/venue_controller.hpp"
@@ -66,14 +68,20 @@ class PostProcessor {
 
   virtual auto reset_app(const Pistache::Rest::Request& request,
                          Pistache::Http::ResponseWriter response) -> void = 0;
+
+  virtual auto publish_quote(const Pistache::Rest::Request& request,
+                             Pistache::Http::ResponseWriter response)
+      -> void = 0;
 };
 
 class PostProcessorImpl : public PostProcessor {
  public:
   PostProcessorImpl(std::shared_ptr<redirect::RedirectionProcessor> redirector,
                     std::shared_ptr<DatasourceController> datasource_controller,
+                    std::shared_ptr<GeneratorController> generator_controller,
                     std::shared_ptr<ListingController> listing_controller,
                     std::shared_ptr<PriceSeedController> price_seed_controller,
+                    std::shared_ptr<QuoteController> quote_controller,
                     std::shared_ptr<SettingController> setting_controller,
                     std::shared_ptr<TradingController> trading_controller,
                     std::shared_ptr<VenueController> venue_controller,
@@ -121,6 +129,9 @@ class PostProcessorImpl : public PostProcessor {
   auto reset_app(const Pistache::Rest::Request& request,
                  Pistache::Http::ResponseWriter response) -> void override;
 
+  auto publish_quote(const Pistache::Rest::Request& request,
+                     Pistache::Http::ResponseWriter response) -> void override;
+
  private:
   static auto respond(const Pistache::Rest::Request& request,
                       Pistache::Http::ResponseWriter& response,
@@ -130,19 +141,13 @@ class PostProcessorImpl : public PostProcessor {
   auto redirect(const Pistache::Rest::Request& request,
                 const std::string& instance_id) const -> redirect::Result;
 
-  auto handle_generation_stop_request(const Pistache::Rest::Request& request,
-                                      Pistache::Http::ResponseWriter response)
-      -> void;
-
-  auto handle_generation_start_request(const Pistache::Rest::Request& request,
-                                       Pistache::Http::ResponseWriter response)
-      -> void;
-
   std::shared_ptr<redirect::RedirectionProcessor> redirector_;
 
   std::shared_ptr<DatasourceController> datasource_controller_;
+  std::shared_ptr<GeneratorController> generator_controller_;
   std::shared_ptr<ListingController> listing_controller_;
   std::shared_ptr<PriceSeedController> price_seed_controller_;
+  std::shared_ptr<QuoteController> quote_controller_;
   std::shared_ptr<SettingController> setting_controller_;
   std::shared_ptr<TradingController> trading_controller_;
   std::shared_ptr<VenueController> venue_controller_;

@@ -55,7 +55,9 @@ struct HttpListingControllerRandomPriceSource : public Test {
   }
 
   static auto make_listing(Listing::Patch patch) -> Listing {
-    return Listing::create(patch.with_venue_id(std::string{VenueId}), 42);
+    return Listing::create(patch.with_venue_id(std::string{VenueId})
+                               .with_engine_type(Listing::EngineType::Matching),
+                           42);
   }
 
   constexpr static std::uint64_t DatasourceId{24};
@@ -77,7 +79,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
   EXPECT_CALL(listings(), add).Times(0);
 
   const auto [code, content] = controller->insert_listing(
-      R"({"venueId":"LSE",)"
+      R"({"venueId":"LSE","engineType":"Matching",)"
       R"("randomPriceSources":[{"datasourceId":24,"symbol":"AAPL.OQ"}]})");
 
   EXPECT_EQ(code, Code::Bad_Request);
@@ -94,7 +96,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
   EXPECT_CALL(listings(), add).Times(0);
 
   const auto [code, content] = controller->insert_listing(
-      R"({"venueId":"LSE",)"
+      R"({"venueId":"LSE","engineType":"Matching",)"
       R"("randomPriceSources":[{"datasourceId":24,"symbol":"AAPL.OQ"}]})");
 
   EXPECT_EQ(code, Code::Internal_Server_Error);
@@ -109,7 +111,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
       .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
 
   const auto [code, content] = controller->insert_listing(
-      R"({"venueId":"LSE",)"
+      R"({"venueId":"LSE","engineType":"Matching",)"
       R"("randomPriceSources":[{"datasourceId":24,"symbol":"AAPL.OQ"}]})");
 
   EXPECT_EQ(code, Code::Created);
@@ -124,7 +126,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
       .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
 
   const auto [code, content] = controller->insert_listing(
-      R"({"venueId":"LSE",)"
+      R"({"venueId":"LSE","engineType":"Matching",)"
       R"("randomPriceSources":[{"datasourceId":24,"symbol":"AAPL.OQ"}]})");
 
   EXPECT_EQ(code, Code::Created);
@@ -137,7 +139,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
   EXPECT_CALL(listings(), add).Times(0);
 
   const auto [code, content] = controller->insert_listing(
-      R"({"venueId":"LSE",)"
+      R"({"venueId":"LSE","engineType":"Matching",)"
       R"("randomPriceSources":[{"datasourceId":24,"symbol":"AAPL.OQ"}]})");
 
   EXPECT_EQ(code, Code::Bad_Request);
@@ -153,7 +155,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
       .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
 
   const auto [code, content] = controller->insert_listing(
-      R"({"venueId":"LSE",)"
+      R"({"venueId":"LSE","engineType":"Matching",)"
       R"("randomPriceSources":[{"datasourceId":24,"symbol":"AAPL.OQ"}]})");
 
   EXPECT_EQ(code, Code::Created);
@@ -165,8 +167,8 @@ TEST_F(HttpListingControllerRandomPriceSource,
   EXPECT_CALL(listings(), add)
       .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
 
-  const auto [code, content] =
-      controller->insert_listing(R"({"venueId":"LSE","symbol":"AAPL"})");
+  const auto [code, content] = controller->insert_listing(
+      R"({"venueId":"LSE","engineType":"Matching","symbol":"AAPL"})");
 
   EXPECT_EQ(code, Code::Created);
 }
@@ -314,7 +316,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
       .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
 
   const auto [code, content] =
-      controller->insert_listing(R"({"venueId":"LSE",)"
+      controller->insert_listing(R"({"venueId":"LSE","engineType":"Matching",)"
                                  R"("randomPriceSources":[]})");
 
   EXPECT_EQ(code, Code::Created);
@@ -330,7 +332,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
   EXPECT_CALL(listings(), add).Times(0);
 
   const auto [code, content] = controller->insert_listing(
-      R"({"venueId":"LSE",)"
+      R"({"venueId":"LSE","engineType":"Matching",)"
       R"("randomPriceSources":[{"datasourceId":24,"symbol":"AAPL.OQ"},)"
       R"({"datasourceId":25,"symbol":"AAPL.N"}]})");
 
@@ -349,7 +351,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
       .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
 
   const auto [code, content] = controller->insert_listing(
-      R"({"venueId":"LSE",)"
+      R"({"venueId":"LSE","engineType":"Matching",)"
       R"("randomPriceSources":[{"datasourceId":24,"symbol":"AAPL.OQ"},)"
       R"({"datasourceId":25,"symbol":"AAPL.N"}]})");
 
@@ -365,7 +367,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
       .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
 
   const auto [code, content] = controller->insert_listing(
-      R"({"venueId":"LSE",)"
+      R"({"venueId":"LSE","engineType":"Matching",)"
       R"("randomPriceSources":[{"datasourceId":24,"symbol":"AAPL.OQ"},)"
       R"({"datasourceId":24,"symbol":"AAPL.N"}]})");
 
@@ -379,7 +381,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
       .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
 
   const auto [code, content] = controller->insert_listing(
-      R"({"venueId":"LSE",)"
+      R"({"venueId":"LSE","engineType":"Matching",)"
       R"("randomPriceSources":[{"datasourceId":null,"symbol":"MSFT"}]})");
 
   EXPECT_EQ(code, Code::Created);
@@ -409,7 +411,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
       .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
 
   const auto [code, content] = controller->insert_listing(
-      R"({"venueId":"LSE",)"
+      R"({"venueId":"LSE","engineType":"Matching",)"
       R"("randomPriceSources":[{"datasourceId":null,"symbol":"MSFT"},)"
       R"({"datasourceId":24,"symbol":"AAPL.OQ"}]})");
 
@@ -421,7 +423,8 @@ TEST_F(HttpListingControllerRandomPriceSource,
   EXPECT_CALL(listings(), add).Times(0);
 
   const auto [code, content] = controller->insert_listing(
-      R"({"venueId":"LSE","randomPriceSources":[{"datasourceId":null}]})");
+      R"({"venueId":"LSE","engineType":"Matching",)"
+      R"("randomPriceSources":[{"datasourceId":null}]})");
 
   EXPECT_EQ(code, Code::Bad_Request);
   EXPECT_THAT(content,
@@ -433,7 +436,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
   EXPECT_CALL(listings(), add).Times(0);
 
   const auto [code, content] = controller->insert_listing(
-      R"({"venueId":"LSE",)"
+      R"({"venueId":"LSE","engineType":"Matching",)"
       R"("randomPriceSources":[{"datasourceId":24,"symbol":""}]})");
 
   EXPECT_EQ(code, Code::Bad_Request);
@@ -446,7 +449,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
   EXPECT_CALL(listings(), add).Times(0);
 
   const auto [code, content] = controller->insert_listing(
-      R"({"venueId":"LSE","symbol":"MSFT",)"
+      R"({"venueId":"LSE","engineType":"Matching","symbol":"MSFT",)"
       R"("randomPriceSources":[{"datasourceId":null,"symbol":"MSFT"}]})");
 
   EXPECT_EQ(code, Code::Bad_Request);
@@ -599,6 +602,53 @@ TEST_F(HttpListingControllerRandomPriceSource,
   EXPECT_EQ(code, Code::Bad_Request);
   EXPECT_THAT(content,
               HasSubstr("must refer to a datasource on the `XETRA' venue"));
+}
+
+struct HttpListingControllerEngineType : public Test {
+  using Code = Pistache::Http::Code;
+
+  HttpListingControllerEngineType() {
+    auto accessor = std::make_unique<NiceMock<mock::ListingAccessor>>();
+    listings = accessor.get();
+    controller = std::make_unique<ListingController>(
+        std::move(accessor),
+        std::make_unique<NiceMock<mock::DatasourceAccessor>>());
+  }
+
+  NiceMock<mock::ListingAccessor>* listings = nullptr;
+  std::unique_ptr<ListingController> controller;
+};
+
+TEST_F(HttpListingControllerEngineType, RejectsInsertWithoutEngineType) {
+  EXPECT_CALL(*listings, add).Times(0);
+
+  const auto [code, content] =
+      controller->insert_listing(R"({"venueId":"LSE","symbol":"AAPL"})");
+
+  EXPECT_EQ(code, Code::Bad_Request);
+  EXPECT_EQ(content,
+            R"({"result":"engineType is required for a new listing"})");
+}
+
+TEST_F(HttpListingControllerEngineType, RejectsInsertWithNullEngineType) {
+  EXPECT_CALL(*listings, add).Times(0);
+
+  const auto [code, content] = controller->insert_listing(
+      R"({"venueId":"LSE","engineType":null,"symbol":"AAPL"})");
+
+  EXPECT_EQ(code, Code::Bad_Request);
+  EXPECT_EQ(content,
+            R"({"result":"engineType is required for a new listing"})");
+}
+
+TEST_F(HttpListingControllerEngineType, InsertsListingWithEngineType) {
+  EXPECT_CALL(*listings, add)
+      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+
+  const auto [code, content] = controller->insert_listing(
+      R"({"venueId":"LSE","engineType":"Quoting","symbol":"AAPL"})");
+
+  EXPECT_EQ(code, Code::Created);
 }
 
 // NOLINTEND(*magic-numbers*)

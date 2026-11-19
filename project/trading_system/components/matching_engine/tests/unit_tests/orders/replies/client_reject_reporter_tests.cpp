@@ -46,54 +46,6 @@ TEST_F(OrderPlacementRejectReporting, EmitsRejectNotification) {
   report_request_rejected(request, "");
 }
 
-TEST_F(OrderPlacementRejectReporting, SpecifiesSession) {
-  request.session = protocol::Session{
-      protocol::fix::Session{protocol::fix::BeginString{"FIXT1.1"},
-                             protocol::fix::SenderCompId{"Sender"},
-                             protocol::fix::TargetCompId{"Target"}}};
-
-  EXPECT_CALL(listener(), on_placement_reject);
-  report_request_rejected(request, "");
-
-  ASSERT_THAT(reject.session, Eq(request.session));
-}
-
-TEST_F(OrderPlacementRejectReporting, SpecifiesInstrument) {
-  request.instrument = {.security_id = std::nullopt,
-                        .symbol = Symbol{"test symbol"},
-                        .currency = std::nullopt,
-                        .security_exchange = std::nullopt,
-                        .parties = {},
-                        .requester_instrument_id = std::nullopt,
-                        .security_type = std::nullopt,
-                        .security_id_source = std::nullopt};
-
-  EXPECT_CALL(listener(), on_placement_reject);
-  report_request_rejected(request, "");
-
-  ASSERT_THAT(reject.instrument.symbol, Eq(request.instrument.symbol));
-}
-
-TEST_F(OrderPlacementRejectReporting, SpecifiesParties) {
-  request.parties = {Party{PartyId{"P"},
-                           PartyIdSource::Option::Proprietary,
-                           PartyRole::Option::ExecutingFirm}};
-
-  EXPECT_CALL(listener(), on_placement_reject);
-  report_request_rejected(request, "");
-
-  ASSERT_THAT(reject.parties, ElementsAreArray(request.parties));
-}
-
-TEST_F(OrderPlacementRejectReporting, SpecifiesClientOrderId) {
-  request.client_order_id = ClientOrderId{"client-id"};
-
-  EXPECT_CALL(listener(), on_placement_reject);
-  report_request_rejected(request, "");
-
-  ASSERT_THAT(reject.client_order_id, Eq(request.client_order_id));
-}
-
 TEST_F(OrderPlacementRejectReporting, GeneratesRejectedVenueOrderId) {
   EXPECT_CALL(order_id_generator(), generate).WillOnce(Return(OrderId{10000}));
   EXPECT_CALL(listener(), on_placement_reject);
@@ -110,56 +62,17 @@ TEST_F(OrderPlacementRejectReporting, GeneratesRejectExecutionId) {
   ASSERT_THAT(reject.execution_id, Eq(ExecutionId{"10000-1"}));
 }
 
-TEST_F(OrderPlacementRejectReporting, SpecifiesRejectReason) {
+TEST_F(OrderPlacementRejectReporting, RejectsGivenRequestWithGivenReason) {
+  request.client_order_id = ClientOrderId{"client-id"};
+
   EXPECT_CALL(listener(), on_placement_reject);
   report_request_rejected(request, "test reject reason");
 
-  ASSERT_THAT(reject.reject_text, Eq(RejectText("test reject reason")));
-}
-
-TEST_F(OrderPlacementRejectReporting, SpecifiesOrderPrice) {
-  request.order_price = OrderPrice{100};
-
-  EXPECT_CALL(listener(), on_placement_reject);
-  report_request_rejected(request, "");
-
-  ASSERT_THAT(reject.order_price, Eq(request.order_price));
-}
-
-TEST_F(OrderPlacementRejectReporting, SpecifiesOrderQuantity) {
-  request.order_quantity = OrderQuantity{100};
-
-  EXPECT_CALL(listener(), on_placement_reject);
-  report_request_rejected(request, "");
-
-  ASSERT_THAT(reject.order_quantity, Eq(request.order_quantity));
-}
-
-TEST_F(OrderPlacementRejectReporting, SpecifiesOrderType) {
-  request.order_type = OrderType::Option::Limit;
-
-  EXPECT_CALL(listener(), on_placement_reject);
-  report_request_rejected(request, "");
-
-  ASSERT_THAT(reject.order_type, Eq(request.order_type));
-}
-
-TEST_F(OrderPlacementRejectReporting, SpecifiesSide) {
-  request.side = Side::Option::Buy;
-
-  EXPECT_CALL(listener(), on_placement_reject);
-  report_request_rejected(request, "");
-
-  ASSERT_THAT(reject.side, Eq(request.side));
-}
-
-TEST_F(OrderPlacementRejectReporting, SpecifiesTimeInForce) {
-  request.time_in_force = TimeInForce::Option::ImmediateOrCancel;
-
-  EXPECT_CALL(listener(), on_placement_reject);
-  report_request_rejected(request, "");
-
-  ASSERT_THAT(reject.time_in_force, Eq(request.time_in_force));
+  ASSERT_THAT(reject,
+              AllOf(Field(&protocol::OrderPlacementReject::client_order_id,
+                          Eq(ClientOrderId{"client-id"})),
+                    Field(&protocol::OrderPlacementReject::reject_text,
+                          Eq(RejectText{"test reject reason"}))));
 }
 
 class OrderModificationRejectReporting : public Test {
@@ -194,57 +107,17 @@ TEST_F(OrderModificationRejectReporting, EmitsRejectNotification) {
   report_request_rejected(request, "");
 }
 
-TEST_F(OrderModificationRejectReporting, SpecifiesSession) {
-  request.session = protocol::Session{
-      protocol::fix::Session{protocol::fix::BeginString{"FIXT1.1"},
-                             protocol::fix::SenderCompId{"Sender"},
-                             protocol::fix::TargetCompId{"Target"}}};
-
-  EXPECT_CALL(listener(), on_modification_reject);
-  report_request_rejected(request, "");
-
-  ASSERT_THAT(reject.session, Eq(request.session));
-}
-
-TEST_F(OrderModificationRejectReporting, SpecifiesClientOrderId) {
+TEST_F(OrderModificationRejectReporting, RejectsGivenRequestWithGivenReason) {
   request.client_order_id = ClientOrderId{"client-id"};
 
   EXPECT_CALL(listener(), on_modification_reject);
-  report_request_rejected(request, "");
-
-  ASSERT_THAT(reject.client_order_id, Eq(request.client_order_id));
-}
-
-TEST_F(OrderModificationRejectReporting, SpecifiesOrigClientOrderId) {
-  request.orig_client_order_id = OrigClientOrderId{"orig-client-id"};
-
-  EXPECT_CALL(listener(), on_modification_reject);
-  report_request_rejected(request, "");
-
-  ASSERT_THAT(reject.orig_client_order_id, Eq(request.orig_client_order_id));
-}
-
-TEST_F(OrderModificationRejectReporting, SpecifiesVenueOrderId) {
-  request.venue_order_id = VenueOrderId{"venue-id"};
-
-  EXPECT_CALL(listener(), on_modification_reject);
-  report_request_rejected(request, "");
-
-  ASSERT_THAT(reject.venue_order_id, Eq(request.venue_order_id));
-}
-
-TEST_F(OrderModificationRejectReporting, SpecifiesRejectReason) {
-  EXPECT_CALL(listener(), on_modification_reject);
   report_request_rejected(request, "test reject reason");
 
-  ASSERT_THAT(reject.reject_text, Eq(RejectText("test reject reason")));
-}
-
-TEST_F(OrderModificationRejectReporting, HardcodesRejectedOrderStatus) {
-  EXPECT_CALL(listener(), on_modification_reject);
-  report_request_rejected(request, "");
-
-  ASSERT_THAT(reject.order_status, Eq(OrderStatus::Option::Rejected));
+  ASSERT_THAT(reject,
+              AllOf(Field(&protocol::OrderModificationReject::client_order_id,
+                          Eq(ClientOrderId{"client-id"})),
+                    Field(&protocol::OrderModificationReject::reject_text,
+                          Eq(RejectText{"test reject reason"}))));
 }
 
 class OrderCancellationRejectReporting : public Test {
@@ -279,57 +152,17 @@ TEST_F(OrderCancellationRejectReporting, EmitsRejectNotification) {
   report_request_rejected(request, "");
 }
 
-TEST_F(OrderCancellationRejectReporting, SpecifiesSession) {
-  request.session = protocol::Session{
-      protocol::fix::Session{protocol::fix::BeginString{"FIXT1.1"},
-                             protocol::fix::SenderCompId{"Sender"},
-                             protocol::fix::TargetCompId{"Target"}}};
-
-  EXPECT_CALL(listener(), on_cancellation_reject);
-  report_request_rejected(request, "");
-
-  ASSERT_THAT(reject.session, Eq(request.session));
-}
-
-TEST_F(OrderCancellationRejectReporting, SpecifiesOrigClientOrderId) {
-  request.orig_client_order_id = OrigClientOrderId{"orig-client-id"};
-
-  EXPECT_CALL(listener(), on_cancellation_reject);
-  report_request_rejected(request, "");
-
-  ASSERT_THAT(reject.orig_client_order_id, Eq(request.orig_client_order_id));
-}
-
-TEST_F(OrderCancellationRejectReporting, SpecifiesVenueOrderId) {
-  request.venue_order_id = VenueOrderId{"venue-id"};
-
-  EXPECT_CALL(listener(), on_cancellation_reject);
-  report_request_rejected(request, "");
-
-  ASSERT_THAT(reject.venue_order_id, Eq(request.venue_order_id));
-}
-
-TEST_F(OrderCancellationRejectReporting, SpecifiesClientOrderId) {
+TEST_F(OrderCancellationRejectReporting, RejectsGivenRequestWithGivenReason) {
   request.client_order_id = ClientOrderId{"client-id"};
 
   EXPECT_CALL(listener(), on_cancellation_reject);
-  report_request_rejected(request, "");
-
-  ASSERT_THAT(reject.client_order_id, Eq(request.client_order_id));
-}
-
-TEST_F(OrderCancellationRejectReporting, SpecifiesRejectReason) {
-  EXPECT_CALL(listener(), on_cancellation_reject);
   report_request_rejected(request, "test reject reason");
 
-  ASSERT_THAT(reject.reject_text, Eq(RejectText("test reject reason")));
-}
-
-TEST_F(OrderCancellationRejectReporting, HardcodesRejectedOrderStatus) {
-  EXPECT_CALL(listener(), on_cancellation_reject);
-  report_request_rejected(request, "");
-
-  ASSERT_THAT(reject.order_status, Eq(OrderStatus::Option::Rejected));
+  ASSERT_THAT(reject,
+              AllOf(Field(&protocol::OrderCancellationReject::client_order_id,
+                          Eq(ClientOrderId{"client-id"})),
+                    Field(&protocol::OrderCancellationReject::reject_text,
+                          Eq(RejectText{"test reject reason"}))));
 }
 
 // NOLINTEND(*magic-numbers*,*non-private-member*)

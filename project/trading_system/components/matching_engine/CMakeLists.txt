@@ -19,9 +19,7 @@ add_static_library(
     ih/common/events/event.hpp
     ih/common/events/event_reporter.hpp
     ih/common/events/order_book_notification.hpp
-    ih/common/validation/checker_utils.hpp
     ih/common/validation/conclusion.hpp
-    ih/common/validation/validation.hpp
     ih/dispatching/event_dispatcher.hpp
     ih/market_data/actions/market_data_recover.hpp
     ih/market_data/cache/cache_manager.hpp

@@ -1,12 +1,12 @@
-#ifndef SIMULATOR_MATCHING_ENGINE_IH_COMMON_VALIDATION_VALIDATION_HPP_
-#define SIMULATOR_MATCHING_ENGINE_IH_COMMON_VALIDATION_VALIDATION_HPP_
+#ifndef SIMULATOR_TRADING_SYSTEM_COMPONENTS_COMMON_VALIDATION_HPP_
+#define SIMULATOR_TRADING_SYSTEM_COMPONENTS_COMMON_VALIDATION_HPP_
 
 #include <functional>
 #include <memory>
 #include <optional>
 #include <string_view>
 
-namespace simulator::trading_system::matching_engine {
+namespace simulator::trading_system {
 
 template <typename T, typename Error>
 class Validation {
@@ -60,6 +60,6 @@ class Validation {
   ErrorDescriber error_describer_;
 };
 
-}  // namespace simulator::trading_system::matching_engine
+}  // namespace simulator::trading_system
 
-#endif  // SIMULATOR_MATCHING_ENGINE_IH_COMMON_VALIDATION_VALIDATION_HPP_
+#endif  // SIMULATOR_TRADING_SYSTEM_COMPONENTS_COMMON_VALIDATION_HPP_

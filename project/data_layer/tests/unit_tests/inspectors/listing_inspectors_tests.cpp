@@ -21,13 +21,15 @@ class DataLayerInspectorsListingReader : public ::testing::Test {
   using ReaderType = ListingReader<MarshallerType>;
 
   using Attribute = Listing::Attribute;
+  using EngineType = Listing::EngineType;
 
   auto marshaller() -> MarshallerType& { return marshaller_; }
 
   auto make_reader() -> ReaderType { return ReaderType{marshaller_}; }
 
   static auto make_default_patch() -> Listing::Patch {
-    return Listing::Patch{}.with_venue_id("dummy");
+    return Listing::Patch{}.with_venue_id("dummy").with_engine_type(
+        EngineType::Matching);
   }
 
  protected:
@@ -36,6 +38,9 @@ class DataLayerInspectorsListingReader : public ::testing::Test {
         .Times(AnyNumber());
 
     EXPECT_CALL(marshaller(), string(Eq(Attribute::VenueId), _))
+        .Times(AnyNumber());
+
+    EXPECT_CALL(marshaller(), engine_type(Eq(Attribute::EngineType), _))
         .Times(AnyNumber());
   }
 
@@ -183,22 +188,22 @@ TEST_F(DataLayerInspectorsListingReader, ReadsRandomDepthLevels) {
   make_reader().read(listing);
 }
 
-TEST_F(DataLayerInspectorsListingReader, ReadsRandomOrdersSpread) {
-  const auto patch = make_default_patch().with_random_orders_spread(42.42);
+TEST_F(DataLayerInspectorsListingReader, ReadsRandomPriceSpread) {
+  const auto patch = make_default_patch().with_random_price_spread(42.42);
   const auto listing = Listing::create(patch, 42);
 
   EXPECT_CALL(marshaller(),
-              real(Eq(Attribute::RandomOrdersSpread), DoubleEq(42.42)))
+              real(Eq(Attribute::RandomPriceSpread), DoubleEq(42.42)))
       .Times(1);
 
   make_reader().read(listing);
 }
 
-TEST_F(DataLayerInspectorsListingReader, ReadsRandomOrdersRate) {
-  const auto patch = make_default_patch().with_random_orders_rate(42);
+TEST_F(DataLayerInspectorsListingReader, ReadsRandomUpdateRate) {
+  const auto patch = make_default_patch().with_random_update_rate(42);
   const auto listing = Listing::create(patch, 42);
 
-  EXPECT_CALL(marshaller(), uint32(Eq(Attribute::RandomOrdersRate), Eq(42)))
+  EXPECT_CALL(marshaller(), uint32(Eq(Attribute::RandomUpdateRate), Eq(42)))
       .Times(1);
 
   make_reader().read(listing);
@@ -335,12 +340,13 @@ TEST_F(DataLayerInspectorsListingReader, ReadsRandomAmtMaximum) {
   make_reader().read(listing);
 }
 
-TEST_F(DataLayerInspectorsListingReader, ReadsRandomOrdersEnabled) {
-  const auto patch = make_default_patch().with_random_orders_enabled_flag(true);
+TEST_F(DataLayerInspectorsListingReader, ReadsRandomActionsEnabled) {
+  const auto patch =
+      make_default_patch().with_random_actions_enabled_flag(true);
   const auto listing = Listing::create(patch, 42);
 
   EXPECT_CALL(marshaller(),
-              boolean(Eq(Attribute::RandomOrdersEnabled), Eq(true)))
+              boolean(Eq(Attribute::RandomActionsEnabled), Eq(true)))
       .Times(1);
 
   make_reader().read(listing);
@@ -356,6 +362,17 @@ TEST_F(DataLayerInspectorsListingReader,
   EXPECT_CALL(
       marshaller(),
       boolean(Eq(Attribute::RandomPriceExcludeCurrentListing), Eq(true)))
+      .Times(1);
+
+  make_reader().read(listing);
+}
+
+TEST_F(DataLayerInspectorsListingReader, ReadsEngineType) {
+  const auto patch = make_default_patch().with_engine_type(EngineType::Quoting);
+  const auto listing = Listing::create(patch, 42);
+
+  EXPECT_CALL(marshaller(),
+              engine_type(Eq(Attribute::EngineType), Eq(EngineType::Quoting)))
       .Times(1);
 
   make_reader().read(listing);
@@ -415,6 +432,7 @@ class DataLayerInspectorsListingPatchReader : public ::testing::Test {
   using ReaderType = ListingPatchReader<MarshallerType>;
 
   using Attribute = Listing::Attribute;
+  using EngineType = Listing::EngineType;
 
   auto marshaller() -> MarshallerType& { return marshaller_; }
 
@@ -565,22 +583,22 @@ TEST_F(DataLayerInspectorsListingPatchReader, ReadsRandomDepthLevels) {
   make_reader().read(patch);
 }
 
-TEST_F(DataLayerInspectorsListingPatchReader, ReadsRandomOrdersSpread) {
-  patch.with_random_orders_spread(42.42);
+TEST_F(DataLayerInspectorsListingPatchReader, ReadsRandomPriceSpread) {
+  patch.with_random_price_spread(42.42);
 
   EXPECT_CALL(marshaller(),
-              optional_real(Eq(Attribute::RandomOrdersSpread),
+              optional_real(Eq(Attribute::RandomPriceSpread),
                             Optional(DoubleEq(42.42))))
       .Times(1);
 
   make_reader().read(patch);
 }
 
-TEST_F(DataLayerInspectorsListingPatchReader, ReadsRandomOrdersRate) {
-  patch.with_random_orders_rate(42);
+TEST_F(DataLayerInspectorsListingPatchReader, ReadsRandomUpdateRate) {
+  patch.with_random_update_rate(42);
 
   EXPECT_CALL(marshaller(),
-              optional_uint32(Eq(Attribute::RandomOrdersRate), Eq(42)))
+              optional_uint32(Eq(Attribute::RandomUpdateRate), Eq(42)))
       .Times(1);
 
   make_reader().read(patch);
@@ -717,21 +735,21 @@ TEST_F(DataLayerInspectorsListingPatchReader, ReadsRandomAmtMaximum) {
 }
 
 TEST_F(DataLayerInspectorsListingPatchReader,
-       SetsRandomOrdersEnabledToTrueIfItIsNull) {
-  patch.with_random_orders_enabled_flag(std::nullopt);
+       SetsRandomActionsEnabledToTrueIfItIsNull) {
+  patch.with_random_actions_enabled_flag(std::nullopt);
 
   EXPECT_CALL(marshaller(),
-              boolean(Eq(Attribute::RandomOrdersEnabled), Eq(true)))
+              boolean(Eq(Attribute::RandomActionsEnabled), Eq(true)))
       .Times(1);
 
   make_reader().read(patch);
 }
 
-TEST_F(DataLayerInspectorsListingPatchReader, ReadsRandomOrdersEnabled) {
-  patch.with_random_orders_enabled_flag(false);
+TEST_F(DataLayerInspectorsListingPatchReader, ReadsRandomActionsEnabled) {
+  patch.with_random_actions_enabled_flag(false);
 
   EXPECT_CALL(marshaller(),
-              boolean(Eq(Attribute::RandomOrdersEnabled), Eq(false)))
+              boolean(Eq(Attribute::RandomActionsEnabled), Eq(false)))
       .Times(1);
 
   make_reader().read(patch);
@@ -756,6 +774,17 @@ TEST_F(DataLayerInspectorsListingPatchReader,
   EXPECT_CALL(
       marshaller(),
       boolean(Eq(Attribute::RandomPriceExcludeCurrentListing), Eq(true)))
+      .Times(1);
+
+  make_reader().read(patch);
+}
+
+TEST_F(DataLayerInspectorsListingPatchReader, ReadsEngineType) {
+  patch.with_engine_type(EngineType::Quoting);
+
+  EXPECT_CALL(
+      marshaller(),
+      optional_engine_type(Eq(Attribute::EngineType), Eq(EngineType::Quoting)))
       .Times(1);
 
   make_reader().read(patch);
@@ -811,6 +840,7 @@ class DataLayerInspectorsListingPatchWriter : public ::testing::Test {
   using WriterType = ListingPatchWriter<UnmarshallerType>;
 
   using Attribute = Listing::Attribute;
+  using EngineType = Listing::EngineType;
 
   auto unmarshaller() -> UnmarshallerType& { return unmarshaller_; }
 
@@ -853,6 +883,10 @@ class DataLayerInspectorsListingPatchWriter : public ::testing::Test {
         .WillRepeatedly(Return(false));
 
     EXPECT_CALL(unmarshaller(), optional_uint64)
+        .Times(AnyNumber())
+        .WillRepeatedly(Return(false));
+
+    EXPECT_CALL(unmarshaller(), optional_engine_type)
         .Times(AnyNumber())
         .WillRepeatedly(Return(false));
   }
@@ -1064,42 +1098,41 @@ TEST_F(DataLayerInspectorsListingPatchWriter, WritesRandomDepthLevels) {
               IsPatchFieldWithValue(Optional(Eq(42))));
 }
 
-TEST_F(DataLayerInspectorsListingPatchWriter, WritesRandomOrdersSpreadNull) {
+TEST_F(DataLayerInspectorsListingPatchWriter, WritesRandomPriceSpreadNull) {
   EXPECT_CALL(unmarshaller(),
-              optional_real(Eq(Attribute::RandomOrdersSpread), _))
+              optional_real(Eq(Attribute::RandomPriceSpread), _))
       .WillOnce(DoAll(SetArgReferee<1>(std::nullopt), Return(true)));
 
   make_writer().write(patch);
-  EXPECT_THAT(patch.random_orders_spread(),
-              IsPatchFieldWithValue(std::nullopt));
+  EXPECT_THAT(patch.random_price_spread(), IsPatchFieldWithValue(std::nullopt));
 }
 
-TEST_F(DataLayerInspectorsListingPatchWriter, WritesRandomOrdersSpread) {
+TEST_F(DataLayerInspectorsListingPatchWriter, WritesRandomPriceSpread) {
   EXPECT_CALL(unmarshaller(),
-              optional_real(Eq(Attribute::RandomOrdersSpread), _))
+              optional_real(Eq(Attribute::RandomPriceSpread), _))
       .WillOnce(DoAll(SetArgReferee<1>(42.42), Return(true)));
 
   make_writer().write(patch);
-  EXPECT_THAT(patch.random_orders_spread(),
+  EXPECT_THAT(patch.random_price_spread(),
               IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
 }
 
-TEST_F(DataLayerInspectorsListingPatchWriter, WritesRandomOrdersRateNull) {
+TEST_F(DataLayerInspectorsListingPatchWriter, WritesRandomUpdateRateNull) {
   EXPECT_CALL(unmarshaller(),
-              optional_uint32(Eq(Attribute::RandomOrdersRate), _))
+              optional_uint32(Eq(Attribute::RandomUpdateRate), _))
       .WillOnce(DoAll(SetArgReferee<1>(std::nullopt), Return(true)));
 
   make_writer().write(patch);
-  EXPECT_THAT(patch.random_orders_rate(), IsPatchFieldWithValue(std::nullopt));
+  EXPECT_THAT(patch.random_update_rate(), IsPatchFieldWithValue(std::nullopt));
 }
 
-TEST_F(DataLayerInspectorsListingPatchWriter, WritesRandomOrdersRate) {
+TEST_F(DataLayerInspectorsListingPatchWriter, WritesRandomUpdateRate) {
   EXPECT_CALL(unmarshaller(),
-              optional_uint32(Eq(Attribute::RandomOrdersRate), _))
+              optional_uint32(Eq(Attribute::RandomUpdateRate), _))
       .WillOnce(DoAll(SetArgReferee<1>(42), Return(true)));
 
   make_writer().write(patch);
-  EXPECT_THAT(patch.random_orders_rate(),
+  EXPECT_THAT(patch.random_update_rate(),
               IsPatchFieldWithValue(Optional(Eq(42))));
 }
 
@@ -1326,23 +1359,23 @@ TEST_F(DataLayerInspectorsListingPatchWriter, WritesRandomAmtMaximum) {
               IsPatchFieldWithValue(Optional(DoubleEq(42.42))));
 }
 
-TEST_F(DataLayerInspectorsListingPatchWriter, WritesRandomOrdersEnabledNull) {
+TEST_F(DataLayerInspectorsListingPatchWriter, WritesRandomActionsEnabledNull) {
   EXPECT_CALL(unmarshaller(),
-              optional_boolean(Eq(Attribute::RandomOrdersEnabled), _))
+              optional_boolean(Eq(Attribute::RandomActionsEnabled), _))
       .WillOnce(DoAll(SetArgReferee<1>(std::nullopt), Return(true)));
 
   make_writer().write(patch);
-  EXPECT_THAT(patch.random_orders_enabled_flag(),
+  EXPECT_THAT(patch.random_actions_enabled_flag(),
               IsPatchFieldWithValue(std::nullopt));
 }
 
-TEST_F(DataLayerInspectorsListingPatchWriter, WritesRandomOrdersEnabled) {
+TEST_F(DataLayerInspectorsListingPatchWriter, WritesRandomActionsEnabled) {
   EXPECT_CALL(unmarshaller(),
-              optional_boolean(Eq(Attribute::RandomOrdersEnabled), _))
+              optional_boolean(Eq(Attribute::RandomActionsEnabled), _))
       .WillOnce(DoAll(SetArgReferee<1>(false), Return(true)));
 
   make_writer().write(patch);
-  EXPECT_THAT(patch.random_orders_enabled_flag(),
+  EXPECT_THAT(patch.random_actions_enabled_flag(),
               IsPatchFieldWithValue(Optional(Eq(false))));
 }
 
@@ -1368,6 +1401,27 @@ TEST_F(DataLayerInspectorsListingPatchWriter,
   make_writer().write(patch);
   EXPECT_THAT(patch.random_price_exclude_current_listing_flag(),
               IsPatchFieldWithValue(Optional(Eq(true))));
+}
+
+TEST_F(DataLayerInspectorsListingPatchWriter, WritesEngineTypeNull) {
+  EXPECT_CALL(unmarshaller(),
+              optional_engine_type(Eq(Attribute::EngineType), _))
+      .WillOnce(DoAll(SetArgReferee<1>(std::nullopt), Return(true)));
+
+  make_writer().write(patch);
+
+  EXPECT_THAT(patch.engine_type(), IsPatchFieldWithValue(Eq(std::nullopt)));
+}
+
+TEST_F(DataLayerInspectorsListingPatchWriter, WritesEngineType) {
+  EXPECT_CALL(unmarshaller(),
+              optional_engine_type(Eq(Attribute::EngineType), _))
+      .WillOnce(DoAll(SetArgReferee<1>(EngineType::Matching), Return(true)));
+
+  make_writer().write(patch);
+
+  EXPECT_THAT(patch.engine_type(),
+              IsPatchFieldWithValue(Optional(Eq(EngineType::Matching))));
 }
 
 TEST_F(DataLayerInspectorsListingPatchWriter,

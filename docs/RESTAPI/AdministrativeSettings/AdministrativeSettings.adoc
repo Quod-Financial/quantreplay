@@ -151,16 +151,12 @@ _Resource Properties_
 
 | id	| Text	| Unique primary key
 | name	| Text	| Display name
-| engineType	| Enum	a| Indicates which type of engine we want to use for this venue (Currently only matching engine is available)
-
-* *Matching* - Matching engine
-* *Quoting* - Quote engine
 | supportTifIoc	| Boolean	| Whether IOC limit orders are supported
 | supportTifFok	| Boolean	| Whether FOK limit orders are supported
 | supportTifDay	| Boolean	| Whether Day limit orders are supported
 | includeOwnOrders	| Boolean	| Whether to include a party's own orders in published depth
 | restPort	| Integer	| The port that will be used to send REST API calls
-| orderOnStartup	| Boolean	| Whether to start generating orders when MktSimulator launched
+| generateActionsOnStartup	| Boolean	| Whether to start the automatic generator (random order generation and historical data playback) when MktSimulator launched
 | randomPartyCount	| Integer	| The amount of different counter party id's used by generator
 | timeAndSalesEnabled	| Boolean	| Whether time and sales trades should be included at all in market data updates
 | timeAndSalesQuantityEnabled	| Boolean	| Whether time and sales trades should include quantity of the trade
@@ -236,13 +232,12 @@ Content-Length: XXX
 {
     "id" : "LSE",
     "name" : "London Stock Exchange",
-    "engineType" : "Matching",
     "supportTifIoc" : true,
     "supportTifFok" : true,
     "supportTifDay" : true,
     "includeOwnOrders" : true,
     "restPort" :9184,
-    "orderOnStartup" : false,
+    "generateActionsOnStartup" : false,
     "randomPartyCount" : 10,
     "timeAndSalesEnabled" : true,
     "timeAndSalesQuantityEnabled" : true,
@@ -314,13 +309,12 @@ Content-Length: XXX
         {
             "id" : "FASTMATCH",
             "name" : "FASTMATCH",
-            "engineType" : "Quoting",
             "supportTifIoc" : true,
             "supportTifFok" : true,
             "supportTifDay" : true,
             "includeOwnOrders" : true,
             "restPort" : 9182,
-            "orderOnStartup" : false,
+            "generateActionsOnStartup" : false,
             "randomPartyCount" : 10,
             "timeAndSalesEnabled" : true,
             "timeAndSalesQuantityEnabled" : true,
@@ -334,13 +328,12 @@ Content-Length: XXX
         {
             "id" : "LSE",
             "name" : "London Stock Exchange",
-            "engineType" : 1,
             "supportTifIoc" : true,
             "supportTifFok" : true,
             "supportTifDay" : true,
             "includeOwnOrders" : true,
             "restPort" :9184,
-            "orderOnStartup" : false,
+            "generateActionsOnStartup" : false,
             "randomPartyCount" : 10,
             "timeAndSalesEnabled" : true,
             "timeAndSalesQuantityEnabled" : true,
@@ -391,14 +384,13 @@ Content-Length: XXX
 {
     "id" : "NewExchange",
     "name" : "NewExchange Description",
-    "engineType" : "Matching",
     "timeAndSalesEnabled" : false,
     "supportTifIoc" : false,
     "supportTifFok" : false,
     "supportTifDay" : false,
     "includeOwnOrders" : false,
     "restPort" : 9087,
-    "orderOnStartup" : true,
+    "generateActionsOnStartup" : true,
     "randomPartyCount" : 1
 }
 ----
@@ -449,8 +441,8 @@ Host: localhost
 Content-Length: XXX
 
 {
-    "randomOrdersRate" : 12,
-    "orderOnStartup" : true
+    "randomPartyCount" : 12,
+    "generateActionsOnStartup" : true
 }
 ----
 
@@ -498,6 +490,12 @@ _Resource Properties_
 | id	| Numeric	| Unique primary key
 | symbol	| Text	| The symbol for this listing, unique to the venue
 | venueId	| Text	| Unique venue key for this listing
+| engineType	| Enum	a| The type of engine that manages this listing. Required when a listing is added, and an update cannot remove it by setting it to null:
+
+* *Matching* - Matching engine: orders are matched in an order book
+* *Quoting* - Quoting engine: quotes published with the <<admincmds-quotes-publish,quote publication>> request are streamed to market data subscribers, see <<general-quoting,Quoting Listings>>
+
+A change takes effect on the next startup or <<admincmds-simstate-reset,reset>> of the venue instance.
 | securityType	| Text	a| Security type for this listing, possible values are:
 
 *	CS - Common Stock
@@ -553,10 +551,10 @@ Used only for passive orders if randomAggQtyMaximum and/or randomAggAmtMaximum h
 | randomAggAmtMinimum	| Decimal	| The amount used to derive the minimum quantity that can be created by the Random Order Generator for aggressive orders (uses randomAggQtyMinimum by default or if randomAggQtyMinimum has a higher value than the quantity derived from this value)
 | randomAggAmtMaximum	| Decimal	| The amount used to derive the maximum quantity that can be created by the Random Order Generator for aggressive orders (uses randomAggQtyMaximum by default or if randomAggQtyMaximum has a lower value than the quantity derived from this value)
 | randomDepthLevels	| Integer	| Maximum count of depth levels that can be created by Random Order Generator (no limit by default)
-| randomOrdersSpread	| Decimal	| The smallest top of book bid/ask price difference for prices created by the Random Order Generator (uses priceTickSize by default)
-| randomOrdersRate	| Integer	| The number of order actions (new order/modification/cancel/wait) per second during Random Order Generation
+| randomPriceSpread	| Decimal	| The smallest top of book bid/ask price difference for prices created by the Random Order Generator (uses priceTickSize by default)
+| randomUpdateRate	| Integer	| The number of order actions (new order/modification/cancel/wait) per second during Random Order Generation
 | randomTickRange	| Integer	| Range of price ticks used to calculate prices created by the Random Order Generator (10 by default)
-| randomOrdersEnabled	| Boolean	| Indicates if the Random Order Generator has to generate random orders on a listing
+| randomActionsEnabled	| Boolean	| Indicates if the Random Order Generator has to generate random orders on a listing (no random actions are generated on a Quoting listing, see <<general-quoting,Quoting Listings>>)
 | randomPriceSources	| Array	| Market data of datasources, or of other listings of the same venue, used as the base price for random order generation on this listing, see <<adminsets-listings-randpricesrc,Random Price Sources Sub-List>>
 | randomPriceExcludeCurrentListing	| Boolean	| Indicates if the order book of the listing itself is excluded from the aggregation of its random price sources (false by default)
 | enabled	| Boolean	| Indicates if the listing is enabled and should be used by the Market Simulator
@@ -569,6 +567,7 @@ By default, the Random Order Generator uses the top of book of the listing itsel
 A listing can also use a base price from the market data of one or more datasources of any format, as configured in this sub-list.
 A random price source can also refer to another listing of the local venue, the venue of the listing itself, instead of a datasource:
 the prices are then taken directly from the order book of that listing on the running simulator instance, with no datasource involved.
+A random price source naming a Quoting listing of the venue is ignored, since a Quoting listing has no order book.
 The market data of these sources is then aggregated with the order book of the listing itself to determine the base price, or the order book of the listing can be excluded using the `randomPriceExcludeCurrentListing` setting.
 See <<general-randomorder-distrprice,this section>> for details of how these prices are used to derive the price for each randomly generated order.
 
@@ -625,6 +624,7 @@ Content-Length: XXX
     "id" : 1,
     "symbol" : "DE0007664005",
     "venueId" : "XETRA",
+    "engineType" : "Matching",
     "securityType" : "CS",
     "priceCurrency" : "EUR",
     "fxBaseCurrency" : "",
@@ -648,10 +648,10 @@ Content-Length: XXX
     "randomAmtMinimum" : 0.0,
     "randomAmtMaximum" : 0.0,
     "randomDepthLevels" : 7,
-    "randomOrdersSpread" : 0.01,
-    "randomOrdersRate" : 7,
+    "randomPriceSpread" : 0.01,
+    "randomUpdateRate" : 7,
     "randomTickRange" : 100,
-    "randomOrdersEnabled" : true,
+    "randomActionsEnabled" : true,
     "randomAggQtyMinimum" : 2.0,
     "randomAggQtyMaximum" : 200.0,
     "randomAggAmtMinimum" : 1000.0,
@@ -720,6 +720,7 @@ Content-Length: XXX
             "id" : 1,
             "symbol" : "DE0007664005",
             "venueId" : "XETRA",
+            "engineType" : "Matching",
             "securityType" : "CS",
             "priceCurrency" : "EUR",
             "fxBaseCurrency" : "",
@@ -742,8 +743,8 @@ Content-Length: XXX
             "randomAmtMinimum" : 0,
             "randomAmtMaximum" : 0,
             "randomDepthLevels" : 10,
-            "randomOrdersSpread" : 1,
-            "randomOrdersRate" : 1,
+            "randomPriceSpread" : 1,
+            "randomUpdateRate" : 1,
             "randomTickRange" : 10,
             "randomAggQtyMinimum" : 2.0,
             "randomAggQtyMaximum" : 200.0,
@@ -762,6 +763,7 @@ Content-Length: XXX
             "id" : 3,
             "symbol" : "EUR/USD",
             "venueId" : "FASTMATCH",
+            "engineType" : "Matching",
             "securityType" : "FXSPOT",
             "priceCurrency" : "USD",
             "fxBaseCurrency" : "EUR",
@@ -784,8 +786,8 @@ Content-Length: XXX
             "randomAmtMinimum" : 0,
             "randomAmtMaximum" : 0,
             "randomDepthLevels" : 3,
-            "randomOrdersSpread" : 1.0E-4,
-            "randomOrdersRate" : 1,
+            "randomPriceSpread" : 1.0E-4,
+            "randomUpdateRate" : 1,
             "randomTickRange" : 10,
             "randomAggQtyMinimum" : 2.0,
             "randomAggQtyMaximum" : 200.0,
@@ -819,6 +821,7 @@ Host: localhost
 {
     "symbol" : "AAPL",
     "venueId" : "XETRA",
+    "engineType" : "Matching",
     "instrSymbol" : "AAPL",
     "securityType" : "CS",
     "qtyMinimum" : 1,
@@ -828,7 +831,7 @@ Host: localhost
     "randomQtyMaximum" : 1100,
     "randomAmtMinimum" : 100,
     "randomAmtMaximum" : 2000,
-    "randomOrdersEnabled" : false,
+    "randomActionsEnabled" : false,
     "enabled" : false
 }
 ----
@@ -859,6 +862,19 @@ Content-Length: XXX
 }
 ----
 
+_Example_: Negative reply, the request has no engineType
+
+[,http]
+----
+HTTP/1.1 400 Bad Request
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "engineType is required for a new listing"
+}
+----
+
 [[adminsets-listings-update]]
 ==== Update Listing
 Update existing market simulator listing entity via ID.
@@ -879,7 +895,7 @@ Host: localhost
 
 {
     "enabled" : true,
-    "randomOrdersEnabled" : true
+    "randomActionsEnabled" : true
 }
 ----
 
@@ -906,6 +922,19 @@ Content-Length: XXX
 
 {
     "result" : "No such listing"
+}
+----
+
+_Example_: Negative reply, the request sets engineType to null
+
+[,http]
+----
+HTTP/1.1 400 Bad Request
+Connection: Close
+Content-Length: XXX
+
+{
+    "result" : "Requested operation violates data integrity constraints"
 }
 ----
 

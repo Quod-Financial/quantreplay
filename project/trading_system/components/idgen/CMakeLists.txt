@@ -19,6 +19,7 @@ add_static_library(
     include/idgen/instrument_id.hpp
     include/idgen/market_entry_id.hpp
     include/idgen/order_id.hpp
+    include/idgen/order_reject_ids.hpp
   SOURCES
     src/contexts/execution_id_context.cpp
     src/contexts/instrument_id_context.cpp
@@ -26,6 +27,7 @@ add_static_library(
     src/contexts/order_id_context.cpp
     src/generation.cpp
     src/idgen.cpp
+    src/order_reject_ids.cpp
   PUBLIC_INCLUDE_DIRECTORIES
     ${CMAKE_CURRENT_SOURCE_DIR}/include
   PRIVATE_INCLUDE_DIRECTORIES

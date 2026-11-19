@@ -11,6 +11,7 @@ add_subdirectory(components/instruments)
 add_subdirectory(components/runtime)
 add_subdirectory(components/ies)
 add_subdirectory(components/matching_engine)
+add_subdirectory(components/quoting_engine)
 
 #------------------------------------------------------------------------------#
 
@@ -67,6 +68,7 @@ add_static_library(
     ts::runtime
     ts::instruments
     ts::matching_engine
+    ts::quoting_engine
     simulator::middleware
     simulator::log
     simulator::data_layer

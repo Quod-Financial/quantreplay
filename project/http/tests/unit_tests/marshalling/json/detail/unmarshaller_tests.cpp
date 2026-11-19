@@ -7,6 +7,8 @@
 #include <stdexcept>
 #include <string>
 
+#include "data_layer/api/models/listing.hpp"
+#include "data_layer/api/models/venue.hpp"
 #include "ih/marshalling/json/detail/unmarshaller.hpp"
 #include "tests/test_utils/utils.hpp"
 
@@ -17,6 +19,7 @@ using namespace ::testing;
 
 class HttpJsonUnmarshaller : public ::testing::Test {
  public:
+  using Listing = data_layer::Listing;
   using Venue = data_layer::Venue;
   constexpr inline static auto Attribute = Venue::Attribute::VenueId;
   constexpr inline static const char* Key = "id";
@@ -484,7 +487,7 @@ TEST_F(HttpJsonUnmarshaller, ThrowsExceptionWhenUnmarshallingBoolAsEnum) {
   add_member(Key, false, document);
 
   Unmarshaller unmarshaller{document};
-  Venue::EngineType decoded{};
+  Listing::EngineType decoded{};
 
   ASSERT_THROW(unmarshaller(Attribute, decoded), std::runtime_error);
 }
@@ -495,7 +498,7 @@ TEST_F(HttpJsonUnmarshaller,
   add_member(Key, value, document);
 
   Unmarshaller unmarshaller{document};
-  Venue::EngineType decoded{};
+  Listing::EngineType decoded{};
 
   ASSERT_THROW(unmarshaller(Attribute, decoded), std::runtime_error);
 }
@@ -505,17 +508,17 @@ TEST_F(HttpJsonUnmarshaller, UnmarshallsEnumFromString) {
   add_member(Key, value, document);
 
   Unmarshaller unmarshaller{document};
-  Venue::EngineType decoded{};
+  Listing::EngineType decoded{};
 
   ASSERT_TRUE(unmarshaller(Attribute, decoded));
-  ASSERT_EQ(decoded, Venue::EngineType::Quoting);
+  ASSERT_EQ(decoded, Listing::EngineType::Quoting);
 }
 
 TEST_F(HttpJsonUnmarshaller, UnmarshallsOptionalEnumNull) {
   add_null_member(Key, document);
 
   Unmarshaller unmarshaller{document};
-  auto decoded = std::make_optional(Venue::EngineType::Matching);
+  auto decoded = std::make_optional(Listing::EngineType::Matching);
 
   ASSERT_TRUE(unmarshaller(Attribute, decoded));
   ASSERT_EQ(decoded, std::nullopt);
@@ -526,10 +529,10 @@ TEST_F(HttpJsonUnmarshaller, UnmarshallsOptionalEnumFromString) {
   add_member(Key, value, document);
 
   Unmarshaller unmarshaller{document};
-  auto decoded = std::make_optional(Venue::EngineType::Matching);
+  auto decoded = std::make_optional(Listing::EngineType::Matching);
 
   ASSERT_TRUE(unmarshaller(Attribute, decoded));
-  ASSERT_THAT(decoded, Optional(Venue::EngineType::Quoting));
+  ASSERT_THAT(decoded, Optional(Listing::EngineType::Quoting));
 }
 
 }  // namespace

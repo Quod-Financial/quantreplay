@@ -5,8 +5,8 @@
 
 #include "common/attributes.hpp"
 #include "common/instrument_state.hpp"
+#include "common/validation.hpp"
 #include "core/tools/time.hpp"
-#include "ih/common/validation/validation.hpp"
 #include "ih/orders/validation/errors.hpp"
 #include "ih/orders/validation/validator.hpp"
 #include "protocol/app/order_cancellation_request.hpp"
@@ -17,7 +17,7 @@ namespace simulator::trading_system::matching_engine::order {
 
 class ClientRequestValidator : public Validator {
   template <typename RequestType>
-  using Validation = matching_engine::Validation<RequestType, ValidationError>;
+  using Validation = trading_system::Validation<RequestType, ValidationError>;
 
  public:
   struct Config {

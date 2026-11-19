@@ -125,7 +125,8 @@ class Generator_Random_OrderGenerationAlgorithm : public testing::Test {
                              std::optional<std::uint32_t> random_depth_levels =
                                  std::nullopt) -> data_layer::Listing {
     data_layer::Listing::Patch listing_patch;
-    listing_patch.with_symbol(smbl).with_venue_id(venue);
+    listing_patch.with_symbol(smbl).with_venue_id(venue).with_engine_type(
+        data_layer::Listing::EngineType::Matching);
     if (random_depth_levels.has_value()) {
       listing_patch.with_random_depth_levels(*random_depth_levels);
     }

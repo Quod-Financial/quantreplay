@@ -32,6 +32,12 @@ struct TradingAdminRequestReceiver
               (const protocol::RecoverMarketStateRequest& request,
                protocol::RecoverMarketStateReply& reply),
               (override));
+
+  MOCK_METHOD(void,
+              process,
+              (const protocol::QuotePublicationRequest& request,
+               protocol::QuotePublicationReply& reply),
+              (override));
 };
 
 }  // namespace simulator::http::mock

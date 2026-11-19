@@ -184,6 +184,18 @@ struct TradeCondition {
                                    .plural = "TradeConditions"};
 };
 
+struct QuoteCondition {
+  using value_type = core::enumerators::QuoteCondition;
+  constexpr static core::Name name{.singular = "QuoteCondition",
+                                   .plural = "QuoteConditions"};
+};
+
+struct MdQuoteType {
+  using value_type = core::enumerators::MdQuoteType;
+  constexpr static core::Name name{.singular = "MDQuoteType",
+                                   .plural = "MDQuoteTypes"};
+};
+
 struct TradingPhase {
   using value_type = core::enumerators::TradingPhase;
   constexpr static core::Name name{.singular = "TradingPhase",
@@ -238,6 +250,10 @@ struct SecurityStatusReqId {
                                    .plural = "SecurityStatusReqIDs"};
 };
 
+struct QuoteId {
+  constexpr static core::Name name{.singular = "QuoteID", .plural = "QuoteIDs"};
+};
+
 struct SeqNum {
   using value_type = std::uint64_t;
   constexpr static core::Name name{.singular = "SeqNum", .plural = "SeqNums"};
@@ -279,6 +295,8 @@ SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, Side);
 SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, TimeInForce);
 SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, MdEntryType);
 SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, TradeCondition);
+SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, QuoteCondition);
+SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, MdQuoteType);
 SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, MdSubscriptionRequestType);
 SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, MdRejectReason);
 SIMULATOR_DECLARE_ENUMERABLE_ATTRIBUTE(simulator, MarketEntryAction);
@@ -307,6 +325,7 @@ SIMULATOR_DECLARE_ATTRIBUTE(simulator, MarketEntryId, Literal);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, BuyerId, Literal);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, SellerId, Literal);
 SIMULATOR_DECLARE_ATTRIBUTE(simulator, SecurityStatusReqId, Literal);
+SIMULATOR_DECLARE_ATTRIBUTE(simulator, QuoteId, Literal);
 
 // Derived attributes
 

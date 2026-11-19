@@ -3,10 +3,19 @@
 
 #include <memory>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include "common/instrument.hpp"
+#include "common/order_modifying_engine.hpp"
+#include "common/phase_aware_engine.hpp"
+#include "common/quote_publishing_engine.hpp"
+#include "common/state_persisting_engine.hpp"
 #include "ih/repository/trading_engines_repository.hpp"
+#include "mocks/order_modifying_engine_mock.hpp"
+#include "mocks/phase_aware_engine_mock.hpp"
+#include "mocks/quote_publishing_engine_mock.hpp"
+#include "mocks/state_persisting_engine_mock.hpp"
 #include "mocks/trading_engine_mock.hpp"
 
 namespace simulator::trading_system::test {
@@ -14,14 +23,41 @@ namespace {
 
 using namespace testing;  // NOLINT
 
+// NOLINTBEGIN(*magic-numbers*)
+
+struct PhaseAwareTradingEngineMock : TradingEngineMock, PhaseAwareEngineMock {
+  using PhaseAwareEngineMock::handle;
+  using TradingEngineMock::handle;
+};
+
+struct OrderModifyingTradingEngineMock : TradingEngineMock,
+                                         OrderModifyingEngineMock {
+  using OrderModifyingEngineMock::execute;
+  using TradingEngineMock::execute;
+};
+
+struct StatePersistingTradingEngineMock : TradingEngineMock,
+                                          StatePersistingEngineMock {};
+
+struct QuotePublishingTradingEngineMock : TradingEngineMock,
+                                          QuotePublishingEngineMock {
+  using QuotePublishingEngineMock::execute;
+  using TradingEngineMock::execute;
+};
+
 struct TradingSystemTradingEnginesRepository : public Test {
   auto add_engine(InstrumentId instrument_id) -> TradingEngine& {
-    return repository.add_engine(instrument_id,
-                                 std::make_unique<TradingEngineMock>());
+    return add_engine<TradingEngineMock>(instrument_id);
+  }
+
+  template <typename EngineType>
+  auto add_engine(InstrumentId instrument_id) -> EngineType& {
+    return repository.add_engine(instrument_id, std::make_unique<EngineType>());
   }
 
   auto add_engine(std::nullptr_t) -> TradingEngine& {
-    return repository.add_engine(InstrumentId{42}, nullptr);
+    return repository.add_engine(InstrumentId{42},
+                                 std::unique_ptr<TradingEngineMock>{});
   }
 
   TradingEnginesRepository repository;
@@ -95,6 +131,77 @@ TEST_F(TradingSystemTradingEnginesRepository, IteratesOverAllEngines) {
   ASSERT_THAT(engines_pointers,
               UnorderedElementsAre(&engine1, &engine2, &engine3));
 }
+
+TEST_F(TradingSystemTradingEnginesRepository,
+       IteratesOverPhaseAwareEnginesOnly) {
+  auto phase_aware_engine = std::make_unique<PhaseAwareTradingEngineMock>();
+  const PhaseAwareEngine* const expected_engine = phase_aware_engine.get();
+  add_engine(InstrumentId{1});
+  repository.add_engine(InstrumentId{2}, std::move(phase_aware_engine));
+
+  std::vector<const PhaseAwareEngine*> engines_pointers;
+  repository.for_each_phase_aware_engine([&](const PhaseAwareEngine& engine) {
+    engines_pointers.push_back(&engine);
+  });
+
+  ASSERT_THAT(engines_pointers, ElementsAre(expected_engine));
+}
+
+TEST_F(TradingSystemTradingEnginesRepository,
+       ProvidesNoOrderModifyingEngineForEngineThatCannotModifyOrders) {
+  add_engine(InstrumentId{1});
+
+  ASSERT_THAT(repository.find_order_modifying_engine(InstrumentId{1}),
+              IsNull());
+}
+
+TEST_F(TradingSystemTradingEnginesRepository,
+       ProvidesOrderModifyingEngineByInstrumentId) {
+  add_engine(InstrumentId{1});
+  const OrderModifyingEngine& engine =
+      add_engine<OrderModifyingTradingEngineMock>(InstrumentId{2});
+
+  ASSERT_THAT(repository.find_order_modifying_engine(InstrumentId{2}),
+              Eq(&engine));
+}
+
+TEST_F(TradingSystemTradingEnginesRepository,
+       ProvidesNoStatePersistingEngineForEngineThatPersistsNoState) {
+  add_engine(InstrumentId{1});
+
+  ASSERT_THAT(repository.find_state_persisting_engine(InstrumentId{1}),
+              IsNull());
+}
+
+TEST_F(TradingSystemTradingEnginesRepository,
+       ProvidesStatePersistingEngineByInstrumentId) {
+  add_engine(InstrumentId{1});
+  const StatePersistingEngine& engine =
+      add_engine<StatePersistingTradingEngineMock>(InstrumentId{2});
+
+  ASSERT_THAT(repository.find_state_persisting_engine(InstrumentId{2}),
+              Eq(&engine));
+}
+
+TEST_F(TradingSystemTradingEnginesRepository,
+       ProvidesNoQuotePublishingEngineForEngineThatCannotPublishQuotes) {
+  add_engine(InstrumentId{1});
+
+  ASSERT_THAT(repository.find_quote_publishing_engine(InstrumentId{1}),
+              IsNull());
+}
+
+TEST_F(TradingSystemTradingEnginesRepository,
+       ProvidesQuotePublishingEngineByInstrumentId) {
+  add_engine(InstrumentId{1});
+  const QuotePublishingEngine& engine =
+      add_engine<QuotePublishingTradingEngineMock>(InstrumentId{2});
+
+  ASSERT_THAT(repository.find_quote_publishing_engine(InstrumentId{2}),
+              Eq(&engine));
+}
+
+// NOLINTEND(*magic-numbers*)
 
 }  // namespace
 }  // namespace simulator::trading_system::test

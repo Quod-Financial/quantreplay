@@ -1,9 +1,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "ih/common/validation/validation.hpp"
+#include "common/validation.hpp"
 
-namespace simulator::trading_system::matching_engine::test {
+namespace simulator::trading_system::test {
 namespace {
 
 using namespace ::testing;
@@ -22,26 +22,26 @@ auto error_describer(Error error) -> std::string_view {
   return "unknown error";
 }
 
-struct MatchingEngineValidation : public Test {
+struct TradingSystemValidation : public Test {
   Request request;
   Validation<Request, Error> validation{request, error_describer};
 };
 
-TEST_F(MatchingEngineValidation, ThrowsExceptionWhenErrorDescriberIsEmpty) {
+TEST_F(TradingSystemValidation, ThrowsExceptionWhenErrorDescriberIsEmpty) {
   Validation<Request, Error>::ErrorDescriber empty_describer;
   ASSERT_THROW(
       (Validation<Request, Error>{Request{}, std::move(empty_describer)}),
       std::invalid_argument);
 }
 
-TEST_F(MatchingEngineValidation, ExpectCallsChecker) {
+TEST_F(TradingSystemValidation, ExpectCallsChecker) {
   MockFunction<std::optional<Error>(const Request&)> checker;
   EXPECT_CALL(checker, Call).WillOnce(Return(std::nullopt));
 
   validation.expect(checker.AsStdFunction());
 }
 
-TEST_F(MatchingEngineValidation, ExpectCallsCheckerIfPreviousCheckWasSuccess) {
+TEST_F(TradingSystemValidation, ExpectCallsCheckerIfPreviousCheckWasSuccess) {
   MockFunction<std::optional<Error>(const Request&)> failed_checker;
   EXPECT_CALL(failed_checker, Call)
       .WillOnce(Return(std::make_optional(Error::CheckFailed)));
@@ -53,18 +53,18 @@ TEST_F(MatchingEngineValidation, ExpectCallsCheckerIfPreviousCheckWasSuccess) {
       .expect(not_called_checker.AsStdFunction());
 }
 
-TEST_F(MatchingEngineValidation, ReturnsStoresRequest) {
+TEST_F(TradingSystemValidation, ReturnsStoresRequest) {
   request.field = 42;
   validation = Validation<Request, Error>{request, error_describer};
 
   ASSERT_EQ(validation.request().field, 42);
 }
 
-TEST_F(MatchingEngineValidation, IsSuccessfulByDefault) {
+TEST_F(TradingSystemValidation, IsSuccessfulByDefault) {
   ASSERT_TRUE(validation.successful());
 }
 
-TEST_F(MatchingEngineValidation, IsSuccessfulOnSuccessfulCheck) {
+TEST_F(TradingSystemValidation, IsSuccessfulOnSuccessfulCheck) {
   MockFunction<std::optional<Error>(const Request&)> successful_checker;
   EXPECT_CALL(successful_checker, Call).WillOnce(Return(std::nullopt));
 
@@ -73,7 +73,7 @@ TEST_F(MatchingEngineValidation, IsSuccessfulOnSuccessfulCheck) {
   ASSERT_TRUE(validation.successful());
 }
 
-TEST_F(MatchingEngineValidation, IsNotSuccessfulOnFailedCheck) {
+TEST_F(TradingSystemValidation, IsNotSuccessfulOnFailedCheck) {
   MockFunction<std::optional<Error>(const Request&)> failed_checker;
   EXPECT_CALL(failed_checker, Call)
       .WillOnce(Return(std::make_optional(Error::CheckFailed)));
@@ -83,11 +83,11 @@ TEST_F(MatchingEngineValidation, IsNotSuccessfulOnFailedCheck) {
   ASSERT_FALSE(validation.successful());
 }
 
-TEST_F(MatchingEngineValidation, ReturnsNoErrorByDefault) {
+TEST_F(TradingSystemValidation, ReturnsNoErrorByDefault) {
   ASSERT_EQ(validation.error(), std::nullopt);
 }
 
-TEST_F(MatchingEngineValidation, ReturnsNoErrorOnSuccessfulCheck) {
+TEST_F(TradingSystemValidation, ReturnsNoErrorOnSuccessfulCheck) {
   MockFunction<std::optional<Error>(const Request&)> successful_checker;
   EXPECT_CALL(successful_checker, Call).WillOnce(Return(std::nullopt));
 
@@ -96,7 +96,7 @@ TEST_F(MatchingEngineValidation, ReturnsNoErrorOnSuccessfulCheck) {
   ASSERT_EQ(validation.error(), std::nullopt);
 }
 
-TEST_F(MatchingEngineValidation, ReturnsErrorOnFailedCheck) {
+TEST_F(TradingSystemValidation, ReturnsErrorOnFailedCheck) {
   MockFunction<std::optional<Error>(const Request&)> failed_checker;
   EXPECT_CALL(failed_checker, Call)
       .WillOnce(Return(std::make_optional(Error::CheckFailed)));
@@ -106,11 +106,11 @@ TEST_F(MatchingEngineValidation, ReturnsErrorOnFailedCheck) {
   ASSERT_EQ(validation.error(), std::make_optional(Error::CheckFailed));
 }
 
-TEST_F(MatchingEngineValidation, ReturnsEmptyErrorDescriptionIfNoError) {
+TEST_F(TradingSystemValidation, ReturnsEmptyErrorDescriptionIfNoError) {
   ASSERT_TRUE(validation.error_description().empty());
 }
 
-TEST_F(MatchingEngineValidation, ReturnsErrorDescriptionIfError) {
+TEST_F(TradingSystemValidation, ReturnsErrorDescriptionIfError) {
   MockFunction<std::optional<Error>(const Request&)> failed_checker;
   EXPECT_CALL(failed_checker, Call)
       .WillOnce(Return(std::make_optional(Error::CheckFailed)));
@@ -121,4 +121,4 @@ TEST_F(MatchingEngineValidation, ReturnsErrorDescriptionIfError) {
 }
 
 }  // namespace
-}  // namespace simulator::trading_system::matching_engine::test
+}  // namespace simulator::trading_system::test

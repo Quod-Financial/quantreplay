@@ -10,6 +10,7 @@
 #include "ih/state_persistence/market_state_persistence_controller.hpp"
 #include "instruments/cache.hpp"
 #include "protocol/admin/market_state.hpp"
+#include "protocol/admin/quote.hpp"
 #include "protocol/admin/trading_phase.hpp"
 #include "protocol/app/market_data_request.hpp"
 #include "protocol/app/order_cancellation_request.hpp"
@@ -49,6 +50,9 @@ class TradingSystemFacade {
 
   auto execute(const protocol::RecoverMarketStateRequest& request,
                protocol::RecoverMarketStateReply& reply) -> void;
+
+  auto execute(const protocol::QuotePublicationRequest& request,
+               protocol::QuotePublicationReply& reply) -> void;
 
   auto react_on(const protocol::SessionTerminatedEvent& event) -> void;
 

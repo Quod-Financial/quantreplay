@@ -5,6 +5,7 @@
 
 #include "data_layer/api/database/context.hpp"
 #include "protocol/admin/market_state.hpp"
+#include "protocol/admin/quote.hpp"
 #include "protocol/admin/trading_phase.hpp"
 #include "protocol/app/market_data_request.hpp"
 #include "protocol/app/order_cancellation_request.hpp"
@@ -69,6 +70,10 @@ auto process(const protocol::StoreMarketStateRequest& request,
 
 auto process(const protocol::RecoverMarketStateRequest& request,
              protocol::RecoverMarketStateReply& reply,
+             System& trading_system) -> void;
+
+auto process(const protocol::QuotePublicationRequest& request,
+             protocol::QuotePublicationReply& reply,
              System& trading_system) -> void;
 
 auto react_on(const protocol::SessionTerminatedEvent& event,

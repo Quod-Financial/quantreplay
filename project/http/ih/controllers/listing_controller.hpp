@@ -46,6 +46,10 @@ class ListingController {
   enum class SourcesOrigin : std::uint8_t { Request, StoredListing };
 
   [[nodiscard]]
+  static auto new_listing_has_engine_type(
+      const data_layer::Listing::Patch& patch) -> Validation;
+
+  [[nodiscard]]
   auto validate_random_price_source(
       const data_layer::Listing::Patch& patch,
       const std::optional<data_layer::Listing>& current) const -> Validation;

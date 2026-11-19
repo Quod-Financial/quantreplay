@@ -1,5 +1,5 @@
-#ifndef SIMULATOR_MATCHING_ENGINE_IH_COMMON_VALIDATION_CHECKER_UTILS_HPP_
-#define SIMULATOR_MATCHING_ENGINE_IH_COMMON_VALIDATION_CHECKER_UTILS_HPP_
+#ifndef SIMULATOR_TRADING_SYSTEM_COMPONENTS_COMMON_CHECKER_UTILS_HPP_
+#define SIMULATOR_TRADING_SYSTEM_COMPONENTS_COMMON_CHECKER_UTILS_HPP_
 
 #include <optional>
 
@@ -7,7 +7,7 @@
 #include "core/common/meta.hpp"
 #include "core/tools/numeric.hpp"
 
-namespace simulator::trading_system::matching_engine {
+namespace simulator::trading_system {
 
 template <typename T, typename E>
 auto field_specified(std::optional<T> field, E error) -> std::optional<E> {
@@ -17,7 +17,7 @@ auto field_specified(std::optional<T> field, E error) -> std::optional<E> {
 template <core::attribute::RepresentsAttribute T, typename U, typename E>
 auto field_respects_minimum(T field, std::optional<U> minimum, E error)
     -> std::optional<E> {
-  constexpr U no_value{0};
+  const U no_value{0};
   const auto min = static_cast<double>(minimum.value_or(no_value));
   const auto value = static_cast<double>(field);
   return value >= min && value > static_cast<double>(no_value)
@@ -105,6 +105,6 @@ auto fields_respect_order(T field1, U field2, P predicate, E error)
   return std::nullopt;
 }
 
-}  // namespace simulator::trading_system::matching_engine
+}  // namespace simulator::trading_system
 
-#endif  // SIMULATOR_MATCHING_ENGINE_IH_COMMON_VALIDATION_CHECKER_UTILS_HPP_
+#endif  // SIMULATOR_TRADING_SYSTEM_COMPONENTS_COMMON_CHECKER_UTILS_HPP_

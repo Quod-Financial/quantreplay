@@ -76,8 +76,8 @@ constexpr std::string_view PriceTickSize{"priceTickSize"};
 constexpr std::string_view RandomQtyMinimum{"randomQtyMinimum"};
 constexpr std::string_view RandomQtyMaximum{"randomQtyMaximum"};
 constexpr std::string_view RandomDepthLevels{"randomDepthLevels"};
-constexpr std::string_view RandomOrdersSpread{"randomOrdersSpread"};
-constexpr std::string_view RandomOrdersRate{"randomOrdersRate"};
+constexpr std::string_view RandomPriceSpread{"randomPriceSpread"};
+constexpr std::string_view RandomUpdateRate{"randomUpdateRate"};
 constexpr std::string_view RandomTickRange{"randomTickRange"};
 constexpr std::string_view RandomAmtMinimum{"randomAmtMinimum"};
 constexpr std::string_view RandomAmtMaximum{"randomAmtMaximum"};
@@ -86,10 +86,11 @@ constexpr std::string_view RandomAggressiveQtyMaximum{"randomAggQtyMaximum"};
 constexpr std::string_view RandomAggressiveAmtMinimum{"randomAggAmtMinimum"};
 constexpr std::string_view RandomAggressiveAmtMaximum{"randomAggAmtMaximum"};
 constexpr std::string_view Enabled{"enabled"};
-constexpr std::string_view RandomOrdersEnabled{"randomOrdersEnabled"};
+constexpr std::string_view RandomActionsEnabled{"randomActionsEnabled"};
 constexpr std::string_view RandomPriceSources{"randomPriceSources"};
 constexpr std::string_view RandomPriceExcludeCurrentListing{
     "randomPriceExcludeCurrentListing"};
+constexpr std::string_view EngineType{"engineType"};
 constexpr std::string_view Listings{"listings"};
 
 }  // namespace listing_key
@@ -122,6 +123,25 @@ constexpr std::string_view PriceSeeds{"priceSeeds"};
 
 }  // namespace price_seed_key
 
+namespace quote_key {
+
+constexpr std::string_view QuoteId{"quoteId"};
+constexpr std::string_view Symbol{"symbol"};
+constexpr std::string_view VenueId{"venueId"};
+constexpr std::string_view SecurityType{"securityType"};
+constexpr std::string_view SecurityId{"securityId"};
+constexpr std::string_view SecurityIdSource{"securityIdSource"};
+constexpr std::string_view PriceCurrency{"priceCurrency"};
+constexpr std::string_view SecurityExchange{"securityExchange"};
+constexpr std::string_view PartyRole{"partyRole"};
+constexpr std::string_view PartyId{"partyId"};
+constexpr std::string_view Bids{"bids"};
+constexpr std::string_view Asks{"asks"};
+constexpr std::string_view Quantity{"quantity"};
+constexpr std::string_view Price{"price"};
+
+}  // namespace quote_key
+
 namespace setting_key {
 
 constexpr std::string_view Key{"key"};
@@ -134,13 +154,12 @@ namespace venue_key {
 
 constexpr std::string_view VenueId{"id"};
 constexpr std::string_view Name{"name"};
-constexpr std::string_view EngineType{"engineType"};
 constexpr std::string_view SupportTifIoc{"supportTifIoc"};
 constexpr std::string_view SupportTifFok{"supportTifFok"};
 constexpr std::string_view SupportTifDay{"supportTifDay"};
 constexpr std::string_view IncludeOwnOrders{"includeOwnOrders"};
 constexpr std::string_view RestPort{"restPort"};
-constexpr std::string_view OrderOnStartup{"orderOnStartup"};
+constexpr std::string_view GenerateActionsOnStartup{"generateActionsOnStartup"};
 constexpr std::string_view RandomPartiesCount{"randomPartyCount"};
 constexpr std::string_view TnsEnabled{"timeAndSalesEnabled"};
 constexpr std::string_view TnsQtyEnabled{"timeAndSalesQuantityEnabled"};

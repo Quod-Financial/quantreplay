@@ -15,7 +15,10 @@ struct GeneratorRandomMaxMktDepthSelector : public testing::Test {
   data_layer::Listing::Patch patch;
   static constexpr std::uint64_t listing_id = 42;
 
-  GeneratorRandomMaxMktDepthSelector() { patch.with_venue_id("Venue"); }
+  GeneratorRandomMaxMktDepthSelector() {
+    patch.with_venue_id("Venue").with_engine_type(
+        data_layer::Listing::EngineType::Matching);
+  }
 };
 
 TEST_F(GeneratorRandomMaxMktDepthSelector,

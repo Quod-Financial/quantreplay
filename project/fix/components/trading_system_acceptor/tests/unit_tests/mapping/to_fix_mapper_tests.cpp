@@ -1385,6 +1385,41 @@ TEST_F(AcceptorToFixMarketDataSnapshotMapping,
 }
 
 TEST_F(AcceptorToFixMarketDataSnapshotMapping,
+       MapsQuoteSpecificMarketDataEntryAttributes) {
+  reply.market_data_entries.emplace_back([] {
+    MarketDataEntry entry;
+    entry.quote_condition = QuoteCondition::Option::Open;
+    entry.quote_type = MdQuoteType::Option::Tradeable;
+    return entry;
+  }());
+
+  ToFixMapper::map(reply, fix_message, {});
+  ASSERT_THAT(get_fix_field<FIX::NoMDEntries>(fix_message), Optional(Eq(1)));
+
+  const auto& entry = fix_message.getGroupRef(1, FIX::FIELD::NoMDEntries);
+  EXPECT_THAT(get_fix_field_string<FIX::QuoteCondition>(entry),
+              Optional(Eq(FIX::QuoteCondition_OPEN_ACTIVE)));
+  EXPECT_THAT(get_fix_field<FIX::MDQuoteType>(entry),
+              Optional(Eq(FIX::MDQuoteType_TRADEABLE)));
+}
+
+TEST_F(AcceptorToFixMarketDataSnapshotMapping,
+       OmitsQuoteAttributesAbsentFromMarketDataEntry) {
+  reply.market_data_entries.emplace_back([] {
+    MarketDataEntry entry;
+    entry.type = MdEntryType::Option::Bid;
+    return entry;
+  }());
+
+  ToFixMapper::map(reply, fix_message, {});
+  ASSERT_THAT(get_fix_field<FIX::NoMDEntries>(fix_message), Optional(Eq(1)));
+
+  const auto& entry = fix_message.getGroupRef(1, FIX::FIELD::NoMDEntries);
+  EXPECT_THAT(entry.isSetField(FIX::FIELD::QuoteCondition), IsFalse());
+  EXPECT_THAT(entry.isSetField(FIX::FIELD::MDQuoteType), IsFalse());
+}
+
+TEST_F(AcceptorToFixMarketDataSnapshotMapping,
        MapsMarketPhaseFromMarketDataEntry) {
   reply.market_data_entries.emplace_back([] {
     MarketDataEntry entry;

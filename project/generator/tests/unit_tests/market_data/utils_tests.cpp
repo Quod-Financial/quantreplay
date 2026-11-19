@@ -88,7 +88,8 @@ TEST(GeneratorMarketDataSessionParsing,
 
 struct GeneratorMarketDataOrderBookPricesSelection : public Test {
   data_layer::Listing::Patch patch =
-      data_layer::Listing::Patch{}.with_venue_id("LSE");
+      data_layer::Listing::Patch{}.with_venue_id("LSE").with_engine_type(
+          data_layer::Listing::EngineType::Matching);
 
   [[nodiscard]]
   auto make_listing() const -> data_layer::Listing {
@@ -191,6 +192,7 @@ struct GeneratorMarketDataDatasourceRequirementBuilder : public Test {
     if (!patch.venue_id().has_value()) {
       patch.with_venue_id("LSE");
     }
+    patch.with_engine_type(Listing::EngineType::Matching);
     return Listing::create(std::move(patch), listing_id);
   }
 };

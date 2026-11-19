@@ -88,6 +88,14 @@ auto TradingSystemFacade::execute(
   reply.error_message = std::move(error_message);
 }
 
+auto TradingSystemFacade::execute(
+    const protocol::QuotePublicationRequest& request,
+    protocol::QuotePublicationReply& reply) -> void {
+  log::debug("trading system received {}", request);
+  execution_system_.execute_request(request, reply);
+  log::debug("trading system replies {}", reply);
+}
+
 auto TradingSystemFacade::react_on(
     const protocol::SessionTerminatedEvent& event) -> void {
   log::debug("trading system is notified about {}", event);
@@ -104,14 +112,12 @@ auto TradingSystemFacade::init_trading_engines() -> void {
   // Load all cached instruments
   std::vector<Instrument> instruments = instruments_.retrieve_instruments();
 
-  // Create a matching engine factory
   std::unique_ptr<TradingEngineFactory> engine_factory =
-      create_matching_engine_factory(config_, thread_pool_);
+      create_trading_engine_factory(config_, thread_pool_);
 
   for (auto& instrument : instruments) {
     // Add a trading engine for each instrument to the repository
-    engines_repository_.add_engine(
-        instrument, engine_factory->create_trading_engine(instrument));
+    engine_factory->create_trading_engine(instrument, engines_repository_);
   }
 
   log::debug("initialized trading engines");
@@ -132,13 +138,13 @@ auto TradingSystemFacade::launch_ies() -> void {
 }
 
 auto TradingSystemFacade::process(const event::Tick& event) -> void {
-  engines_repository_.for_each_engine(
-      [&event](TradingEngine& engine) { engine.handle(event); });
+  engines_repository_.for_each_phase_aware_engine(
+      [&event](PhaseAwareEngine& engine) { engine.handle(event); });
 }
 
 auto TradingSystemFacade::process(const event::PhaseTransition& event) -> void {
-  engines_repository_.for_each_engine(
-      [&event](TradingEngine& engine) { engine.handle(event); });
+  engines_repository_.for_each_phase_aware_engine(
+      [&event](PhaseAwareEngine& engine) { engine.handle(event); });
 }
 
 }  // namespace simulator::trading_system

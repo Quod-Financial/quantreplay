@@ -2,10 +2,34 @@
 
 #include <fmt/format.h>
 
+#include <string>
+
 #include "ih/constants.hpp"
 #include "log/logging.hpp"
 
 namespace simulator::generator {
+namespace {
+
+auto log_quoting_listing_skipped(const data_layer::Listing& listing,
+                                 const std::string& symbol) -> void {
+  if (listing.random_actions_enabled_flag().value_or(
+          data_layer::Listing::DefaultRandomActionsEnabledFlag)) {
+    log::warn(
+        "the `{}' listing (id: {}) has the Quoting engine type, which the "
+        "generator does not support, no random actions are generated for it "
+        "and no datasource is played back into it",
+        symbol,
+        listing.listing_id());
+  } else {
+    log::info(
+        "the `{}' listing (id: {}) has the Quoting engine type, which the "
+        "generator does not support, skipping it",
+        symbol,
+        listing.listing_id());
+  }
+}
+
+}  // namespace
 
 auto Validator::is_acceptable(const data_layer::Listing& listing) -> bool {
   const auto listing_id = listing.listing_id();
@@ -29,6 +53,11 @@ auto Validator::is_acceptable(const data_layer::Listing& listing) -> bool {
     return false;
   }
 
+  if (listing.engine_type() == data_layer::Listing::EngineType::Quoting) {
+    log_quoting_listing_skipped(listing, *symbol);
+    return false;
+  }
+
   return true;
 }
 
@@ -41,24 +70,22 @@ auto Validator::is_acceptable_for_random_generation(
   const auto listing_id = listing.listing_id();
   const auto& symbol = listing.symbol();
 
-  if (!listing.random_orders_enabled_flag().value_or(
-          data_layer::Listing::DefaultRandomOrdersEnabledFlag)) {
+  if (!listing.random_actions_enabled_flag().value_or(
+          data_layer::Listing::DefaultRandomActionsEnabledFlag)) {
     log::info(
         "listing '{}' (id: {}) can not be accepted for random orders "
-        "generation: random orders generation is disabled for the listing",
+        "generation: randomActionsEnabled is disabled for the listing",
         symbol,
         listing_id);
     return false;
   }
 
-  if (listing.random_orders_rate().value_or(0) <= 0) {
+  if (listing.random_update_rate().value_or(0) <= 0) {
     log::info(
         "listing '{}' (id: {}) can not be accepted for random orders "
-        "generation: random orders rate value has to be greater "
-        "than zero (0)",
+        "generation: randomUpdateRate has to be greater than zero (0)",
         symbol,
-        listing_id,
-        listing.random_orders_rate());
+        listing_id);
     return false;
   }
 

@@ -46,13 +46,14 @@ class Generator_GenerationManager : public testing::Test {
         data_layer::Venue::create(std::move(patch)));
   }
 
-  static auto make_manager(bool order_on_startup_enabled)
+  static auto make_manager(bool generate_actions_on_startup_enabled)
       -> std::shared_ptr<GenerationManager> {
     static const std::string default_venue_id{"XNSE"};
 
     data_layer::Venue::Patch patch;
     patch.with_venue_id(default_venue_id)
-        .with_orders_on_startup_flag(order_on_startup_enabled);
+        .with_generate_actions_on_startup_flag(
+            generate_actions_on_startup_enabled);
     return GenerationManager::create(
         data_layer::Venue::create(std::move(patch)));
   }
@@ -246,14 +247,14 @@ TEST_F(Generator_GenerationManager, Create) {
   EXPECT_EQ(manager->get_venue().venue_id(), venue_id);
 }
 
-TEST_F(Generator_GenerationManager, Create_OrderOnStartup_Disabled) {
+TEST_F(Generator_GenerationManager, Create_GenerateActionsOnStartup_Disabled) {
   const auto manager = make_manager(false);
   ASSERT_TRUE(manager);
 
   EXPECT_FALSE(manager->is_component_running());
 }
 
-TEST_F(Generator_GenerationManager, Create_OrderOnStartup_Enabled) {
+TEST_F(Generator_GenerationManager, Create_GenerateActionsOnStartup_Enabled) {
   const auto manager = make_manager(true);
   ASSERT_TRUE(manager);
 
