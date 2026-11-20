@@ -107,6 +107,14 @@ Conditionally required if this message is in response to a MarketDataRequest(35=
 
 | => 269 | MDEntryType | Y | Type of market data entry, see <<pretrade-messages-mdentrytypes>>.
 
+| => 278 | MDEntryID | N a| Identifier of the market data entry, unique per listing. Set when MDEntryType (269) is Bid, Offer, Market Bid, Market Offer or Trade.
+
+A Bid, Offer, Market Bid or Market Offer entry keeps its MDEntryID while its level stays in the book; in a MarketDataIncrementalRefresh (35=X), MDUpdateAction (279) = 1 (Change) and 2 (Delete) carry the MDEntryID of that level. A Trade entry receives a new MDEntryID each time it is sent.
+
+The value has the format timestamp:counter (e.g. 12346523:7): the timestamp is the Unix time in seconds at which the simulator instance started; the counter starts from 1 and is shared by all entries of a listing - it is incremented for each new level in the book and for each Trade entry.
+
+On a Quoting listing, the Bid and Offer entries receive their MDEntryID as described in <<pretrade-messages-quoting>>.
+
 | => 270 | MDEntryPx | C | Price of the Market Data Entry. Not every entry type carries a price, see <<pretrade-messages-mdentrytypes>>.
 
 | => 15 | Currency | N | Can be used to specify the currency of the quoted price.
@@ -174,10 +182,6 @@ Present only in the entries of a quote on a Quoting listing, see <<pretrade-mess
 
 Present only in the entries of a quote on a Quoting listing, see <<pretrade-messages-quoting>>.
 
-| 278 | MDEntryID | Y a| MDEntryID value is unique per Listing. This is an incrementing counter of the format timestamp:counter (e.g. 12346523:7)
-
-The timestamp component is a Unix Timestamp (Sec) that is generated when the simulator instance starts. The counter component starts from 1 and is incremented separately for each new bid and each new offer.
-
 | Component | <<common-components-std-trailer>> | Y | 
 |===
 
@@ -201,6 +205,12 @@ The timestamp component is a Unix Timestamp (Sec) that is generated when the sim
 * 2 - Delete
 
 | => 269 | MDEntryType | Y | Type of market data entry, see <<pretrade-messages-mdentrytypes>>.
+
+| => 278 | MDEntryID | N a| Identifier of the market data entry, unique per listing. Set when MDEntryType (269) is Bid, Offer, Market Bid, Market Offer or Trade.
+
+A Bid, Offer, Market Bid or Market Offer entry keeps its MDEntryID while its level stays in the book; MDUpdateAction (279) = 1 (Change) and 2 (Delete) carry the MDEntryID of that level. A Trade entry receives a new MDEntryID each time it is sent.
+
+The value has the format timestamp:counter (e.g. 12346523:7): the timestamp is the Unix time in seconds at which the simulator instance started; the counter starts from 1 and is shared by all entries of a listing - it is incremented for each new level in the book and for each Trade entry.
 
 | => 270 | MDEntryPx | C | Price of the Market Data Entry. Not every entry type carries a price, see <<pretrade-messages-mdentrytypes>>.
 
