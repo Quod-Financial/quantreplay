@@ -93,10 +93,9 @@ auto DataLayerListingAccessor::select_all() const noexcept
 }
 
 auto DataLayerListingAccessor::add(data_layer::Listing::Patch snapshot)
-    const noexcept -> tl::expected<void, Failure> {
+    const noexcept -> tl::expected<data_layer::Listing, Failure> {
   try {
-    data_layer::insert_listing(context_, std::move(snapshot));
-    return {};
+    return data_layer::insert_listing(context_, std::move(snapshot));
   } catch (const data_layer::ConnectionFailure&) {
     return tl::unexpected{Failure::DatabaseConnectionError};
   } catch (const data_layer::CardinalityViolationError&) {
@@ -123,15 +122,14 @@ auto DataLayerListingAccessor::add(data_layer::Listing::Patch snapshot)
 
 auto DataLayerListingAccessor::update(data_layer::Listing::Patch update,
                                       std::uint64_t listing_id) const noexcept
-    -> tl::expected<void, Failure> {
+    -> tl::expected<data_layer::Listing, Failure> {
   using Column = data_layer::Listing::Attribute;
   using data_layer::ListingCmp;
 
   try {
     auto pred = ListingCmp::eq(Column::ListingId, listing_id);
-    data_layer::update_one_listing(
+    return data_layer::update_one_listing(
         context_, std::move(update), std::move(pred));
-    return {};
   } catch (const data_layer::ConnectionFailure&) {
     return tl::unexpected{Failure::DatabaseConnectionError};
   } catch (const data_layer::CardinalityViolationError&) {
@@ -160,16 +158,15 @@ auto DataLayerListingAccessor::update(data_layer::Listing::Patch update,
 
 auto DataLayerListingAccessor::update(data_layer::Listing::Patch update,
                                       const std::string& symbol) const noexcept
-    -> tl::expected<void, Failure> {
+    -> tl::expected<data_layer::Listing, Failure> {
   using Column = data_layer::Listing::Attribute;
   using data_layer::ListingCmp;
 
   try {
     auto pred = ListingCmp::eq(Column::Symbol, symbol) &&
                 ListingCmp::eq(Column::VenueId, cfg::venue().name);
-    data_layer::update_one_listing(
+    return data_layer::update_one_listing(
         context_, std::move(update), std::move(pred));
-    return {};
   } catch (const data_layer::ConnectionFailure&) {
     return tl::unexpected{Failure::DatabaseConnectionError};
   } catch (const data_layer::CardinalityViolationError&) {

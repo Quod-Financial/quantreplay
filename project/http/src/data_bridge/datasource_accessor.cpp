@@ -62,10 +62,9 @@ auto DataLayerDatasourceAccessor::select_all() const noexcept
 }
 
 auto DataLayerDatasourceAccessor::add(data_layer::Datasource::Patch snapshot)
-    const noexcept -> tl::expected<void, FailureInfo> {
+    const noexcept -> tl::expected<data_layer::Datasource, FailureInfo> {
   try {
-    data_layer::insert_datasource(context_, std::move(snapshot));
-    return {};
+    return data_layer::insert_datasource(context_, std::move(snapshot));
   } catch (const data_layer::ConnectionFailure&) {
     return tl::unexpected{FailureInfo{Failure::DatabaseConnectionError, {}}};
   } catch (const data_layer::CardinalityViolationError&) {
@@ -93,15 +92,14 @@ auto DataLayerDatasourceAccessor::add(data_layer::Datasource::Patch snapshot)
 
 auto DataLayerDatasourceAccessor::update(data_layer::Datasource::Patch update,
                                          std::uint64_t datasource_id)
-    const noexcept -> tl::expected<void, FailureInfo> {
+    const noexcept -> tl::expected<data_layer::Datasource, FailureInfo> {
   using Column = data_layer::Datasource::Attribute;
   using data_layer::DatasourceCmp;
 
   try {
     auto pred = DatasourceCmp::eq(Column::DatasourceId, datasource_id);
-    auto venue = data_layer::update_one_datasource(
+    return data_layer::update_one_datasource(
         context_, std::move(update), std::move(pred));
-    return {};
   } catch (const data_layer::ConnectionFailure&) {
     return tl::unexpected{FailureInfo{Failure::DatabaseConnectionError, {}}};
   } catch (const data_layer::CardinalityViolationError&) {

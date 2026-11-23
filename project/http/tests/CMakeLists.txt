@@ -13,11 +13,13 @@ add_target_tests(
     mocks/head_processor.hpp
     mocks/listing_accessor.hpp
     mocks/post_processor.hpp
+    mocks/price_seed_accessor.hpp
     mocks/put_processor.hpp
     mocks/quote_controller.hpp
     mocks/redirection_processor.hpp
     mocks/redirector.hpp
     mocks/resolver.hpp
+    mocks/setting_accessor.hpp
     mocks/trading_admin_request_receiver.hpp
     mocks/trading_controller.hpp
     mocks/venue_accessor.hpp
@@ -28,11 +30,14 @@ add_target_tests(
   UNIT_TESTS
     unit_tests/config_provider_tests.cpp
     unit_tests/controllers/app_controller_tests.cpp
+    unit_tests/controllers/datasource_controller_tests.cpp
     unit_tests/controllers/fix_session_controller_tests.cpp
     unit_tests/controllers/generator_controller_tests.cpp
     unit_tests/controllers/listing_controller_tests.cpp
+    unit_tests/controllers/price_seed_controller_tests.cpp
     unit_tests/controllers/quote_controller_tests.cpp
     unit_tests/controllers/trading_controller_tests.cpp
+    unit_tests/controllers/venue_controller_tests.cpp
     unit_tests/headers/content_disposition_attachment_tests.cpp
     unit_tests/headers/x_api_version_tests.cpp
     unit_tests/marshalling/json/detail/enumeration_resolver_tests.cpp

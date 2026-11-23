@@ -36,17 +36,17 @@ class ListingAccessor {
 
   [[nodiscard]]
   virtual auto add(data_layer::Listing::Patch snapshot) const noexcept
-      -> tl::expected<void, Failure> = 0;
+      -> tl::expected<data_layer::Listing, Failure> = 0;
 
   [[nodiscard]]
   virtual auto update(data_layer::Listing::Patch update,
                       std::uint64_t listing_id) const noexcept
-      -> tl::expected<void, Failure> = 0;
+      -> tl::expected<data_layer::Listing, Failure> = 0;
 
   [[nodiscard]]
   virtual auto update(data_layer::Listing::Patch update,
                       const std::string& symbol) const noexcept
-      -> tl::expected<void, Failure> = 0;
+      -> tl::expected<data_layer::Listing, Failure> = 0;
 };
 
 class DataLayerListingAccessor final : public ListingAccessor {
@@ -71,17 +71,17 @@ class DataLayerListingAccessor final : public ListingAccessor {
 
   [[nodiscard]]
   auto add(data_layer::Listing::Patch snapshot) const noexcept
-      -> tl::expected<void, Failure> override;
+      -> tl::expected<data_layer::Listing, Failure> override;
 
   [[nodiscard]]
   auto update(data_layer::Listing::Patch update,
               std::uint64_t listing_id) const noexcept
-      -> tl::expected<void, Failure> override;
+      -> tl::expected<data_layer::Listing, Failure> override;
 
   [[nodiscard]]
   auto update(data_layer::Listing::Patch update,
               const std::string& symbol) const noexcept
-      -> tl::expected<void, Failure> override;
+      -> tl::expected<data_layer::Listing, Failure> override;
 
  private:
   data_layer::database::Context context_;

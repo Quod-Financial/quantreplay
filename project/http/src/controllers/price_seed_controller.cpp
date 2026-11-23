@@ -127,7 +127,8 @@ auto PriceSeedController::insert_price_seed(const std::string& body) const
   if (result) {
     log::info("successfully added a new price seed");
     code = Pistache::Http::Code::Created;
-    content = format_result_response("Successfully inserted new price seed");
+    content =
+        format_written_entity_response<json::PriceSeedMarshaller>(*result);
   } else {
     const auto failure = result.error();
     content = format_error_response(failure);
@@ -159,8 +160,8 @@ auto PriceSeedController::update_price_seed(std::uint64_t seed_id,
   auto result = seed_accessor_->update(patch, seed_id);
   if (result) {
     code = Pistache::Http::Code::Ok;
-    content = format_result_response(fmt::format(
-        "Successfully updated the price seed with {} identifier", seed_id));
+    content =
+        format_written_entity_response<json::PriceSeedMarshaller>(*result);
 
     log::info("successfully updated the price seed with `{}' identifier",
               seed_id);

@@ -61,10 +61,9 @@ auto DataLayerVenueAccessor::select_all() const noexcept
 }
 
 auto DataLayerVenueAccessor::add(data_layer::Venue::Patch snapshot)
-    const noexcept -> tl::expected<void, Failure> {
+    const noexcept -> tl::expected<data_layer::Venue, Failure> {
   try {
-    data_layer::insert_venue(context_, std::move(snapshot));
-    return {};
+    return data_layer::insert_venue(context_, std::move(snapshot));
   } catch (const data_layer::ConnectionFailure&) {
     return tl::unexpected{Failure::DatabaseConnectionError};
   } catch (const data_layer::CardinalityViolationError&) {
@@ -91,16 +90,14 @@ auto DataLayerVenueAccessor::add(data_layer::Venue::Patch snapshot)
 
 auto DataLayerVenueAccessor::update(data_layer::Venue::Patch update,
                                     const std::string& venue_id) const noexcept
-    -> tl::expected<void, Failure> {
+    -> tl::expected<data_layer::Venue, Failure> {
   using Column = data_layer::Venue::Attribute;
   using data_layer::VenueCmp;
 
   try {
     auto pred = VenueCmp::eq(Column ::VenueId, venue_id);
-    auto venue = data_layer::update_one_venue(
+    return data_layer::update_one_venue(
         context_, std::move(update), std::move(pred));
-
-    return {};
   } catch (const data_layer::ConnectionFailure&) {
     return tl::unexpected{Failure::DatabaseConnectionError};
   } catch (const data_layer::CardinalityViolationError&) {

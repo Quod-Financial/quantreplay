@@ -31,12 +31,12 @@ class VenueAccessor {
 
   [[nodiscard]]
   virtual auto add(data_layer::Venue::Patch snapshot) const noexcept
-      -> tl::expected<void, Failure> = 0;
+      -> tl::expected<data_layer::Venue, Failure> = 0;
 
   [[nodiscard]]
   virtual auto update(data_layer::Venue::Patch update,
                       const std::string& venue_id) const noexcept
-      -> tl::expected<void, Failure> = 0;
+      -> tl::expected<data_layer::Venue, Failure> = 0;
 };
 
 class DataLayerVenueAccessor final : public VenueAccessor {
@@ -57,12 +57,12 @@ class DataLayerVenueAccessor final : public VenueAccessor {
 
   [[nodiscard]]
   auto add(data_layer::Venue::Patch snapshot) const noexcept
-      -> tl::expected<void, Failure> override;
+      -> tl::expected<data_layer::Venue, Failure> override;
 
   [[nodiscard]]
   auto update(data_layer::Venue::Patch update,
               const std::string& venue_id) const noexcept
-      -> tl::expected<void, Failure> override;
+      -> tl::expected<data_layer::Venue, Failure> override;
 
  private:
   data_layer::database::Context context_;

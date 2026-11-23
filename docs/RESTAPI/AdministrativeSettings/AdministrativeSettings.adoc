@@ -395,6 +395,9 @@ Content-Length: XXX
 }
 ----
 
+The positive reply contains the venue as stored, with the default values of the properties the request omits, in the form <<adminsets-venues-get-single,Get Single Venue>> returns it: properties without a value are left out.
+If the venue is added but cannot be returned, the reply is 201 Created with an empty body, and <<adminsets-venues-get-single,Get Single Venue>> returns the venue or reports the error.
+
 _Example_: Positive reply
 
 [,http]
@@ -404,7 +407,18 @@ Connection: Keep-Alive
 Content-Length: XXX
 
 {
-    "result" : "Successfully inserted a new Venue"
+    "id" : "NewExchange",
+    "name" : "NewExchange Description",
+    "supportTifIoc" : false,
+    "supportTifFok" : false,
+    "supportTifDay" : false,
+    "includeOwnOrders" : false,
+    "restPort" : 9087,
+    "generateActionsOnStartup" : true,
+    "randomPartyCount" : 1,
+    "timeAndSalesEnabled" : false,
+    "persistenceEnabled" : false,
+    "phases" : []
 }
 ----
 
@@ -446,6 +460,9 @@ Content-Length: XXX
 }
 ----
 
+The positive reply contains the venue as stored after the update, in the form <<adminsets-venues-get-single,Get Single Venue>> returns it: properties without a value are left out.
+If the venue is updated but cannot be returned, the reply is 200 OK with an empty body, and <<adminsets-venues-get-single,Get Single Venue>> returns the venue or reports the error.
+
 _Example_: Positive reply
 
 [,http]
@@ -455,7 +472,18 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "Requested update of the venue - NewExchange"
+    "id" : "NewExchange",
+    "name" : "NewExchange Description",
+    "supportTifIoc" : false,
+    "supportTifFok" : false,
+    "supportTifDay" : false,
+    "includeOwnOrders" : false,
+    "restPort" : 9087,
+    "generateActionsOnStartup" : true,
+    "randomPartyCount" : 12,
+    "timeAndSalesEnabled" : false,
+    "persistenceEnabled" : false,
+    "phases" : []
 }
 ----
 
@@ -880,7 +908,7 @@ Host: localhost
     "securityType" : "CS",
     "qtyMinimum" : 1,
     "qtyMaximum" : 100000,
-    "randomQtyMultiple" : 1,
+    "qtyMultiple" : 1,
     "randomQtyMinimum" : 200,
     "randomQtyMaximum" : 1100,
     "randomAmtMinimum" : 100,
@@ -889,6 +917,9 @@ Host: localhost
     "enabled" : false
 }
 ----
+
+The positive reply contains the listing as stored, with the default values of the properties the request omits, in the form <<adminsets-listings-get-sgl,Get Single Listing>> returns it: properties without a value are left out.
+If the listing is added but cannot be returned, the reply is 201 Created with an empty body, and <<adminsets-listings-get-multi,Get Multiple Listings>> returns the listing or reports the error.
 
 _Example_: Positive reply
 
@@ -899,7 +930,24 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "Successfully inserted a new Listing"
+    "id" : 4,
+    "symbol" : "AAPL",
+    "venueId" : "XETRA",
+    "engineType" : "Matching",
+    "securityType" : "CS",
+    "instrSymbol" : "AAPL",
+    "qtyMinimum" : 1.0,
+    "qtyMaximum" : 100000.0,
+    "qtyMultiple" : 1.0,
+    "enabled" : false,
+    "randomQtyMinimum" : 200.0,
+    "randomQtyMaximum" : 1100.0,
+    "randomAmtMinimum" : 100.0,
+    "randomAmtMaximum" : 2000.0,
+    "randomActionsEnabled" : false,
+    "randomPriceExcludeCurrentListing" : false,
+    "randomPriceSources" : [],
+    "priceTickRanges" : []
 }
 ----
 
@@ -953,6 +1001,9 @@ Host: localhost
 }
 ----
 
+The positive reply contains the listing as stored after the update, in the form <<adminsets-listings-get-sgl,Get Single Listing>> returns it: properties without a value are left out.
+If the listing is updated but cannot be returned, the reply is 200 OK with an empty body, and <<adminsets-listings-get-sgl,Get Single Listing>> returns the listing or reports the error.
+
 _Example_: Positive reply
 
 [,http]
@@ -962,7 +1013,24 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "Requested update of the listing - AAPL"
+    "id" : 4,
+    "symbol" : "AAPL",
+    "venueId" : "XETRA",
+    "engineType" : "Matching",
+    "securityType" : "CS",
+    "instrSymbol" : "AAPL",
+    "qtyMinimum" : 1.0,
+    "qtyMaximum" : 100000.0,
+    "qtyMultiple" : 1.0,
+    "enabled" : true,
+    "randomQtyMinimum" : 200.0,
+    "randomQtyMaximum" : 1100.0,
+    "randomAmtMinimum" : 100.0,
+    "randomAmtMaximum" : 2000.0,
+    "randomActionsEnabled" : true,
+    "randomPriceExcludeCurrentListing" : false,
+    "randomPriceSources" : [],
+    "priceTickRanges" : []
 }
 ----
 
@@ -1033,7 +1101,36 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "Requested update of the listing - AAPL"
+    "id" : 4,
+    "symbol" : "AAPL",
+    "venueId" : "XETRA",
+    "engineType" : "Matching",
+    "securityType" : "CS",
+    "instrSymbol" : "AAPL",
+    "qtyMinimum" : 1.0,
+    "qtyMaximum" : 100000.0,
+    "qtyMultiple" : 2.0,
+    "enabled" : true,
+    "randomQtyMinimum" : 200.0,
+    "randomQtyMaximum" : 1100.0,
+    "randomAmtMinimum" : 100.0,
+    "randomAmtMaximum" : 2000.0,
+    "randomActionsEnabled" : true,
+    "randomPriceExcludeCurrentListing" : false,
+    "randomPriceSources" : [],
+    "priceTickRanges" : [
+        {
+            "tickSize" : 0.001,
+            "upperLimit" : 1.0
+        },
+        {
+            "tickSize" : 0.01,
+            "upperLimit" : 10.0
+        },
+        {
+            "tickSize" : 0.05
+        }
+    ]
 }
 ----
 
@@ -1422,7 +1519,10 @@ Host: localhost
 }
 ----
 
-_Example_: Positive reply
+The positive reply contains the datasource as stored, with the default values of the properties the request omits, in the form <<adminsets-data-get-sgl,Get Single Datasource>> returns it: properties without a value are left out.
+If the datasource is added but cannot be returned, the reply is 201 Created with an empty body, and <<adminsets-data-get-multi,Get Multiple Datasources>> returns the datasource or reports the error.
+
+_Example_: Positive reply to the request adding a datasource reading an external FIX market data feed
 
 [,http]
 ----
@@ -1431,7 +1531,27 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "Successfully inserted a new datasource"
+    "id" : 4,
+    "enabled" : true,
+    "name" : "XETRA-FEED",
+    "venueId" : "XETRA",
+    "connection" : "FIXT.1.1:XETRA_FEED_CLIENT->FEED_SERVER",
+    "format" : "FIX",
+    "type" : "OrderBook",
+    "repeat" : false,
+    "textDelimiter" : ",",
+    "textHeaderRow" : 0,
+    "textDataRow" : 1,
+    "maxDepthLevels" : 1,
+    "randomPriceOnly" : true,
+    "incrementalSubscriptions" : true,
+    "columnMapping" : [],
+    "listings" : [
+        {
+            "datasourceId" : 4,
+            "symbol" : "VOW"
+        }
+    ]
 }
 ----
 
@@ -1472,6 +1592,9 @@ Host: localhost
 }
 ----
 
+The positive reply contains the datasource as stored after the update, in the form <<adminsets-data-get-sgl,Get Single Datasource>> returns it: properties without a value are left out.
+If the datasource is updated but cannot be returned, the reply is 200 OK with an empty body, and <<adminsets-data-get-sgl,Get Single Datasource>> returns the datasource or reports the error.
+
 _Example_: Positive reply
 
 [,http]
@@ -1481,7 +1604,33 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "Requested update of the datasource with identifier - 1"
+    "id" : 1,
+    "enabled" : true,
+    "name" : "XETRA-3",
+    "venueId" : "XETRA",
+    "connection" : "postgresql://develop:develop@172.16.238.3:5432/simhistoricaldb",
+    "format" : "PSQL",
+    "type" : "OrderBook",
+    "repeat" : false,
+    "textDelimiter" : ",",
+    "textHeaderRow" : 0,
+    "textDataRow" : 1,
+    "tableName" : "historical_data",
+    "randomPriceOnly" : false,
+    "incrementalSubscriptions" : false,
+    "columnMapping" : [
+        {
+            "datasourceId" : 1,
+            "columnFrom" : "ReceivedTimeStamp",
+            "columnTo" : "ActionTime"
+        },
+        {
+            "datasourceId" : 1,
+            "columnFrom" : "MessageTimeStamp",
+            "columnTo" : "2"
+        }
+    ],
+    "listings" : []
 }
 ----
 
@@ -1705,6 +1854,9 @@ Host: localhost
 }
 ----
 
+The positive reply contains the price seed as stored, in the form <<adminsets-priceseeds-get-sgl,Get Single Price Seed>> returns it: properties without a value are left out.
+If the price seed is added but cannot be returned, the reply is 201 Created with an empty body, and <<adminsets-priceseeds-get-multi,Get Multiple Price Seeds>> returns the price seed or reports the error.
+
 _Example_: Positive reply
 
 [,http]
@@ -1714,7 +1866,14 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "Successfully inserted new price seed"
+    "id" : 4,
+    "symbol" : "AAPL",
+    "securityType" : "CS",
+    "priceCurrency" : "USD",
+    "instrumentSymbol" : "AAPL",
+    "midPrice" : 120.5,
+    "bidPrice" : 110.5,
+    "offerPrice" : 130.5
 }
 ----
 
@@ -1741,6 +1900,9 @@ Host: localhost
 }
 ----
 
+The positive reply contains the price seed as stored after the update, in the form <<adminsets-priceseeds-get-sgl,Get Single Price Seed>> returns it: properties without a value are left out.
+If the price seed is updated but cannot be returned, the reply is 200 OK with an empty body, and <<adminsets-priceseeds-get-sgl,Get Single Price Seed>> returns the price seed or reports the error.
+
 _Example_: Positive reply
 
 [,http]
@@ -1750,7 +1912,14 @@ Connection: Close
 Content-Length: XXX
 
 {
-    "result" : "Successfully updated the price seed with 4 identifier"
+    "id" : 4,
+    "symbol" : "AAPL",
+    "securityType" : "CS",
+    "priceCurrency" : "USD",
+    "instrumentSymbol" : "AAPL",
+    "midPrice" : 120.5,
+    "bidPrice" : 110.5,
+    "offerPrice" : 123.5
 }
 ----
 

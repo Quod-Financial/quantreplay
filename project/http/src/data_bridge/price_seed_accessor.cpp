@@ -62,10 +62,9 @@ auto DataLayerPriceSeedAccessor::select_all() const noexcept
 }
 
 auto DataLayerPriceSeedAccessor::add(data_layer::PriceSeed::Patch snapshot)
-    const noexcept -> tl::expected<void, Failure> {
+    const noexcept -> tl::expected<data_layer::PriceSeed, Failure> {
   try {
-    data_layer::insert_price_seed(context_, std::move(snapshot));
-    return {};
+    return data_layer::insert_price_seed(context_, std::move(snapshot));
   } catch (const data_layer::ConnectionFailure&) {
     return tl::unexpected{Failure::DatabaseConnectionError};
   } catch (const data_layer::CardinalityViolationError&) {
@@ -92,15 +91,14 @@ auto DataLayerPriceSeedAccessor::add(data_layer::PriceSeed::Patch snapshot)
 
 auto DataLayerPriceSeedAccessor::update(data_layer::PriceSeed::Patch update,
                                         std::uint64_t seed_id) const noexcept
-    -> tl::expected<void, Failure> {
+    -> tl::expected<data_layer::PriceSeed, Failure> {
   using Column = data_layer::PriceSeed::Attribute;
   using data_layer::PriceSeedCmp;
 
   try {
     auto pred = PriceSeedCmp::eq(Column::PriceSeedId, seed_id);
-    data_layer::update_one_price_seed(
+    return data_layer::update_one_price_seed(
         context_, std::move(update), std::move(pred));
-    return {};
   } catch (const data_layer::ConnectionFailure&) {
     return tl::unexpected{Failure::DatabaseConnectionError};
   } catch (const data_layer::CardinalityViolationError&) {

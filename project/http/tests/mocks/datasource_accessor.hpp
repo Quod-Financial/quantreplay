@@ -22,7 +22,6 @@ class DatasourceAccessor : public data_bridge::DatasourceAccessor {
  public:
   using DatasourceResult = Result<Datasource>;
   using DatasourcesResult = Result<std::vector<Datasource>>;
-  using EmptyResult = Result<void>;
 
   MOCK_METHOD(DatasourceResult,
               select_single,
@@ -31,9 +30,9 @@ class DatasourceAccessor : public data_bridge::DatasourceAccessor {
 
   MOCK_METHOD(DatasourcesResult, select_all, (), (const, noexcept, override));
 
-  MOCK_METHOD(EmptyResult, add, (Patch), (const, noexcept, override));
+  MOCK_METHOD(DatasourceResult, add, (Patch), (const, noexcept, override));
 
-  MOCK_METHOD(EmptyResult,
+  MOCK_METHOD(DatasourceResult,
               update,
               (Patch, std::uint64_t),
               (const, noexcept, override));

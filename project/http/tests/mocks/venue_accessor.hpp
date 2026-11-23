@@ -20,7 +20,6 @@ class VenueAccessor : public data_bridge::VenueAccessor {
  public:
   using VenueResult = Result<Venue>;
   using VenuesResult = Result<std::vector<Venue>>;
-  using EmptyResult = Result<void>;
 
   MOCK_METHOD(VenueResult,
               select_single,
@@ -29,9 +28,9 @@ class VenueAccessor : public data_bridge::VenueAccessor {
 
   MOCK_METHOD(VenuesResult, select_all, (), (const, noexcept, override));
 
-  MOCK_METHOD(EmptyResult, add, (Patch), (const, noexcept, override));
+  MOCK_METHOD(VenueResult, add, (Patch), (const, noexcept, override));
 
-  MOCK_METHOD(EmptyResult,
+  MOCK_METHOD(VenueResult,
               update,
               (Patch, const std::string&),
               (const, noexcept, override));

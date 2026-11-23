@@ -33,12 +33,12 @@ class DatasourceAccessor {
 
   [[nodiscard]]
   virtual auto add(data_layer::Datasource::Patch snapshot) const noexcept
-      -> tl::expected<void, FailureInfo> = 0;
+      -> tl::expected<data_layer::Datasource, FailureInfo> = 0;
 
   [[nodiscard]]
   virtual auto update(data_layer::Datasource::Patch update,
                       std::uint64_t datasource_id) const noexcept
-      -> tl::expected<void, FailureInfo> = 0;
+      -> tl::expected<data_layer::Datasource, FailureInfo> = 0;
 };
 
 class DataLayerDatasourceAccessor final : public DatasourceAccessor {
@@ -60,12 +60,12 @@ class DataLayerDatasourceAccessor final : public DatasourceAccessor {
 
   [[nodiscard]]
   auto add(data_layer::Datasource::Patch snapshot) const noexcept
-      -> tl::expected<void, FailureInfo> override;
+      -> tl::expected<data_layer::Datasource, FailureInfo> override;
 
   [[nodiscard]]
   auto update(data_layer::Datasource::Patch update,
               std::uint64_t datasource_id) const noexcept
-      -> tl::expected<void, FailureInfo> override;
+      -> tl::expected<data_layer::Datasource, FailureInfo> override;
 
  private:
   data_layer::database::Context context_;

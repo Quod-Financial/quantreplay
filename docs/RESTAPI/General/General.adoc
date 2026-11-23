@@ -93,7 +93,7 @@ Market Simulators use the POST request to add one or more new resources to the s
 
 | 200 OK | Request was successful, the response body contains the result of the action.
 
-| 201 CREATED | Request was successful, we added the new resource(s) and the response body contains the validated form of the resource(s) or the response to a complex request.
+| 201 CREATED | Request was successful, we added the new resource(s) and the response body contains the validated form of the resource(s) or the response to a complex request. The body is empty if the added resource cannot be returned.
 
 | 400 BAD REQUEST | The request failed validation, see response body for details.
 
@@ -125,7 +125,7 @@ Market Simulators use the PUT request to update one or more existing resources i
 |===
 | Status Code | Meaning
 
-| 200 OK | Request was successful, we updated the resource(s) and the response body contains the validated form of the resource(s).
+| 200 OK | Request was successful, we updated the resource(s) and the response body contains the validated form of the resource(s). The body is empty if the updated resource cannot be returned.
 
 | 204 NO CONTENT | Request was successful, we updated the resource(s) and the response body is empty.
 

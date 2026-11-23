@@ -23,7 +23,6 @@ class ListingAccessor : public data_bridge::ListingAccessor {
  public:
   using ListingResult = Result<Listing>;
   using ListingsResult = Result<std::vector<Listing>>;
-  using EmptyResult = Result<void>;
 
   MOCK_METHOD(ListingResult,
               select_single,
@@ -37,14 +36,14 @@ class ListingAccessor : public data_bridge::ListingAccessor {
 
   MOCK_METHOD(ListingsResult, select_all, (), (const, noexcept, override));
 
-  MOCK_METHOD(EmptyResult, add, (Patch), (const, noexcept, override));
+  MOCK_METHOD(ListingResult, add, (Patch), (const, noexcept, override));
 
-  MOCK_METHOD(EmptyResult,
+  MOCK_METHOD(ListingResult,
               update,
               (Patch, std::uint64_t),
               (const, noexcept, override));
 
-  MOCK_METHOD(EmptyResult,
+  MOCK_METHOD(ListingResult,
               update,
               (Patch, const std::string&),
               (const, noexcept, override));

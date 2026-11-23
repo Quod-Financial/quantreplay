@@ -111,7 +111,8 @@ auto DatasourceController::insert_datasource(const std::string& body) const
   if (result) {
     log::info("successfully added a new venue");
     code = Pistache::Http::Code::Created;
-    content = format_result_response("Successfully inserted a new datasource");
+    content =
+        format_written_entity_response<json::DatasourceMarshaller>(*result);
     return std::make_pair(code, std::move(content));
   }
 
@@ -143,9 +144,8 @@ auto DatasourceController::update_datasource(std::uint64_t datasource_id,
   auto result = data_accessor_->update(patch, datasource_id);
   if (result) {
     code = Pistache::Http::Code::Ok;
-    content = format_result_response(
-        fmt::format("Successfully updated the datasource with `{}' identifier",
-                    datasource_id));
+    content =
+        format_written_entity_response<json::DatasourceMarshaller>(*result);
 
     log::info("successfully updated the datasource with `{}' identifier",
               datasource_id);

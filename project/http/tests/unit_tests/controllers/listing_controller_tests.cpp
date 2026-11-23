@@ -5,15 +5,20 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <tl/expected.hpp>
 #include <utility>
 
 #include "data_layer/api/models/datasource.hpp"
 #include "data_layer/api/models/listing.hpp"
 #include "data_layer/api/models/listing_random_price_source.hpp"
+#include "data_layer/api/models/price_tick_range.hpp"
 #include "ih/controllers/listing_controller.hpp"
+#include "ih/data_bridge/operation_failure.hpp"
+#include "ih/marshalling/json/listing.hpp"
 #include "tests/mocks/datasource_accessor.hpp"
 #include "tests/mocks/listing_accessor.hpp"
 #include "tests/test_utils/matchers.hpp"
+#include "tests/test_utils/utils.hpp"
 
 namespace simulator::http::test {
 namespace {
@@ -22,6 +27,21 @@ using namespace ::testing;  // NOLINT
 using json::test::is_price_tick_range_patch;
 
 // NOLINTBEGIN(*magic-numbers*)
+
+[[nodiscard]]
+auto make_stored_listing() -> data_layer::Listing {
+  using data_layer::Listing;
+  return Listing::create(
+      Listing::Patch{}
+          .with_symbol("AAPL")
+          .with_venue_id("LSE")
+          .with_engine_type(Listing::EngineType::Matching)
+          .with_random_price_source(
+              data_layer::ListingRandomPriceSource::Patch{}.with_symbol("MSFT"))
+          .with_price_tick_range(
+              data_layer::PriceTickRange::Patch{}.with_tick_size(0.01)),
+      42);
+}
 
 struct HttpListingControllerRandomPriceSource : public Test {
   using Code = Pistache::Http::Code;
@@ -111,8 +131,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
   EXPECT_CALL(datasources(), select_single(Eq(DatasourceId)))
       .WillOnce(Return(
           make_datasource(Datasource::Format::Csv, std::string{VenueId})));
-  EXPECT_CALL(listings(), add)
-      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+  EXPECT_CALL(listings(), add).WillOnce(Return(make_stored_listing()));
 
   const auto [code, content] = controller->insert_listing(
       R"({"venueId":"LSE","engineType":"Matching",)"
@@ -126,8 +145,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
   EXPECT_CALL(datasources(), select_single(Eq(DatasourceId)))
       .WillOnce(Return(
           make_datasource(Datasource::Format::Postgres, std::string{VenueId})));
-  EXPECT_CALL(listings(), add)
-      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+  EXPECT_CALL(listings(), add).WillOnce(Return(make_stored_listing()));
 
   const auto [code, content] = controller->insert_listing(
       R"({"venueId":"LSE","engineType":"Matching",)"
@@ -155,8 +173,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
        InsertsListingWithFixDatasourceOfItsVenue) {
   EXPECT_CALL(datasources(), select_single(Eq(DatasourceId)))
       .WillOnce(Return(make_fix_datasource()));
-  EXPECT_CALL(listings(), add)
-      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+  EXPECT_CALL(listings(), add).WillOnce(Return(make_stored_listing()));
 
   const auto [code, content] = controller->insert_listing(
       R"({"venueId":"LSE","engineType":"Matching",)"
@@ -168,8 +185,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
 TEST_F(HttpListingControllerRandomPriceSource,
        InsertsListingWithoutRandomPriceSourcesSpecified) {
   EXPECT_CALL(datasources(), select_single).Times(0);
-  EXPECT_CALL(listings(), add)
-      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+  EXPECT_CALL(listings(), add).WillOnce(Return(make_stored_listing()));
 
   const auto [code, content] = controller->insert_listing(
       R"({"venueId":"LSE","engineType":"Matching","symbol":"AAPL"})");
@@ -255,7 +271,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
       .WillOnce(Return(
           make_datasource(Datasource::Format::Csv, std::string{VenueId})));
   EXPECT_CALL(listings(), update(_, Matcher<const std::string&>(Eq("AAPL"))))
-      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+      .WillOnce(Return(make_stored_listing()));
 
   const auto [code, content] = controller->update_listing(
       "AAPL",
@@ -290,7 +306,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
   EXPECT_CALL(datasources(), select_single(Eq(DatasourceId)))
       .WillOnce(Return(make_fix_datasource()));
   EXPECT_CALL(listings(), update(_, Matcher<const std::string&>(Eq("AAPL"))))
-      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+      .WillOnce(Return(make_stored_listing()));
 
   const auto [code, content] = controller->update_listing(
       "AAPL",
@@ -305,7 +321,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
       .Times(0);
   EXPECT_CALL(datasources(), select_single).Times(0);
   EXPECT_CALL(listings(), update(_, Matcher<const std::string&>(Eq("AAPL"))))
-      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+      .WillOnce(Return(make_stored_listing()));
 
   const auto [code, content] =
       controller->update_listing("AAPL", R"({"enabled":false})");
@@ -316,8 +332,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
 TEST_F(HttpListingControllerRandomPriceSource,
        InsertsListingWithEmptyRandomPriceSources) {
   EXPECT_CALL(datasources(), select_single).Times(0);
-  EXPECT_CALL(listings(), add)
-      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+  EXPECT_CALL(listings(), add).WillOnce(Return(make_stored_listing()));
 
   const auto [code, content] =
       controller->insert_listing(R"({"venueId":"LSE","engineType":"Matching",)"
@@ -351,8 +366,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
       .WillOnce(Return(make_fix_datasource()));
   EXPECT_CALL(datasources(), select_single(Eq(OtherDatasourceId)))
       .WillOnce(Return(make_fix_datasource()));
-  EXPECT_CALL(listings(), add)
-      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+  EXPECT_CALL(listings(), add).WillOnce(Return(make_stored_listing()));
 
   const auto [code, content] = controller->insert_listing(
       R"({"venueId":"LSE","engineType":"Matching",)"
@@ -367,8 +381,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
   EXPECT_CALL(datasources(), select_single(Eq(DatasourceId)))
       .Times(1)
       .WillOnce(Return(make_fix_datasource()));
-  EXPECT_CALL(listings(), add)
-      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+  EXPECT_CALL(listings(), add).WillOnce(Return(make_stored_listing()));
 
   const auto [code, content] = controller->insert_listing(
       R"({"venueId":"LSE","engineType":"Matching",)"
@@ -381,8 +394,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
 TEST_F(HttpListingControllerRandomPriceSource,
        InsertsListingWithLocalVenueSource) {
   EXPECT_CALL(datasources(), select_single).Times(0);
-  EXPECT_CALL(listings(), add)
-      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+  EXPECT_CALL(listings(), add).WillOnce(Return(make_stored_listing()));
 
   const auto [code, content] = controller->insert_listing(
       R"({"venueId":"LSE","engineType":"Matching",)"
@@ -398,7 +410,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
       .WillOnce(Return(make_listing(Listing::Patch{})));
   EXPECT_CALL(datasources(), select_single).Times(0);
   EXPECT_CALL(listings(), update(_, Matcher<const std::string&>(Eq("AAPL"))))
-      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+      .WillOnce(Return(make_stored_listing()));
 
   const auto [code, content] = controller->update_listing(
       "AAPL",
@@ -411,8 +423,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
        InsertsListingWithLocalVenueSourceAndDatasourceOfItsVenue) {
   EXPECT_CALL(datasources(), select_single(Eq(DatasourceId)))
       .WillOnce(Return(make_fix_datasource()));
-  EXPECT_CALL(listings(), add)
-      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+  EXPECT_CALL(listings(), add).WillOnce(Return(make_stored_listing()));
 
   const auto [code, content] = controller->insert_listing(
       R"({"venueId":"LSE","engineType":"Matching",)"
@@ -481,7 +492,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
               select_single(Matcher<const std::string&>(Eq("AAPL"))))
       .WillOnce(Return(make_listing(Listing::Patch{}.with_symbol("AAPL"))));
   EXPECT_CALL(listings(), update(_, Matcher<const std::string&>(Eq("AAPL"))))
-      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+      .WillOnce(Return(make_stored_listing()));
 
   const auto [code, content] = controller->update_listing(
       "AAPL",
@@ -520,7 +531,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
       .WillOnce(Return(make_listing(std::move(stored))));
   EXPECT_CALL(datasources(), select_single).Times(0);
   EXPECT_CALL(listings(), update(_, Matcher<const std::string&>(Eq("AAPL"))))
-      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+      .WillOnce(Return(make_stored_listing()));
 
   const auto [code, content] =
       controller->update_listing("AAPL", R"({"symbol":"MSFT"})");
@@ -561,7 +572,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
       .WillOnce(Return(make_listing(std::move(stored))));
   EXPECT_CALL(datasources(), select_single).Times(0);
   EXPECT_CALL(listings(), update(_, Matcher<const std::string&>(Eq("AAPL"))))
-      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+      .WillOnce(Return(make_stored_listing()));
 
   const auto [code, content] =
       controller->update_listing("AAPL", R"({"venueId":"XETRA"})");
@@ -581,7 +592,7 @@ TEST_F(HttpListingControllerRandomPriceSource,
       .WillOnce(Return(make_listing(std::move(stored))));
   EXPECT_CALL(datasources(), select_single).Times(0);
   EXPECT_CALL(listings(), update(_, Matcher<const std::string&>(Eq("AAPL"))))
-      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+      .WillOnce(Return(make_stored_listing()));
 
   const auto [code, content] = controller->update_listing(
       "AAPL", R"({"venueId":"LSE","enabled":false})");
@@ -646,8 +657,7 @@ TEST_F(HttpListingControllerEngineType, RejectsInsertWithNullEngineType) {
 }
 
 TEST_F(HttpListingControllerEngineType, InsertsListingWithEngineType) {
-  EXPECT_CALL(*listings, add)
-      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+  EXPECT_CALL(*listings, add).WillOnce(Return(make_stored_listing()));
 
   const auto [code, content] = controller->insert_listing(
       R"({"venueId":"LSE","engineType":"Quoting","symbol":"AAPL"})");
@@ -758,7 +768,7 @@ TEST_F(HttpListingControllerPriceTickRanges,
               add(has_price_tick_ranges(ElementsAre(
                   is_price_tick_range_patch(0.01, Optional(DoubleEq(10.0))),
                   is_price_tick_range_patch(0.1, Eq(std::nullopt))))))
-      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+      .WillOnce(Return(make_stored_listing()));
 
   const auto [code, content] = controller->insert_listing(
       insert_body(R"([{"tickSize":0.01,"upperLimit":10},{"tickSize":0.1}])"));
@@ -821,14 +831,124 @@ TEST_F(HttpListingControllerPriceTickRanges,
                  is_price_tick_range_patch(0.01, Optional(DoubleEq(10.0))),
                  is_price_tick_range_patch(0.1, Eq(std::nullopt)))),
              Matcher<const std::string&>(Eq("AAPL"))))
-      .WillOnce(Return(mock::ListingAccessor::EmptyResult{}));
+      .WillOnce(Return(make_stored_listing()));
 
   const auto [code, content] = controller->update_listing(
       "AAPL",
       update_body(R"([{"tickSize":0.01,"upperLimit":10},{"tickSize":0.1}])"));
 
   EXPECT_EQ(code, Code::Ok);
-  EXPECT_EQ(content, R"({"result":"Successfully updated the AAPL listing"})");
+}
+
+struct HttpListingControllerWriteReply : public Test {
+  using Code = Pistache::Http::Code;
+  using Listing = data_layer::Listing;
+
+  HttpListingControllerWriteReply() {
+    auto accessor = std::make_unique<NiceMock<mock::ListingAccessor>>();
+    listings = accessor.get();
+    controller = std::make_unique<ListingController>(
+        std::move(accessor),
+        std::make_unique<NiceMock<mock::DatasourceAccessor>>());
+  }
+
+  static auto make_unencodable_listing() -> Listing {
+    return Listing::create(
+        Listing::Patch{}.with_venue_id("LSE").with_engine_type(
+            util::invalid_enum_value<Listing::EngineType>()),
+        42);
+  }
+
+  NiceMock<mock::ListingAccessor>* listings = nullptr;
+  std::unique_ptr<ListingController> controller;
+};
+
+TEST_F(HttpListingControllerWriteReply, ReportsDataIntegrityViolationOnInsert) {
+  EXPECT_CALL(*listings, add)
+      .WillOnce(Return(
+          tl::unexpected{data_bridge::Failure::DataIntegrityViolationError}));
+
+  const auto [code, content] = controller->insert_listing(
+      R"({"venueId":"LSE","engineType":"Matching","symbol":"AAPL"})");
+
+  EXPECT_EQ(code, Code::Bad_Request);
+  EXPECT_EQ(
+      content,
+      R"({"result":"Requested operation violates data integrity constraints"})");
+}
+
+TEST_F(HttpListingControllerWriteReply,
+       RepliesCreatedWithEmptyBodyIfInsertedListingCanNotBeEncoded) {
+  EXPECT_CALL(*listings, add).WillOnce(Return(make_unencodable_listing()));
+
+  const auto [code, content] = controller->insert_listing(
+      R"({"venueId":"LSE","engineType":"Matching","symbol":"AAPL"})");
+
+  EXPECT_EQ(code, Code::Created);
+  EXPECT_THAT(content, IsEmpty());
+}
+
+TEST_F(HttpListingControllerWriteReply,
+       RepliesCreatedWithStoredListingOnInsert) {
+  const auto stored = make_stored_listing();
+  EXPECT_CALL(*listings, add).WillOnce(Return(stored));
+
+  const auto [code, content] = controller->insert_listing(
+      R"({"venueId":"LSE","engineType":"Matching","symbol":"AAPL"})");
+
+  EXPECT_EQ(code, Code::Created);
+  EXPECT_EQ(content, json::ListingMarshaller::marshall(stored));
+}
+
+TEST_F(HttpListingControllerWriteReply, ReportsListingNotFoundOnUpdate) {
+  EXPECT_CALL(*listings, update(_, Matcher<const std::string&>(Eq("AAPL"))))
+      .WillOnce(Return(
+          tl::unexpected{data_bridge::Failure::ResponseCardinalityError}));
+
+  const auto [code, content] =
+      controller->update_listing("AAPL", R"({"engineType":"Matching"})");
+
+  EXPECT_EQ(code, Code::Not_Found);
+  EXPECT_EQ(content,
+            R"({"result":"Can not resolve a single Listing by a given key"})");
+}
+
+TEST_F(HttpListingControllerWriteReply,
+       RepliesOkWithEmptyBodyIfUpdatedListingCanNotBeEncoded) {
+  EXPECT_CALL(*listings, update(_, Matcher<const std::string&>(Eq("AAPL"))))
+      .WillOnce(Return(make_unencodable_listing()));
+
+  const auto [code, content] =
+      controller->update_listing("AAPL", R"({"engineType":"Matching"})");
+
+  EXPECT_EQ(code, Code::Ok);
+  EXPECT_THAT(content, IsEmpty());
+}
+
+TEST_F(HttpListingControllerWriteReply,
+       RepliesOkWithAllFieldsOfStoredListingOnUpdateById) {
+  const auto stored = make_stored_listing();
+  EXPECT_CALL(*listings, update(_, Matcher<std::uint64_t>(Eq(42U))))
+      .WillOnce(Return(stored));
+
+  const auto [code, content] =
+      controller->update_listing("42", R"({"engineType":"Matching"})");
+
+  EXPECT_EQ(code, Code::Ok);
+  EXPECT_EQ(content, json::ListingMarshaller::marshall(stored));
+}
+
+TEST_F(HttpListingControllerWriteReply,
+       RepliesOkWithAllFieldsOfStoredListingOnUpdateBySymbol) {
+  const auto stored = make_stored_listing();
+  EXPECT_CALL(*listings, update(_, Matcher<const std::string&>(Eq("AAPL"))))
+      .WillOnce(Return(stored));
+
+  const auto [code, content] =
+      controller->update_listing("AAPL", R"({"engineType":"Matching"})");
+
+  EXPECT_EQ(code, Code::Ok);
+  EXPECT_EQ(content, json::ListingMarshaller::marshall(stored));
 }
 
 // NOLINTEND(*magic-numbers*)

@@ -32,12 +32,12 @@ class PriceSeedAccessor {
 
   [[nodiscard]]
   virtual auto add(data_layer::PriceSeed::Patch snapshot) const noexcept
-      -> tl::expected<void, Failure> = 0;
+      -> tl::expected<data_layer::PriceSeed, Failure> = 0;
 
   [[nodiscard]]
   virtual auto update(data_layer::PriceSeed::Patch update,
                       std::uint64_t seed_id) const noexcept
-      -> tl::expected<void, Failure> = 0;
+      -> tl::expected<data_layer::PriceSeed, Failure> = 0;
 
   [[nodiscard]]
   virtual auto drop_single(std::uint64_t seed_id) const noexcept
@@ -66,12 +66,12 @@ class DataLayerPriceSeedAccessor final : public PriceSeedAccessor {
 
   [[nodiscard]]
   auto add(data_layer::PriceSeed::Patch snapshot) const noexcept
-      -> tl::expected<void, Failure> override;
+      -> tl::expected<data_layer::PriceSeed, Failure> override;
 
   [[nodiscard]]
   auto update(data_layer::PriceSeed::Patch update,
               std::uint64_t seed_id) const noexcept
-      -> tl::expected<void, Failure> override;
+      -> tl::expected<data_layer::PriceSeed, Failure> override;
 
   [[nodiscard]]
   auto drop_single(std::uint64_t seed_id) const noexcept

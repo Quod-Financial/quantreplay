@@ -4,6 +4,7 @@
 
 #include <chrono>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -19,6 +20,7 @@ namespace simulator::http::test {
 namespace {
 
 using ::testing::HasSubstr;
+using ::testing::IsEmpty;
 using ::testing::NiceMock;
 using ::testing::ReturnRef;
 
@@ -166,6 +168,30 @@ TEST_F(FormatCurrentVenueStatus, ReturnsStatusWithFixSessions) {
   ASSERT_THAT(venue_status, HasSubstr(R"("sessions":[)"));
   ASSERT_THAT(venue_status, HasSubstr(expected_connected_session));
   ASSERT_THAT(venue_status, HasSubstr(expected_never_connected_session));
+}
+
+struct Entity {};
+
+struct EncodingMarshaller {
+  static auto marshall(const Entity& /*entity*/) -> std::string {
+    return R"({"id":"LSE"})";
+  }
+};
+
+struct FailingMarshaller {
+  static auto marshall(const Entity& /*entity*/) -> std::string {
+    throw std::logic_error{"undefined enumeration value"};
+  }
+};
+
+TEST(FormatWrittenEntityResponse, ReturnsEmptyBodyIfEntityCanNotBeMarshalled) {
+  ASSERT_THAT(format_written_entity_response<FailingMarshaller>(Entity{}),
+              IsEmpty());
+}
+
+TEST(FormatWrittenEntityResponse, ReturnsMarshalledEntity) {
+  ASSERT_EQ(format_written_entity_response<EncodingMarshaller>(Entity{}),
+            R"({"id":"LSE"})");
 }
 
 }  // namespace

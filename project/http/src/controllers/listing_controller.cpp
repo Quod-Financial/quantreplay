@@ -190,7 +190,7 @@ auto ListingController::insert_listing(const std::string& body) const
   if (result) {
     log::info("successfully added a new listing");
     code = Pistache::Http::Code::Created;
-    content = format_result_response("Successfully inserted a new Listing");
+    content = format_written_entity_response<json::ListingMarshaller>(*result);
   } else {
     const auto failure = result.error();
     content = format_error_response(failure);
@@ -259,8 +259,7 @@ auto ListingController::update_listing(const std::string& key,
 
   if (result) {
     code = Pistache::Http::Code::Ok;
-    content = format_result_response(
-        fmt::format("Successfully updated the {} listing", key));
+    content = format_written_entity_response<json::ListingMarshaller>(*result);
 
     log::info("successfully updated the listing by `{}' key", key);
   } else {

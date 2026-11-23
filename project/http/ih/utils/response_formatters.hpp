@@ -4,6 +4,7 @@
 #include <fmt/format.h>
 #include <pistache/http_defs.h>
 
+#include <exception>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -11,6 +12,7 @@
 #include "data_layer/api/models/venue.hpp"
 #include "ih/config_provider.hpp"
 #include "ih/controllers/fix_session_controller.hpp"
+#include "log/logging.hpp"
 
 namespace simulator::http {
 
@@ -24,6 +26,24 @@ inline auto format_response(std::string_view key, std::string_view msg)
 inline auto format_result_response(std::string_view result_message)
     -> std::string {
   return format_response("result", result_message);
+}
+
+template <typename Marshaller, typename Entity>
+[[nodiscard]]
+auto format_written_entity_response(const Entity& entity) -> std::string {
+  try {
+    return Marshaller::marshall(entity);
+  } catch (const std::exception& exception) {
+    log::warn(
+        "failed to marshall the written entity, replying with an empty body: "
+        "{}",
+        exception.what());
+  } catch (...) {
+    log::warn(
+        "failed to marshall the written entity, replying with an empty body: "
+        "unknown error");
+  }
+  return {};
 }
 
 // Formats the status of another simulator instance when response_code != OK.

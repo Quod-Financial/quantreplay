@@ -110,7 +110,7 @@ auto VenueController::insert_venue(const std::string& body) const -> Result {
   if (result) {
     log::info("successfully added a new venue");
     code = Pistache::Http::Code::Created;
-    content = format_result_response("Successfully inserted a new Venue");
+    content = format_written_entity_response<json::VenueMarshaller>(*result);
   } else {
     const auto failure = result.error();
     content = format_error_response(failure);
@@ -141,8 +141,7 @@ auto VenueController::update_venue(const std::string& venue_id,
   auto result = data_accessor_->update(patch, venue_id);
   if (result) {
     code = Pistache::Http::Code::Ok;
-    content = format_result_response(
-        fmt::format("Successfully updated the {} venue", venue_id));
+    content = format_written_entity_response<json::VenueMarshaller>(*result);
 
     log::info("successfully updated the venue with `{}' identifier", venue_id);
   } else {
