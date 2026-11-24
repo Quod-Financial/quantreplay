@@ -76,6 +76,10 @@ auto process(const protocol::QuotePublicationRequest& request,
              protocol::QuotePublicationReply& reply,
              System& trading_system) -> void;
 
+auto process(const protocol::QuoteCancellationRequest& request,
+             protocol::QuoteCancellationReply& reply,
+             System& trading_system) -> void;
+
 auto react_on(const protocol::SessionTerminatedEvent& event,
               System& trading_system) -> void;
 

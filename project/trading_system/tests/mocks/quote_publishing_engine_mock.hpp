@@ -10,6 +10,7 @@ namespace simulator::trading_system::test {
 struct QuotePublishingEngineMock : QuotePublishingEngine {
   // clang-format off
   MOCK_METHOD(void, execute, (const protocol::QuotePublicationRequest&, protocol::QuotePublicationReply&), (override));
+  MOCK_METHOD(void, execute, (const protocol::QuoteCancellationRequest&, protocol::QuoteCancellationReply&), (override));
   // clang-format on
 };
 

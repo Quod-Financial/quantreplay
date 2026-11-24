@@ -1,6 +1,7 @@
 #include <gmock/gmock.h>
 
 #include <memory>
+#include <tuple>
 
 #include "core/domain/attributes.hpp"
 #include "core/tools/time.hpp"
@@ -74,6 +75,63 @@ TEST_F(QuotingEngineQuoteBook, ReportsMostRecentlyPublishedQuoteAsLatest) {
               Pointee(ResultOf(
                   [](const Quote& quote) { return quote.bids; },
                   ElementsAre(Field(&PublishedLevel::price, Eq(Price{1.5}))))));
+}
+
+TEST_F(QuotingEngineQuoteBook,
+       ReportsPreviousActiveQuoteAsLatestAfterLatestQuoteIsRemoved) {
+  const QuoteId first_id = add_quote(1.25).identifier;
+  const QuoteId second_id = add_quote(1.5).identifier;
+
+  std::ignore = book.remove(second_id);
+
+  ASSERT_THAT(book.latest(), Pointee(Field(&Quote::identifier, Eq(first_id))));
+}
+
+TEST_F(QuotingEngineQuoteBook, KeepsLatestQuoteWhenEarlierQuoteIsRemoved) {
+  const QuoteId first_id = add_quote(1.25).identifier;
+  const QuoteId second_id = add_quote(1.5).identifier;
+
+  std::ignore = book.remove(first_id);
+
+  ASSERT_THAT(book.latest(), Pointee(Field(&Quote::identifier, Eq(second_id))));
+}
+
+TEST_F(QuotingEngineQuoteBook, HasNoLatestQuoteAfterOnlyQuoteIsRemoved) {
+  const QuoteId quote_id = add_quote(1.25).identifier;
+
+  std::ignore = book.remove(quote_id);
+
+  ASSERT_THAT(book.latest(), IsNull());
+}
+
+TEST_F(QuotingEngineQuoteBook, RefusesRemovalOfUnknownQuote) {
+  add_quote(1.25);
+
+  ASSERT_FALSE(book.remove(QuoteId{"unknown"}));
+}
+
+TEST_F(QuotingEngineQuoteBook, RefusesRemovalOfAlreadyRemovedQuote) {
+  const QuoteId quote_id = add_quote(1.25).identifier;
+  std::ignore = book.remove(quote_id);
+
+  ASSERT_FALSE(book.remove(quote_id));
+}
+
+TEST_F(QuotingEngineQuoteBook, ReportsRemovalOfActiveQuote) {
+  const QuoteId quote_id = add_quote(1.25).identifier;
+
+  ASSERT_TRUE(book.remove(quote_id));
+}
+
+TEST_F(QuotingEngineQuoteBook, KeepsActiveQuotesOnRemovalOfUnknownQuote) {
+  const QuoteId first_id = add_quote(1.25).identifier;
+  const QuoteId second_id = add_quote(1.5).identifier;
+
+  std::ignore = book.remove(QuoteId{"unknown"});
+
+  ASSERT_THAT(book.quotes(),
+              ElementsAre(Field(&Quote::identifier, Eq(first_id)),
+                          Field(&Quote::identifier, Eq(second_id))));
 }
 
 // NOLINTEND(*magic-numbers*)

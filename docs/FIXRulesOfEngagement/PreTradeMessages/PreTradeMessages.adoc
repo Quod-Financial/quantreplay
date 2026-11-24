@@ -330,9 +330,9 @@ A MarketDataRequest (35=V) is accepted only when:
 
 Otherwise the request is rejected with a MarketDataRequestReject (35=Y), whose Text values are listed in <<message-flows-mkt-data-quoting>>.
 
-A MarketDataSnapshotFullRefresh (35=W) of a Quoting listing holds the entries of the most recently published quote, for the requested entry types only:
+A MarketDataSnapshotFullRefresh (35=W) of a Quoting listing holds the entries of the most recently published quote that is still active, for the requested entry types only:
 
 * the Bid entries come first, followed by the Offer entries; the entries of each side keep the order in which they were published, which is not checked to be by price
 * each entry carries MDEntryType (269), MDEntryPx (270), MDEntrySize (271), MDEntryID (278), QuoteCondition (276) = A (Open / Active) and MDQuoteType (1070) = 1 (Tradeable)
 * every entry of every published quote receives a new MDEntryID (278), in the format described in <<pretrade-messages-mktdatasnapshot>>, when the quote is published; the Bid and Offer entries of a listing share one counter; the entry keeps that MDEntryID in every MarketDataSnapshotFullRefresh (35=W) carrying the quote, the initial snapshot of a later subscription included
-* when no quote has been published on the listing, the message holds no entries (NoMDEntries (268) = 0)
+* when no quote is active on the listing, because none has been published since the venue instance was started or reset, or all of them have been cancelled through the simulator REST API, the message holds no entries (NoMDEntries (268) = 0)

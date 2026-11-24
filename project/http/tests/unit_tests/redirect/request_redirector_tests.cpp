@@ -78,6 +78,14 @@ class HttpRequestRedirector : public testing::Test {
                         std::nullopt);
   }
 
+  static auto make_patch_request(Destination destination, std::string endpoint)
+      -> Request {
+    return make_request(std::move(destination),
+                        Pistache::Http::Method::Patch,
+                        std::move(endpoint),
+                        std::nullopt);
+  }
+
  protected:
   void SetUp() override {
     request_redirector_ = RequestRedirector::create();
@@ -123,8 +131,8 @@ TEST_F(HttpRequestRedirector,
 
 TEST_F(HttpRequestRedirector,
        ReturnsUnknownErrorOnRedirectingUnsupportedMethod) {
-  const auto request = make_delete_request(make_destination(server_port()),
-                                           "/test/delete/request");
+  const auto request = make_patch_request(make_destination(server_port()),
+                                          "/test/delete/request");
 
   auto [response, status] = redirect(request);
   ASSERT_EQ(status, RedirectStatus::UnknownError);
@@ -193,6 +201,19 @@ TEST_F(HttpRequestRedirector, RedirectsMethodPut) {
 
   ASSERT_TRUE(response.has_value());
   ASSERT_EQ(response->http_code(), Pistache::Http::Code::Ok);
+}
+
+TEST_F(HttpRequestRedirector, RedirectsMethodDelete) {
+  server_responder().set_response_data(Pistache::Http::Code::No_Content);
+
+  const auto request = make_delete_request(make_destination(server_port()),
+                                           "/test/delete/request");
+
+  auto [response, status] = redirect(request);
+  ASSERT_EQ(status, RedirectStatus::Success);
+
+  ASSERT_TRUE(response.has_value());
+  ASSERT_EQ(response->http_code(), Pistache::Http::Code::No_Content);
 }
 
 TEST_F(HttpRequestRedirector, RedirectsWhenEndpointUriIsNotFound) {

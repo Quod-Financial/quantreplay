@@ -14,6 +14,7 @@ struct RepositoryAccessorMock : public RepositoryAccessor {
   MOCK_METHOD(bool, unicast_order_modifying_impl, (InstrumentId, tl::function_ref<void(OrderModifyingEngine&)>), (const, override));
   MOCK_METHOD(bool, unicast_state_persisting_impl, (InstrumentId, tl::function_ref<void(StatePersistingEngine&)>), (const, override));
   MOCK_METHOD(bool, unicast_quote_publishing_impl, (InstrumentId, tl::function_ref<void(QuotePublishingEngine&)>), (const, override));
+  MOCK_METHOD(bool, try_quote_publishing_until_handled_impl, (tl::function_ref<bool(QuotePublishingEngine&)>), (const, override));
   // clang-format on
 };
 

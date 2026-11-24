@@ -37,6 +37,10 @@ static const std::map<Pistache::Http::Method, MethodHandler> Handlers{
                         request.url(), *request.body(), "application/json")
                   : client.Put(request.url());
      }},
+    {Pistache::Http::Method::Delete,
+     [](auto& client, const auto& request) {
+       return client.Delete(request.url());
+     }},
 };
 
 static auto find_handler(Pistache::Http::Method method)

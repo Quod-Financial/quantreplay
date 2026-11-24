@@ -42,9 +42,16 @@ class QuotingEngine final : public TradingEngine, public QuotePublishingEngine {
   auto execute(const protocol::QuotePublicationRequest& request,
                protocol::QuotePublicationReply& reply) -> void override;
 
+  auto execute(const protocol::QuoteCancellationRequest& request,
+               protocol::QuoteCancellationReply& reply) -> void override;
+
   auto handle(const protocol::SessionTerminatedEvent& event) -> void override;
 
  private:
+  template <typename RequestType, typename ReplyType>
+  auto execute_synchronously(const RequestType& request, ReplyType& reply)
+      -> void;
+
   runtime::Mux mux_;
   std::unique_ptr<Implementation> implementation_;
 };

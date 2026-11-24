@@ -34,6 +34,11 @@ struct ExecutorMock : public Executor {
                protocol::QuotePublicationReply&),
               (const, override));
   MOCK_METHOD(void,
+              execute_request,
+              (const protocol::QuoteCancellationRequest&,
+               protocol::QuoteCancellationReply&),
+              (const, override));
+  MOCK_METHOD(void,
               store_state_request,
               ((const std::vector<
                   std::pair<InstrumentId, market_state::InstrumentState&>>&)),

@@ -39,6 +39,10 @@ struct Executor {
                                protocol::QuotePublicationReply& reply) const
       -> void = 0;
 
+  virtual auto execute_request(
+      const protocol::QuoteCancellationRequest& request,
+      protocol::QuoteCancellationReply& reply) const -> void = 0;
+
   virtual auto store_state_request(
       const std::vector<
           std::pair<InstrumentId, market_state::InstrumentState&>>& instruments)
@@ -78,6 +82,10 @@ class ExecutionSystem : public Executor {
 
   auto execute_request(const protocol::QuotePublicationRequest& request,
                        protocol::QuotePublicationReply& reply) const
+      -> void override;
+
+  auto execute_request(const protocol::QuoteCancellationRequest& request,
+                       protocol::QuoteCancellationReply& reply) const
       -> void override;
 
   auto store_state_request(

@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 
+#include "core/domain/attributes.hpp"
 #include "idgen/market_entry_id.hpp"
 #include "ih/quotes/quote.hpp"
 #include "quoting_engine/quote_id_generator.hpp"
@@ -16,6 +17,9 @@ class QuoteBook {
 
   auto add(const std::vector<QuoteLevel>& bids,
            const std::vector<QuoteLevel>& asks) -> const Quote&;
+
+  [[nodiscard]]
+  auto remove(const QuoteId& identifier) -> bool;
 
   [[nodiscard]]
   auto latest() const -> const Quote*;

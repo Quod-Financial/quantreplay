@@ -73,6 +73,20 @@ auto make_operation(const protocol::QuotePublicationRequest& request,
   };
 }
 
+auto make_operation(const protocol::QuoteCancellationRequest& request,
+                    protocol::QuoteCancellationReply& reply) {
+  return [&request, &reply](QuotePublishingEngine& engine) {
+    protocol::QuoteCancellationReply engine_reply;
+    engine.execute(request, engine_reply);
+    if (engine_reply.result !=
+        protocol::QuoteCancellationReply::Result::Cancelled) {
+      return false;
+    }
+    reply = engine_reply;
+    return true;
+  };
+}
+
 constexpr auto to_quote_publication_result(instrument::LookupError error)
     -> protocol::QuotePublicationReply::Result {
   using Result = protocol::QuotePublicationReply::Result;
@@ -183,6 +197,16 @@ auto ExecutionSystem::execute_request(
     log::debug("refusing {}, the listing is not a quoting listing", request);
     reply.result = protocol::QuotePublicationReply::Result::InvalidRequest;
     reply.error_message = QuotesNotSupportedReason;
+  }
+}
+
+auto ExecutionSystem::execute_request(
+    const protocol::QuoteCancellationRequest& request,
+    protocol::QuoteCancellationReply& reply) const -> void {
+  if (!repository_accessor_.try_quote_publishing_until_handled(
+          make_operation(request, reply))) {
+    log::debug("no quoting listing holds an active quote with {}", request);
+    reply.result = protocol::QuoteCancellationReply::Result::QuoteNotFound;
   }
 }
 

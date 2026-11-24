@@ -96,6 +96,14 @@ auto TradingSystemFacade::execute(
   log::debug("trading system replies {}", reply);
 }
 
+auto TradingSystemFacade::execute(
+    const protocol::QuoteCancellationRequest& request,
+    protocol::QuoteCancellationReply& reply) -> void {
+  log::debug("trading system received {}", request);
+  execution_system_.execute_request(request, reply);
+  log::debug("trading system replies {}", reply);
+}
+
 auto TradingSystemFacade::react_on(
     const protocol::SessionTerminatedEvent& event) -> void {
   log::debug("trading system is notified about {}", event);

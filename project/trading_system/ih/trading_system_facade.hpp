@@ -54,6 +54,9 @@ class TradingSystemFacade {
   auto execute(const protocol::QuotePublicationRequest& request,
                protocol::QuotePublicationReply& reply) -> void;
 
+  auto execute(const protocol::QuoteCancellationRequest& request,
+               protocol::QuoteCancellationReply& reply) -> void;
+
   auto react_on(const protocol::SessionTerminatedEvent& event) -> void;
 
   auto terminate() -> void;

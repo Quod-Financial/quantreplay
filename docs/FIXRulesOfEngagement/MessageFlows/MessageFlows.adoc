@@ -85,10 +85,13 @@ Unknown Symbol (0) | ‘listing identification attributes set is malformed’
 
 On a <<general-quoting-listings,Quoting listing>>, market data is streamed only in the form of full market data snapshots:
 
-* a subscription (SubscriptionRequestType=Subscribe) is answered right away with a *MarketDataSnapshotFullRefresh* holding the most recently published quote, or no entries when no quote has been published on the listing yet;
+* a subscription (SubscriptionRequestType=Subscribe) is answered right away with a *MarketDataSnapshotFullRefresh* holding the most recently published quote that is still active, or no entries when no quote is active on the listing;
 each quote published on the listing afterwards is sent to the subscription as a new MarketDataSnapshotFullRefresh, even when the quote holds no entries of the requested entry types;
-* a snapshot request (SubscriptionRequestType=Snapshot) is answered with a single MarketDataSnapshotFullRefresh holding the most recently published quote, or no entries;
+* a snapshot request (SubscriptionRequestType=Snapshot) is answered with a single MarketDataSnapshotFullRefresh holding the most recently published quote that is still active, or no entries;
 * an unsubscribe request (SubscriptionRequestType=Unsubscribe) cancels the subscription, as on any listing.
+
+A published quote stays active until it is cancelled through the simulator REST API, or until the venue instance is reset or restarted, which discards all quotes.
+No message is sent to the subscriptions when a quote is cancelled: they keep the prices they last received until the next quote is published on the listing.
 
 The content of these messages is described in <<pretrade-messages-quoting>>.
 

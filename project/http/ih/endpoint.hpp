@@ -8,6 +8,7 @@ namespace simulator::http::endpoint {
 
 constexpr std::string_view VenueStatusByVenueIdFmt{"/api/venuestatus/{}"};
 constexpr std::string_view Quotes{"/api/quotes"};
+constexpr std::string_view QuotesByQuoteId{"/api/quotes/:quoteId"};
 
 const std::string GenStatus{"/api/genstatus"};
 const std::string GenStatusByVenueId{"/api/genstatus/:venueId"};

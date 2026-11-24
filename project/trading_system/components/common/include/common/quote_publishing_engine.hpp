@@ -18,6 +18,9 @@ class QuotePublishingEngine {
 
   virtual auto execute(const protocol::QuotePublicationRequest& request,
                        protocol::QuotePublicationReply& reply) -> void = 0;
+
+  virtual auto execute(const protocol::QuoteCancellationRequest& request,
+                       protocol::QuoteCancellationReply& reply) -> void = 0;
 };
 
 }  // namespace simulator::trading_system

@@ -207,8 +207,7 @@ auto Server::Implementation::setup_handler(
   auto app_controller = std::make_unique<AppControllerImpl>(
       venue_accessor, config_provider->venue_id(), std::move(callbacks));
 
-  auto quote_controller = std::make_shared<QuoteControllerImpl>(
-      redirector, config_provider->venue_id());
+  auto quote_controller = std::make_shared<QuoteControllerImpl>();
 
   fix_session_controller_ = std::make_shared<FixSessionControllerImpl>(
       std::make_shared<data_bridge::DataLayerFixSessionAccessor>(database),
@@ -234,7 +233,7 @@ auto Server::Implementation::setup_handler(
                                           std::move(generator_controller),
                                           listing_controller,
                                           price_seed_controller,
-                                          std::move(quote_controller),
+                                          quote_controller,
                                           setting_controller,
                                           trading_controller,
                                           venue_controller,
@@ -248,7 +247,10 @@ auto Server::Implementation::setup_handler(
                                                           venue_controller);
 
   auto delete_processor =
-      std::make_shared<DeleteProcessorImpl>(price_seed_controller);
+      std::make_shared<DeleteProcessorImpl>(std::move(redirector),
+                                            price_seed_controller,
+                                            std::move(quote_controller),
+                                            config_provider->venue_id());
 
   endpoint_->setHandler(std::make_shared<Router>(std::move(get_processor),
                                                  std::move(head_processor),

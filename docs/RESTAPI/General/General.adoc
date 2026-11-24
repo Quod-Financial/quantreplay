@@ -163,6 +163,8 @@ Market Simulators use the DELETE request to remove one or more existing resource
 
 | 500 SERVER ERROR |  Request could not be processed due to an internal server error.
 
+| 502 BAD GATEWAY | Request could not be forwarded to destination simulator instance, see response body for details.
+
 | 503 SERVICE UNAVAILABLE | System is temporarily unable to process the request. Please wait and then try again.
 
 |===
@@ -271,8 +273,10 @@ A Matching listing keeps an order book in which orders are matched, as described
 A Quoting listing manages published quotes instead:
 
 * A quote is published on the listing with the <<admincmds-quotes-publish,quote publication>> request. A quote holds bid entries and ask entries, each with a price and a quantity.
+A published quote stays active until it is cancelled with the <<admincmds-quotes-cancel,quote cancellation>> request, or until the venue instance is reset or restarted, so several quotes can be active on a listing at once.
 * Each published quote is sent right away to every active FIX market data subscription of the listing, as a full snapshot holding the entries of that quote only.
-A new subscription first receives the most recently published quote, or an empty snapshot when no quote has been published yet.
+A new subscription first receives the most recently published quote that is still active, or an empty snapshot when no quote is active.
+A cancel is not sent to the subscriptions, which keep the prices they last received until the next quote is published.
 Only bids and offers are published: a Quoting listing has no trades and no other market data values, such as the session high and low prices.
 The FIX messages are described in the Market Simulator FIX Rules of Engagement.
 * A Quoting listing has no market phases and is always open.

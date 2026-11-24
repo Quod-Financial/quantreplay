@@ -1,5 +1,7 @@
 #include "ih/repository/repository_accessor.hpp"
 
+#include <gsl/pointers>
+
 #include "ih/repository/trading_engines_repository.hpp"
 
 namespace simulator::trading_system {
@@ -19,40 +21,45 @@ class TradingEngineRepositoryAccessor : public RepositoryAccessor {
  public:
   explicit TradingEngineRepositoryAccessor(
       const TradingEnginesRepository& repository)
-      : repository_(repository) {}
+      : repository_{&repository} {}
 
  private:
   auto unicast_impl(InstrumentId instrument_id, Action action) const
       -> void override {
-    action(repository_.find_instrument_engine(instrument_id));
+    action(repository_->find_instrument_engine(instrument_id));
   }
 
   auto broadcast_impl(Action action) const -> void override {
-    repository_.for_each_engine(action);
+    repository_->for_each_engine(action);
   }
 
   auto unicast_order_modifying_impl(InstrumentId instrument_id,
                                     OrderModifyingAction action) const
       -> bool override {
     return apply_if_found(
-        repository_.find_order_modifying_engine(instrument_id), action);
+        repository_->find_order_modifying_engine(instrument_id), action);
   }
 
   auto unicast_state_persisting_impl(InstrumentId instrument_id,
                                      StatePersistingAction action) const
       -> bool override {
     return apply_if_found(
-        repository_.find_state_persisting_engine(instrument_id), action);
+        repository_->find_state_persisting_engine(instrument_id), action);
   }
 
   auto unicast_quote_publishing_impl(InstrumentId instrument_id,
                                      QuotePublishingAction action) const
       -> bool override {
     return apply_if_found(
-        repository_.find_quote_publishing_engine(instrument_id), action);
+        repository_->find_quote_publishing_engine(instrument_id), action);
   }
 
-  const TradingEnginesRepository& repository_;
+  auto try_quote_publishing_until_handled_impl(
+      QuotePublishingAttempt action) const -> bool override {
+    return repository_->try_quote_publishing_until_handled(action);
+  }
+
+  gsl::not_null<const TradingEnginesRepository*> repository_;
 };
 
 }  // namespace

@@ -4,6 +4,7 @@
 #include <iterator>
 #include <memory>
 #include <optional>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -225,6 +226,38 @@ TEST_F(QuotingEngineQuotePublication,
   ASSERT_THAT(first_quote_id, AllOf(Ne(std::nullopt), Ne(second_quote_id)));
 }
 
+struct QuotingEngineQuoteCancellation : public QuotingEngineQuotePublication {
+  [[nodiscard]]
+  auto publish_quote() -> QuoteId {
+    const auto quote_id = publish_valid_quote();
+    EXPECT_TRUE(quote_id.has_value());
+    return quote_id.value_or(QuoteId{"unpublished"});
+  }
+
+  [[nodiscard]]
+  auto cancel(const QuoteId& quote_id) -> protocol::QuoteCancellationReply {
+    protocol::QuoteCancellationReply reply;
+    engine.execute(protocol::QuoteCancellationRequest{.quote_id = quote_id},
+                   reply);
+    return reply;
+  }
+};
+
+TEST_F(QuotingEngineQuoteCancellation,
+       RepliesQuoteNotFoundOnCancellationOfUnknownQuote) {
+  std::ignore = publish_quote();
+
+  ASSERT_THAT(
+      cancel(QuoteId{"unknown"}).result,
+      Optional(protocol::QuoteCancellationReply::Result::QuoteNotFound));
+}
+
+TEST_F(QuotingEngineQuoteCancellation,
+       RepliesCancelledOnCancellationOfPublishedQuote) {
+  ASSERT_THAT(cancel(publish_quote()).result,
+              Optional(protocol::QuoteCancellationReply::Result::Cancelled));
+}
+
 struct QuotingEngineMarketData : public Test {
   [[nodiscard]]
   static auto make_session() -> protocol::Session {
@@ -266,12 +299,20 @@ struct QuotingEngineMarketData : public Test {
   }
 
   auto publish(std::vector<protocol::QuoteEntry> bids,
-               std::vector<protocol::QuoteEntry> asks) -> void {
+               std::vector<protocol::QuoteEntry> asks) -> QuoteId {
     protocol::QuotePublicationRequest request;
     request.bids = std::move(bids);
     request.asks = std::move(asks);
     protocol::QuotePublicationReply reply;
     engine.execute(request, reply);
+    EXPECT_TRUE(reply.quote_id.has_value());
+    return reply.quote_id.value_or(QuoteId{"unpublished"});
+  }
+
+  auto cancel(const QuoteId& quote_id) -> void {
+    protocol::QuoteCancellationReply reply;
+    engine.execute(protocol::QuoteCancellationRequest{.quote_id = quote_id},
+                   reply);
   }
 
   auto publish_quote() -> void {
@@ -332,6 +373,28 @@ TEST_F(QuotingEngineMarketData, StopsStreamingToTerminatedSession) {
   publish_quote();
 
   ASSERT_THAT(snapshots, IsEmpty());
+}
+
+TEST_F(QuotingEngineMarketData,
+       SendsEarlierActiveQuoteOnSubscriptionAfterLatestQuoteIsCancelled) {
+  publish({make_entry(1.0)}, {make_entry(2.0)});
+  cancel(publish({make_entry(1.25)}, {make_entry(1.5)}));
+
+  engine.execute(make_subscription());
+
+  ASSERT_THAT(snapshots, SizeIs(1));
+  ASSERT_THAT(prices_of(snapshots.front()),
+              UnorderedElementsAre(Price{1.0}, Price{2.0}));
+}
+
+TEST_F(QuotingEngineMarketData,
+       SendsEmptySnapshotOnSubscriptionAfterOnlyQuoteIsCancelled) {
+  cancel(publish({make_entry(1.25)}, {make_entry(1.5)}));
+
+  engine.execute(make_subscription());
+
+  ASSERT_THAT(snapshots, SizeIs(1));
+  ASSERT_THAT(snapshots.front().market_data_entries, IsEmpty());
 }
 
 // NOLINTEND(*magic-numbers*)

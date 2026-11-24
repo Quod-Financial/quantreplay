@@ -258,8 +258,17 @@ auto PostProcessorImpl::publish_quote(const Pistache::Rest::Request& request,
     -> void {
   log::info("requested publication of a new quote");
 
-  const auto [code, body] = quote_controller_->publish_quote(request.body());
-  respond(request, response, code, body);
+  const auto venue_id = quote_controller_->publication_venue_id(request.body());
+  if (venue_id.has_value() && *venue_id != venue_id_) {
+    const auto redirect_response = redirect(request, *venue_id);
+    respond(request,
+            response,
+            redirect_response.http_code(),
+            redirect_response.body_content());
+  } else {
+    const auto [code, body] = quote_controller_->publish_quote(request.body());
+    respond(request, response, code, body);
+  }
 }
 
 auto PostProcessorImpl::respond(const Pistache::Rest::Request& request,

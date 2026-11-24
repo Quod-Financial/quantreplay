@@ -70,6 +70,11 @@ class TradingEngine final
     trading_system::process(request, reply, trading_system_);
   }
 
+  auto process(const protocol::QuoteCancellationRequest& request,
+               protocol::QuoteCancellationReply& reply) -> void override {
+    trading_system::process(request, reply, trading_system_);
+  }
+
   auto on_event(const protocol::SessionTerminatedEvent& event)
       -> void override {
     trading_system::react_on(event, trading_system_);

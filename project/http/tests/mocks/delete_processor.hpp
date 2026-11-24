@@ -14,6 +14,12 @@ class DeleteProcessor : public http::DeleteProcessor {
               (const Pistache::Rest::Request& request,
                Pistache::Http::ResponseWriter response),
               (override));
+
+  MOCK_METHOD(void,
+              cancel_quote,
+              (const Pistache::Rest::Request& request,
+               Pistache::Http::ResponseWriter response),
+              (override));
 };
 
 }  // namespace simulator::http::test::mock

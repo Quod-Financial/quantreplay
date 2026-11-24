@@ -398,6 +398,12 @@ auto Router::init_quote_routes() -> void {
       std::string{endpoint::Quotes},
       Pistache::Rest::Routes::bind(&PostProcessor::publish_quote,
                                    post_processor_.get()));
+
+  Pistache::Rest::Routes::Delete(
+      router_,
+      std::string{endpoint::QuotesByQuoteId},
+      Pistache::Rest::Routes::bind(&DeleteProcessor::cancel_quote,
+                                   delete_processor_.get()));
 }
 
 }  // namespace simulator::http

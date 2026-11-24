@@ -1261,7 +1261,7 @@ Content-Length: XXX
 
 [[admincmds-quotes]]
 === Quotes
-Publish quotes on the Quoting listings of each market simulator venue instance. See <<general-quoting,this section>> for more information about Quoting listings.
+Publish and cancel quotes on the Quoting listings of each market simulator venue instance. See <<general-quoting,this section>> for more information about Quoting listings.
 
 _Response Properties_
 
@@ -1269,8 +1269,8 @@ _Response Properties_
 |===
 | Path | Type |Description
 
-| quoteId | Text | The identifier generated for the published quote, returned only when the quote is published
-| result | Text | Explanation of HTTP code received in response to request, returned only when the quote is not published
+| quoteId | Text | The identifier generated for the published quote, returned only when a quote is published
+| result | Text | Explanation of HTTP code received in response to request, returned only when the request fails
 |===
 
 [[admincmds-quotes-publish]]
@@ -1479,3 +1479,60 @@ Content-Length: XXX
     "result" : "Failed to process the request."
 }
 ----
+
+[[admincmds-quotes-cancel]]
+==== Cancel Quote
+Cancel a quote published with the <<admincmds-quotes-publish,quote publication>> request. The quote is removed from the active quotes of its listing, and the other active quotes are not affected.
+
+No FIX message is sent on a cancel: the market data subscriptions of the listing keep the prices they last received until the next quote is published on the listing. A market data request received afterwards is answered with the most recently published quote of the listing that is still active, or with no entries when none is, as described in the Market Simulator FIX Rules of Engagement.
+
+The request is processed by the instance of the venue named by venueId. When venueId names another venue, the receiving instance forwards the request to the instance of that venue and returns its reply. When venueId is absent or empty, the receiving instance cancels the quote among its own active quotes.
+
+_Request Properties_
+
+[cols="25,15,60"]
+|===
+| Path | Type |Description
+
+| quoteId | Text | Required path parameter. The quoteId returned when the quote was published
+| venueId | Text | Optional query parameter. The venue that holds the quote; an empty value is treated as absent
+|===
+
+_Resource URI_
+
+----
+DELETE /api/quotes/{quoteId}
+DELETE /api/quotes/{quoteId}?venueId={venueId}
+----
+
+_Example_: Cancel a quote
+
+[,http]
+----
+DELETE /api/quotes/251109143015000001?venueId=FASTMATCH HTTP/1.1
+Accept: application/json;charset=UTF-8
+Host: localhost
+----
+
+_Example_: Positive reply
+
+[,http]
+----
+HTTP/1.1 204 No Content
+----
+
+_Example_: Negative reply, the quote is not an active quote of the venue instance
+
+[,http]
+----
+HTTP/1.1 404 Not Found
+Content-Length: XXX
+
+{
+    "result" : "Failed to cancel the Quote: quote not found"
+}
+----
+
+The 404 Not Found reply is returned when the quoteId is unknown to the venue instance that processes the request, when its quote has already been cancelled, or when the quote was discarded by a reset or restart of the venue instance.
+
+When venueId names a venue whose instance cannot be resolved or accessed, the reply is the same as for the <<admincmds-quotes-publish,quote publication>> request: 502 Bad Gateway with the result "Could not resolve destination instance with <venueId> identifier" or "Could not access an instance with <venueId> identifier". When the venue instance cannot process the request, the reply is 500 Internal Server Error with the result "Failed to process the request.".

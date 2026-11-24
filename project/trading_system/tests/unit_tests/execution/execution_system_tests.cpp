@@ -1,5 +1,6 @@
 #include <gmock/gmock.h>
 
+#include <optional>
 #include <tl/expected.hpp>
 
 #include "common/instrument_state.hpp"
@@ -464,9 +465,87 @@ TEST_F(TradingSystemExecutionSystemQuotePublication,
        PublishesQuoteInEngineOfResolvedListing) {
   EXPECT_CALL(repository_accessor,
               unicast_quote_publishing_impl(Eq(instrument.identifier), _));
-  EXPECT_CALL(engine, execute(Ref(request), Ref(reply)));
+  EXPECT_CALL(
+      engine,
+      execute(Matcher<const protocol::QuotePublicationRequest&>(Ref(request)),
+              Ref(reply)));
 
   execution_system.execute_request(request, reply);
+}
+
+struct TradingSystemExecutionSystemQuoteCancellation
+    : public TradingSystemExecutionSystem {
+  using Result = protocol::QuoteCancellationReply::Result;
+
+  TradingSystemExecutionSystemQuoteCancellation() {
+    ON_CALL(repository_accessor, try_quote_publishing_until_handled_impl)
+        .WillByDefault([this](auto action) {
+          handled = action(engine);
+          return *handled;
+        });
+    reply_with(Result::QuoteNotFound);
+  }
+
+  auto reply_with(Result result) -> void {
+    ON_CALL(engine,
+            execute(A<const protocol::QuoteCancellationRequest&>(),
+                    A<protocol::QuoteCancellationReply&>()))
+        .WillByDefault(
+            [result](const auto& /*request*/, auto& cancellation_reply) {
+              cancellation_reply.result = result;
+            });
+  }
+
+  NiceMock<QuotePublishingEngineMock> engine;
+  std::optional<bool> handled;
+  protocol::QuoteCancellationRequest request{.quote_id = QuoteId{"quote-id"}};
+  protocol::QuoteCancellationReply reply;
+};
+
+TEST_F(TradingSystemExecutionSystemQuoteCancellation,
+       PassesQuoteIdToQuotingEngine) {
+  EXPECT_CALL(engine,
+              execute(Matcher<const protocol::QuoteCancellationRequest&>(
+                          Field(&protocol::QuoteCancellationRequest::quote_id,
+                                Eq(QuoteId{"quote-id"}))),
+                      _));
+
+  execution_system.execute_request(request, reply);
+}
+
+TEST_F(TradingSystemExecutionSystemQuoteCancellation,
+       ReportsCancellationUnhandledWhenQuotingEngineFindsNoQuote) {
+  execution_system.execute_request(request, reply);
+
+  ASSERT_THAT(handled, Optional(false));
+}
+
+TEST_F(TradingSystemExecutionSystemQuoteCancellation,
+       ReportsCancellationHandledWhenQuotingEngineCancelsQuote) {
+  reply_with(Result::Cancelled);
+
+  execution_system.execute_request(request, reply);
+
+  ASSERT_THAT(handled, Optional(true));
+}
+
+TEST_F(TradingSystemExecutionSystemQuoteCancellation,
+       RepliesQuoteNotFoundWhenNoQuotingEngineHandlesCancellation) {
+  ON_CALL(repository_accessor, try_quote_publishing_until_handled_impl)
+      .WillByDefault(Return(false));
+
+  execution_system.execute_request(request, reply);
+
+  ASSERT_THAT(reply.result, Optional(Result::QuoteNotFound));
+}
+
+TEST_F(TradingSystemExecutionSystemQuoteCancellation,
+       RepliesCancelledWhenQuotingEngineCancelsQuote) {
+  reply_with(Result::Cancelled);
+
+  execution_system.execute_request(request, reply);
+
+  ASSERT_THAT(reply.result, Optional(Result::Cancelled));
 }
 
 // NOLINTEND(*magic-numbers*)

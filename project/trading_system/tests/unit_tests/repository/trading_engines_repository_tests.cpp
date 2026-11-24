@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <stdexcept>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -199,6 +200,56 @@ TEST_F(TradingSystemTradingEnginesRepository,
 
   ASSERT_THAT(repository.find_quote_publishing_engine(InstrumentId{2}),
               Eq(&engine));
+}
+
+TEST_F(TradingSystemTradingEnginesRepository,
+       TriesEveryQuotePublishingEngineWhileNoneHandlesAction) {
+  add_engine(InstrumentId{1});
+  const QuotePublishingEngine& first_engine =
+      add_engine<QuotePublishingTradingEngineMock>(InstrumentId{2});
+  const QuotePublishingEngine& second_engine =
+      add_engine<QuotePublishingTradingEngineMock>(InstrumentId{3});
+  std::vector<const QuotePublishingEngine*> tried;
+
+  std::ignore = repository.try_quote_publishing_until_handled(
+      [&tried](QuotePublishingEngine& engine) {
+        tried.push_back(&engine);
+        return false;
+      });
+
+  ASSERT_THAT(tried, UnorderedElementsAre(&first_engine, &second_engine));
+}
+
+TEST_F(TradingSystemTradingEnginesRepository,
+       StopsTryingQuotePublishingEnginesOnceOneHandlesAction) {
+  add_engine<QuotePublishingTradingEngineMock>(InstrumentId{1});
+  add_engine<QuotePublishingTradingEngineMock>(InstrumentId{2});
+  std::vector<const QuotePublishingEngine*> tried;
+
+  std::ignore = repository.try_quote_publishing_until_handled(
+      [&tried](QuotePublishingEngine& engine) {
+        tried.push_back(&engine);
+        return true;
+      });
+
+  ASSERT_THAT(tried, SizeIs(1));
+}
+
+TEST_F(TradingSystemTradingEnginesRepository,
+       ReportsActionUnhandledByQuotePublishingEngines) {
+  add_engine(InstrumentId{1});
+  add_engine<QuotePublishingTradingEngineMock>(InstrumentId{2});
+
+  ASSERT_FALSE(repository.try_quote_publishing_until_handled(
+      [](QuotePublishingEngine& /*engine*/) { return false; }));
+}
+
+TEST_F(TradingSystemTradingEnginesRepository,
+       ReportsActionHandledByQuotePublishingEngine) {
+  add_engine<QuotePublishingTradingEngineMock>(InstrumentId{1});
+
+  ASSERT_TRUE(repository.try_quote_publishing_until_handled(
+      [](QuotePublishingEngine& /*engine*/) { return true; }));
 }
 
 // NOLINTEND(*magic-numbers*)

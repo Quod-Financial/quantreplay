@@ -23,6 +23,9 @@ struct TradingAdminRequestReceiver : public detail::Receiver {
 
   virtual auto process(const protocol::QuotePublicationRequest& request,
                        protocol::QuotePublicationReply& reply) -> void = 0;
+
+  virtual auto process(const protocol::QuoteCancellationRequest& request,
+                       protocol::QuoteCancellationReply& reply) -> void = 0;
 };
 
 auto bind_trading_admin_channel(

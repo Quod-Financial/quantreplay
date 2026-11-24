@@ -1,11 +1,18 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <httplib.h>
+#include <pistache/endpoint.h>
+#include <pistache/http_defs.h>
 
+#include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
+#include <utility>
 
 #include "ih/endpoint.hpp"
 #include "ih/processors/post_processor.hpp"
+#include "ih/redirect/result.hpp"
 #include "ih/router.hpp"
 #include "mocks/delete_processor.hpp"
 #include "mocks/generator_controller.hpp"
@@ -26,6 +33,7 @@ using ::testing::EndsWith;
 using ::testing::Eq;
 using ::testing::NiceMock;
 using ::testing::Optional;
+using ::testing::Pair;
 using ::testing::Return;
 using ::testing::SaveArg;
 
@@ -278,19 +286,116 @@ TEST_F(HttpPostProcessorStopOrderGen, RedirectsWhenVenueIsDifferent) {
   router->onRequest(request, std::move(response_writer.writer));
 }
 
-class HttpPostProcessorPublishQuote : public HttpPostProcessor {};
+class HttpPostProcessorPublishQuote : public HttpPostProcessor {
+ protected:
+  auto SetUp() -> void override {
+    HttpPostProcessor::SetUp();
+    ON_CALL(*quote_controller, publish_quote)
+        .WillByDefault(Return(http::QuoteController::Result{
+            Pistache::Http::Code::Created, R"({"quoteId":"QT-1"})"}));
+    ON_CALL(*redirector, redirect_to_venue)
+        .WillByDefault(Return(redirect::Result{Pistache::Http::Code::Created}));
+  }
 
-TEST_F(HttpPostProcessorPublishQuote, PassesRequestBodyToQuoteController) {
-  const std::string body{R"({"venueId":"current_venue"})"};
-  EXPECT_CALL(*quote_controller, publish_quote(Eq(body)))
-      .Times(1)
-      .WillOnce(Return(http::QuoteController::Result{
-          Pistache::Http::Code::Created, R"({"result":"published"})"}));
+  auto publish_quote_of(const std::optional<std::string>& venue_id) -> void {
+    ON_CALL(*quote_controller, publication_venue_id(Eq(QuoteBody)))
+        .WillByDefault(Return(venue_id));
 
-  const auto request =
-      util::make_request(MethodName, std::string{endpoint::Quotes}, {}, body);
-  auto response_writer = util::make_response_writer(*router);
-  router->onRequest(request, std::move(response_writer.writer));
+    const auto request = util::make_request(
+        MethodName, std::string{endpoint::Quotes}, {}, std::string{QuoteBody});
+    auto response_writer = util::make_response_writer(*router);
+    router->onRequest(request, std::move(response_writer.writer));
+  }
+
+  static constexpr std::string_view QuoteBody{R"({"symbol":"EUR/USD"})"};
+};
+
+TEST_F(HttpPostProcessorPublishQuote, PublishesQuoteOfCurrentVenueLocally) {
+  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
+  EXPECT_CALL(*quote_controller, publish_quote(Eq(QuoteBody))).Times(1);
+
+  publish_quote_of(VenueName);
+}
+
+TEST_F(HttpPostProcessorPublishQuote,
+       PublishesQuoteWithoutPublicationVenueLocally) {
+  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
+  EXPECT_CALL(*quote_controller, publish_quote(Eq(QuoteBody))).Times(1);
+
+  publish_quote_of(std::nullopt);
+}
+
+TEST_F(HttpPostProcessorPublishQuote, DoesNotPublishQuoteOfOtherVenueLocally) {
+  EXPECT_CALL(*quote_controller, publish_quote).Times(0);
+
+  publish_quote_of(OtherVenueName);
+}
+
+TEST_F(HttpPostProcessorPublishQuote, ForwardsQuoteToInstanceOfOtherVenue) {
+  EXPECT_CALL(*redirector,
+              redirect_to_venue(Eq(OtherVenueName),
+                                Eq(Pistache::Http::Method::Post),
+                                Eq(std::string{endpoint::Quotes}),
+                                Optional(Eq(QuoteBody))));
+
+  publish_quote_of(OtherVenueName);
+}
+
+struct HttpPostProcessorPublishQuoteReply : public ::testing::Test {
+  auto post_quote() const -> httplib::Result {
+    httplib::Client client{"127.0.0.1", server.getPort()};
+    return client.Post(std::string{endpoint::Quotes},
+                       R"({"venueId":"other_venue"})",
+                       "application/json");
+  }
+
+  std::shared_ptr<NiceMock<mock::QuoteController>> quote_controller =
+      std::make_shared<NiceMock<mock::QuoteController>>();
+  std::shared_ptr<NiceMock<mock::RedirectionProcessor>> redirector =
+      std::make_shared<NiceMock<mock::RedirectionProcessor>>();
+  Pistache::Http::Endpoint server{
+      Pistache::Address{Pistache::Ipv4::loopback(), Pistache::Port{0}}};
+
+ private:
+  auto SetUp() -> void override {
+    ON_CALL(*quote_controller, publication_venue_id)
+        .WillByDefault(Return(std::make_optional<std::string>("other_venue")));
+
+    server.init(Pistache::Http::Endpoint::options().threads(1));
+    server.setHandler(std::make_shared<Router>(
+        std::make_shared<mock::GetProcessor>(),
+        std::make_shared<mock::HeadProcessor>(),
+        std::make_shared<PostProcessorImpl>(redirector,
+                                            nullptr,
+                                            nullptr,
+                                            nullptr,
+                                            nullptr,
+                                            quote_controller,
+                                            nullptr,
+                                            nullptr,
+                                            nullptr,
+                                            nullptr,
+                                            "current_venue"),
+        std::make_shared<mock::PutProcessor>(),
+        std::make_shared<mock::DeleteProcessor>()));
+    server.serveThreaded();
+  }
+
+  auto TearDown() -> void override { server.shutdown(); }
+};
+
+TEST_F(HttpPostProcessorPublishQuoteReply,
+       RespondsWithReplyOfInstanceOfOtherVenue) {
+  redirect::Result redirected{Pistache::Http::Code::Not_Found};
+  redirected.set_body_content("body-content");
+  ON_CALL(*redirector, redirect_to_venue).WillByDefault(Return(redirected));
+
+  const auto response = post_quote();
+
+  ASSERT_TRUE(response);
+  ASSERT_THAT(
+      std::make_pair(response->status, response->body),
+      Pair(static_cast<int>(Pistache::Http::Code::Not_Found), "body-content"));
 }
 
 }  // namespace

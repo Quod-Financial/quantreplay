@@ -13,11 +13,8 @@
 #include "core/domain/instrument_descriptor.hpp"
 #include "core/domain/party.hpp"
 #include "ih/controllers/quote_controller.hpp"
-#include "ih/endpoint.hpp"
-#include "ih/redirect/result.hpp"
 #include "ih/utils/response_formatters.hpp"
 #include "middleware/channels/trading_admin_channel.hpp"
-#include "mocks/redirection_processor.hpp"
 #include "mocks/trading_admin_request_receiver.hpp"
 #include "protocol/admin/quote.hpp"
 
@@ -92,9 +89,7 @@ struct HttpQuoteController : public Test {
   }
 
   NiceMock<http::mock::TradingAdminRequestReceiver> receiver;
-  std::shared_ptr<mock::RedirectionProcessor> redirector =
-      std::make_shared<mock::RedirectionProcessor>();
-  QuoteControllerImpl controller{redirector, std::string{CurrentVenue}};
+  QuoteControllerImpl controller;
   std::optional<protocol::QuotePublicationRequest> sent_request;
 
  private:
@@ -349,54 +344,6 @@ TEST_F(HttpQuoteController, DoesNotSendRejectedBodyToTradingSystem) {
   std::ignore = publish(body_without_venue());
 }
 
-TEST_F(HttpQuoteController, PublishesQuoteOfCurrentVenueLocally) {
-  EXPECT_CALL(*redirector, redirect_to_venue).Times(0);
-  EXPECT_CALL(receiver,
-              process(A<const protocol::QuotePublicationRequest&>(),
-                      A<protocol::QuotePublicationReply&>()))
-      .Times(1);
-
-  std::ignore = publish(FullBody);
-}
-
-TEST_F(HttpQuoteController, ForwardsRequestBodyToInstanceOfOtherVenue) {
-  const auto body =
-      fmt::format(R"({{"venueId":"{}","symbol":"EUR/USD"}})", OtherVenue);
-  EXPECT_CALL(*redirector,
-              redirect_to_venue(Eq(std::string{OtherVenue}),
-                                Eq(Pistache::Http::Method::Post),
-                                Eq(std::string{endpoint::Quotes}),
-                                Optional(Eq(body))))
-      .WillOnce(Return(redirect::Result{Code::Created}));
-
-  std::ignore = publish(body);
-}
-
-TEST_F(HttpQuoteController, RelaysReplyOfInstanceOfOtherVenue) {
-  redirect::Result redirected{Code::Not_Found};
-  redirected.set_body_content(R"({"result":"listing not found"})");
-  ON_CALL(*redirector, redirect_to_venue).WillByDefault(Return(redirected));
-
-  const auto result = publish(
-      fmt::format(R"({{"venueId":"{}","symbol":"EUR/USD"}})", OtherVenue));
-
-  ASSERT_EQ(result,
-            std::make_pair(Code::Not_Found,
-                           std::string{R"({"result":"listing not found"})"}));
-}
-
-TEST_F(HttpQuoteController, DoesNotPublishQuoteOfOtherVenueLocally) {
-  ON_CALL(*redirector, redirect_to_venue)
-      .WillByDefault(Return(redirect::Result{Code::Created}));
-  EXPECT_CALL(receiver,
-              process(A<const protocol::QuotePublicationRequest&>(),
-                      A<protocol::QuotePublicationReply&>()))
-      .Times(0);
-
-  std::ignore = publish(
-      fmt::format(R"({{"venueId":"{}","symbol":"EUR/USD"}})", OtherVenue));
-}
-
 TEST_F(HttpQuoteController,
        RepliesInternalServerErrorWhenTradingSystemIsUnbound) {
   middleware::release_trading_admin_channel();
@@ -499,6 +446,92 @@ INSTANTIATE_TEST_SUITE_P(
                           SecurityIdSource::Option::ExchangeSymbol),
            std::make_pair("BloombergSymbol",
                           SecurityIdSource::Option::BloombergSymbol)));
+
+struct HttpQuoteControllerPublicationVenueId : public HttpQuoteController {
+  auto venue_id_of(std::string_view body) const -> std::optional<std::string> {
+    return controller.publication_venue_id(std::string{body});
+  }
+};
+
+TEST_F(HttpQuoteControllerPublicationVenueId, ReportsNoVenueIdOfMalformedJson) {
+  ASSERT_THAT(venue_id_of(R"({"venueId": "other_venue")"), Eq(std::nullopt));
+}
+
+TEST_F(HttpQuoteControllerPublicationVenueId,
+       ReportsNoVenueIdOfBodyRejectedByUnmarshaller) {
+  ASSERT_THAT(venue_id_of(fmt::format(R"({{"venueId":"{}","symbol":"EUR/USD",)"
+                                      R"("securityId":"EU0009652759"}})",
+                                      OtherVenue)),
+              Eq(std::nullopt));
+}
+
+TEST_F(HttpQuoteControllerPublicationVenueId, ReportsVenueIdOfValidBody) {
+  ASSERT_THAT(venue_id_of(fmt::format(
+                  R"({{"venueId":"{}","symbol":"EUR/USD"}})", OtherVenue)),
+              Optional(Eq(std::string{OtherVenue})));
+}
+
+struct HttpQuoteControllerCancellation : public HttpQuoteController {
+  using CancellationResult = protocol::QuoteCancellationReply::Result;
+
+  auto reply_to_cancellation_with(CancellationResult result) -> void {
+    protocol::QuoteCancellationReply reply;
+    reply.result = result;
+    ON_CALL(receiver,
+            process(A<const protocol::QuoteCancellationRequest&>(),
+                    A<protocol::QuoteCancellationReply&>()))
+        .WillByDefault(
+            DoAll(SaveArg<0>(&sent_cancellation), SetArgReferee<1>(reply)));
+  }
+
+  auto cancel() const -> QuoteController::Result {
+    return controller.cancel_quote(QuoteId{"QT-1"});
+  }
+
+  std::optional<protocol::QuoteCancellationRequest> sent_cancellation;
+};
+
+TEST_F(HttpQuoteControllerCancellation,
+       RepliesInternalServerErrorWhenTradingSystemIsUnbound) {
+  middleware::release_trading_admin_channel();
+
+  const auto result = cancel();
+
+  ASSERT_EQ(
+      result,
+      std::make_pair(Code::Internal_Server_Error,
+                     format_result_response("Failed to process the request.")));
+}
+
+TEST_F(HttpQuoteControllerCancellation, RepliesNotFoundWhenQuoteIsNotFound) {
+  reply_to_cancellation_with(CancellationResult::QuoteNotFound);
+
+  const auto result = cancel();
+
+  ASSERT_EQ(result,
+            std::make_pair(Code::Not_Found,
+                           format_result_response(
+                               "Failed to cancel the Quote: quote not found")));
+}
+
+TEST_F(HttpQuoteControllerCancellation,
+       RepliesNoContentWithEmptyBodyWhenQuoteIsCancelled) {
+  reply_to_cancellation_with(CancellationResult::Cancelled);
+
+  const auto result = cancel();
+
+  ASSERT_EQ(result, std::make_pair(Code::No_Content, std::string{}));
+}
+
+TEST_F(HttpQuoteControllerCancellation, SendsQuoteIdToTradingSystem) {
+  reply_to_cancellation_with(CancellationResult::Cancelled);
+
+  std::ignore = cancel();
+
+  ASSERT_THAT(sent_cancellation,
+              Optional(Field(&protocol::QuoteCancellationRequest::quote_id,
+                             Eq(QuoteId{"QT-1"}))));
+}
 
 // NOLINTEND(*magic-numbers*)
 

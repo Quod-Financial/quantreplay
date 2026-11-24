@@ -43,6 +43,9 @@ class QuotingEngine::Implementation
   auto process(const protocol::QuotePublicationRequest& request,
                protocol::QuotePublicationReply& reply) -> void;
 
+  auto process(const protocol::QuoteCancellationRequest& request,
+               protocol::QuoteCancellationReply& reply) -> void;
+
   auto handle(const protocol::SessionTerminatedEvent& event) -> void;
 
  private:

@@ -4,6 +4,7 @@
 #include <iterator>
 #include <stdexcept>
 #include <utility>
+#include <vector>
 
 #include "core/tools/time.hpp"
 #include "idgen/market_entry_id.hpp"
@@ -38,6 +39,12 @@ auto QuoteBook::identify(const std::vector<QuoteLevel>& levels)
             .quantity = level.quantity};
       });
   return published;
+}
+
+auto QuoteBook::remove(const QuoteId& identifier) -> bool {
+  return std::erase_if(quotes_, [&identifier](const Quote& quote) {
+           return quote.identifier == identifier;
+         }) != 0;
 }
 
 auto QuoteBook::latest() const -> const Quote* {

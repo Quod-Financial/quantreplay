@@ -38,6 +38,12 @@ struct TradingAdminRequestReceiver
               (const protocol::QuotePublicationRequest& request,
                protocol::QuotePublicationReply& reply),
               (override));
+
+  MOCK_METHOD(void,
+              process,
+              (const protocol::QuoteCancellationRequest& request,
+               protocol::QuoteCancellationReply& reply),
+              (override));
 };
 
 }  // namespace simulator::http::mock

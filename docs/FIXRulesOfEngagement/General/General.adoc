@@ -127,7 +127,7 @@ Symbol (55) is present in a message a| * Symbol (55) a| * SecurityType (167)
 
 Each listing is managed either by a matching engine (a Matching listing) or by a quoting engine (a Quoting listing), as configured in the simulator.
 A Matching listing keeps an order book and behaves as described throughout this document.
-A Quoting listing streams the quotes published on it through the simulator REST API instead.
+A Quoting listing streams the quotes published on it through the simulator REST API instead; quotes are cancelled through the same API, not over FIX.
 Its listing is resolved as described in <<general-instrument-resolution>>, and:
 
 * A market data subscription receives each published quote as a MarketDataSnapshotFullRefresh (35=W) holding Bid and Offer entries only, see <<pretrade-messages-quoting>> and <<message-flows-mkt-data-quoting>>.

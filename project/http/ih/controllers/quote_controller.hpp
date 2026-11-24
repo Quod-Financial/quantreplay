@@ -3,12 +3,12 @@
 
 #include <pistache/http_defs.h>
 
-#include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 
+#include "core/domain/attributes.hpp"
 #include "ih/marshalling/json/quote.hpp"
-#include "ih/redirect/redirection_processor.hpp"
 
 namespace simulator::http {
 
@@ -25,28 +25,31 @@ class QuoteController {
   auto operator=(QuoteController&&) noexcept -> QuoteController& = default;
 
   [[nodiscard]]
+  virtual auto publication_venue_id(const std::string& body) const
+      -> std::optional<std::string> = 0;
+
+  [[nodiscard]]
   virtual auto publish_quote(const std::string& body) const -> Result = 0;
+
+  [[nodiscard]]
+  virtual auto cancel_quote(const QuoteId& quote_id) const -> Result = 0;
 };
 
 class QuoteControllerImpl final : public QuoteController {
  public:
-  QuoteControllerImpl(
-      std::shared_ptr<redirect::RedirectionProcessor> redirector,
-      std::string venue_id);
+  [[nodiscard]]
+  auto publication_venue_id(const std::string& body) const
+      -> std::optional<std::string> override;
 
   [[nodiscard]]
   auto publish_quote(const std::string& body) const -> Result override;
 
+  [[nodiscard]]
+  auto cancel_quote(const QuoteId& quote_id) const -> Result override;
+
  private:
   [[nodiscard]]
-  auto redirect(const std::string& venue_id, const std::string& body) const
-      -> Result;
-
-  [[nodiscard]]
   static auto publish(const json::QuotePublication& publication) -> Result;
-
-  std::shared_ptr<redirect::RedirectionProcessor> redirector_;
-  std::string venue_id_;
 };
 
 }  // namespace simulator::http

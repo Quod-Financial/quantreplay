@@ -23,6 +23,9 @@ auto send_admin_request(const protocol::RecoverMarketStateRequest& request,
 auto send_admin_request(const protocol::QuotePublicationRequest& request,
                         protocol::QuotePublicationReply& reply) -> void;
 
+auto send_admin_request(const protocol::QuoteCancellationRequest& request,
+                        protocol::QuoteCancellationReply& reply) -> void;
+
 }  // namespace simulator::middleware
 
 #endif  // SIMULATOR_MIDDLEWARE_ROUTING_TRADING_PHASE_ADMIN_CHANNEL_HPP_

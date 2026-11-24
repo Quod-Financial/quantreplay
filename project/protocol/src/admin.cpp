@@ -232,3 +232,33 @@ auto fmt::formatter<protocol::QuotePublicationReply>::format(
       reply.quote_id,
       reply.error_message);
 }
+
+auto fmt::formatter<protocol::QuoteCancellationRequest>::format(
+    const formattable& request, format_context& context)
+    -> decltype(context.out()) {
+  using simulator::core::name_of;
+  return format_to(context.out(),
+                   "QuoteCancellationRequest={{ {}={} }}",
+                   name_of(request.quote_id),
+                   request.quote_id);
+}
+
+auto fmt::formatter<protocol::QuoteCancellationReply::Result>::format(
+    formattable result, format_context& context) const
+    -> decltype(context.out()) {
+  using base_formatter = formatter<std::string_view>;
+  switch (result) {
+    case formattable::Cancelled:
+      return base_formatter::format("Cancelled", context);
+    case formattable::QuoteNotFound:
+      return base_formatter::format("QuoteNotFound", context);
+  }
+  return base_formatter::format("undefined", context);
+}
+
+auto fmt::formatter<protocol::QuoteCancellationReply>::format(
+    const formattable& reply, format_context& context)
+    -> decltype(context.out()) {
+  return format_to(
+      context.out(), "QuoteCancellationReply={{ Result={} }}", reply.result);
+}

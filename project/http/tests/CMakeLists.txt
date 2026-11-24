@@ -52,6 +52,7 @@ add_target_tests(
     unit_tests/marshalling/json/price_seed_marshalling_tests.cpp
     unit_tests/marshalling/json/setting_marshalling_tests.cpp
     unit_tests/marshalling/json/venue_marshalling_tests.cpp
+    unit_tests/processors/delete_processor_tests.cpp
     unit_tests/processors/get_processor_tests.cpp
     unit_tests/processors/head_processor_tests.cpp
     unit_tests/processors/post_processor_tests.cpp

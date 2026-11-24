@@ -69,6 +69,18 @@ auto QuotingEngine::Implementation::process(
   quote_streamer_.publish(quote);
 }
 
+auto QuotingEngine::Implementation::process(
+    const protocol::QuoteCancellationRequest& request,
+    protocol::QuoteCancellationReply& reply) -> void {
+  using Result = protocol::QuoteCancellationReply::Result;
+  if (quotes_.remove(request.quote_id)) {
+    log::info("cancelled quote `{}'", request.quote_id);
+    reply.result = Result::Cancelled;
+  } else {
+    reply.result = Result::QuoteNotFound;
+  }
+}
+
 auto QuotingEngine::Implementation::handle(
     const protocol::SessionTerminatedEvent& event) -> void {
   security_status_.unsubscribe(event.session);

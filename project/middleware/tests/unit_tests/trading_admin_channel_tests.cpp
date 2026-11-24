@@ -82,6 +82,18 @@ TEST_F(TradingAdminChannel, SendsSyncQuotePublicationRequest) {
   ASSERT_NO_THROW(send_admin_request(request, reply));
 }
 
+TEST_F(TradingAdminChannel, SendsSyncQuoteCancellationRequest) {
+  bind_channel();
+  const protocol::QuoteCancellationRequest request{.quote_id = QuoteId{"1"}};
+  protocol::QuoteCancellationReply reply;
+
+  EXPECT_CALL(receiver,
+              process(A<const protocol::QuoteCancellationRequest&>(),
+                      A<protocol::QuoteCancellationReply&>()));
+
+  ASSERT_NO_THROW(send_admin_request(request, reply));
+}
+
 TEST_F(TradingAdminChannel, ReportsChannelNotBoundWhenSendingSyncRequest) {
   constexpr protocol::HaltPhaseRequest request;
   protocol::HaltPhaseReply reply;

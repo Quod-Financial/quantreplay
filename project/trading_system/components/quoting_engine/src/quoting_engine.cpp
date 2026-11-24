@@ -19,6 +19,19 @@ QuotingEngine::QuotingEngine(
 
 QuotingEngine::~QuotingEngine() noexcept = default;
 
+template <typename RequestType, typename ReplyType>
+auto QuotingEngine::execute_synchronously(const RequestType& request,
+                                          ReplyType& reply) -> void {
+  std::latch request_processed{1};
+
+  runtime::execute(mux_, [this, &request, &reply, &request_processed] {
+    implementation_->process(request, reply);
+    request_processed.count_down();
+  });
+
+  request_processed.wait();
+}
+
 auto QuotingEngine::execute(protocol::OrderPlacementRequest request) -> void {
   log::trace("dispatching order placement request");
 
@@ -47,14 +60,14 @@ auto QuotingEngine::execute(const protocol::QuotePublicationRequest& request,
                             protocol::QuotePublicationReply& reply) -> void {
   log::trace("dispatching synchronous quote publication request");
 
-  std::latch quote_processed{1};
+  execute_synchronously(request, reply);
+}
 
-  runtime::execute(mux_, [this, &request, &reply, &quote_processed] {
-    implementation_->process(request, reply);
-    quote_processed.count_down();
-  });
+auto QuotingEngine::execute(const protocol::QuoteCancellationRequest& request,
+                            protocol::QuoteCancellationReply& reply) -> void {
+  log::trace("dispatching synchronous quote cancellation request");
 
-  quote_processed.wait();
+  execute_synchronously(request, reply);
 }
 
 auto QuotingEngine::handle(const protocol::SessionTerminatedEvent& event)

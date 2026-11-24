@@ -41,6 +41,16 @@ struct QuotePublicationReply {
   std::string error_message;
 };
 
+struct QuoteCancellationRequest {
+  QuoteId quote_id;
+};
+
+struct QuoteCancellationReply {
+  enum class Result : std::uint8_t { Cancelled, QuoteNotFound };
+
+  std::optional<Result> result;
+};
+
 }  // namespace simulator::protocol
 
 template <>
@@ -75,6 +85,35 @@ struct fmt::formatter<simulator::protocol::QuotePublicationReply::Result>
 template <>
 struct fmt::formatter<simulator::protocol::QuotePublicationReply> {
   using formattable = simulator::protocol::QuotePublicationReply;
+
+  constexpr static auto parse(format_parse_context& ctx) { return ctx.begin(); }
+
+  static auto format(const formattable& reply, format_context& context)
+      -> decltype(context.out());
+};
+
+template <>
+struct fmt::formatter<simulator::protocol::QuoteCancellationRequest> {
+  using formattable = simulator::protocol::QuoteCancellationRequest;
+
+  constexpr static auto parse(format_parse_context& ctx) { return ctx.begin(); }
+
+  static auto format(const formattable& request, format_context& context)
+      -> decltype(context.out());
+};
+
+template <>
+struct fmt::formatter<simulator::protocol::QuoteCancellationReply::Result>
+    : public formatter<std::string_view> {
+  using formattable = simulator::protocol::QuoteCancellationReply::Result;
+
+  auto format(formattable result, format_context& context) const
+      -> decltype(context.out());
+};
+
+template <>
+struct fmt::formatter<simulator::protocol::QuoteCancellationReply> {
+  using formattable = simulator::protocol::QuoteCancellationReply;
 
   constexpr static auto parse(format_parse_context& ctx) { return ctx.begin(); }
 

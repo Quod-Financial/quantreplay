@@ -5,6 +5,7 @@
 #include <functional>
 #include <memory>
 #include <stdexcept>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -76,6 +77,20 @@ class TradingEnginesRepository {
     for (PhaseAwareEngine& engine : phase_aware_engines_) {
       function(engine);
     }
+  }
+
+  template <typename ActionType>
+    requires std::is_invocable_r_v<bool, ActionType, QuotePublishingEngine&>
+  [[nodiscard]]
+  auto try_quote_publishing_until_handled(const ActionType& action) const
+      -> bool {
+    // NOLINTNEXTLINE(readability-use-anyofallof): the action has side effects
+    for (const auto& entry : quote_publishing_engines_) {
+      if (action(entry.second.get())) {
+        return true;
+      }
+    }
+    return false;
   }
 
  private:

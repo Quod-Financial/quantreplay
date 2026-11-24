@@ -4,11 +4,11 @@
 #include <pistache/http_defs.h>
 
 #include <exception>
+#include <optional>
 #include <string>
 #include <utility>
 
 #include "core/domain/attributes.hpp"
-#include "ih/endpoint.hpp"
 #include "ih/marshalling/json/detail/keys.hpp"
 #include "ih/marshalling/json/quote.hpp"
 #include "ih/utils/response_formatters.hpp"
@@ -38,6 +38,12 @@ auto make_refused_response(Code code, const std::string& reason)
 }
 
 [[nodiscard]]
+auto make_unprocessed_response() -> QuoteController::Result {
+  return {Code::Internal_Server_Error,
+          format_result_response("Failed to process the request.")};
+}
+
+[[nodiscard]]
 auto make_response(const protocol::QuotePublicationReply& reply)
     -> QuoteController::Result {
   using ReplyResult = protocol::QuotePublicationReply::Result;
@@ -57,16 +63,39 @@ auto make_response(const protocol::QuotePublicationReply& reply)
         return make_refused_response(Code::Bad_Request, reply.error_message);
     }
   }
-  return {Code::Internal_Server_Error,
-          format_result_response("Failed to process the request.")};
+  return make_unprocessed_response();
+}
+
+[[nodiscard]]
+auto make_response(const protocol::QuoteCancellationReply& reply)
+    -> QuoteController::Result {
+  using ReplyResult = protocol::QuoteCancellationReply::Result;
+
+  if (reply.result.has_value()) {
+    switch (*reply.result) {
+      case ReplyResult::Cancelled:
+        return {Code::No_Content, std::string{}};
+      case ReplyResult::QuoteNotFound:
+        return {Code::Not_Found,
+                format_result_response(
+                    "Failed to cancel the Quote: quote not found")};
+    }
+  }
+  return make_unprocessed_response();
 }
 
 }  // namespace
 
-QuoteControllerImpl::QuoteControllerImpl(
-    std::shared_ptr<redirect::RedirectionProcessor> redirector,
-    std::string venue_id)
-    : redirector_{std::move(redirector)}, venue_id_{std::move(venue_id)} {}
+auto QuoteControllerImpl::publication_venue_id(const std::string& body) const
+    -> std::optional<std::string> {
+  json::QuotePublication publication;
+  try {
+    json::QuoteUnmarshaller::unmarshall(body, publication);
+  } catch (const std::exception&) {
+    return std::nullopt;
+  }
+  return std::make_optional(std::move(publication.venue_id));
+}
 
 auto QuoteControllerImpl::publish_quote(const std::string& body) const
     -> Result {
@@ -79,22 +108,7 @@ auto QuoteControllerImpl::publish_quote(const std::string& body) const
             format_result_response(
                 fmt::format("Bad request: {}", exception.what()))};
   }
-
-  if (publication.venue_id != venue_id_) {
-    return redirect(publication.venue_id, body);
-  }
   return publish(publication);
-}
-
-auto QuoteControllerImpl::redirect(const std::string& venue_id,
-                                   const std::string& body) const -> Result {
-  log::info("forwarding the quote publication to the `{}' venue", venue_id);
-  const auto result =
-      redirector_->redirect_to_venue(venue_id,
-                                     Pistache::Http::Method::Post,
-                                     std::string{endpoint::Quotes},
-                                     body);
-  return {result.http_code(), result.body_content()};
 }
 
 auto QuoteControllerImpl::publish(const json::QuotePublication& publication)
@@ -104,6 +118,18 @@ auto QuoteControllerImpl::publish(const json::QuotePublication& publication)
     middleware::send_admin_request(publication.request, reply);
   } catch (const middleware::ChannelUnboundError&) {
     log::err("failed to send request {}", publication.request);
+  }
+  return make_response(reply);
+}
+
+auto QuoteControllerImpl::cancel_quote(const QuoteId& quote_id) const
+    -> Result {
+  const protocol::QuoteCancellationRequest request{.quote_id = quote_id};
+  protocol::QuoteCancellationReply reply;
+  try {
+    middleware::send_admin_request(request, reply);
+  } catch (const middleware::ChannelUnboundError&) {
+    log::err("failed to send request {}", request);
   }
   return make_response(reply);
 }

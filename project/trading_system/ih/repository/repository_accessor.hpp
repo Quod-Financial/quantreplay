@@ -21,6 +21,7 @@ class RepositoryAccessor {
   using OrderModifyingAction = tl::function_ref<void(OrderModifyingEngine&)>;
   using StatePersistingAction = tl::function_ref<void(StatePersistingEngine&)>;
   using QuotePublishingAction = tl::function_ref<void(QuotePublishingEngine&)>;
+  using QuotePublishingAttempt = tl::function_ref<bool(QuotePublishingEngine&)>;
 
   RepositoryAccessor() = default;
   RepositoryAccessor(const RepositoryAccessor&) = default;
@@ -68,6 +69,13 @@ class RepositoryAccessor {
                                          std::forward<ActionType>(action));
   }
 
+  template <typename ActionType>
+  [[nodiscard]]
+  auto try_quote_publishing_until_handled(ActionType&& action) const -> bool {
+    return try_quote_publishing_until_handled_impl(
+        std::forward<ActionType>(action));
+  }
+
   static auto create(const TradingEnginesRepository& repository)
       -> std::unique_ptr<RepositoryAccessor>;
 
@@ -88,6 +96,9 @@ class RepositoryAccessor {
   virtual auto unicast_quote_publishing_impl(InstrumentId instrument_id,
                                              QuotePublishingAction action) const
       -> bool = 0;
+
+  virtual auto try_quote_publishing_until_handled_impl(
+      QuotePublishingAttempt action) const -> bool = 0;
 };
 
 }  // namespace simulator::trading_system
