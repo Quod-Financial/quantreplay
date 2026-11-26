@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include "data_layer/api/models/patch_field.hpp"
 #include "data_layer/api/predicate/definitions.hpp"
@@ -148,6 +149,11 @@ class PriceSeed::Patch {
   PatchField<double> bid_price_;
   PatchField<double> offer_price_;
 };
+
+[[nodiscard]]
+auto matches(const PriceSeed& price_seed,
+             std::string_view instrument_symbol,
+             std::optional<std::string_view> price_currency) noexcept -> bool;
 
 }  // namespace simulator::data_layer
 

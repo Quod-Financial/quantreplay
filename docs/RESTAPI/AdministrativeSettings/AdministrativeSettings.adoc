@@ -1672,7 +1672,7 @@ _Resource Properties_
 | Path | Type |Description
 
 | id	| Integer	| A unique price seed record identifier
-| symbol	| Text	| Symbol for this instrument
+| symbol	| Text	| Symbol for this instrument, not used for <<adminsets-priceseeds-matching,matching>>
 | securityType	| Text	a| Security type for a target instrument:
 
 *	CS - Common Stock
@@ -1695,7 +1695,7 @@ _Resource Properties_
 *	FXSWAP - Forex Swap
 *	FXNDS - Forex Non-Deliverable Swap
 
-| priceCurrency	| Text	| Currency of price (for FX, second currency in the pair), using ISO-4217 3-char currency codes
+| priceCurrency	| Text	| Currency of price (for FX, second currency in the pair), using ISO-4217 3-char currency codes, used for <<adminsets-priceseeds-matching,matching>>
 | securityId	| Text	| Security ID for this listing
 | securityIdSource	| Text	a| Type of security ID entered, can be null (i.e. for FX where we don't require a security ID):
 
@@ -1706,13 +1706,20 @@ _Resource Properties_
 *	ExchangeSymbol - Exchange-specific ticker symbol
 *	BloombergSymbol - Bloomberg’s security identifier
 
-| instrumentSymbol	| Text	| Common symbol used for this listing across different venues
+| instrumentSymbol	| Text	| Common symbol used for this listing across different venues, the key for <<adminsets-priceseeds-matching,matching>>
 | midPrice	| Decimal	| Last known mid price
 | bidPrice	| Decimal	| Last known bid price
 | offerPrice	| Decimal	| Last known offer price
 | lastUpdate	| DateTime	| Date and time in UTC of last time instrument price was last successfully refreshed
 
 |===
+
+[[adminsets-priceseeds-matching]]
+A price seed matches a listing, or a price seed of the external database during a <<adminsets-priceseeds-sync,sync>>, when its instrumentSymbol is equal to the instrSymbol of the listing (or to the instrumentSymbol of the external price seed) and their price currencies do not differ: if both have a priceCurrency, the two must be equal, and if either has none, the instrument symbol alone decides.
+Both comparisons are exact and case-sensitive.
+A price seed or listing without an instrument symbol matches nothing, and the symbol of a price seed takes no part in matching.
+The same instrument can therefore have a price seed per currency, and a price seed without a priceCurrency matches the instrument in any currency.
+How the Random Order Generator uses the price seeds is described in <<general-randomorder-distrprice,Distribution of Price>>.
 
 [[adminsets-priceseeds-get-sgl]]
 ==== Get Single Price Seed
@@ -1978,7 +1985,15 @@ Content-Length: XXX
 
 [[adminsets-priceseeds-sync]]
 ==== Sync Price Seeds
-Retrieve and update price seeds from an external database
+Retrieve and update price seeds from the external database that the SeedPriceDatabaseConnection <<adminsets-general,general setting>> connects to.
+Each price seed read from the external database is synced as follows:
+
+* A price seed without an instrumentSymbol is not synced.
+* Every local price seed that <<adminsets-priceseeds-matching,matches>> it takes the midPrice, bidPrice, offerPrice and lastUpdate of the external price seed, each only if it is set there; all other values of the local price seed are kept.
+* If no local price seed matches it, it is added to the local price seeds with its properties and a new id.
+
+Local price seeds that no external price seed matches are left unchanged.
+The external price seeds are synced one by one in no defined order, and a price seed added by the sync can be matched by the external price seeds synced after it, so when several of them match the same local price seed, the values of the last one synced remain.
 
 _Resource URI_
 ----

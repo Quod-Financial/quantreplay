@@ -1,5 +1,7 @@
 #include "api/models/price_seed.hpp"
 
+#include <optional>
+#include <string_view>
 #include <utility>
 
 namespace simulator::data_layer {
@@ -186,6 +188,15 @@ auto PriceSeed::Patch::with_last_update(
     std::optional<std::string> update_timestamp) noexcept -> Patch& {
   last_update_ = std::move(update_timestamp);
   return *this;
+}
+
+auto matches(const PriceSeed& price_seed,
+             std::string_view instrument_symbol,
+             std::optional<std::string_view> price_currency) noexcept -> bool {
+  const auto& seed_price_currency = price_seed.price_currency();
+  return price_seed.instrument_symbol() == instrument_symbol &&
+         (!seed_price_currency.has_value() || !price_currency.has_value() ||
+          *seed_price_currency == *price_currency);
 }
 
 }  // namespace simulator::data_layer

@@ -23,6 +23,7 @@
 #include "ih/random/seed_hasher.hpp"
 #include "ih/registry/registry_updater.hpp"
 #include "ih/utils/executor.hpp"
+#include "ih/utils/price_seed_selection.hpp"
 #include "ih/utils/validator.hpp"
 #include "log/logging.hpp"
 
@@ -160,8 +161,9 @@ auto GeneratorImpl::select_random_generation_candidates() const
 
   for (const auto& instrument_ctx : order_listings_contexts_) {
     const auto& instrument = instrument_ctx->get_instrument();
+    const auto& instrument_symbol = instrument.instr_symbol();
 
-    if (!instrument.instr_symbol().has_value()) {
+    if (!instrument_symbol.has_value()) {
       log::info(
           "can not initialize random orders generation executable for "
           "instrument id `{}' - the instrument does not have an instr_symbol",
@@ -173,28 +175,31 @@ auto GeneratorImpl::select_random_generation_candidates() const
       continue;
     }
 
-    std::optional<data_layer::PriceSeed> px_seed;
+    std::vector<data_layer::PriceSeed> price_seeds;
     try {
-      px_seed = data_layer::select_one_price_seed(
+      price_seeds = data_layer::select_all_price_seeds(
           database_context_,
           data_layer::predicate::eq<data_layer::PriceSeed>(
               data_layer::PriceSeed::Attribute::InstrumentSymbol,
-              *instrument.instr_symbol()));
-    } catch (const std::logic_error&) {
-      log::info(
+              *instrument_symbol));
+    } catch (const std::logic_error& exception) {
+      log::warn(
           "can not initialize random orders generation executable for "
-          "instrument with the instr_symbol `{}' - no price seed entry has "
-          "been found for the instrument",
-          instrument.instr_symbol());
+          "instrument with the instr_symbol `{}' - failed to read its price "
+          "seeds: {}",
+          *instrument_symbol,
+          exception.what());
       continue;
     }
 
-    if (!Validator::is_acceptable(*px_seed)) {
+    auto price_seed = select_price_seed(
+        *instrument_symbol, instrument.price_currency(), price_seeds);
+    if (!price_seed.has_value()) {
       continue;
     }
 
     candidates.push_back(RandomGenerationCandidate{
-        .context = instrument_ctx, .price_seed = *std::move(px_seed)});
+        .context = instrument_ctx, .price_seed = *std::move(price_seed)});
   }
 
   return candidates;

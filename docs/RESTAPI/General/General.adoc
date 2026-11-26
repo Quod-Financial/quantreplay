@@ -377,14 +377,18 @@ This effectively becomes the smallest spread allowed in the order book determine
 If the spread becomes less than this value (or crossed) it is likely due to other actions, such as historical data playback or manually entered orders.
 
 Starting with an empty book, the initial value to consider when generating a new random price will be taken from a starting "seed" price as stored in a table of starting 
-prices per instrument (across all listings of that instrument). 
+prices per instrument (see <<adminsets-priceseeds,Price Seeds>>).
+A listing uses a price seed that <<adminsets-priceseeds-matching,matches>> the instrSymbol and priceCurrency of the listing and has a price for each side: a bidPrice or midPrice, and an offerPrice or midPrice.
+When several price seeds qualify, an arbitrary one of them is used.
+A listing without an instrSymbol or without such a price seed generates no random orders.
+The price seed of a listing is chosen when the venue instance starts or is reset.
 After the book has resting orders, the initial value is taken from the best prices in the book. 
 In both cases, the initial value is adjusted to incorporate the configured spread as described above.
 Specifically, prices for new resting Bid orders and aggressive Sell orders use an initial starting value of the best Ask price in the order book subtracting
 the configured spread, or the best Bid price directly if there are no resting Ask orders, or failing that the configured Bid price directly
 from the table of starting prices (or Mid price if there is no Bid). 
 Respectively, prices for new resting Ask orders and aggressive Buy orders use an initial starting value of the best Bid price in the order book 
-adding the configured spread, or the best Ask price directly if there are no resting Bid orders, or failing that the configured Bid price directly 
+adding the configured spread, or the best Ask price directly if there are no resting Bid orders, or failing that the configured Offer price directly
 from the table of starting prices (or Mid price if there is no Ask).
 When the spread moves the initial value into a price range with a different tick size, the initial value is rounded to a multiple of that tick size:
 down when the spread is subtracted, and up when it is added.

@@ -281,5 +281,68 @@ TEST_F(DataLayerModelPriceSeed, GetsLastUpdateSpecified) {
   EXPECT_THAT(seed.last_update(), Optional(Eq("2023-08-25 12:03:45")));
 }
 
+struct DataLayerModelPriceSeedMatching : public ::testing::Test {
+  [[nodiscard]]
+  auto price_seed() const -> PriceSeed {
+    return PriceSeed::create(patch, 1);
+  }
+
+  PriceSeed::Patch patch;
+};
+
+TEST_F(DataLayerModelPriceSeedMatching,
+       DoesNotMatchEntryWithoutInstrumentSymbolEvenWithSameSymbol) {
+  patch.with_symbol("AAPL").with_price_currency("USD");
+
+  ASSERT_FALSE(matches(price_seed(), "AAPL", "USD"));
+}
+
+TEST_F(DataLayerModelPriceSeedMatching,
+       DoesNotMatchEntryOfAnotherInstrumentSymbol) {
+  patch.with_instrument_symbol("MSFT").with_price_currency("USD");
+
+  ASSERT_FALSE(matches(price_seed(), "AAPL", "USD"));
+}
+
+TEST_F(DataLayerModelPriceSeedMatching,
+       DoesNotMatchInstrumentSymbolDifferingInCase) {
+  patch.with_instrument_symbol("aapl").with_price_currency("USD");
+
+  ASSERT_FALSE(matches(price_seed(), "AAPL", "USD"));
+}
+
+TEST_F(DataLayerModelPriceSeedMatching, DoesNotMatchEntryInAnotherCurrency) {
+  patch.with_instrument_symbol("AAPL").with_price_currency("EUR");
+
+  ASSERT_FALSE(matches(price_seed(), "AAPL", "USD"));
+}
+
+TEST_F(DataLayerModelPriceSeedMatching, DoesNotMatchCurrencyDifferingInCase) {
+  patch.with_instrument_symbol("AAPL").with_price_currency("usd");
+
+  ASSERT_FALSE(matches(price_seed(), "AAPL", "USD"));
+}
+
+TEST_F(DataLayerModelPriceSeedMatching,
+       MatchesEntryOfSameInstrumentSymbolAndCurrency) {
+  patch.with_instrument_symbol("AAPL").with_price_currency("USD");
+
+  ASSERT_TRUE(matches(price_seed(), "AAPL", "USD"));
+}
+
+TEST_F(DataLayerModelPriceSeedMatching,
+       MatchesEntryWithoutCurrencyInAnyCurrency) {
+  patch.with_instrument_symbol("AAPL");
+
+  ASSERT_TRUE(matches(price_seed(), "AAPL", "USD"));
+}
+
+TEST_F(DataLayerModelPriceSeedMatching,
+       MatchesEntryInAnyCurrencyForTargetWithoutCurrency) {
+  patch.with_instrument_symbol("AAPL").with_price_currency("USD");
+
+  ASSERT_TRUE(matches(price_seed(), "AAPL", std::nullopt));
+}
+
 }  // namespace
 }  // namespace simulator::data_layer::test

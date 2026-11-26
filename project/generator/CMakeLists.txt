@@ -103,6 +103,7 @@ add_static_library(
     ih/utils/executable.hpp
     ih/utils/executor.hpp
     ih/utils/parsers.hpp
+    ih/utils/price_seed_selection.hpp
     ih/utils/request_builder.hpp
     ih/utils/validator.hpp
     ih/constants.hpp
@@ -166,6 +167,7 @@ add_static_library(
     src/registry/registry_updater.cpp
     src/utils/executor.cpp
     src/utils/parsers.cpp
+    src/utils/price_seed_selection.cpp
     src/utils/request_builder.cpp
     src/utils/validator.cpp
     src/generator_impl.cpp

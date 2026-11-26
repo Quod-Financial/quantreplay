@@ -1,9 +1,65 @@
 #include "ih/data_bridge/price_seed_accessor.hpp"
 
+#include <optional>
+#include <ranges>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
+
 #include "data_layer/api/data_access_layer.hpp"
 #include "log/logging.hpp"
 
 namespace simulator::http::data_bridge {
+namespace {
+
+auto log_price_seed_insertion(std::string_view instrument_symbol,
+                              const std::optional<std::string>& price_currency)
+    -> void {
+  if (price_currency.has_value()) {
+    log::info(
+        "the price seed with `{}' instrument symbol and `{}' price currency "
+        "is not present in the local price seed table, but exists in the "
+        "external one, inserting it into the local table",
+        instrument_symbol,
+        *price_currency);
+  } else {
+    log::info(
+        "the price seed with `{}' instrument symbol is not present in the "
+        "local price seed table, but exists in the external one, inserting "
+        "it into the local table",
+        instrument_symbol);
+  }
+}
+
+auto insert_external_price_seed(const data_layer::database::Context& context,
+                                const data_layer::PriceSeed& ext_seed,
+                                const std::string& instrument_symbol,
+                                data_layer::PriceSeed::Patch price_patch)
+    -> void {
+  log_price_seed_insertion(instrument_symbol, ext_seed.price_currency());
+
+  if (const auto& value = ext_seed.symbol()) {
+    price_patch.with_symbol(value);
+  }
+  if (const auto& value = ext_seed.security_type()) {
+    price_patch.with_security_type(value);
+  }
+  if (const auto& value = ext_seed.price_currency()) {
+    price_patch.with_price_currency(value);
+  }
+  if (const auto& value = ext_seed.security_id()) {
+    price_patch.with_security_id(value);
+  }
+  if (const auto& value = ext_seed.security_id_source()) {
+    price_patch.with_security_id_source(value);
+  }
+  price_patch.with_instrument_symbol(instrument_symbol);
+
+  data_layer::insert_price_seed(context, std::move(price_patch));
+}
+
+}  // namespace
 
 DataLayerPriceSeedAccessor::DataLayerPriceSeedAccessor(
     data_layer::database::Context context) noexcept
@@ -198,11 +254,13 @@ auto DataLayerPriceSeedAccessor::sync(std::string pqxx_source_connection)
 
 auto DataLayerPriceSeedAccessor::sync_seeds(
     const data_layer::PriceSeed& ext_seed) const -> void {
-  const std::optional<std::string>& symbol = ext_seed.symbol();
-  if (!symbol.has_value()) {
+  const std::optional<std::string>& instrument_symbol =
+      ext_seed.instrument_symbol();
+  if (!instrument_symbol.has_value()) {
     log::info(
-        "the price seed record without a symbol found in the external "
-        "price seed table with an identifier `{}', record can not be synced",
+        "the price seed record without an instrument symbol found in the "
+        "external price seed table with an identifier `{}', record can not "
+        "be synced",
         ext_seed.price_seed_id());
     return;
   }
@@ -223,39 +281,29 @@ auto DataLayerPriceSeedAccessor::sync_seeds(
 
   using data_layer::PriceSeedCmp;
   using Column = data_layer::PriceSeed::Attribute;
-  auto pred = PriceSeedCmp::eq(Column::Symbol, *symbol);
-
-  const std::vector<data_layer::PriceSeed> updated =
-      data_layer::update_all_price_seeds(context_, patch, pred);
-  if (!updated.empty()) {
-    // Price seeds with such symbol are updated in the db, nothing to do...
+  const std::vector<data_layer::PriceSeed> local_seeds =
+      data_layer::select_all_price_seeds(
+          context_,
+          PriceSeedCmp::eq(Column::InstrumentSymbol, *instrument_symbol));
+  auto matching_seeds =
+      local_seeds |
+      std::views::filter([&instrument_symbol,
+                          &ext_seed](const data_layer::PriceSeed& local_seed) {
+        return data_layer::matches(
+            local_seed, *instrument_symbol, ext_seed.price_currency());
+      });
+  if (std::ranges::empty(matching_seeds)) {
+    insert_external_price_seed(
+        context_, ext_seed, *instrument_symbol, std::move(patch));
     return;
   }
 
-  log::info(
-      "the price seed with `{}' symbol is not present in the local "
-      "price seed table, but exists in the external one, inserting "
-      "it into the local table",
-      *symbol);
-
-  patch.with_symbol(*symbol);
-  if (const auto& value = ext_seed.security_type()) {
-    patch.with_security_type(*value);
+  for (const data_layer::PriceSeed& local_seed : matching_seeds) {
+    data_layer::update_one_price_seed(
+        context_,
+        patch,
+        PriceSeedCmp::eq(Column::PriceSeedId, local_seed.price_seed_id()));
   }
-  if (const auto& value = ext_seed.price_currency()) {
-    patch.with_price_currency(*value);
-  }
-  if (const auto& value = ext_seed.security_id()) {
-    patch.with_security_id(*value);
-  }
-  if (const auto& value = ext_seed.security_id_source()) {
-    patch.with_security_id_source(*value);
-  }
-  if (const auto& value = ext_seed.instrument_symbol()) {
-    patch.with_instrument_symbol(*value);
-  }
-
-  data_layer::insert_price_seed(context_, std::move(patch));
 }
 
 }  // namespace simulator::http::data_bridge

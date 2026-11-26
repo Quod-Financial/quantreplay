@@ -85,4 +85,5 @@ add_target_tests(
     unit_tests/registry/registry_updater_tests.cpp
     unit_tests/tracing/json_tracer_tests.cpp
     unit_tests/tracing/trace_value_tests.cpp
+    unit_tests/utils/price_seed_selection_tests.cpp
     unit_tests/utils/validator_tests.cpp)
